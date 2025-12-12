@@ -1,0 +1,370 @@
+Prompt 1 – Scan & summarize current traces
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 1)
+-------------
+First, I want a clear map of EVERY place we do physics traces in SOTS_Parkour so we can safely centralize them later.
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+
+TASKS
+-----
+1. In SOTS_ParkourComponent.cpp, find all uses of:
+   - LineTrace*, SphereTrace*, CapsuleTrace*
+   - GetWorld()->LineTrace*, GetWorld()->Sweep*
+   - Any helper functions that encapsulate traces, like:
+     - ConfirmSurfaceForAction
+     - RunDropHangProbes
+     - TryTicTacSideProbes
+     - Or any similar “Check*Surface”, “*Probe”, or “*Trace” functions.
+
+2. For each trace site you find, note:
+   - Function name
+   - What it’s used for (mantle surface, vault, drop, tic-tac, generic forward probe, etc.)
+   - Whether it’s called:
+     - Directly from TickComponent,
+     - From an input-style function like RequestParkour,
+     - Or from some other state/transition handler.
+
+3. Add a short comment block near the top of SOTS_ParkourComponent.cpp that summarizes the current situation, e.g.:
+
+   // PARKOUR TRACE MAP (pre-refactor)
+   // - Forward capsule: FunctionA -> used for NotBusy/Climb classification
+   // - Mantle surface probe: FunctionB -> called after forward hit
+   // - Vault surface probe: ...
+   // - Drop hang probes: ...
+   // - Tic-tac side probes: ...
+   // - Tick traces: [yes/no], etc.
+
+4. Do NOT change any behavior yet.
+   - Only add the comment summary and any tiny clarifying comments you need.
+   - No new functions, no refactors yet.
+
+FOCUS
+-----
+This step is pure reconnaissance. When you’re done, I should be able to read that comment block and instantly understand where every trace is and how it’s currently being called.
+
+Prompt 2 – Introduce PerformParkourDetection and centralize probes
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 2)
+-------------
+Introduce a single unified detection entrypoint:
+    void PerformParkourDetection(const FVector& InputDirection, bool bIsContinuation);
+
+This function should centralize all forward, downward, and lateral probes that currently live in multiple functions.
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+
+CONSTRAINTS
+-----------
+- KEEP all existing behaviors:
+  - Mantle / Vault / Drop / Tic-tac action types.
+  - Forward capsule math (start/end, radius, half-height) exactly as currently implemented.
+  - Mantle/vault surface capsule probes (mantle ±8 Z, vault +18/+5 Z, radius 25).
+  - Drop hang spheres, tic-tac side probes.
+  - Warp metadata & result filling.
+- Do NOT change numeric values or classification rules in this step.
+- Just centralize and reuse existing logic.
+
+TASKS
+-----
+1. In SOTS_ParkourComponent.h:
+   - Add a private method declaration:
+     void PerformParkourDetection(const FVector& InputDirection, bool bIsContinuation);
+
+2. In SOTS_ParkourComponent.cpp:
+   - Implement PerformParkourDetection so it:
+     a) Computes the forward capsule trace using the existing math for NotBusy vs Climb.
+        - Use the same math currently used for the “first capsule trace” (including IsFalling logic, height offsets, speed → distance mapping, radius, half-height).
+     b) From the forward hit, decides which follow-up probes to run:
+        - Mantle/Vault: call existing surface probe logic (or inline it), but make it consume the already-found forward hit instead of doing its own trace.
+        - Drop: call existing drop hang sphere probe logic starting from the forward hit.
+     c) If the above do NOT lead to a valid mantle/vault/drop:
+        - Run the existing tic-tac side probe logic as a fallback (left/right side probes), again using shared data where possible.
+     d) Populate LastResult and all relevant FSOTS_ParkourResult fields (bHasResult, bIsValid, WorldLocation, Target, Normal, Action, ClimbStyle, warp fields) exactly as before.
+
+3. Refactor existing per-action “Check*Surface” style functions:
+   - Remove redundant trace calls and have them either:
+     - Operate on the data produced by PerformParkourDetection, OR
+     - Be inlined into PerformParkourDetection if they are only ever used there.
+   - The goal is that *physics traces* now only happen inside PerformParkourDetection, but the high-level classification/logic stays the same.
+
+4. Keep behavior identical:
+   - Use the same trace channels, debug lifetime, config fields, and classification rules.
+   - After the refactor, everything should still feel the same in-game; we’ve just centralized where the traces live.
+
+FOCUS
+-----
+Centralize the tracing logic into PerformParkourDetection without changing the math or the high-level outcomes. All future steps will build on this.
+
+Prompt 3 – Make detection event-driven (no idle Tick spam)
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 3)
+-------------
+Stop doing per-frame (idle) parkour traces. Detection should be event-driven:
+
+- When the player presses the parkour input (new attempt).
+- When the player is already in a parkour/climbing state and needs continuation validation (edge/corner).
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+
+TASKS
+-----
+1. Find the main entrypoints for parkour:
+   - Typically something like RequestParkour(), TryStartParkour(), or a similar method triggered by input.
+   - Also find any parkour logic in TickComponent that currently fires traces.
+
+2. Refactor the input entrypoint so that:
+   - It computes an InputDirection (either from movement input or velocity, as we do today for the first capsule).
+   - It calls:
+       PerformParkourDetection(InputDirection, /*bIsContinuation=*/false);
+   - The rest of the execution flow (using LastResult, picking an action, executing motion warping) should remain the same.
+
+3. For continuation cases:
+   - Identify where we currently do extra checks when already in a parkour/climb state (e.g., edge checks, corner steps).
+   - In those places, call:
+       PerformParkourDetection(CurrentDirectionOrNormal, /*bIsContinuation=*/true);
+     rather than letting any of them perform their own traces.
+
+4. Clean up TickComponent:
+   - If TickComponent currently performs traces on every frame, remove that behavior.
+   - It’s OK for TickComponent to do cheap state bookkeeping, but **not** line/sphere/capsule traces.
+   - After this step, traces should only come from:
+     - Input-triggered calls.
+     - Explicit continuation/validation calls in the parkour state machine.
+
+5. Verify:
+   - Idle (no parkour key pressed, not in a parkour state) → zero physics traces per frame.
+   - Press parkour input → a single detection burst via PerformParkourDetection.
+   - While climbing where we need continuation checks → only targeted calls from those states.
+
+FOCUS
+-----
+Make detection event-driven and route all detection through PerformParkourDetection, so idle frames no longer pay for parkour traces.
+
+Prompt 4 – Integrate OmniTrace as a first-class source of anchors
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 4)
+-------------
+Integrate the existing OmniTrace system so that, when possible, SOTS_Parkour reuses OmniTrace anchors instead of firing new physics traces.
+
+Assume there is an OmniTrace plugin in this project that already:
+- Tracks nearby anchors.
+- Knows which anchors are visible/valid.
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+(Only touch OmniTrace headers if needed to call their API.)
+
+TASKS
+-----
+1. In SOTS_ParkourComponent.h:
+   - Add a small private helper declaration:
+     bool TryGetOmniTraceAnchor(FHitResult& OutAnchorHit);
+
+2. In SOTS_ParkourComponent.cpp:
+   - Implement TryGetOmniTraceAnchor to:
+     - Query the OmniTrace system for the “best” anchor near the owning character within a reasonable parkour range.
+     - Return false if no suitable anchor exists.
+   - Keep the implementation conservative:
+     - If you can see an obvious OmniTrace API to query anchors, use it.
+     - If not, stub the body with a clear TODO comment, returning false for now (so we can wire it later).
+
+3. Modify PerformParkourDetection:
+   - At the very beginning, before any physics trace:
+     - Call TryGetOmniTraceAnchor.
+     - If it returns true:
+       - Treat OutAnchorHit as if it were the result of the forward capsule trace.
+       - Feed it into the same classification pipeline used for the normal forward hit (mantle/vault/drop/tic-tac).
+     - Only if TryGetOmniTraceAnchor returns false, fall back to the existing forward capsule trace.
+
+4. Add an optional config flag in SOTS_ParkourConfig:
+   - e.g. bUseOmniTraceForParkour (default true).
+   - Respect this flag inside PerformParkourDetection:
+     - If false, skip TryGetOmniTraceAnchor and always do the normal forward trace.
+
+FOCUS
+-----
+Make OmniTrace a first-class source of surface hits so we don’t always need to fire new physics traces, while keeping behavior identical when OmniTrace has no data.
+
+Prompt 5 – Add configurable trace budgets
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 5)
+-------------
+Introduce a simple per-frame trace budget in SOTS_Parkour so we never overshoot a configurable maximum number of trace calls.
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourConfig.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourConfig.cpp
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+
+TASKS
+-----
+1. In SOTS_ParkourConfig.h:
+   - Add:
+
+     UPROPERTY(EditAnywhere, Category = "Parkour|Tracing")
+     bool bContinuousTraceMode = false;
+
+     UPROPERTY(EditAnywhere, Category = "Parkour|Tracing", meta=(ClampMin="0"))
+     int32 MaxTracesPerFrame = 3;
+
+   - Initialize sensible defaults in the .cpp (false, 3).
+
+2. In SOTS_ParkourComponent.h:
+   - Add a private integer member to track the per-frame trace count, e.g.:
+     int32 CurrentTraceCountThisFrame = 0;
+
+3. In SOTS_ParkourComponent.cpp:
+   - Reset CurrentTraceCountThisFrame at the start of TickComponent (or another per-frame location).
+   - Create a small helper method, e.g.:
+     bool CanPerformAnotherTrace() const;
+     void CountTracePerformed();
+   - Use these around ALL physics trace calls (line/sphere/capsule) inside PerformParkourDetection and any remaining helpers:
+     - Before any trace:
+       - If MaxTracesPerFrame is > 0 and CurrentTraceCountThisFrame >= MaxTracesPerFrame:
+         - Early-out from that trace path.
+     - After each successful trace call:
+       - Increment CurrentTraceCountThisFrame.
+
+4. Behavior modes:
+   - bContinuousTraceMode == false (default):
+     - Detection is already event-driven from earlier steps.
+     - The budget is a safety net in case multiple detection calls happen in one frame.
+   - bContinuousTraceMode == true:
+     - We may permit some limited per-frame detection (if we reintroduce any in TickComponent later),
+       but the per-frame budget still caps trace usage.
+
+FOCUS
+-----
+Implement a simple, robust per-frame trace budget so SOTS_Parkour can never spam traces beyond a configured limit, while keeping existing behavior unchanged when under budget.
+
+Prompt 6 – Add smart LOD cutoff (speed + camera distance)
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 6)
+-------------
+Add a smart LOD-style cutoff: if the player is moving slowly OR the camera is too far, we skip parkour detection entirely (unless we are in a special continuation state that must be validated).
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourConfig.h
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourConfig.cpp
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+
+TASKS
+-----
+1. In SOTS_ParkourConfig.h:
+   - Add:
+
+     UPROPERTY(EditAnywhere, Category = "Parkour|LOD")
+     float MinSpeedForDetection = 5.0f;
+
+     UPROPERTY(EditAnywhere, Category = "Parkour|LOD")
+     float MaxCameraDistanceForDetection = 3000.0f;
+
+   - Initialize defaults in the .cpp.
+
+2. In SOTS_ParkourComponent.cpp, inside PerformParkourDetection:
+   - Before doing any actual traces or OmniTrace queries:
+     - Compute the player’s 2D speed (Speed2D) from the movement component or velocity.
+     - Get the current main camera location (e.g. from the player controller or camera component).
+     - Compute distance between the camera and the character (or the parkour origin).
+
+   - If:
+     - Speed2D < MinSpeedForDetection, OR
+     - Camera distance > MaxCameraDistanceForDetection
+     - AND `bIsContinuation` is false
+       → Early-out:
+         - Do not fire OmniTrace queries or any traces.
+         - Set LastResult.bHasResult = false and return.
+
+   - If `bIsContinuation` is true (we’re mid-parkour and must validate), always allow detection even if these thresholds are exceeded.
+
+3. Keep this logic lightweight:
+   - Do not add any heavy queries here.
+   - Just read movement and camera data, apply the thresholds, and early-out.
+
+FOCUS
+-----
+Save work in “stealth idle” or far-camera situations by skipping detection when it’s unlikely to be needed or visible, without breaking mid-parkour continuation checks.
+
+Prompt 7 – Sanity checks & behavior preservation
+You are my VSCode Buddy working on the SOTS_Parkour C++ plugin.
+
+GOAL (STEP 7)
+-------------
+Do a final cleanup pass to ensure the new detection model is clean, readable, and behaviorally identical to the old one (except for reduced trace spam).
+
+FILES
+-----
+- Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp
+- Any small changes needed in the header files you’ve touched.
+
+TASKS
+-----
+1. Verify centralization:
+   - Confirm that ALL line/sphere/capsule traces in SOTS_ParkourComponent now:
+     - Live either directly inside PerformParkourDetection, OR
+     - Are called by helper functions that are ONLY invoked from PerformParkourDetection.
+   - There should be no stray traces in TickComponent or random helper calls.
+
+2. Verify event-driven behavior:
+   - Confirm that:
+     - “New attempt” detection is only triggered from the input/request function.
+     - “Continuation” detection is only triggered from explicit parkour state transitions.
+   - No idle/frame-based detection in TickComponent.
+
+3. Verify OmniTrace integration:
+   - Confirm that when the OmniTrace flag is enabled:
+     - TryGetOmniTraceAnchor is called before the forward trace.
+     - If a valid anchor is returned, that hit is used instead of firing a new forward trace.
+   - Confirm that disabling the OmniTrace flag falls back to pure physics traces.
+
+4. Verify trace budget:
+   - Ensure CurrentTraceCountThisFrame is:
+     - Reset once per frame.
+     - Incremented for every physics trace.
+     - Checked against MaxTracesPerFrame everywhere we fire traces.
+
+5. Verify LOD cutoff:
+   - Confirm that PerformParkourDetection early-outs when:
+     - Speed2D < MinSpeedForDetection OR camera distance > MaxCameraDistanceForDetection,
+     - Unless bIsContinuation is true.
+
+6. Sanity comments:
+   - At the top of SOTS_ParkourComponent.cpp, add or refine a concise comment block summarizing the new model, e.g.:
+
+     // SOTS_Parkour detection model (post-refactor):
+     // - PerformParkourDetection is the single entrypoint for physics traces.
+     // - Detection is event-driven (input/continuation), not tick-driven.
+     // - OmniTrace anchors are preferred when available.
+     // - A per-frame trace budget and LOD gates cap work.
+     // - Mantle/Vault/Drop/TicTac behavior and MotionWarping remain unchanged.
+
+7. Do NOT re-tune any numeric values:
+   - Only confirm that the new structure calls into the existing math and config as before.
+
+FOCUS
+-----
+Leave the plugin in a clean, well-commented state where the new detection model is easy to reason about, and we’re confident we haven’t changed moment-to-moment parkour feel—only eliminated redundant traces.
+
+
+If you want, next step I can turn all of this into a [SOTS_DEVTOOLS] write_files pack that gently nudges Buddy into these steps while also logging everything in DevTools—but for straight Buddy-side usage, these seven prompts should carry you cleanly through the refactor.

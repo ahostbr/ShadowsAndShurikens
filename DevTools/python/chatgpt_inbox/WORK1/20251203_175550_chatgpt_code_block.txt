@@ -1,0 +1,298 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692ce42d95d481919fda192d49f49f12-pythondevtools/c/6930ab2d-afec-832e-b400-3010bb200e30
+Type: code_block
+<!--
+DevTools v0.6 Reorg PLAN
+High-level plan for restructuring DevTools/python from a flat junk drawer
+into a small set of packages (devtools.core, devtools.build, devtools.plugins,
+devtools.kem, etc.) without breaking existing tools, paths, or the hub.
+-->
+
+[SOTS_DEVTOOLS]
+tool: none
+category: devtools
+plugin: DevTools
+pass: v0_6_REORG_PLAN
+mode: manual
+version: 0.6
+tags: devtools, reorg, layout, packaging
+[/SOTS_DEVTOOLS]
+
+DevTools v0.6 – Root Reorg PLAN
+===============================
+
+Context & Current State
+-----------------------
+- DevTools/python currently contains ~80 files directly in the root:
+  - Core hub + helpers:
+    - sots_tools.py, sots_tools_config.json
+    - project_paths.py, cli_utils.py, log_utils.py, llm_log.py
+    - sots_bridge_server.py, sots_chatgpt_dispatcher.py, inbox_router.py, bridge_runner.py
+    - devtools_header_utils.py, run_devtool.py, sots_pipeline_hub.py (if present)
+  - Dozens of tool scripts:
+    - build/log/CI tools (clean_binaries_intermediate.py, analyze_build_log.py, ci_checks.py, etc.)
+    - plugin/package tools (plugin_audit.py, plugin_stats.py, package_plugin.py, compare_plugin_zips.py, etc.)
+    - search/edit helpers (quick_search.py, mass_regex_edit.py, scan_todos.py, etc.)
+    - FSOTS/tag tools (scan_fsots_structs.py, fsots_duplicate_report.py, check_tag_spine.py)
+    - KEM tools (kem_*.py family)
+    - BlueprintGen helpers (sots_bpgen_tools.py, print_bp_functions.py, bp_functions_out.txt)
+- Almost every tool assumes it can import helpers like:
+  - from cli_utils import confirm_start
+  - from project_paths import get_project_root
+  - from log_utils import make_log_dir
+- Moving tools into subfolders without changing imports will break them because
+  sys.path[0] becomes the new folder, not DevTools/python.
+
+v0.6 Reorg Goals
+----------------
+1. Make DevTools/python root readable at a glance:
+   - Only the “brain” files live at root (hub, config, bridge, dispatcher, router, core helpers).
+   - Everything else is grouped into clear subpackages.
+2. Introduce a stable package namespace for tools:
+   - devtools.core.* for common helpers.
+   - devtools.build.*, devtools.plugins.*, devtools.kem.*, devtools.fsots.*, devtools.bpgen.*, etc.
+3. Keep all existing DevTools entrypoints working:
+   - sots_tools.py menu items keep functioning.
+   - run_devtool.py keeps working and becomes the primary way to call tools by module path.
+4. Preserve the “no silent tools” rule:
+   - All tools still log to DevTools/python/logs or a related folder.
+5. Design the reorg so it can be executed via DevTools itself:
+   - Mass import updates via JSON packs + mass_regex_edit.
+   - Minimal hand edits; easy to re-run/verify.
+
+High-Level Target Layout
+------------------------
+Target structure after v0.6 (conceptual):
+
+DevTools/python/
+  sots_tools.py
+  sots_tools_config.json
+  sots_pipeline_hub.py        # if still in use
+  sots_bridge_server.py
+  sots_chatgpt_dispatcher.py
+  inbox_router.py
+  bridge_runner.py
+  project_paths.py
+  cli_utils.py
+  log_utils.py
+  devtools_header_utils.py
+  llm_log.py
+  __init__.py                 # makes DevTools/python a package root
+
+  devtools/
+    __init__.py
+
+    core/
+      __init__.py
+      project_paths.py        # eventually moved here
+      cli_utils.py            # eventually moved here
+      log_utils.py
+      devtools_header_utils.py
+      llm_log.py
+
+    bridge/
+      __init__.py
+      patch_from_block.py
+      file_ops.py
+      tampermonkey.txt        # optional; may also stay at root
+
+    runners/
+      __init__.py
+      run_devtool.py
+      run_build_and_analyze.py
+      run_unreal_project.py
+      run_bpgen_build.py
+      enable_vscode_shell_integration.py
+
+    build/
+      __init__.py
+      clean_binaries_intermediate.py
+      analyze_build_log.py
+      summarize_crash_logs.py
+      log_error_digest.py
+      ci_checks.py
+      devtools_selftest.py
+      devtools_status_dashboard.py
+
+    edit/
+      __init__.py
+      quick_search.py
+      quick_search_regex.py
+      ad_hoc_regex_search.py
+      mass_regex_edit.py
+      regex_replace.py
+      delete_paths.py
+      delete_target.py
+      scan_todos.py
+      tag_usage_scan.py
+      symbol_refs.py
+
+    plugins/
+      __init__.py
+      plugin_audit.py
+      plugin_stats.py
+      plugin_dependency_health.py
+      plugin_dependency_health.md
+      ensure_plugin_modules.py
+      fix_plugin_dependencies.py
+      package_plugin.py
+      compare_plugin_zips.py
+      validate_sots_pack.py
+      uplugin_utils.py
+      include_map.py
+      sots_plugin_modules.json
+
+    health/
+      __init__.py
+      architecture_lint.py
+      sots_architecture_lint.json
+      project_health_report.py
+      hud_widget_usage_check.py
+
+    fsots/
+      __init__.py
+      scan_fsots_structs.py
+      fsots_duplicate_report.py
+      check_tag_spine.py
+
+    kem/
+      __init__.py
+      kem_anchor_report.py
+      kem_callsites_report.py
+      kem_coverage_matrix_report.py
+      kem_coverage_report.py
+      kem_decision_log_analyzer.py
+      kem_execution_report.py
+      kem_omnitrace_tuning_report.py
+      kem_telemetry_report.py
+      report_bundle_exporter.py
+
+    bpgen/
+      __init__.py
+      README_SOTS_BlueprintGen.txt
+      sots_bpgen_tools.py
+      print_bp_functions.py
+      bp_functions_out.txt
+
+    packs/
+      __init__.py
+      apply_json_pack.py
+      pack_linter.py
+      pack_template_generator.py
+      output.txt
+      sots_tools_runlog.txt
+      plugin_dependency_health.md  # or keep in plugins
+
+  scripts/
+    ListAllFiles_Recursive.bat
+    ListPyFiles.bat
+
+  logs/
+    *.log
+
+Phase Breakdown (v0.6)
+----------------------
+
+Phase 1 – Inventory & Mapping (PLAN only, no edits)
+- Use DevTools/python as-is to:
+  - List all .py and .txt tools in the root and classify them into:
+    - core, bridge, runners, build, edit, plugins, health, fsots, kem, bpgen, packs, misc.
+  - Generate a simple mapping file (e.g. devtools_v06_mapping.md):
+    - old_path → new_module_path (e.g. quick_search.py → devtools.edit.quick_search)
+- Deliverables:
+  - A text mapping that can be used later to build JSON packs and regex edits.
+  - Confirmation that there are no “mystery” scripts that don’t fit a category.
+
+Phase 2 – Establish devtools package and core helpers
+- Create the devtools/ folder and devtools/core submodule:
+  - Add devtools/__init__.py.
+  - Add devtools/core/__init__.py.
+- Decide whether to:
+  - Move project_paths.py, cli_utils.py, log_utils.py, devtools_header_utils.py, llm_log.py
+    into devtools/core/ in **one** controlled pass, or
+  - Copy them first, update imports, then remove old duplicates once all tools are confirmed.
+- Update imports in all tools to go through devtools.core:
+  - from cli_utils import confirm_start
+    → from devtools.core.cli_utils import confirm_start
+  - from project_paths import get_project_root
+    → from devtools.core.project_paths import get_project_root
+- Ensure sots_tools.py, sots_bridge_server.py, sots_chatgpt_dispatcher.py, inbox_router.py and
+  any runners are updated to import from devtools.core as well.
+- This Phase uses DevTools mass_regex_edit/apply_json_pack rather than manual edits.
+
+Phase 3 – Group tools into subpackages (build, edit, plugins, fsots, kem, bpgen, packs)
+- For each domain (build, edit, plugins, fsots, kem, bpgen, packs):
+  - Move the selected scripts into the appropriate devtools.* subfolder.
+  - Ensure each subfolder has __init__.py.
+- Update sots_tools.py menu items and any run_devtool.py calls to use module paths instead of
+  bare filenames where appropriate, e.g.:
+  - old: python analyze_build_log.py
+  - new: python run_devtool.py --script devtools.build.analyze_build_log
+- Decide whether to keep thin wrapper scripts at root (e.g. analyze_build_log.py that imports
+  from devtools.build.analyze_build_log and calls main()), or remove them entirely:
+  - v0.6 should prefer **no** wrappers if possible, but wrappers can be used temporarily for
+    compatibility until the hub is fully updated.
+
+Phase 4 – Hub & Runner Alignment
+- sots_tools.py:
+  - Update each menu item to call run_devtool.py or direct python with the new module paths.
+  - Group menu sections to match the new folder structure (Build, Plugins, KEM, FSOTS, BPGen, etc.).
+- run_devtool.py:
+  - Confirm it accepts a module-style script name (e.g. devtools.build.analyze_build_log),
+    imports the module, and calls main(), or spawns a new process accordingly.
+- Ensure that sots_pipeline_hub.py and any other “meta-pipeline” tools use the same module
+  paths when they schedule or chain tools.
+
+Phase 5 – Self-Test, Logging, and Safety Checks
+- Run devtools_selftest.py (or create a v0.6-specific self-test if needed):
+  - Verify that:
+    - All menu items in sots_tools.py execute without ImportError.
+    - All major tools (build/CI, plugin audit, KEM, FSOTS) produce logs under logs/.
+    - No .py files left in root except:
+      - sots_tools.py, sots_tools_config.json
+      - sots_bridge_server.py, sots_chatgpt_dispatcher.py, inbox_router.py, bridge_runner.py
+      - project_paths.py (if not moved), cli_utils.py, log_utils.py, devtools_header_utils.py, llm_log.py
+      - __init__.py
+- Confirm that:
+  - Tools called by older JSON packs or prompts still work, or at least fail gracefully with
+    clear errors, and can be re-pointed to the new module paths.
+  - The root DevTools/python directory, when opened in Explorer, now reads like a “brain and
+    packages” layout instead of a junk drawer.
+
+Phase 6 – Documentation & Index
+- Add a DevTools index file at root, e.g. DEVTOOLS_INDEX.md:
+  - Outline:
+    - devtools.core – shared helpers, logging, project root.
+    - devtools.build – build/log/CI tools.
+    - devtools.edit – search/edit/mass regex tools.
+    - devtools.plugins – plugin audit, stats, packaging, validation.
+    - devtools.health – project/architecture health checks.
+    - devtools.fsots – FSOTS/Tag Spine reports.
+    - devtools.kem – KillExecutionManager report suite.
+    - devtools.bpgen – BlueprintGen integration tools.
+    - devtools.packs – JSON pack tools, pack linter, pack templates.
+- This index becomes the human-friendly map you can open in VS Code to remember what’s where.
+
+Execution Strategy (Later Passes)
+---------------------------------
+- This PLAN does not move any files or change imports.
+- Future passes will be expressed as additional [SOTS_DEVTOOLS] prompts, e.g.:
+  - [SOTS_DEVTOOLS] DevTools v0.6 CorePackage SPINE
+  - [SOTS_DEVTOOLS] DevTools v0.6 GroupBuildAndEdit SPINE
+  - [SOTS_DEVTOOLS] DevTools v0.6 HubAndRunners BRIDGE
+  - [SOTS_DEVTOOLS] DevTools v0.6 SelfTestAndDocs TOOLS
+- Each of those passes will:
+  - Use devtools.core helpers, mass_regex_edit, and apply_json_pack.
+  - Leave detailed logs and selftest results in logs/.
+  - Avoid any silent behavior; every reorg step writes out what changed.
+
+Notes for Future Me
+-------------------
+- Treat the GitHub DevTools repo as the canonical source when designing the actual reorg packs
+  unless a new DEVTOOLS_*.zip is explicitly promoted as the single source of truth for a session.
+- Keep the bridge and dispatcher stable; the v0.6 reorg is about internal layout and imports,
+  not the end-to-end Send2SOTS pipeline.
+- Always prioritize safety and observability:
+  - No destructive changes without logs.
+  - Prefer staged moves (copy → import-update → delete) over blind mass deletes.

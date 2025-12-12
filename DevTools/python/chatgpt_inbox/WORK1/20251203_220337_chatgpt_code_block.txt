@@ -1,0 +1,362 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/693033da-92e4-8330-aa6e-d876788863e1
+Type: code_block
+# SOTS DevTools – SOTS_Parkour SPINE 2
+# ------------------------------------
+# What this patch does:
+#   - Builds on SPINE 1 to add a minimal, local-only detection path:
+#       * Simple forward line trace from the character to find a ledge/wall.
+#       * Basic height-based classification into Mantle vs Drop.
+#       * Populates FSOTS_ParkourResult (LastResult) on success.
+#   - Extends RequestParkour() to:
+#       * Run this simple detection pass.
+#       * Set ParkourState to Active when a valid result exists, or revert
+#         to Idle on failure.
+#   - Adds lightweight debug helpers:
+#       * DrawDebugLine / DrawDebugSphere for the trace and hit.
+#       * UE_LOG(Verbose) printout of the result (non-shipping/test only).
+#
+# Usage:
+#   - Save this whole block as a .txt file (e.g. DevTools/chatgpt_inbox/SOTS_Parkour_SPINE_2.txt).
+#   - Run (MANUAL, per laws):
+#       python DevTools/python/write_files.py --source DevTools/chatgpt_inbox/SOTS_Parkour_SPINE_2.txt
+#   - This will overwrite ONLY SOTS_ParkourComponent.h/.cpp in the SOTS_Parkour plugin.
+#   - Rebuild project, then you can call RequestParkour() from BP and see:
+#       * State flip to Active when a simple ledge/drop is detected.
+#       * LastResult filled with Action/ClimbStyle/impact data.
+#       * Debug lines/spheres + log output in non-shipping builds.
+
+[SOTS_DEVTOOLS]
+tool: write_files
+category: plugin_spine
+plugin: SOTS_Parkour
+pass: SPINE_2
+description: "SOTS_Parkour SPINE 2 – minimal local detection path, LastResult wiring, and basic debug output (no OmniTrace yet)."
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h ===
+// SOTS_ParkourComponent.h
+// SPINE 2: Skeleton ActorComponent for SOTS parkour with high-level
+// entry/exit flow, owner caching, and a minimal local-only detection
+// path that fills LastResult. Movement/animations will follow in later
+// passes.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "SOTS_ParkourTypes.h"
+#include "SOTS_ParkourComponent.generated.h"
+
+class ACharacter;
+class UCharacterMovementComponent;
+
+UCLASS(ClassGroup = (SOTS), meta = (BlueprintSpawnableComponent))
+class SOTS_PARKOUR_API USOTS_ParkourComponent : public UActorComponent
+{
+    GENERATED_BODY()
+
+public:
+    USOTS_ParkourComponent();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    /** Returns true if the parkour system considers itself currently active. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    bool IsParkourActive() const { return ParkourState == ESOTS_ParkourState::Active; }
+
+    /** Current high-level parkour state (idle, entering, active, exiting). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ParkourState GetParkourState() const { return ParkourState; }
+
+    /** Current climb style (free hang vs braced). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle GetCurrentClimbStyle() const { return CurrentClimbStyle; }
+
+    /** Current parkour action (mantle, vault, drop, etc). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction GetCurrentAction() const { return CurrentAction; }
+
+    /** Last computed parkour result from a detection pass. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    const FSOTS_ParkourResult& GetLastResult() const { return LastResult; }
+
+    /**
+     * Request that parkour begin.
+     *
+     * SPINE 2 behavior:
+     *   - Only allowed from Idle state.
+     *   - Runs a minimal local-only detection pass (no OmniTrace yet).
+     *   - If a valid opportunity is found:
+     *       * Fills LastResult.
+     *       * Sets ParkourState to Active.
+     *   - If no valid opportunity is found:
+     *       * Leaves LastResult reset.
+     *       * ParkourState returns to Idle.
+     */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Parkour")
+    void RequestParkour();
+
+    /**
+     * Cancel/stop parkour for the owning actor.
+     *
+     * In SPINE 2 this simply resets state and clears the last result. Later passes
+     * will add proper transition handling (e.g., exit animations).
+     */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Parkour")
+    void CancelParkour();
+
+protected:
+    /** High-level state of the parkour system for this actor. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourState ParkourState = ESOTS_ParkourState::Idle;
+
+    /** Climb style currently selected (mapped from CGF logic in later passes). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle CurrentClimbStyle = ESOTS_ClimbStyle::None;
+
+    /** The parkour action chosen by the last successful classification. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction CurrentAction = ESOTS_ParkourAction::None;
+
+    /** Unified result container for the last parkour opportunity evaluation. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    FSOTS_ParkourResult LastResult;
+
+    /** Cached owning character (if the owner is a character). */
+    UPROPERTY(Transient)
+    TWeakObjectPtr<ACharacter> CachedCharacter;
+
+    /** Cached movement component from the owning character (if available). */
+    UPROPERTY(Transient)
+    UCharacterMovementComponent* CachedMovementComponent = nullptr;
+
+    /** Simple internal helper: can the owner currently attempt parkour at all? */
+    bool CanAttemptParkourInternal() const;
+
+    /**
+     * SPINE 2: Minimal local-only detection pass that tries to find a simple
+     * forward ledge/wall opportunity in front of the character and classify it
+     * into a basic action (e.g., Mantle vs Drop).
+     *
+     * Returns true and fills OutResult if a valid opportunity exists.
+     */
+    bool TryDetectSimpleParkourOpportunity(FSOTS_ParkourResult& OutResult) const;
+};
+
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp ===
+// SOTS_ParkourComponent.cpp
+// SPINE 2: Minimal implementation with high-level entry/exit flow,
+// owner caching, and a simple local-only detection pass that fills
+// LastResult. Movement/animations are not implemented yet.
+
+#include "SOTS_ParkourComponent.h"
+
+#include "DrawDebugHelpers.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+USOTS_ParkourComponent::USOTS_ParkourComponent()
+{
+    PrimaryComponentTick.bCanEverTick = false; // No tick needed in the skeleton passes
+
+    // Initial state is idle; other fields already have default initializers.
+    ParkourState      = ESOTS_ParkourState::Idle;
+    CurrentClimbStyle = ESOTS_ClimbStyle::None;
+    CurrentAction     = ESOTS_ParkourAction::None;
+    LastResult.Reset();
+}
+
+void USOTS_ParkourComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    AActor* Owner = GetOwner();
+    if (Owner)
+    {
+        if (ACharacter* AsCharacter = Cast<ACharacter>(Owner))
+        {
+            CachedCharacter = AsCharacter;
+            CachedMovementComponent = AsCharacter->GetCharacterMovement();
+        }
+    }
+
+    // SPINE 2: No movement mode hooks or input bindings yet.
+    // Later passes will integrate with the player character’s input and
+    // traversal systems.
+}
+
+bool USOTS_ParkourComponent::CanAttemptParkourInternal() const
+{
+    // Owner must be a valid character.
+    if (!CachedCharacter.IsValid())
+    {
+        return false;
+    }
+
+    // In SPINE 2 we only allow attempts from Idle state. Later passes will
+    // mirror CGF’s richer gating (movement mode, velocity, etc.).
+    if (ParkourState != ESOTS_ParkourState::Idle)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool USOTS_ParkourComponent::TryDetectSimpleParkourOpportunity(FSOTS_ParkourResult& OutResult) const
+{
+    OutResult.Reset();
+
+    ACharacter* Character = CachedCharacter.Get();
+    if (!Character)
+    {
+        return false;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return false;
+    }
+
+    const FVector ActorLocation = Character->GetActorLocation();
+    const FVector Forward       = Character->GetActorForwardVector();
+
+    // Simple, local-only forward trace at roughly chest height.
+    // Later passes will replace this with OmniTrace-based bundles and
+    // richer vertical probing.
+    static const float ForwardTraceDistance = 150.0f;
+    static const float VerticalOffset       = 40.0f;
+
+    const FVector TraceStart = ActorLocation + FVector(0.0f, 0.0f, VerticalOffset);
+    const FVector TraceEnd   = TraceStart + Forward * ForwardTraceDistance;
+
+    FHitResult Hit;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_Parkour_ForwardTrace), false, Character);
+    const bool bHit = World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    DrawDebugLine(World, TraceStart, TraceEnd, FColor::Yellow, false, 2.0f, 0, 1.0f);
+    if (bHit && Hit.IsValidBlockingHit())
+    {
+        DrawDebugSphere(World, Hit.ImpactPoint, 8.0f, 8, FColor::Green, false, 2.0f);
+    }
+#endif
+
+    if (!bHit || !Hit.IsValidBlockingHit())
+    {
+        return false;
+    }
+
+    // Very simple classification based on ledge height relative to character
+    // feet. These constants will move to a config DataAsset in SPINE 4.
+    const float CharacterHalfHeight = Character->GetSimpleCollisionHalfHeight();
+    const float CharacterFeetZ      = ActorLocation.Z - CharacterHalfHeight;
+    const float LedgeZ              = Hit.ImpactPoint.Z;
+    const float HeightDelta         = LedgeZ - CharacterFeetZ;
+
+    // Tunable thresholds (to be externalized later).
+    static const float MinMantleHeight = 30.0f;
+    static const float MaxMantleHeight = 120.0f;
+    static const float MaxSafeDrop     = 240.0f; // distance below feet considered a "safe" drop
+
+    OutResult.bHasResult    = true;
+    OutResult.WorldLocation = Hit.ImpactPoint;
+    OutResult.WorldNormal   = Hit.ImpactNormal;
+    OutResult.Hit           = Hit;
+
+    if (HeightDelta >= MinMantleHeight && HeightDelta <= MaxMantleHeight)
+    {
+        // Simple forward mantle.
+        OutResult.Action     = ESOTS_ParkourAction::Mantle;
+        OutResult.ClimbStyle = ESOTS_ClimbStyle::Braced;
+    }
+    else if (HeightDelta < 0.0f && FMath::Abs(HeightDelta) <= MaxSafeDrop)
+    {
+        // Slightly below feet: treat as a controlled drop/down case.
+        OutResult.Action     = ESOTS_ParkourAction::Drop;
+        OutResult.ClimbStyle = ESOTS_ClimbStyle::FreeHang;
+    }
+    else
+    {
+        // Out-of-range ledge height; treat as invalid for now.
+        OutResult.Reset();
+        return false;
+    }
+
+    return true;
+}
+
+void USOTS_ParkourComponent::RequestParkour()
+{
+    if (!CanAttemptParkourInternal())
+    {
+        return;
+    }
+
+    LastResult.Reset();
+    ParkourState = ESOTS_ParkourState::Entering;
+
+    FSOTS_ParkourResult Candidate;
+    if (!TryDetectSimpleParkourOpportunity(Candidate))
+    {
+        // No valid opportunity found; return to Idle, keep LastResult reset.
+        ParkourState = ESOTS_ParkourState::Idle;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (AActor* Owner = GetOwner())
+        {
+            UE_LOG(LogTemp, Verbose, TEXT("[SOTS_Parkour] No valid parkour opportunity for %s"), *Owner->GetName());
+        }
+#endif
+
+        return;
+    }
+
+    LastResult   = Candidate;
+    CurrentAction     = LastResult.Action;
+    CurrentClimbStyle = LastResult.ClimbStyle;
+    ParkourState      = ESOTS_ParkourState::Active;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (AActor* Owner = GetOwner())
+    {
+        UE_LOG(LogTemp, Verbose,
+            TEXT("[SOTS_Parkour] Parkour result for %s: Action=%d, ClimbStyle=%d, Loc=%s"),
+            *Owner->GetName(),
+            static_cast<int32>(LastResult.Action),
+            static_cast<int32>(LastResult.ClimbStyle),
+            *LastResult.WorldLocation.ToString());
+    }
+#endif
+
+    // SPINE 2 does not yet move the character or play animations.
+    // SPINE 3 will add execution logic based on LastResult.
+}
+
+void USOTS_ParkourComponent::CancelParkour()
+{
+    if (ParkourState == ESOTS_ParkourState::Idle)
+    {
+        // Nothing to cancel.
+        return;
+    }
+
+    // Clear current action/context.
+    CurrentAction     = ESOTS_ParkourAction::None;
+    CurrentClimbStyle = ESOTS_ClimbStyle::None;
+    LastResult.Reset();
+
+    // Later we may want a proper Exiting state with animations. For now,
+    // go straight back to Idle for safety and simplicity.
+    ParkourState = ESOTS_ParkourState::Idle;
+}
+
+=== END FILE ===

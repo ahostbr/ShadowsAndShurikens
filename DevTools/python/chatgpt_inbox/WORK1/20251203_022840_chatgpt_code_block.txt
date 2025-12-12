@@ -1,0 +1,212 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/692fc016-a1f0-832c-b383-235fe3cd9693
+Type: code_block
+/*
+[SOTS_DEVTOOLS] – SOTS_Parkour V2_3
+Goal: Add the high-level parkour flow spine to USOTS_ParkourComponent:
+      - Cache owner character + movement in BeginPlay.
+      - Expose simple Blueprint entrypoints to request/cancel parkour.
+      - Drive ParkourState transitions at a high level (Idle → Entering, etc.).
+      NOTE: This pass still does NOT implement detection, traces, or real
+      movement. It only sets up the entry/exit flow that later passes will fill.
+*/
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h ===
+// SOTS_ParkourComponent.h
+// V2_3: Skeleton ActorComponent for SOTS parkour, now with high-level
+// entry/exit flow and owner caching. Detection, traces, and movement
+// will be added in later passes.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "SOTS_ParkourTypes.h"
+#include "SOTS_ParkourComponent.generated.h"
+
+class ACharacter;
+class UCharacterMovementComponent;
+
+UCLASS(ClassGroup = (SOTS), meta = (BlueprintSpawnableComponent))
+class SOTS_PARKOUR_API USOTS_ParkourComponent : public UActorComponent
+{
+    GENERATED_BODY()
+
+public:
+    USOTS_ParkourComponent();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    /** Returns true if the parkour system considers itself currently active. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    bool IsParkourActive() const { return ParkourState == ESOTS_ParkourState::Active; }
+
+    /** Current high-level parkour state (idle, entering, active, exiting). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ParkourState GetParkourState() const { return ParkourState; }
+
+    /** Current climb style (free hang vs braced). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle GetCurrentClimbStyle() const { return CurrentClimbStyle; }
+
+    /** Current parkour action (mantle, vault, tic-tac, etc). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction GetCurrentAction() const { return CurrentAction; }
+
+    /** Last computed parkour result from a detection pass. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    const FSOTS_ParkourResult& GetLastResult() const { return LastResult; }
+
+    /**
+     * Request that parkour begin.
+     *
+     * In V2_3 this only drives high-level state transitions (Idle → Entering).
+     * Later passes will perform detection, fill LastResult, and move the
+     * character or reject the attempt.
+     */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Parkour")
+    void RequestParkour();
+
+    /**
+     * Cancel/stop parkour for the owning actor.
+     *
+     * In V2_3 this simply resets state and clears the last result. Later passes
+     * will add proper transition handling (e.g., exit animations).
+     */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Parkour")
+    void CancelParkour();
+
+protected:
+    /** High-level state of the parkour system for this actor. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourState ParkourState = ESOTS_ParkourState::Idle;
+
+    /** Climb style currently selected (mapped from CGF logic in later passes). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle CurrentClimbStyle = ESOTS_ClimbStyle::None;
+
+    /** The parkour action chosen by the last successful classification. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction CurrentAction = ESOTS_ParkourAction::None;
+
+    /** Unified result container for the last parkour opportunity evaluation. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    FSOTS_ParkourResult LastResult;
+
+    /** Cached owning character (if the owner is a character). */
+    UPROPERTY(Transient)
+    TWeakObjectPtr<ACharacter> CachedCharacter;
+
+    /** Cached movement component from the owning character (if available). */
+    UPROPERTY(Transient)
+    UCharacterMovementComponent* CachedMovementComponent = nullptr;
+
+    /** Simple internal helper: can the owner currently attempt parkour at all? */
+    bool CanAttemptParkourInternal() const;
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp ===
+// SOTS_ParkourComponent.cpp
+// V2_3: Minimal implementation with high-level entry/exit flow, owner
+// caching, and simple gating. Detection, traces, and movement are not
+// implemented yet.
+
+#include "SOTS_ParkourComponent.h"
+
+#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+USOTS_ParkourComponent::USOTS_ParkourComponent()
+{
+    PrimaryComponentTick.bCanEverTick = false; // No tick needed in the skeleton passes
+
+    // Initial state is idle; other fields already have default initializers.
+    ParkourState      = ESOTS_ParkourState::Idle;
+    CurrentClimbStyle = ESOTS_ClimbStyle::None;
+    CurrentAction     = ESOTS_ParkourAction::None;
+    LastResult.Reset();
+}
+
+void USOTS_ParkourComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    AActor* Owner = GetOwner();
+    if (Owner)
+    {
+        if (ACharacter* AsCharacter = Cast<ACharacter>(Owner))
+        {
+            CachedCharacter = AsCharacter;
+            CachedMovementComponent = AsCharacter->GetCharacterMovement();
+        }
+    }
+
+    // V2_3: No movement mode hooks or input bindings yet.
+    // Later passes will integrate with the player character’s input and
+    // traversal systems.
+}
+
+bool USOTS_ParkourComponent::CanAttemptParkourInternal() const
+{
+    // Owner must be a valid character.
+    if (!CachedCharacter.IsValid())
+    {
+        return false;
+    }
+
+    // In V2_3 we only allow attempts from Idle state. Later passes will
+    // mirror CGF’s richer gating (movement mode, velocity, etc.).
+    if (ParkourState != ESOTS_ParkourState::Idle)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void USOTS_ParkourComponent::RequestParkour()
+{
+    // Basic high-level gating only; no detection or movement yet.
+    if (!CanAttemptParkourInternal())
+    {
+        return;
+    }
+
+    // Entering is a placeholder state that later passes will expand to:
+    // - Run detection
+    // - Fill LastResult
+    // - Transition to Active or back to Idle.
+    ParkourState = ESOTS_ParkourState::Entering;
+
+    // V2_3: We do not yet compute a real result or move the character.
+    // This is the hook that later passes will build the full CGF/TNT-based
+    // detection and execution pipeline on top of.
+}
+
+void USOTS_ParkourComponent::CancelParkour()
+{
+    if (ParkourState == ESOTS_ParkourState::Idle)
+    {
+        // Nothing to cancel.
+        return;
+    }
+
+    // Clear current action/context.
+    CurrentAction     = ESOTS_ParkourAction::None;
+    CurrentClimbStyle = ESOTS_ClimbStyle::None;
+    LastResult.Reset();
+
+    // Later we may want a proper Exiting state with animations. For now,
+    // go straight back to Idle for safety and simplicity.
+    ParkourState = ESOTS_ParkourState::Idle;
+}
+=== END FILE ===

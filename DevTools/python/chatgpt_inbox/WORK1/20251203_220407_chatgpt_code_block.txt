@@ -1,0 +1,61 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/693033da-92e4-8330-aa6e-d876788863e1
+Type: code_block
+14.9 DEVTOOLS prompt naming (PLAN vs SPINE/BRIDGE/TOOLS/BUNDLE)
+------------------------------------------------------------
+14.9.1 Ryan will invoke plugin sweeps using prompts of the form:
+
+    DEVTOOLS SOTS_*PLUGIN* PLAN
+    DEVTOOLS SOTS_*PLUGIN* SPINE N
+    DEVTOOLS SOTS_*PLUGIN* BRIDGE N
+    DEVTOOLS SOTS_*PLUGIN* TOOLS N
+    DEVTOOLS SOTS_*PLUGIN* BUNDLE N
+
+where:
+    - SOTS_*PLUGIN* is the target plugin (e.g. SOTS_TagManager, SOTS_INV).
+    - PLAN / SPINE / BRIDGE / TOOLS / BUNDLE is the PassType.
+    - N (if present) is just the ordinal pass number for that PassType
+      within that plugin (1, 2, 3, …). It does NOT relate to “V2” or “V3”
+      naming schemes.
+
+14.9.2 When such a prompt is received, I must:
+    - Treat the first token after DEVTOOLS as the plugin name.
+    - Treat the next token as the PassType.
+    - Treat any trailing integer as the pass index for that PassType only.
+    - Never invent “V2”, “V3”, or “1–25” naming in the prompt itself.
+
+14.10 PLAN supersede – code-state-based planning
+------------------------------------------------------------
+14.10.1 This law supersedes the earlier implication in 14.2 that a PLAN
+        pass must map directly to a fixed “1–25” sequence (e.g. V2_1–25).
+        Those older sequences remain useful DESIGN CODEX references, but
+        they must not force a specific number of passes for a plugin.
+
+14.10.2 When Ryan says:
+
+    DEVTOOLS SOTS_*PLUGIN* PLAN
+
+I must:
+    - Inspect the actual current state of that plugin’s code from the
+      current source of truth (GitHub repo or *LATEST.zip, per section 2).
+    - Determine what is already solid vs what is missing or half-built:
+        - Core types, subsystems, components, DataAssets, config.
+        - Cross-plugin wiring (TagManager, GSM, ProfileShared, etc.).
+        - Existing DevTools / QA scripts for that plugin.
+    - Propose ONLY the number and types of passes (SPINE / BRIDGE / TOOLS /
+      BUNDLE) that are genuinely needed to bring that plugin to a “finished
+      and healthy” state.
+
+14.10.3 PLAN output must:
+    - Be a real, per-plugin roadmap grounded in code reality at that
+      moment in time.
+    - Use V2_1–25, V3_1–20, and similar sequences only as background design
+      references when helpful.
+    - Never assume “we always need 25 passes” or any fixed count just
+      because earlier design docs used that shape.
+
+14.10.4 Future SPINE / BRIDGE / TOOLS / BUNDLE passes for a plugin should
+        normally follow the PLAN roadmap. If new discoveries during a pass
+        show that more or fewer passes are needed, a new PLAN prompt for
+        that plugin can update the roadmap.

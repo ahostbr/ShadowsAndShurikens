@@ -1,0 +1,53 @@
+{
+  "Nodes": [
+    { "Id": "Entry", "NodeType": "K2Node_Event", "NodePosition": { "X": -500.0, "Y": 0.0 }, "ExtraData": { "EventName": "ReceiveBeginPlay" } },
+    { "Id": "Seq", "NodeType": "K2Node_ExecutionSequence", "NodePosition": { "X": -220.0, "Y": 0.0 } },
+
+    { "Id": "ForLoop", "NodeType": "K2Node_ForLoop", "NodePosition": { "X": 80.0, "Y": -80.0 }, "ExtraData": { "StartIndex": "0", "EndIndex": "3" } },
+    { "Id": "ForLoopWithBreak", "NodeType": "K2Node_ForLoopWithBreak", "NodePosition": { "X": 330.0, "Y": -80.0 }, "ExtraData": { "StartIndex": "0", "EndIndex": "2" } },
+    { "Id": "ForEachLoop", "NodeType": "K2Node_ForEachLoop", "NodePosition": { "X": 580.0, "Y": -80.0 } },
+
+    { "Id": "DoOnce", "NodeType": "K2Node_DoOnce", "NodePosition": { "X": 80.0, "Y": 120.0 } },
+    { "Id": "Gate", "NodeType": "K2Node_Gate", "NodePosition": { "X": 330.0, "Y": 120.0 } },
+    { "Id": "FlipFlop", "NodeType": "K2Node_FlipFlop", "NodePosition": { "X": 580.0, "Y": 120.0 } },
+    { "Id": "Delay", "NodeType": "K2Node_CallFunction", "NodePosition": { "X": 830.0, "Y": 60.0 }, "FunctionPath": "/Script/Engine.KismetSystemLibrary:Delay", "ExtraData": { "Duration": "0.5" } },
+
+    { "Id": "EnumLiteral", "NodeType": "K2Node_EnumLiteral", "NodePosition": { "X": 80.0, "Y": 320.0 }, "ExtraData": { "EnumPath": "/Script/Engine.ECollisionChannel", "EnumValue": "ECC_Visibility" } },
+    { "Id": "SwitchEnum", "NodeType": "K2Node_SwitchEnum", "NodePosition": { "X": 330.0, "Y": 320.0 }, "ExtraData": { "EnumPath": "/Script/Engine.ECollisionChannel" } },
+    { "Id": "SwitchInt", "NodeType": "K2Node_SwitchInteger", "NodePosition": { "X": 580.0, "Y": 320.0 }, "ExtraData": { "CaseCount": "3" } },
+    { "Id": "SwitchString", "NodeType": "K2Node_SwitchString", "NodePosition": { "X": 830.0, "Y": 320.0 }, "ExtraData": { "CaseCount": "2" } },
+
+    { "Id": "PrintA", "NodeType": "K2Node_CallFunction", "NodePosition": { "X": 1080.0, "Y": 80.0 }, "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString", "ExtraData": { "InString": "FlipFlop A" } },
+    { "Id": "PrintB", "NodeType": "K2Node_CallFunction", "NodePosition": { "X": 1080.0, "Y": 160.0 }, "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString", "ExtraData": { "InString": "FlipFlop B" } },
+    { "Id": "PrintLoop", "NodeType": "K2Node_CallFunction", "NodePosition": { "X": 830.0, "Y": -80.0 }, "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString", "ExtraData": { "InString": "ForEach tick" } },
+    { "Id": "PrintDone", "NodeType": "K2Node_CallFunction", "NodePosition": { "X": 1330.0, "Y": 200.0 }, "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString", "ExtraData": { "InString": "Sequence Completed" } },
+    { "Id": "ArrayLength", "NodeType": "K2Node_CallArrayFunction", "NodePosition": { "X": 1330.0, "Y": -60.0 }, "FunctionPath": "/Script/Engine.KismetArrayLibrary:Array_Length" }
+  ],
+  "Links": [
+    { "FromNodeId": "Entry", "FromPinName": "Then", "ToNodeId": "Seq", "ToPinName": "Execute" },
+
+    { "FromNodeId": "Seq", "FromPinName": "Then_0", "ToNodeId": "ForLoop", "ToPinName": "Execute" },
+    { "FromNodeId": "ForLoop", "FromPinName": "LoopBody", "ToNodeId": "ForLoopWithBreak", "ToPinName": "Execute" },
+    { "FromNodeId": "ForLoop", "FromPinName": "Completed", "ToNodeId": "Delay", "ToPinName": "Execute" },
+
+    { "FromNodeId": "ForLoopWithBreak", "FromPinName": "LoopBody", "ToNodeId": "ForEachLoop", "ToPinName": "Execute" },
+    { "FromNodeId": "ForLoopWithBreak", "FromPinName": "Completed", "ToNodeId": "DoOnce", "ToPinName": "Execute" },
+
+    { "FromNodeId": "ForEachLoop", "FromPinName": "LoopBody", "ToNodeId": "PrintLoop", "ToPinName": "Execute" },
+    { "FromNodeId": "ForEachLoop", "FromPinName": "Completed", "ToNodeId": "Delay", "ToPinName": "Execute" },
+
+    { "FromNodeId": "DoOnce", "FromPinName": "Completed", "ToNodeId": "Gate", "ToPinName": "Enter" },
+    { "FromNodeId": "Gate", "FromPinName": "Exit", "ToNodeId": "FlipFlop", "ToPinName": "Execute" },
+    { "FromNodeId": "FlipFlop", "FromPinName": "A", "ToNodeId": "PrintA", "ToPinName": "Execute" },
+    { "FromNodeId": "FlipFlop", "FromPinName": "B", "ToNodeId": "PrintB", "ToPinName": "Execute" },
+
+    { "FromNodeId": "Seq", "FromPinName": "Then_1", "ToNodeId": "SwitchInt", "ToPinName": "Execute" },
+    { "FromNodeId": "EnumLiteral", "FromPinName": "ReturnValue", "ToNodeId": "SwitchEnum", "ToPinName": "Selection" },
+    { "FromNodeId": "SwitchEnum", "FromPinName": "Default", "ToNodeId": "SwitchString", "ToPinName": "Execute" },
+    { "FromNodeId": "SwitchInt", "FromPinName": "Default", "ToNodeId": "SwitchEnum", "ToPinName": "Execute" },
+
+    { "FromNodeId": "Seq", "FromPinName": "Then_2", "ToNodeId": "PrintDone", "ToPinName": "Execute" },
+    { "FromNodeId": "Delay", "FromPinName": "Completed", "ToNodeId": "ArrayLength", "ToPinName": "Execute" },
+    { "FromNodeId": "ArrayLength", "FromPinName": "Then", "ToNodeId": "PrintDone", "ToPinName": "Execute" }
+  ]
+}

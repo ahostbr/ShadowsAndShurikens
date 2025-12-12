@@ -1,0 +1,199 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/692fc016-a1f0-832c-b383-235fe3cd9693
+Type: code_block
+/*
+[SOTS_DEVTOOLS] – SOTS_Parkour V2_2
+Goal: Define the core parkour enums/structs (ESOTS_ParkourState,
+      ESOTS_ClimbStyle, ESOTS_ParkourAction, FSOTS_ParkourResult) and update
+      USOTS_ParkourComponent to use them as its internal state spine.
+      This pass does NOT add real logic; it just creates the data model.
+*/
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourTypes.h ===
+// SOTS_ParkourTypes.h
+// Core enums and result struct for SOTS parkour (V2_2).
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
+#include "SOTS_ParkourTypes.generated.h"
+
+/** High-level state of the parkour component. */
+UENUM(BlueprintType)
+enum class ESOTS_ParkourState : uint8
+{
+    Idle        UMETA(DisplayName = "Idle"),
+    Entering    UMETA(DisplayName = "Entering"),
+    Active      UMETA(DisplayName = "Active"),
+    Exiting     UMETA(DisplayName = "Exiting")
+};
+
+/** Style of climbing the player is currently using. */
+UENUM(BlueprintType)
+enum class ESOTS_ClimbStyle : uint8
+{
+    None        UMETA(DisplayName = "None"),
+    FreeHang    UMETA(DisplayName = "Free Hang"),
+    Braced      UMETA(DisplayName = "Braced")
+};
+
+/** The type of parkour action selected from the detection/classification step. */
+UENUM(BlueprintType)
+enum class ESOTS_ParkourAction : uint8
+{
+    None            UMETA(DisplayName = "None"),
+    Mantle          UMETA(DisplayName = "Mantle"),
+    Vault           UMETA(DisplayName = "Vault"),
+    LedgeMove       UMETA(DisplayName = "Ledge Move"),
+    Drop            UMETA(DisplayName = "Drop"),
+    TicTac          UMETA(DisplayName = "Tic Tac"),
+    BackHop         UMETA(DisplayName = "Back Hop"),
+    PredictJump     UMETA(DisplayName = "Predictive Jump"),
+    AirHang         UMETA(DisplayName = "Air Hang")
+};
+
+/**
+ * Unified result container for a single parkour opportunity evaluation.
+ * Later passes will mirror the full CGF result family inside this struct.
+ */
+USTRUCT(BlueprintType)
+struct SOTS_PARKOUR_API FSOTS_ParkourResult
+{
+    GENERATED_BODY()
+
+public:
+    /** Whether this result contains a valid parkour opportunity. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    bool bHasResult = false;
+
+    /** The chosen parkour action (mantle, vault, tic-tac, etc). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction Action = ESOTS_ParkourAction::None;
+
+    /** The climb style associated with this result (free-hang vs braced). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle ClimbStyle = ESOTS_ClimbStyle::None;
+
+    /** Representative world-space location for this result (e.g. ledge point). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    FVector WorldLocation = FVector::ZeroVector;
+
+    /** Representative world-space normal (e.g. wall or ledge normal). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    FVector WorldNormal = FVector::UpVector;
+
+    /** Raw hit information used to derive this result (first/primary hit). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    FHitResult Hit;
+
+    FSOTS_ParkourResult() = default;
+
+    /** Reset all fields to a clean, invalid state. */
+    void Reset()
+    {
+        bHasResult = false;
+        Action = ESOTS_ParkourAction::None;
+        ClimbStyle = ESOTS_ClimbStyle::None;
+        WorldLocation = FVector::ZeroVector;
+        WorldNormal = FVector::UpVector;
+        Hit = FHitResult();
+    }
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h ===
+// SOTS_ParkourComponent.h
+// V2_2: Minimal skeleton ActorComponent for SOTS parkour, now wired to the
+// core parkour enums and FSOTS_ParkourResult data model.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "SOTS_ParkourTypes.h"
+#include "SOTS_ParkourComponent.generated.h"
+
+UCLASS(ClassGroup = (SOTS), meta = (BlueprintSpawnableComponent))
+class SOTS_PARKOUR_API USOTS_ParkourComponent : public UActorComponent
+{
+    GENERATED_BODY()
+
+public:
+    USOTS_ParkourComponent();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    /** Returns true if the parkour system considers itself currently active. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    bool IsParkourActive() const { return ParkourState == ESOTS_ParkourState::Active; }
+
+    /** Current high-level parkour state (idle, entering, active, exiting). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ParkourState GetParkourState() const { return ParkourState; }
+
+    /** Current climb style (free hang vs braced). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle GetCurrentClimbStyle() const { return CurrentClimbStyle; }
+
+    /** Current parkour action (mantle, vault, tic-tac, etc). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction GetCurrentAction() const { return CurrentAction; }
+
+    /** Last computed parkour result from a detection pass. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    const FSOTS_ParkourResult& GetLastResult() const { return LastResult; }
+
+protected:
+    /** High-level state of the parkour system for this actor. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourState ParkourState = ESOTS_ParkourState::Idle;
+
+    /** Climb style currently selected (mapped from CGF logic in later passes). */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ClimbStyle CurrentClimbStyle = ESOTS_ClimbStyle::None;
+
+    /** The parkour action chosen by the last successful classification. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    ESOTS_ParkourAction CurrentAction = ESOTS_ParkourAction::None;
+
+    /** Unified result container for the last parkour opportunity evaluation. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Parkour")
+    FSOTS_ParkourResult LastResult;
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp ===
+// SOTS_ParkourComponent.cpp
+// V2_2: Minimal implementation, now initialized around the core parkour
+// enums and FSOTS_ParkourResult. No real detection or movement logic yet.
+
+#include "SOTS_ParkourComponent.h"
+#include "GameFramework/Actor.h"
+
+USOTS_ParkourComponent::USOTS_ParkourComponent()
+{
+    PrimaryComponentTick.bCanEverTick = false; // No tick needed in the skeleton passes
+
+    // Initial state is idle; other fields already have default initializers.
+    ParkourState      = ESOTS_ParkourState::Idle;
+    CurrentClimbStyle = ESOTS_ClimbStyle::None;
+    CurrentAction     = ESOTS_ParkourAction::None;
+    LastResult.Reset();
+}
+
+void USOTS_ParkourComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // V2_2: No owner wiring or movement setup yet.
+    // Later passes will hook into the character, movement component, etc.
+}
+=== END FILE ===

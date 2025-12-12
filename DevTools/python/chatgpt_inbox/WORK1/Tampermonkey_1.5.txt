@@ -1,0 +1,708 @@
+// ==UserScript==
+// @name         ChatGPT SOTS Bridge + Thoughts Saver + CodeBlock Sender
+// @namespace    https://ahostbr.plugins.sots
+// @version      2.15
+// @description  Save extended thinking, send last message or individual code blocks to SOTS DevTools bridge, open DevTools README.
+// @match        https://chat.openai.com/*
+// @match        https://chatgpt.com/*
+// @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
+// @connect      127.0.0.1
+// @run-at       document-end
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    // Base selector for markdown blocks inside the right-side panel.
+    const THOUGHTS_SELECTOR =
+        'div.markdown.prose.dark\\:prose-invert.w-full.break-words.dark.markdown-new-styling';
+
+    const BRIDGE_URL = 'http://127.0.0.1:5050/sots/run_prompt';
+    const DEVTOOLS_BIBLE_PATH = 'DevTools/README.md';
+
+    let saveThoughtsButton = null;
+    let sendSotsButton = null;
+    let devtoolsBibleButton = null;
+
+    // ---------- Thoughts capture (extended thinking panel) ----------
+
+    // Find the container that holds the Activity/Thinking panel, by text.
+    function findThinkingRoot() {
+        const labels = ['thinking', 'activity'];
+
+        const candidates = Array.from(
+            document.querySelectorAll('div,span,button')
+        );
+
+        for (const el of candidates) {
+            const txt = (el.textContent || '').trim().toLowerCase();
+            if (!txt) continue;
+
+            if (!labels.includes(txt)) continue;
+
+            // Walk up until we find an ancestor that actually contains our THOUGHTS_SELECTOR.
+            let root = el;
+            let depth = 0;
+            while (root && depth < 10) {
+                if (
+                    root.querySelector &&
+                    root.querySelector(THOUGHTS_SELECTOR)
+                ) {
+                    console.log(
+                        '[ThoughtSaver] Using root from label',
+                        txt,
+                        'depth',
+                        depth
+                    );
+                    return root;
+                }
+                root = root.parentElement;
+                depth++;
+            }
+        }
+
+        console.log(
+            '[ThoughtSaver] No Thinking/Activity root found from label scan.'
+        );
+        return null;
+    }
+
+    function getThoughtsElements() {
+        const dialogRoot = findThinkingRoot();
+        if (!dialogRoot) {
+            return [];
+        }
+
+        const nodes = Array.from(
+            dialogRoot.querySelectorAll(THOUGHTS_SELECTOR)
+        );
+        console.log(
+            '[ThoughtSaver] THOUGHTS_SELECTOR inside panel root:',
+            THOUGHTS_SELECTOR,
+            'count:',
+            nodes.length
+        );
+        return nodes;
+    }
+
+    function elementIsVisible(el) {
+        if (!el) return false;
+        const style = getComputedStyle(el);
+        if (
+            style.display === 'none' ||
+            style.visibility === 'hidden' ||
+            style.opacity === '0'
+        ) {
+            return false;
+        }
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    }
+
+    function getVisibleThoughtsElements() {
+        return getThoughtsElements().filter(elementIsVisible);
+    }
+
+    function getThoughtsText() {
+        const visible = getVisibleThoughtsElements();
+        if (!visible.length) return '';
+        const parts = visible
+            .map((el) => el.innerText.trim())
+            .filter((t) => t.length > 0);
+        return parts.join('\n\n');
+    }
+
+    function isThoughtsPanelOpen() {
+        return getVisibleThoughtsElements().length > 0;
+    }
+
+    // ---------- Last message text for SOTS bridge ----------
+
+    function getLastAssistantMessageText() {
+        const nodes = document.querySelectorAll('.markdown-new-styling');
+        console.log('[SOTS Bridge] .markdown-new-styling count:', nodes.length);
+
+        if (!nodes.length) {
+            return '';
+        }
+
+        const last = nodes[nodes.length - 1];
+        const text = last.innerText.trim();
+        console.log('[SOTS Bridge] using last markdown block, length:', text.length);
+        return text;
+    }
+
+    // ---------- Save Thoughts -> file download ----------
+
+    function saveThoughtsToFile() {
+        const text = getThoughtsText();
+        if (!text) {
+            alert('No extended thinking text found. Is the panel open?');
+            return;
+        }
+
+        const now = new Date();
+        const iso = now.toISOString().replace(/[:.]/g, '-');
+
+        const headerLines = [
+            'ChatGPT thoughts transcript',
+            'Reason: Manual trigger (Save Thoughts button)',
+            `URL: ${location.href}`,
+            `Captured: ${now.toString()}`,
+            '',
+        ];
+
+        const fileContents = headerLines.join('\n') + text + '\n';
+        const blob = new Blob([fileContents], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chatgpt_thoughts_${iso}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        console.log('[ThoughtSaver] Saved thoughts transcript');
+    }
+
+    // ---------- Save Thoughts -> clipboard ----------
+
+    function fallbackCopyToClipboard(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            console.log('[ThoughtSaver] Fallback copy execCommand result:', successful);
+            alert('Thoughts copied to clipboard (fallback).');
+        } catch (err) {
+            console.error('[ThoughtSaver] Fallback copy failed:', err);
+            alert('Could not copy thoughts automatically. A textbox will be shown to copy manually.');
+            window.prompt('Copy the thoughts text below:', text);
+        } finally {
+            document.body.removeChild(ta);
+        }
+    }
+
+    function copyThoughtsToClipboard() {
+        const text = getThoughtsText();
+        if (!text) {
+            alert('No extended thinking text found. Is the panel open?');
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+                .writeText(text)
+                .then(() => {
+                    console.log(
+                        '[ThoughtSaver] Thoughts copied to clipboard via navigator.clipboard.'
+                    );
+                    alert('Thoughts copied to clipboard.');
+                })
+                .catch((err) => {
+                    console.error(
+                        '[ThoughtSaver] navigator.clipboard failed, using fallback:',
+                        err
+                    );
+                    fallbackCopyToClipboard(text);
+                });
+        } else {
+            console.log(
+                '[ThoughtSaver] navigator.clipboard not available, using fallback.'
+            );
+            fallbackCopyToClipboard(text);
+        }
+    }
+
+    // ---------- Send full last message to SOTS bridge ----------
+
+    function sendLastMessageToSots() {
+        const text = getLastAssistantMessageText();
+        if (!text) {
+            alert('Could not find last assistant message text.');
+            return;
+        }
+
+        GM_xmlhttpRequest({
+            method: 'POST',
+            url: BRIDGE_URL,
+            headers: { 'Content-Type': 'application/json' },
+            data: JSON.stringify({
+                prompt: text,
+                label: 'chatgpt_last_markdown',
+                meta: {
+                    url: location.href,
+                    type: 'full_message',
+                },
+            }),
+            onload: function (resp) {
+                console.log('[SOTS Bridge] Response:', resp.status, resp.responseText);
+                if (resp.status >= 200 && resp.status < 300) {
+                    alert('Sent last message markdown to SOTS DevTools bridge.');
+                } else {
+                    alert('Bridge responded with error. Check console/logs.');
+                }
+            },
+            onerror: function (err) {
+                console.error('[SOTS Bridge] Error:', err);
+                alert(
+                    'Error talking to SOTS DevTools bridge. Is sots_bridge_server.py running?'
+                );
+            },
+        });
+    }
+
+    // ---------- DevTools README ("DevTools-Bible") ----------
+
+    function openDevToolsBibleLocal() {
+        const url = 'file:///E:/SAS/ShadowsAndShurikens/DevTools/README.md';
+
+        try {
+            if (typeof GM_openInTab === 'function') {
+                GM_openInTab(url, { active: true, insert: true });
+            } else {
+                window.open(url, '_blank');
+            }
+        } catch (e) {
+            console.error('[SOTS Bridge] Failed to open DevTools-Bible locally:', e);
+            alert(
+                'Could not open DevTools README. Check browser/Tampermonkey file:// permissions.'
+            );
+        }
+    }
+
+    function openDevToolsBibleViaBridge() {
+        const payload = {
+            action: 'open_file',
+            label: 'chatgpt_devtools_open_file',
+            meta: {
+                devtools_path: DEVTOOLS_BIBLE_PATH,
+                url: location.href,
+                type: 'devtools_bible',
+            },
+        };
+
+        GM_xmlhttpRequest({
+            method: 'POST',
+            url: BRIDGE_URL,
+            headers: { 'Content-Type': 'application/json' },
+            data: JSON.stringify(payload),
+            onload: function (resp) {
+                console.log(
+                    '[SOTS Bridge] DevTools-Bible open_file response:',
+                    resp.status,
+                    resp.responseText
+                );
+                if (resp.status >= 200 && resp.status < 300) {
+                    alert(
+                        'DevTools-Bible: open request sent via bridge.\nCheck bridge logs/VS Code if nothing appears.'
+                    );
+                } else {
+                    alert(
+                        'Bridge responded with error for DevTools-Bible open_file. Check console/logs.'
+                    );
+                }
+            },
+            onerror: function (err) {
+                console.error(
+                    '[SOTS Bridge] Error sending DevTools-Bible open_file:',
+                    err
+                );
+                alert('Error talking to SOTS DevTools bridge for DevTools-Bible.');
+            },
+        });
+    }
+
+    // ---------- DevTools path helpers (Send2SOTS code only) ----------
+
+    function parseDevToolsPathFromString(str) {
+        if (!str) return null;
+        const clean = str.replace(/\u200b/g, '');
+        const match = clean.match(/DevTools[\/\\][^\s"'`()]+/i);
+        if (!match) return null;
+        return match[0].replace(/\\/g, '/');
+    }
+
+    function detectDevToolsPathFromCode(codeText) {
+        if (!codeText) return null;
+        const firstLine = codeText.split('\n')[0].trim().replace(/\u200b/g, '');
+        const match = firstLine.match(/DevTools[\/\\][^\s"'`()]+/i);
+        if (!match) return null;
+        return match[0].replace(/\\/g, '/');
+    }
+
+    function findNearestDevToolsPathForElement(el) {
+        let root = el;
+        let depth = 0;
+
+        while (root && depth < 8) {
+            const candidates = root.querySelectorAll('span,button,code,pre,p,div');
+            for (const cand of candidates) {
+                const text = (cand.textContent || '').trim();
+                const devtoolsPath = parseDevToolsPathFromString(text);
+                if (devtoolsPath) {
+                    return devtoolsPath;
+                }
+            }
+            root = root.parentElement;
+            depth++;
+        }
+
+        return null;
+    }
+
+    // ---------- Code-block helpers (per-copy-code button) ----------
+
+    function getCodeFromCopyButton(copyBtn) {
+        const pre = copyBtn.closest('pre');
+        if (!pre) {
+            console.warn('[SOTS Bridge] closest(<pre>) not found for copy button.');
+            return '';
+        }
+
+        const codeEl = pre.querySelector('code');
+        if (!codeEl) {
+            console.warn(
+                '[SOTS Bridge] <code> not found under <pre>; falling back to pre.innerText.'
+            );
+            return pre.innerText || '';
+        }
+
+        const text = codeEl.innerText || '';
+        console.log('[SOTS Bridge] getCodeFromCopyButton length:', text.length);
+        return text;
+    }
+
+    function sanitizeCodeText(raw) {
+        if (!raw) return raw;
+        const lines = raw.split('\n');
+
+        const filtered = lines.filter((line) => {
+            const trimmed = line.trim().toLowerCase();
+            if (trimmed === 'copy code') return false;
+            if (trimmed === 'send2sots') return false;
+            return true;
+        });
+
+        const result = filtered.join('\n').trim();
+        console.log(
+            '[SOTS Bridge] sanitizeCodeText: removed',
+            lines.length - filtered.length,
+            'header lines'
+        );
+        return result;
+    }
+
+    function sendCodeToSots(codeText, languageHint, sourceElement) {
+        if (!codeText) {
+            alert('Could not find code for this block.');
+            return;
+        }
+
+        codeText = sanitizeCodeText(codeText);
+        console.log('[SOTS Bridge] sendCodeToSots final length:', codeText.length);
+
+        let devtoolsPath = null;
+
+        if (sourceElement) {
+            devtoolsPath = findNearestDevToolsPathForElement(sourceElement);
+        }
+
+        if (!devtoolsPath && languageHint) {
+            devtoolsPath = parseDevToolsPathFromString(languageHint);
+        }
+
+        if (!devtoolsPath) {
+            devtoolsPath = detectDevToolsPathFromCode(codeText);
+        }
+
+        const isDevToolsPy =
+            devtoolsPath && devtoolsPath.toLowerCase().endsWith('.py');
+
+        const payload = {
+            prompt: codeText,
+            label: isDevToolsPy ? 'chatgpt_devtools_python_file' : 'chatgpt_code_block',
+            meta: {
+                url: location.href,
+                type: isDevToolsPy ? 'devtools_python_file' : 'code_block',
+                language: languageHint || null,
+            },
+        };
+
+        if (isDevToolsPy) {
+            payload.meta.devtools = {
+                kind: 'python_file',
+                target_path: devtoolsPath,
+            };
+        }
+
+        GM_xmlhttpRequest({
+            method: 'POST',
+            url: BRIDGE_URL,
+            headers: { 'Content-Type': 'application/json' },
+            data: JSON.stringify(payload),
+            onload: function (resp) {
+                console.log(
+                    '[SOTS Bridge] Code block response:',
+                    resp.status,
+                    resp.responseText
+                );
+                if (resp.status >= 200 && resp.status < 300) {
+                    alert(
+                        isDevToolsPy
+                            ? `Sent DevTools .py file to SOTS DevTools bridge:\n${devtoolsPath}`
+                            : 'Sent code block to SOTS DevTools bridge.'
+                    );
+                } else {
+                    alert('Bridge responded with error for code block. Check console/logs.');
+                }
+            },
+            onerror: function (err) {
+                console.error('[SOTS Bridge] Error sending code block:', err);
+                alert('Error talking to SOTS DevTools bridge for code block.');
+            },
+        });
+    }
+
+    function attachSendSotsToCodeBlocks() {
+        const buttons = document.querySelectorAll('button[aria-label]');
+        buttons.forEach((btn) => {
+            const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+            const text = (btn.textContent || '').toLowerCase();
+
+            const looksLikeCopy =
+                aria.includes('copy code') ||
+                (aria.includes('copy') && aria.includes('code')) ||
+                text.includes('copy code');
+
+            if (!looksLikeCopy) return;
+
+            const container = btn.parentElement || btn;
+
+            if (container.querySelector('button[data-sots-code-button="1"]')) {
+                btn.dataset.sotsCodeHooked = '1';
+                return;
+            }
+
+            if (btn.dataset.sotsCodeHooked === '1') return;
+            btn.dataset.sotsCodeHooked = '1';
+
+            const sendBtn = document.createElement('button');
+            sendBtn.type = 'button';
+            sendBtn.textContent = 'Send2SOTS';
+            sendBtn.className = btn.className;
+            sendBtn.style.marginLeft = '0.5rem';
+            sendBtn.dataset.sotsCodeButton = '1';
+
+            sendBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                let labelText = null;
+                const maybeLabel = container.querySelector('span');
+                if (maybeLabel && maybeLabel.textContent) {
+                    labelText = maybeLabel.textContent.trim();
+                }
+
+                const codeText = getCodeFromCopyButton(btn);
+                sendCodeToSots(codeText, labelText, container);
+            });
+
+            container.appendChild(sendBtn);
+        });
+    }
+
+    // ---------- Toolbar Send2SOTS (bottom) ----------
+
+    function findMoreActionsButton() {
+        const buttons = document.querySelectorAll('button[aria-label]');
+        let lastMatch = null;
+
+        buttons.forEach((btn) => {
+            const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+            if (label.includes('more actions')) {
+                lastMatch = btn;
+            }
+        });
+
+        return lastMatch;
+    }
+
+    function attachSendSotsButtonToToolbar() {
+        const moreBtn = findMoreActionsButton();
+        if (!moreBtn || !moreBtn.parentElement) return;
+
+        const targetContainer = moreBtn.parentElement;
+
+        if (!sendSotsButton) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = 'Send2SOTS';
+
+            btn.className = moreBtn.className;
+            btn.style.marginLeft = '2rem';
+
+            btn.addEventListener('click', sendLastMessageToSots);
+
+            sendSotsButton = btn;
+        }
+
+        if (sendSotsButton.parentElement !== targetContainer) {
+            targetContainer.appendChild(sendSotsButton);
+        } else {
+            if (sendSotsButton !== targetContainer.lastElementChild) {
+                targetContainer.appendChild(sendSotsButton);
+            }
+        }
+    }
+
+    // ---------- Floating buttons ----------
+
+    function createSaveThoughtsButtonIfNeeded() {
+        if (!document.body || saveThoughtsButton) return;
+
+        const btn = document.createElement('button');
+        btn.id = 'cgpt-save-thoughts-btn';
+        btn.textContent = 'Save Thoughts';
+
+        Object.assign(btn.style, {
+            position: 'fixed',
+            top: '2.5%',
+            right: '60px',
+            transform: 'translateY(-50%)',
+            zIndex: '999999',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            border: 'none',
+            background: '#303030',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontFamily:
+                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+            opacity: '0.9',
+            display: 'none',
+        });
+
+        btn.addEventListener('mouseenter', () => (btn.style.opacity = '1'));
+        btn.addEventListener('mouseleave', () => (btn.style.opacity = '0.9'));
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (e.ctrlKey) {
+                // Ctrl+click -> download .txt
+                saveThoughtsToFile();
+            } else {
+                // Normal click -> copy to clipboard
+                copyThoughtsToClipboard();
+            }
+        });
+
+        document.body.appendChild(btn);
+        saveThoughtsButton = btn;
+    }
+
+    function createDevToolsBibleButtonIfNeeded() {
+        if (!document.body || devtoolsBibleButton) return;
+
+        const btn = document.createElement('button');
+        btn.id = 'cgpt-devtools-bible-btn';
+        btn.textContent = 'DevTools-Bible';
+
+        Object.assign(btn.style, {
+            position: 'fixed',
+            top: '60px',
+            left: '21%',
+            transform: 'translateX(-50%)',
+            zIndex: '999999',
+            padding: '6px 12px',
+            borderRadius: '999px',
+            border: 'none',
+            background: '#303030',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontFamily:
+                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+            opacity: '0.9',
+        });
+
+        btn.addEventListener('mouseenter', () => (btn.style.opacity = '1'));
+        btn.addEventListener('mouseleave', () => (btn.style.opacity = '0.9'));
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (e.ctrlKey) {
+                openDevToolsBibleViaBridge();
+            } else {
+                openDevToolsBibleLocal();
+            }
+        });
+
+        document.body.appendChild(btn);
+        devtoolsBibleButton = btn;
+    }
+
+    function updateSaveThoughtsVisibility() {
+        if (!saveThoughtsButton) return;
+        saveThoughtsButton.style.display = isThoughtsPanelOpen() ? 'block' : 'none';
+    }
+
+    // ---------- Hotkeys ----------
+
+    function addHotkeys() {
+        document.addEventListener(
+            'keydown',
+            (e) => {
+                if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 't') {
+                    e.preventDefault();
+                    saveThoughtsToFile();
+                }
+                if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    sendLastMessageToSots();
+                }
+            },
+            true
+        );
+    }
+
+    // ---------- Init ----------
+
+    function init() {
+        console.log('[SOTS Bridge Userscript] Init');
+        createSaveThoughtsButtonIfNeeded();
+        createDevToolsBibleButtonIfNeeded();
+        attachSendSotsButtonToToolbar();
+        attachSendSotsToCodeBlocks();
+        addHotkeys();
+
+        setInterval(() => {
+            createSaveThoughtsButtonIfNeeded();
+            createDevToolsBibleButtonIfNeeded();
+            attachSendSotsButtonToToolbar();
+            attachSendSotsToCodeBlocks();
+            updateSaveThoughtsVisibility();
+        }, 1000);
+    }
+
+    const readyInterval = setInterval(() => {
+        if (document.readyState === 'complete' || document.body) {
+            clearInterval(readyInterval);
+            init();
+        }
+    }, 500);
+})();

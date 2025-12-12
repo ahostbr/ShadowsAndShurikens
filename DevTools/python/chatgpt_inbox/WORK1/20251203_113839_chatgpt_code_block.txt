@@ -1,0 +1,385 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/69305e4b-2aec-832f-9efb-243f72da899a
+Type: code_block
+# SOTS_BlueprintGen SPINE 4
+# Goal: Implement ApplyFunctionSkeleton so it actually creates/ensures a function graph
+# in the target Blueprint and compiles it.
+# - Struct/enum builders are already live from SPINE 3.
+# - GraphSpec application (node spawning) remains stubbed for SPINE 5.
+# This pack ONLY writes files; it does not run any tools.
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenBuilder.cpp ===
+#include "SOTS_BPGenBuilder.h"
+#include "SOTS_BlueprintGen.h"
+
+#include "AssetToolsModule.h"
+#include "Kismet2/StructureEditorUtils.h"
+#include "Engine/UserDefinedStruct.h"
+#include "Engine/UserDefinedEnum.h"
+#include "UObject/Package.h"
+#include "UObject/SavePackage.h"
+#include "Misc/PackageName.h"
+#include "EdGraph/EdGraph.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "Engine/Blueprint.h"
+
+namespace
+{
+	static FString GetNormalizedPackageName(const FString& InAssetPath)
+	{
+		FString Result = InAssetPath;
+		Result.TrimStartAndEndInline();
+		return Result;
+	}
+
+	static FName GetSafeObjectName(const FName& InName, const FString& AssetPath)
+	{
+		if (!InName.IsNone())
+		{
+			return InName;
+		}
+
+		FString DummyLeft, Right;
+		if (AssetPath.Split(TEXT("/"), &DummyLeft, &Right, ESearchCase::IgnoreCase, ESearchDir::FromEnd))
+		{
+			return FName(*Right);
+		}
+
+		return FName(TEXT("SOTS_BPGenObject"));
+	}
+
+	static void FillPinTypeFromBPGen(const FSOTS_BPGenPin& InPin, FEdGraphPinType& OutType)
+	{
+		OutType.ResetToDefaults();
+
+		OutType.PinCategory = InPin.Category;
+		OutType.PinSubCategory = InPin.SubCategory;
+		OutType.PinSubCategoryObject = nullptr;
+
+		if (!InPin.SubObjectPath.IsEmpty())
+		{
+			if (UObject* LoadedObj = LoadObject<UObject>(nullptr, *InPin.SubObjectPath))
+			{
+				OutType.PinSubCategoryObject = LoadedObj;
+			}
+		}
+
+		switch (InPin.ContainerType)
+		{
+		case ESOTS_BPGenContainerType::Array:
+			OutType.ContainerType = EPinContainerType::Array;
+			break;
+		case ESOTS_BPGenContainerType::Set:
+			OutType.ContainerType = EPinContainerType::Set;
+			break;
+		case ESOTS_BPGenContainerType::Map:
+			OutType.ContainerType = EPinContainerType::Map;
+			break;
+		default:
+			OutType.ContainerType = EPinContainerType::None;
+			break;
+		}
+	}
+}
+
+FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateStructAssetFromDef(
+	const UObject* WorldContextObject,
+	const FSOTS_BPGenStructDef& StructDef)
+{
+	FSOTS_BPGenAssetResult Result;
+	Result.AssetPath = StructDef.AssetPath;
+
+	if (StructDef.AssetPath.IsEmpty())
+	{
+		Result.bSuccess = false;
+		Result.Message = TEXT("StructDef.AssetPath is empty.");
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("CreateStructAssetFromDef failed: AssetPath is empty."));
+		return Result;
+	}
+
+	const FString PackageName = GetNormalizedPackageName(StructDef.AssetPath);
+	const FName StructName = GetSafeObjectName(StructDef.StructName, PackageName);
+
+	UPackage* Package = CreatePackage(*PackageName);
+	if (!Package)
+	{
+		Result.bSuccess = false;
+		Result.Message = FString::Printf(TEXT("Failed to create or load package '%s'."), *PackageName);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.Message);
+		return Result;
+	}
+
+	UUserDefinedStruct* TargetStruct = FindObject<UUserDefinedStruct>(Package, *StructName.ToString());
+	if (!TargetStruct)
+	{
+		TargetStruct = FStructureEditorUtils::CreateUserDefinedStruct(
+			Package,
+			StructName,
+			RF_Public | RF_Standalone | RF_Transactional);
+
+		if (!TargetStruct)
+		{
+			Result.bSuccess = false;
+			Result.Message = FString::Printf(TEXT("Failed to create user-defined struct '%s'."), *StructName.ToString());
+			UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.Message);
+			return Result;
+		}
+	}
+	else
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Log,
+			TEXT("CreateStructAssetFromDef: Updating existing struct '%s' in package '%s'."),
+			*StructName.ToString(), *PackageName);
+	}
+
+	TArray<FStructVariableDescription>& VarDescs = FStructureEditorUtils::GetVarDesc(TargetStruct);
+	VarDescs.Reset();
+
+	for (const FSOTS_BPGenPin& MemberPin : StructDef.Members)
+	{
+		FStructVariableDescription NewVar;
+		NewVar.VarGuid = FGuid::NewGuid();
+		NewVar.VarName = MemberPin.Name.IsNone() ? FName(TEXT("Member")) : MemberPin.Name;
+		NewVar.FriendlyName = NewVar.VarName.ToString();
+		FillPinTypeFromBPGen(MemberPin, NewVar.VarType);
+
+		VarDescs.Add(MoveTemp(NewVar));
+	}
+
+	FStructureEditorUtils::OnStructureChanged(TargetStruct);
+
+	FAssetRegistryModule::AssetCreated(TargetStruct);
+	Package->MarkPackageDirty();
+
+	const FString FileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+	SaveArgs.Error = GError;
+	SaveArgs.bWarnOfLongFilename = false;
+
+	if (!UPackage::SavePackage(Package, TargetStruct, *FileName, SaveArgs))
+	{
+		Result.bSuccess = false;
+		Result.Message = FString::Printf(TEXT("Failed to save struct package '%s'."), *FileName);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.Message);
+		return Result;
+	}
+
+	Result.bSuccess = true;
+	Result.Message = FString::Printf(TEXT("Struct '%s' created/updated at '%s'."), *StructName.ToString(), *PackageName);
+	return Result;
+}
+
+FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateEnumAssetFromDef(
+	const UObject* WorldContextObject,
+	const FSOTS_BPGenEnumDef& EnumDef)
+{
+	FSOTS_BPGenAssetResult Result;
+	Result.AssetPath = EnumDef.AssetPath;
+
+	if (EnumDef.AssetPath.IsEmpty())
+	{
+		Result.bSuccess = false;
+		Result.Message = TEXT("EnumDef.AssetPath is empty.");
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("CreateEnumAssetFromDef failed: AssetPath is empty."));
+		return Result;
+	}
+
+	const FString PackageName = GetNormalizedPackageName(EnumDef.AssetPath);
+	const FName EnumName = GetSafeObjectName(EnumDef.EnumName, PackageName);
+
+	UPackage* Package = CreatePackage(*PackageName);
+	if (!Package)
+	{
+		Result.bSuccess = false;
+		Result.Message = FString::Printf(TEXT("Failed to create or load package '%s'."), *PackageName);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.Message);
+		return Result;
+	}
+
+	UUserDefinedEnum* TargetEnum = FindObject<UUserDefinedEnum>(Package, *EnumName.ToString());
+	if (!TargetEnum)
+	{
+		TargetEnum = NewObject<UUserDefinedEnum>(
+			Package,
+			EnumName,
+			RF_Public | RF_Standalone | RF_Transactional);
+
+		if (!TargetEnum)
+		{
+			Result.bSuccess = false;
+			Result.Message = FString::Printf(TEXT("Failed to create user-defined enum '%s'."), *EnumName.ToString());
+			UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.Message);
+			return Result;
+		}
+	}
+	else
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Log,
+			TEXT("CreateEnumAssetFromDef: Updating existing enum '%s' in package '%s'."),
+			*EnumName.ToString(), *PackageName);
+	}
+
+	TArray<TPair<FName, int64>> EnumNames;
+	for (int32 Index = 0; Index < EnumDef.Values.Num(); ++Index)
+	{
+		const FString& EntryString = EnumDef.Values[Index];
+		const FName EntryName = FName(*EntryString);
+
+		EnumNames.Add(TPair<FName, int64>(EntryName, Index));
+	}
+
+	TargetEnum->SetEnums(EnumNames, UUserDefinedEnum::ECppForm::Regular);
+	TargetEnum->MarkPackageDirty();
+
+	FAssetRegistryModule::AssetCreated(TargetEnum);
+	Package->MarkPackageDirty();
+
+	const FString FileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+	SaveArgs.Error = GError;
+	SaveArgs.bWarnOfLongFilename = false;
+
+	if (!UPackage::SavePackage(Package, TargetEnum, *FileName, SaveArgs))
+	{
+		Result.bSuccess = false;
+		Result.Message = FString::Printf(TEXT("Failed to save enum package '%s'."), *FileName);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.Message);
+		return Result;
+	}
+
+	Result.bSuccess = true;
+	Result.Message = FString::Printf(TEXT("Enum '%s' created/updated at '%s'."), *EnumName.ToString(), *PackageName);
+	return Result;
+}
+
+FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyFunctionSkeleton(
+	const UObject* WorldContextObject,
+	const FSOTS_BPGenFunctionDef& FunctionDef)
+{
+	FSOTS_BPGenApplyResult Result;
+	Result.TargetBlueprintPath = FunctionDef.TargetBlueprintPath;
+	Result.FunctionName = FunctionDef.FunctionName;
+
+	if (FunctionDef.TargetBlueprintPath.IsEmpty())
+	{
+		Result.bSuccess = false;
+		Result.ErrorMessage = TEXT("ApplyFunctionSkeleton: TargetBlueprintPath is empty.");
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	if (FunctionDef.FunctionName.IsNone())
+	{
+		Result.bSuccess = false;
+		Result.ErrorMessage = TEXT("ApplyFunctionSkeleton: FunctionName is None.");
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	UBlueprint* Blueprint = Cast<UBlueprint>(
+		StaticLoadObject(UBlueprint::StaticClass(), nullptr, *FunctionDef.TargetBlueprintPath));
+
+	if (!Blueprint)
+	{
+		Result.bSuccess = false;
+		Result.ErrorMessage = FString::Printf(
+			TEXT("ApplyFunctionSkeleton: Failed to load Blueprint at '%s'."),
+			*FunctionDef.TargetBlueprintPath);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	UEdGraph* FunctionGraph = nullptr;
+
+	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+	{
+		if (Graph && Graph->GetFName() == FunctionDef.FunctionName)
+		{
+			FunctionGraph = Graph;
+			break;
+		}
+	}
+
+	if (!FunctionGraph)
+	{
+		// Create a new function graph. The K2 schema will handle default
+		// entry/result nodes; IO pin shaping can be added in a later pass.
+		FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
+			Blueprint,
+			FunctionDef.FunctionName,
+			UEdGraph::StaticClass(),
+			UEdGraph::StaticClass());
+
+		if (!FunctionGraph)
+		{
+			Result.bSuccess = false;
+			Result.ErrorMessage = FString::Printf(
+				TEXT("ApplyFunctionSkeleton: Failed to create function graph '%s'."),
+				*FunctionDef.FunctionName.ToString());
+			UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+			return Result;
+		}
+
+		FBlueprintEditorUtils::AddFunctionGraph(
+			Blueprint,
+			FunctionGraph,
+			/*bIsUserCreated=*/true,
+			nullptr);
+
+		UE_LOG(LogSOTS_BlueprintGen, Log,
+			TEXT("ApplyFunctionSkeleton: Created new function graph '%s' in '%s'."),
+			*FunctionDef.FunctionName.ToString(),
+			*FunctionDef.TargetBlueprintPath);
+	}
+	else
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Log,
+			TEXT("ApplyFunctionSkeleton: Reusing existing function graph '%s' in '%s'."),
+			*FunctionDef.FunctionName.ToString(),
+			*FunctionDef.TargetBlueprintPath);
+	}
+
+	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+	FKismetEditorUtilities::CompileBlueprint(Blueprint);
+
+	Result.bSuccess = true;
+	if (FunctionDef.Inputs.Num() > 0 || FunctionDef.Outputs.Num() > 0)
+	{
+		Result.Warnings.Add(TEXT("ApplyFunctionSkeleton SPINE 4: Function graph created/ensured, but IO pins are not yet shaped from Inputs/Outputs. This will be implemented in a later pass."));
+	}
+
+	return Result;
+}
+
+FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
+	const UObject* WorldContextObject,
+	const FSOTS_BPGenFunctionDef& FunctionDef,
+	const FSOTS_BPGenGraphSpec& GraphSpec)
+{
+	FSOTS_BPGenApplyResult Result;
+	Result.TargetBlueprintPath = FunctionDef.TargetBlueprintPath;
+	Result.FunctionName = FunctionDef.FunctionName;
+
+	UE_LOG(LogSOTS_BlueprintGen, Warning,
+		TEXT("ApplyGraphSpecToFunction (SPINE 4 stub) called for Blueprint '%s', Function '%s' with %d nodes / %d links"),
+		*FunctionDef.TargetBlueprintPath,
+		*FunctionDef.FunctionName.ToString(),
+		GraphSpec.Nodes.Num(),
+		GraphSpec.Links.Num());
+
+	Result.bSuccess = false;
+	Result.ErrorMessage = TEXT("ApplyGraphSpecToFunction is not implemented yet (SPINE 4 stub).");
+	return Result;
+}
+=== END FILE ===

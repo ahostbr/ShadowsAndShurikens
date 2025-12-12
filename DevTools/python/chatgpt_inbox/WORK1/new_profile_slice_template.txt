@@ -1,0 +1,26 @@
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_ProfileShared/Source/SOTS_ProfileShared/Public/SOTS_ProfileTypes.h ===
+@@
+ // Define your slice just above `FSOTS_ProfileSnapshot` so the shared header stays organized.
++USTRUCT(BlueprintType)
++struct SOTS_PROFILESHARED_API FSOTS_<SliceName>
++{
++    GENERATED_BODY()
++
++    // TODO: declare the fields your subsystem needs to persist here. Use `UPROPERTY` tags, default values,
++    // and `Category = "SOTS|Profile|<SliceName>"` so tooling groups the slice correctly.
++};
+@@
+     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Profile")
+     FSOTS_FXProfileData FX;
++
++    // Insert your new property right after the last slice that should serialize before it in `FSOTS_ProfileSnapshot`.
++    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Profile")
++    FSOTS_<SliceName> <PropertyName>;
+=== END FILE ===
+
+# After writing the struct, append your property where indicated and update `USOTS_ProfileSubsystem` to marshal this slice.
+# Replace `<SliceName>`/`<PropertyName>` with the actual identifiers, and describe which subsystem owns the data inside this file or the ProfileSnapshot guidance doc. Then rerun `write_files.py` if you need another pass.

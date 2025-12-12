@@ -1,0 +1,53 @@
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Content/DevTools/DA_MissionDefinition_MissionName.uasset ===
+# Replace MissionName with the actual mission identifier.
+# Each entry should map to FSOTS_MissionDefinition and include objectives/FX/music tags.
+# The template below is textual guidance — adapt the entries before re-running the helper.
+
+MissionId: M01_CastleInfiltration
+MissionName: Castle Infiltration
+MissionDescription: Infiltrate the castle and eliminate the corrupt governor without sounding the alarm.
+MissionMap: /Game/Maps/Castle/Castle_Main_Castle_Main
+FXTag_OnMissionStart: FX.Mission.Start
+FXTag_OnMissionCompleted: FX.Mission.Success
+FXTag_OnMissionFailed: FX.Mission.Fail
+MusicTag_OnMissionStart: Music.Mission.CastleStart
+MusicTag_OnMissionCompleted: Music.Mission.CastleSuccess
+MusicTag_OnMissionFailed: Music.Mission.CastleFailure
+MaxAllowedStealthTier: 2
+bFailOnMaxTier: true
+bRequireAllMandatoryObjectives: true
+
+Objectives:
+  - ObjectiveId: M01_Primary_Infiltrate
+    Type: Mandatory
+    Description: Reach the inner courtyard undetected.
+    CompletionTags:
+      - Mission.Event.Objective.PrimaryCompleted
+    FXTag: FX.Mission.ObjectiveComplete
+    MusicTag: Music.Mission.ObjectiveWin
+  - ObjectiveId: M01_Optional_FindIntel
+    Type: Optional
+    Description: Collect the governor's hidden intel cache.
+    bOptional: true
+    CompletionTags:
+      - Mission.Event.Objective.OptionalCompleted
+    ScoreDelta: 150
+    FXTag: FX.Mission.ObjectiveComplete
+    MusicTag: Music.Mission.ObjectiveWin
+
+Rewards:
+  GrantedTags:
+    - Mission.M01.Completed
+  FXTag_OnRewardsGranted: FX.Mission.Reward
+  MusicTag_OnRewardsGranted: Music.Mission.Reward
+
+FailureConditions:
+  FailOnEventTags:
+    - Mission.Event.Alerts.Triggered
+
+# Note: After adjusting values, run write_files.py with this prompt to regenerate
+# the data asset skeleton and replace the placeholder uasset path with your mission.

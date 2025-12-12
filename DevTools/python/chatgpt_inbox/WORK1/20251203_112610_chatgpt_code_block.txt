@@ -1,0 +1,281 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/69305e4b-2aec-832f-9efb-243f72da899a
+Type: code_block
+# SOTS_BlueprintGen SPINE 1
+# Goal: Create the initial C++ plugin skeleton for SOTS_BlueprintGen:
+# - Editor-only .uplugin
+# - Module Build.cs
+# - Basic module class + log category
+# - Core BPGen type structs (Pin/Struct/Enum/Function) as simple USTRUCTs
+# This pack does NOT run anything automatically; it only writes files.
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_BlueprintGen/SOTS_BlueprintGen.uplugin ===
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "SOTS Blueprint Generator",
+  "Description": "DevTools-driven Blueprint asset builder for Shadows And Shurikens.",
+  "Category": "SOTS",
+  "CreatedBy": "Kuroryuu DevTools",
+  "CreatedByURL": "",
+  "EnabledByDefault": true,
+  "SupportsEngineVersions": true,
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Modules": [
+    {
+      "Name": "SOTS_BlueprintGen",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/SOTS_BlueprintGen.Build.cs ===
+using UnrealBuildTool;
+
+public class SOTS_BlueprintGen : ModuleRules
+{
+    public SOTS_BlueprintGen(ReadOnlyTargetRules Target) : base(Target)
+    {
+        Type = ModuleType.Editor;
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
+                "CoreUObject",
+                "Engine",
+                "UnrealEd",
+                "Kismet",
+                "BlueprintGraph",
+                "KismetCompiler",
+                "Kismet2",
+                "AssetTools",
+                "EditorSubsystem",
+                "EditorFramework",
+                "Json",
+                "JsonUtilities",
+                "UserDefinedStructure",
+                "Slate",
+                "SlateCore",
+                "InputCore"
+            }
+        );
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Projects",
+                "ApplicationCore",
+                "PropertyEditor",
+                "ToolMenus",
+                "EditorStyle"
+            }
+        );
+
+        // We keep includes simple for SPINE 1; more modules can be added
+        // in later passes when the builder and commandlet are implemented.
+    }
+}
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Public/SOTS_BlueprintGen.h ===
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Modules/ModuleManager.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogSOTS_BlueprintGen, Log, All);
+
+/**
+ * SOTS_BlueprintGen primary editor module.
+ *
+ * SPINE 1 responsibilities:
+ * - Register the module.
+ * - Provide a log category.
+ *
+ * Later passes will add:
+ * - Builder API (USOTS_BPGenBuilder).
+ * - Commandlets.
+ * - Any editor helpers needed by DevTools.
+ */
+class FSOTS_BlueprintGenModule : public IModuleInterface
+{
+public:
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Public/SOTS_BPGenTypes.h ===
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SOTS_BPGenTypes.generated.h"
+
+/**
+ * Direction of a generated pin (input vs output).
+ */
+UENUM(BlueprintType)
+enum class ESOTS_BPGenPinDirection : uint8
+{
+	Input  UMETA(DisplayName = "Input"),
+	Output UMETA(DisplayName = "Output")
+};
+
+/**
+ * Container type for a generated pin.
+ */
+UENUM(BlueprintType)
+enum class ESOTS_BPGenContainerType : uint8
+{
+	None  UMETA(DisplayName = "None"),
+	Array UMETA(DisplayName = "Array"),
+	Set   UMETA(DisplayName = "Set"),
+	Map   UMETA(DisplayName = "Map")
+};
+
+/**
+ * Blueprint generation pin description.
+ *
+ * This is an abstract description used by DevTools JSON and the
+ * future USOTS_BPGenBuilder. It does NOT yet map directly to
+ * FEdGraphPinType in SPINE 1; that will be added in a later pass.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenPin
+{
+	GENERATED_BODY()
+
+	/** Logical name of the pin (e.g. AbilityData, NameText, etc). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FName Name;
+
+	/** Main pin category name (e.g. "bool", "int", "float", "struct", "object"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FName Category;
+
+	/** Sub-category (e.g. "byte", "int64", "SoftObject", etc). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FName SubCategory;
+
+	/** Optional asset/class path for struct/object types. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FString SubObjectPath;
+
+	/** Container type (None, Array, Set, Map). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	ESOTS_BPGenContainerType ContainerType = ESOTS_BPGenContainerType::None;
+
+	/** Pin direction (Input/Output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	ESOTS_BPGenPinDirection Direction = ESOTS_BPGenPinDirection::Input;
+
+	/** Optional default value (as text/string representation). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FString DefaultValue;
+};
+
+/**
+ * Definition of a struct asset to generate.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenStructDef
+{
+	GENERATED_BODY()
+
+	/** Package path for the struct asset (e.g. /Game/SOTS/Generated/Structs/F_SOTS_Example). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FString AssetPath;
+
+	/** Struct name (usually matches the asset name, e.g. F_SOTS_Example). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FName StructName;
+
+	/** Member pins making up this struct. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	TArray<FSOTS_BPGenPin> Members;
+};
+
+/**
+ * Definition of an enum asset to generate.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenEnumDef
+{
+	GENERATED_BODY()
+
+	/** Package path for the enum asset (e.g. /Game/SOTS/Generated/Enums/E_SOTS_Example). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FString AssetPath;
+
+	/** Enum name (usually matches the asset name, e.g. E_SOTS_Example). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FName EnumName;
+
+	/** Enum entry display names. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	TArray<FString> Values;
+};
+
+/**
+ * Definition of a function to generate inside an existing Blueprint.
+ *
+ * SPINE 1 only defines the data shape. Actual graph-building logic
+ * will be added in later passes.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenFunctionDef
+{
+	GENERATED_BODY()
+
+	/** Content path to the target Blueprint asset. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FString TargetBlueprintPath;
+
+	/** Function name to create or update. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	FName FunctionName;
+
+	/** Input pins for the function. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	TArray<FSOTS_BPGenPin> Inputs;
+
+	/** Output pins for the function. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen")
+	TArray<FSOTS_BPGenPin> Outputs;
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BlueprintGen.cpp ===
+#include "SOTS_BlueprintGen.h"
+#include "SOTS_BPGenTypes.h"
+#include "Modules/ModuleManager.h"
+
+DEFINE_LOG_CATEGORY(LogSOTS_BlueprintGen);
+
+#define LOCTEXT_NAMESPACE "FSOTS_BlueprintGenModule"
+
+void FSOTS_BlueprintGenModule::StartupModule()
+{
+	UE_LOG(LogSOTS_BlueprintGen, Log, TEXT("SOTS_BlueprintGen module has started (SPINE 1)."));
+}
+
+void FSOTS_BlueprintGenModule::ShutdownModule()
+{
+	UE_LOG(LogSOTS_BlueprintGen, Log, TEXT("SOTS_BlueprintGen module is shutting down."));
+}
+
+#undef LOCTEXT_NAMESPACE
+
+IMPLEMENT_MODULE(FSOTS_BlueprintGenModule, SOTS_BlueprintGen)
+=== END FILE ===

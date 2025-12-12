@@ -1,0 +1,133 @@
+[SOTS_DEVTOOLS]
+tool: write_files
+category: plugin_spine
+plugin: SOTS_Parkour
+pass: SPINE_V3_21_VerticalWallDetectStartHeight
+[/SOTS_DEVTOOLS]
+
+=== FILE: Source/SOTS_Parkour/Public/SOTS_ParkourVerticalTraceLibrary.h ===
+#pragma once
+
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "SOTS_ParkourTypes.h"
+#include "SOTS_ParkourVerticalTraceLibrary.generated.h"
+
+class ACharacter;
+class UCharacterMovementComponent;
+
+/**
+
+Trace-related helper math that mirrors the CGF Blueprint functions.
+
+SPINE V3_21: vertical wall detect start-height logic.
+
+This is a direct C++ counterpart to the CGF function:
+
+"Get Vertical Wall Detect Start Heigh"
+
+for the Parkour.State.NotBusy path, using the same constants:
+
+ActorLocation.Z - SelectFloat(40, 70, bPickA = IsFalling)
+
+The Climb branch will be ported in a later SPINE pass once the
+
+SOTS_Parkour state mapping for climb/free-hang is fully wired.
+*/
+UCLASS()
+class SOTS_PARKOUR_API USOTS_ParkourVerticalTraceLibrary : public UBlueprintFunctionLibrary
+{
+GENERATED_BODY()
+
+public:
+
+/**
+ * Compute the Z start height for a "vertical wall detect" trace.
+ *
+ * @param Character     The owning character.
+ * @param MoveComp      The character movement component (used for IsFalling).
+ * @param ParkourState  High-level parkour state (Idle/Entering/Active/Exiting).
+ *
+ * CGF parity (NotBusy path):
+ *   ReturnValue = ActorLocation.Z - SelectFloat(40, 70, bPickA = IsFalling)
+ *
+ * Notes:
+ * - In CGF this is keyed on a GameplayTag state switch:
+ *     Parkour.State.NotBusy
+ *     Parkour.State.Climb
+ *   For now we treat Idle/Entering/Exiting as the "NotBusy" equivalent.
+ * - The Climb-specific branch is intentionally left as a TODO; we still
+ *   return a sane value (same as NotBusy) so it is safe to call even
+ *   before the full climb parity pass is done.
+ */
+UFUNCTION(BlueprintPure, Category = "SOTS|Parkour|Trace")
+static float GetVerticalWallDetectStartHeight(
+	const ACharacter* Character,
+	const UCharacterMovementComponent* MoveComp,
+	ESOTS_ParkourState ParkourState);
+
+
+};
+
+=== END FILE ===
+
+=== FILE: Source/SOTS_Parkour/Private/SOTS_ParkourVerticalTraceLibrary.cpp ===
+#include "SOTS_ParkourVerticalTraceLibrary.h"
+
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+float USOTS_ParkourVerticalTraceLibrary::GetVerticalWallDetectStartHeight(
+const ACharacter* Character,
+const UCharacterMovementComponent* MoveComp,
+ESOTS_ParkourState ParkourState)
+{
+if (!Character || !MoveComp)
+{
+return 0.0f;
+}
+
+const FVector ActorLocation = Character->GetActorLocation();
+const bool bIsFalling = MoveComp->IsFalling();
+
+// CGF "NotBusy" behavior:
+//   ReturnValue = ActorLocation.Z - SelectFloat(40, 70, bPickA = IsFalling)
+// where:
+//   - If IsFalling == true  ->  40
+//   - If IsFalling == false ->  70
+const auto ComputeNotBusyValue = [&]() -> float
+{
+	const float Offset = bIsFalling ? 40.0f : 70.0f;
+	return ActorLocation.Z - Offset;
+};
+
+switch (ParkourState)
+{
+// Treat Idle/Entering/Exiting as the "NotBusy" bucket for now.
+case ESOTS_ParkourState::Idle:
+case ESOTS_ParkourState::Entering:
+case ESOTS_ParkourState::Exiting:
+default:
+	return ComputeNotBusyValue();
+
+case ESOTS_ParkourState::Active:
+	// TODO (SPINE – Climb parity):
+	// In CGF this function has a separate branch for:
+	//   Parkour.State.Climb
+	// which uses different logic based on the climb anchor/arrow.
+	//
+	// Once the SOTS_Parkour climb/free-hang state is fully mapped,
+	// we will:
+	//   - Port the CGF "Parkour.State.Climb" branch here.
+	//   - Potentially add additional parameters (e.g., anchor location).
+	//
+	// For now, we fall back to the NotBusy behavior so callers get a
+	// safe, predictable value instead of 0.0f.
+	return ComputeNotBusyValue();
+}
+
+
+}
+
+=== END FILE ===
+
+//SPINE V3: 21 passes emitted so far for Parkour SPINE; vertical wall detect start-height math is now extracted into a reusable library. We still have several SPINE passes left (warp top point, second capsule/vertical detect traces, full mantle/drop/vault surface checks, and climb-specific branches) to reach full 1:1 parity.

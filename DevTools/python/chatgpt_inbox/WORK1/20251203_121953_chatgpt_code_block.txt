@@ -1,0 +1,440 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/69305e4b-2aec-832f-9efb-243f72da899a
+Type: code_block
+/* 
+SOTS_BlueprintGen TOOLS 1
+-------------------------
+Goal: Add human-facing DevTools docs & examples so BPGen jobs are easy to
+author and run without guessing schemas or commands.
+
+What this pack does:
+- Adds DevTools/python/README_SOTS_BlueprintGen.txt:
+  - High-level overview of the SOTS_BlueprintGen pipeline.
+  - Exact JSON fields expected by SOTS_BPGenBuildCommandlet.
+  - Step-by-step instructions with sots_bpgen_tools.py.
+- Adds DevTools/python/examples/bpgen_sample_job.json:
+  - A concrete, fully-populated example Job file:
+    - StructsToCreate
+    - EnumsToCreate
+    - Function def
+    - Inline GraphSpec with a tiny “branch logger” style graph.
+- NO scripts auto-run. This is pure documentation + examples.
+
+You can tweak paths/types to taste once written.
+*/
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/README_SOTS_BlueprintGen.txt ===
+SOTS_BlueprintGen – DevTools Overview
+=====================================
+
+Summary
+-------
+
+SOTS_BlueprintGen is the "Blueprint builder" side of the pipeline.
+
+It does **not** talk to OpenAI / Gemini directly.
+
+Instead, it:
+
+- Takes a JSON **Job** file that describes:
+  - Which Blueprint to target.
+  - Which function to create/ensure.
+  - Optional structs/enums to create as user-defined assets.
+  - Optional GraphSpec describing which nodes to spawn and how to connect them.
+
+- Optionally takes a separate JSON **GraphSpec** file.
+
+- Uses `USOTS_BPGenBuilder` + `USOTS_BPGenBuildCommandlet` to:
+  - Create/update UUserDefinedStruct assets.
+  - Create/update UUserDefinedEnum assets.
+  - Ensure a function graph exists inside a target Blueprint.
+  - Spawn a limited set of K2 nodes and link them according to the spec.
+
+DevTools/python/sots_bpgen_tools.py is the manual helper for:
+- Creating skeleton Job/GraphSpec JSON files.
+- Printing a ready-to-edit Commandlet call.
+- Optionally *running* that Commandlet when you explicitly request it.
+
+
+File & Folder Layout
+--------------------
+
+Under `DevTools/python`:
+
+- `sots_bpgen_tools.py`
+    Manual CLI helper for BPGen jobs.
+
+- `bpgen_jobs/`
+    Where Job JSON files live.
+    Each file is usually named `<JobId>.json`.
+
+- `bpgen_specs/`
+    Where external GraphSpec JSON files live.
+    Each file is usually named `<JobId>_graph.json`.
+
+- `logs/`
+    Small text logs from `sots_bpgen_tools.py` runs.
+
+- `examples/bpgen_sample_job.json`
+    A concrete example of a fully-populated Job file that the Commandlet can consume.
+
+
+Job JSON Schema (high level)
+----------------------------
+
+The SOTS_BPGenBuildCommandlet expects:
+
+- A top-level JSON object with at least:
+    - `"Function"`: object shaped like `FSOTS_BPGenFunctionDef`.
+- Optionally:
+    - `"StructsToCreate"`: array of `FSOTS_BPGenStructDef`.
+    - `"EnumsToCreate"`: array of `FSOTS_BPGenEnumDef`.
+    - `"GraphSpec"`: object shaped like `FSOTS_BPGenGraphSpec`.
+
+Example (short version):
+
+{
+  "JobId": "BPGEN_Example",
+  "Function": {
+    "TargetBlueprintPath": "/Game/SOTS/UI/WBP_AbilityHUD",
+    "FunctionName": "FormatAbilityHUDInfo",
+    "Inputs": [
+      {
+        "Name": "AbilityData",
+        "Category": "struct",
+        "SubCategory": "",
+        "SubObjectPath": "/Script/SOTS_GAS.F_SOTS_AbilityData",
+        "ContainerType": "None",
+        "Direction": "Input"
+      }
+    ],
+    "Outputs": [
+      {
+        "Name": "NameText",
+        "Category": "text",
+        "SubCategory": "",
+        "SubObjectPath": "",
+        "ContainerType": "None",
+        "Direction": "Output"
+      }
+    ]
+  },
+  "StructsToCreate": [],
+  "EnumsToCreate": [],
+  "GraphSpec": {
+    "Nodes": [],
+    "Links": []
+  }
+}
+
+The types line up with the C++ structs:
+
+- `FSOTS_BPGenPin`
+    - Name           (FName)
+    - Category       (FName)
+    - SubCategory    (FName)
+    - SubObjectPath  (FString; optional, e.g. "/Script/Engine.Actor")
+    - ContainerType  (string/enum; "None", "Array", "Set", "Map")
+    - Direction      (string/enum; e.g. "Input", "Output")
+
+- `FSOTS_BPGenStructDef`
+    - AssetPath: "/Game/SOTS/Data/Structs/F_SOTS_Example"
+    - StructName: "F_SOTS_Example"
+    - Members: array of FSOTS_BPGenPin
+
+- `FSOTS_BPGenEnumDef`
+    - AssetPath: "/Game/SOTS/Data/Enums/E_SOTS_Example"
+    - EnumName: "E_SOTS_Example"
+    - Values: array of strings ["ValueA", "ValueB"]
+
+- `FSOTS_BPGenFunctionDef`
+    - TargetBlueprintPath: "/Game/SOTS/UI/WBP_AbilityHUD"
+    - FunctionName: "FormatAbilityHUDInfo"
+    - Inputs: array of FSOTS_BPGenPin
+    - Outputs: array of FSOTS_BPGenPin
+
+- `FSOTS_BPGenGraphSpec`
+    - Nodes: array of `FSOTS_BPGenGraphNode`
+    - Links: array of `FSOTS_BPGenGraphLink`
+
+Where:
+
+- `FSOTS_BPGenGraphNode`
+    - Id            (string, unique within the graph)
+    - NodeType      (FName; e.g. "K2Node_CallFunction")
+    - FunctionPath  (for CallFunction nodes, e.g. "/Script/Engine.KismetSystemLibrary:PrintString")
+    - VariableName  (for VariableGet/Set nodes)
+    - NodePosition  (X, Y; numeric; used as NodePosX/NodePosY)
+    - Other fields can be extended later as needed.
+
+- `FSOTS_BPGenGraphLink`
+    - FromNodeId    (string)
+    - FromPinName   (FName)
+    - ToNodeId      (string)
+    - ToPinName     (FName)
+
+
+Supported NodeTypes in SPINE 5 (initial version)
+------------------------------------------------
+
+Right now, ApplyGraphSpecToFunction uses a small whitelist:
+
+- "K2Node_CallFunction"
+- "K2Node_VariableGet"
+- "K2Node_VariableSet"
+- "K2Node_Branch"
+- "K2Node_Knot"
+- "K2Node_FunctionEntry"   (binds to the existing entry node)
+- "K2Node_FunctionResult"  (binds to the first existing result node)
+
+Any other NodeType will be logged as a warning and ignored.
+
+Pin names must match the actual node pins (e.g. "Then", "Condition", "True", "False" for Branch).
+
+
+Using sots_bpgen_tools.py
+-------------------------
+
+1) Create a new Job skeleton:
+
+    cd DevTools/python
+
+    python sots_bpgen_tools.py new
+
+    # or with a custom JobId:
+    python sots_bpgen_tools.py new --job-id BPGEN_MyAbilityHUD
+
+    # If you want a separate graph file:
+    python sots_bpgen_tools.py new --job-id BPGEN_MyAbilityHUD --separate-graph-spec
+
+This will create:
+
+    bpgen_jobs/BPGEN_MyAbilityHUD.json
+    bpgen_specs/BPGEN_MyAbilityHUD_graph.json  (if requested)
+
+and write a small log in `logs/`.
+
+2) Fill in the Job and GraphSpec by hand or via ChatGPT:
+
+- Edit bpgen_jobs/BPGEN_MyAbilityHUD.json:
+    - Fill Function.TargetBlueprintPath
+    - Fill Function.FunctionName
+    - Add any StructsToCreate / EnumsToCreate needed.
+
+- Either:
+    - Fill the inline `"GraphSpec"` in the Job file, OR
+    - Edit bpgen_specs/BPGEN_MyAbilityHUD_graph.json and let the job reference
+      it via the `--include-graph-spec` flag.
+
+3) Print a ready-to-edit Commandlet command:
+
+    python sots_bpgen_tools.py cmd --job-id BPGEN_MyAbilityHUD --include-graph-spec
+
+Example output:
+
+    SOTS_BPGen: Suggested Commandlet invocation:
+
+      "UnrealEditor-Cmd.exe" "PATH/TO/YourProject.uproject" -run=SOTS_BPGenBuildCommandlet -JobFile="E:/SAS/DevTools/python/bpgen_jobs/BPGEN_MyAbilityHUD.json" -GraphSpecFile="E:/SAS/DevTools/python/bpgen_specs/BPGEN_MyAbilityHUD_graph.json"
+
+    Note:
+      This is PRINT-ONLY mode. Copy/paste and edit paths as needed.
+      Use --run-now with explicit --ue-cmd/--uproject to execute.
+
+4) Actually run the Commandlet (optional):
+
+You can either copy the printed command and run it yourself, OR let the tool
+spawn it **manually**:
+
+    python sots_bpgen_tools.py cmd \
+        --job-id BPGEN_MyAbilityHUD \
+        --include-graph-spec \
+        --ue-cmd "E:/UE5.7/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" \
+        --uproject "E:/SAS/ShadowsAndShurikens/ShadowsAndShurikens.uproject" \
+        --run-now
+
+This will:
+
+- Invoke UnrealEditor-Cmd.exe with:
+    -run=SOTS_BPGenBuildCommandlet
+    -JobFile=...
+    -GraphSpecFile=...
+- Stream stdout/stderr to your console.
+- Log the run result in `logs/`.
+
+
+Example: bpgen_sample_job.json
+------------------------------
+
+See:
+
+    DevTools/python/examples/bpgen_sample_job.json
+
+This file demonstrates:
+
+- Creating a simple struct asset.
+- Creating a simple enum asset.
+- Targeting a function "BPGen_ExampleFunction" on an example Blueprint.
+- Providing a tiny graph spec that:
+    - Executes a Branch.
+    - Logs a message via KismetSystemLibrary::PrintString.
+
+You can copy/rename that file into `bpgen_jobs/`, tweak paths/types, and use it
+as a starting point for your own BPGen experiments.
+
+
+Law & Safety Notes
+------------------
+
+- Nothing in this pipeline runs automatically.
+- sots_bpgen_tools.py:
+    - Never runs Unreal unless you pass `--run-now` and explicit paths.
+    - Always logs actions to `DevTools/python/logs/`.
+- SOTS_BPGenBuildCommandlet:
+    - Only touches assets described by the Job JSON.
+    - Logs struct/enum/function and graph application results.
+- You stay in full control:
+    - Author/edit Job + GraphSpec via your usual ChatGPT/Tampermonkey flow.
+    - Decide when to run the Commandlet.
+    - Inspect generated/modified Blueprints in the editor afterward.
+
+=== END FILE ===
+
+=== FILE: DevTools/python/examples/bpgen_sample_job.json ===
+{
+  "JobId": "BPGEN_Sample_01",
+  "Function": {
+    "TargetBlueprintPath": "/Game/SOTS/Example/BP_SampleActor",
+    "FunctionName": "BPGen_ExampleFunction",
+    "Inputs": [
+      {
+        "Name": "bCondition",
+        "Category": "bool",
+        "SubCategory": "",
+        "SubObjectPath": "",
+        "ContainerType": "None",
+        "Direction": "Input"
+      }
+    ],
+    "Outputs": [
+      {
+        "Name": "ResultMessage",
+        "Category": "text",
+        "SubCategory": "",
+        "SubObjectPath": "",
+        "ContainerType": "None",
+        "Direction": "Output"
+      }
+    ]
+  },
+  "StructsToCreate": [
+    {
+      "AssetPath": "/Game/SOTS/Data/Structs/F_SOTS_BPGenExample",
+      "StructName": "F_SOTS_BPGenExample",
+      "Members": [
+        {
+          "Name": "ExampleInt",
+          "Category": "int",
+          "SubCategory": "",
+          "SubObjectPath": "",
+          "ContainerType": "None",
+          "Direction": "Input"
+        },
+        {
+          "Name": "ExampleText",
+          "Category": "text",
+          "SubCategory": "",
+          "SubObjectPath": "",
+          "ContainerType": "None",
+          "Direction": "Input"
+        }
+      ]
+    }
+  ],
+  "EnumsToCreate": [
+    {
+      "AssetPath": "/Game/SOTS/Data/Enums/E_SOTS_BPGenExample",
+      "EnumName": "E_SOTS_BPGenExample",
+      "Values": [
+        "Value_A",
+        "Value_B",
+        "Value_C"
+      ]
+    }
+  ],
+  "GraphSpec": {
+    "Nodes": [
+      {
+        "Id": "Entry",
+        "NodeType": "K2Node_FunctionEntry",
+        "FunctionPath": "",
+        "VariableName": "",
+        "NodePosition": {
+          "X": -400,
+          "Y": 0
+        }
+      },
+      {
+        "Id": "Branch",
+        "NodeType": "K2Node_Branch",
+        "FunctionPath": "",
+        "VariableName": "",
+        "NodePosition": {
+          "X": -100,
+          "Y": 0
+        }
+      },
+      {
+        "Id": "Print_True",
+        "NodeType": "K2Node_CallFunction",
+        "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString",
+        "VariableName": "",
+        "NodePosition": {
+          "X": 200,
+          "Y": -80
+        }
+      },
+      {
+        "Id": "Print_False",
+        "NodeType": "K2Node_CallFunction",
+        "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString",
+        "VariableName": "",
+        "NodePosition": {
+          "X": 200,
+          "Y": 80
+        }
+      }
+    ],
+    "Links": [
+      {
+        "FromNodeId": "Entry",
+        "FromPinName": "Then",
+        "ToNodeId": "Branch",
+        "ToPinName": "Exec"
+      },
+      {
+        "FromNodeId": "Entry",
+        "FromPinName": "bCondition",
+        "ToNodeId": "Branch",
+        "ToPinName": "Condition"
+      },
+      {
+        "FromNodeId": "Branch",
+        "FromPinName": "True",
+        "ToNodeId": "Print_True",
+        "ToPinName": "execute"
+      },
+      {
+        "FromNodeId": "Branch",
+        "FromPinName": "False",
+        "ToNodeId": "Print_False",
+        "ToPinName": "execute"
+      }
+    ]
+  }
+}
+=== END FILE ===

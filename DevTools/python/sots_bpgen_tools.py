@@ -1,0 +1,422 @@
+#!/usr/bin/env python3
+"""
+sots_bpgen_tools.py
+-------------------
+
+SOTS DevTools helper for SOTS_BlueprintGen.
+
+This script is **purely manual**:
+- It never talks to OpenAI / Gemini.
+- It never auto-runs Unreal unless you explicitly pass --run-now.
+- It always prints what it did and writes a small log file.
+
+Main usage patterns:
+
+1) Create a new BPGen job (and optional graph spec skeleton):
+
+    python sots_bpgen_tools.py new
+
+    # or with a custom ID:
+    python sots_bpgen_tools.py new --job-id BPGEN_MyCustomId
+
+This will:
+- Ensure bpgen_jobs/, bpgen_specs/, and logs/ exist next to this script.
+- Create bpgen_jobs/<JobId>.json with a minimal skeleton:
+    {
+      "JobId": "...",
+      "Function": {},
+      "StructsToCreate": [],
+      "EnumsToCreate": [],
+      "GraphSpec": {}
+    }
+- Optionally create bpgen_specs/<JobId>_graph.json if you pass
+  --separate-graph-spec.
+- Print paths + next-step instructions.
+- Write a small log under logs/bpgen_new_*.log.
+
+2) Print a Commandlet command line for a job:
+
+    python sots_bpgen_tools.py cmd --job-id BPGEN_2025-12-03_001
+
+This will:
+- Resolve bpgen_jobs/<JobId>.json (and spec path if you ask for it).
+- Print a ready-to-edit UnrealEditor-Cmd.exe invocation, e.g.:
+
+    UnrealEditor-Cmd.exe "PATH/TO/YourProject.uproject" ^
+      -run=SOTS_BPGenBuildCommandlet ^
+      -JobFile="E:/SAS/DevTools/python/bpgen_jobs/BPGEN_2025-12-03_001.json" ^
+      -GraphSpecFile="E:/SAS/DevTools/python/bpgen_specs/BPGEN_2025-12-03_001_graph.json"
+
+- Write a small log under logs/bpgen_cmd_*.log.
+
+3) (Optional) Actually run the Commandlet from DevTools:
+
+    python sots_bpgen_tools.py cmd \
+        --job-id BPGEN_2025-12-03_001 \
+        --ue-cmd "E:/UE5.7/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" \
+        --uproject "E:/SAS/ShadowsAndShurikens/ShadowsAndShurikens.uproject" \
+        --include-graph-spec \
+        --run-now
+
+This will:
+- Spawn UnrealEditor-Cmd.exe with SOTS_BPGenBuildCommandlet and the chosen
+  JobFile/GraphSpecFile.
+- Stream stdout/stderr back to your console.
+- Log everything under logs/bpgen_run_*.log.
+
+Environment variables (optional):
+- SOTS_BPGEN_UE_CMD       → default for --ue-cmd
+- SOTS_BPGEN_UPROJECT     → default for --uproject
+
+If not provided, you MUST pass explicit paths to use --run-now.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import Tuple
+
+
+# ---------------------------------------------------------------------------
+# Core helpers
+# ---------------------------------------------------------------------------
+
+def detect_devtools_root() -> Path:
+    """
+    Detect the DevTools/python root based on this script location.
+
+    Assumes:
+        DevTools/
+            python/
+                sots_bpgen_tools.py   ← here
+                bpgen_jobs/
+                bpgen_specs/
+                logs/
+    """
+    return Path(__file__).resolve().parent
+
+
+def ensure_dirs(root: Path) -> Tuple[Path, Path, Path]:
+    """
+    Ensure bpgen_jobs/, bpgen_specs/, and logs/ exist under the DevTools root.
+    Returns (jobs_dir, specs_dir, logs_dir).
+    """
+    jobs_dir = root / "bpgen_jobs"
+    specs_dir = root / "bpgen_specs"
+    logs_dir = root / "logs"
+
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    return jobs_dir, specs_dir, logs_dir
+
+
+def timestamp() -> str:
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def write_log(logs_dir: Path, prefix: str, message: str) -> Path:
+    """
+    Write a small log file summarizing what happened.
+    """
+    log_path = logs_dir / f"{prefix}_{timestamp()}.log"
+    try:
+        with log_path.open("w", encoding="utf-8") as f:
+            f.write(message)
+    except Exception as exc:
+        # Don't crash if logging fails; just report it.
+        print(f"[WARN] Failed to write log file '{log_path}': {exc}", file=sys.stderr)
+    return log_path
+
+
+# ---------------------------------------------------------------------------
+# Command: new  (create skeleton job/spec JSON)
+# ---------------------------------------------------------------------------
+
+def cmd_new(args: argparse.Namespace) -> int:
+    root = detect_devtools_root()
+    jobs_dir, specs_dir, logs_dir = ensure_dirs(root)
+
+    if args.job_id:
+        job_id = args.job_id
+    else:
+        job_id = f"BPGEN_{timestamp()}"
+
+    job_path = jobs_dir / f"{job_id}.json"
+
+    if job_path.exists() and not args.force:
+        print(f"[ERROR] Job file already exists: {job_path}")
+        print("        Use --force to overwrite, or choose a different --job-id.")
+        return 1
+
+    # Minimal skeleton aligned with SOTS_BPGenBuildCommandlet expectations.
+    job_data = {
+        "JobId": job_id,
+        "Function": {},
+        "StructsToCreate": [],
+        "EnumsToCreate": [],
+        # You can either embed GraphSpec here or use a separate file.
+        "GraphSpec": {}
+    }
+
+    try:
+        with job_path.open("w", encoding="utf-8") as f:
+            json.dump(job_data, f, indent=2)
+    except Exception as exc:
+        print(f"[ERROR] Failed to write job file '{job_path}': {exc}")
+        return 1
+
+    spec_path = None
+    if args.separate_graph_spec:
+        spec_path = specs_dir / f"{job_id}_graph.json"
+        if spec_path.exists() and not args.force:
+            print(f"[ERROR] Graph spec file already exists: {spec_path}")
+            print("        Use --force to overwrite, or delete it first.")
+            return 1
+
+        # Empty skeleton; DevTools / ChatGPT will fill Nodes/Links later.
+        spec_data = {
+            "JobId": job_id,
+            "Nodes": [],
+            "Links": []
+        }
+
+        try:
+            with spec_path.open("w", encoding="utf-8") as f:
+                json.dump(spec_data, f, indent=2)
+        except Exception as exc:
+            print(f"[ERROR] Failed to write graph spec file '{spec_path}': {exc}")
+            return 1
+
+    msg_lines = []
+    msg_lines.append("SOTS_BPGen: Created new job skeleton.")
+    msg_lines.append(f"  DevTools root : {root}")
+    msg_lines.append(f"  JobId         : {job_id}")
+    msg_lines.append(f"  Job file      : {job_path}")
+
+    if spec_path is not None:
+        msg_lines.append(f"  Graph spec    : {spec_path}")
+        msg_lines.append("")
+        msg_lines.append("Next steps:")
+        msg_lines.append("  1) Fill job JSON with FSOTS_BPGenFunctionDef / Struct / Enum fields.")
+        msg_lines.append("  2) Fill graph JSON with FSOTS_BPGenGraphSpec.Nodes / Links.")
+        msg_lines.append("  3) Use 'cmd' or your own scripts to build the Commandlet call.")
+    else:
+        msg_lines.append("")
+        msg_lines.append("Next steps:")
+        msg_lines.append("  1) Fill job JSON with FSOTS_BPGenFunctionDef / Struct / Enum fields.")
+        msg_lines.append("  2) Either:")
+        msg_lines.append("     - Embed GraphSpec directly in the Job file, or")
+        msg_lines.append("     - Create a separate graph spec JSON manually in bpgen_specs/.")
+        msg_lines.append("  3) Use 'cmd' or your own scripts to build the Commandlet call.")
+
+    message = "\n".join(msg_lines)
+    print(message)
+
+    log_path = write_log(logs_dir, "bpgen_new", message + "\n" + json.dumps(job_data, indent=2))
+    print(f"[INFO] Log written to: {log_path}")
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Command: cmd  (print or run the Commandlet invocation)
+# ---------------------------------------------------------------------------
+
+def build_command(
+    job_path: Path,
+    graph_spec_path: Path | None,
+    ue_cmd: str,
+    uproject: str
+) -> str:
+    """
+    Construct the UnrealEditor-Cmd.exe invocation string.
+    """
+    parts = [
+        f"\"{ue_cmd}\"",
+        f"\"{uproject}\"",
+        "-run=SOTS_BPGenBuildCommandlet",
+        f"-JobFile=\"{str(job_path)}\""
+    ]
+    if graph_spec_path is not None:
+        parts.append(f"-GraphSpecFile=\"{str(graph_spec_path)}\"")
+    return " ".join(parts)
+
+
+def cmd_cmd(args: argparse.Namespace) -> int:
+    root = detect_devtools_root()
+    jobs_dir, specs_dir, logs_dir = ensure_dirs(root)
+
+    if not args.job_id:
+        print("[ERROR] --job-id is required for 'cmd' subcommand.")
+        return 1
+
+    job_path = jobs_dir / f"{args.job_id}.json"
+    if not job_path.exists():
+        print(f"[ERROR] Job file does not exist: {job_path}")
+        print("        Use 'new' first, or ensure the job ID is correct.")
+        return 1
+
+    graph_spec_path = None
+    if args.include_graph_spec:
+        candidate = specs_dir / f"{args.job_id}_graph.json"
+        if not candidate.exists():
+            print(f"[WARN] Graph spec requested but file not found: {candidate}")
+            print("       Proceeding without -GraphSpecFile.")
+        else:
+            graph_spec_path = candidate
+
+    # Resolve UE Cmd and uproject paths.
+    ue_cmd = args.ue_cmd or os.environ.get("SOTS_BPGEN_UE_CMD")
+    uproject = args.uproject or os.environ.get("SOTS_BPGEN_UPROJECT")
+
+    # For printing-only mode, we allow ue_cmd/uproject to be None → we use placeholders.
+    placeholder_used = False
+    if not ue_cmd:
+        ue_cmd = "UnrealEditor-Cmd.exe"
+        placeholder_used = True
+    if not uproject:
+        uproject = "PATH/TO/YourProject.uproject"
+        placeholder_used = True
+
+    cmd_str = build_command(job_path, graph_spec_path, ue_cmd, uproject)
+
+    msg_lines = []
+    msg_lines.append("SOTS_BPGen: Suggested Commandlet invocation:")
+    msg_lines.append("")
+    msg_lines.append("  " + cmd_str)
+    msg_lines.append("")
+
+    if placeholder_used and args.run_now:
+        msg_lines.append("[ERROR] Cannot use --run-now with placeholder paths.")
+        msg_lines.append("        Please pass --ue-cmd and --uproject explicitly,")
+        msg_lines.append("        or set SOTS_BPGEN_UE_CMD and SOTS_BPGEN_UPROJECT.")
+        run_allowed = False
+    else:
+        run_allowed = True
+
+    if not args.run_now:
+        msg_lines.append("Note:")
+        msg_lines.append("  This is PRINT-ONLY mode. Copy/paste and edit paths as needed.")
+        msg_lines.append("  Use --run-now with explicit --ue-cmd/--uproject to execute.")
+    else:
+        msg_lines.append("Note:")
+        msg_lines.append("  --run-now requested; will execute the command if paths are valid.")
+
+    message = "\n".join(msg_lines)
+    print(message)
+
+    log_path = write_log(logs_dir, "bpgen_cmd", message)
+    print(f"[INFO] Log written to: {log_path}")
+
+    if args.run_now and run_allowed:
+        print("[INFO] Executing Commandlet...")
+        try:
+            # Use shell=False for safety; split is not needed since we already
+            # have arguments separated if we build a list. Here we reuse build_command
+            # and let the shell parse; to keep it simple we use shell=True
+            # but rely on explicit args for paths.
+            completed = subprocess.run(cmd_str, shell=True)
+            print(f"[INFO] Commandlet exited with code {completed.returncode}")
+            run_log_msg = f"Command exit code: {completed.returncode}"
+            write_log(logs_dir, "bpgen_run", run_log_msg + "\n" + cmd_str)
+        except Exception as exc:
+            print(f"[ERROR] Failed to execute Commandlet: {exc}")
+            write_log(logs_dir, "bpgen_run_error", f"Exception: {exc}\n{cmd_str}")
+            return 1
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# CLI wiring
+# ---------------------------------------------------------------------------
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="SOTS DevTools helper for SOTS_BlueprintGen BPGen jobs."
+    )
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # new
+    p_new = subparsers.add_parser(
+        "new",
+        help="Create a new BPGen job skeleton (and optional graph spec)."
+    )
+    p_new.add_argument(
+        "--job-id",
+        type=str,
+        default=None,
+        help="Custom JobId (default: BPGEN_<timestamp>)."
+    )
+    p_new.add_argument(
+        "--separate-graph-spec",
+        action="store_true",
+        help="Also create a separate graph spec JSON in bpgen_specs/."
+    )
+    p_new.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing job/spec files if they already exist."
+    )
+    p_new.set_defaults(func=cmd_new)
+
+    # cmd
+    p_cmd = subparsers.add_parser(
+        "cmd",
+        help="Print (and optionally run) the Commandlet invocation for a job."
+    )
+    p_cmd.add_argument(
+        "--job-id",
+        type=str,
+        required=True,
+        help="BPGen JobId (must correspond to a JSON in bpgen_jobs/)."
+    )
+    p_cmd.add_argument(
+        "--include-graph-spec",
+        action="store_true",
+        help="If set, attempt to include bpgen_specs/<JobId>_graph.json as -GraphSpecFile."
+    )
+    p_cmd.add_argument(
+        "--ue-cmd",
+        type=str,
+        default=None,
+        help="Path to UnrealEditor-Cmd.exe (overrides SOTS_BPGEN_UE_CMD env)."
+    )
+    p_cmd.add_argument(
+        "--uproject",
+        type=str,
+        default=None,
+        help="Path to your .uproject file (overrides SOTS_BPGEN_UPROJECT env)."
+    )
+    p_cmd.add_argument(
+        "--run-now",
+        action="store_true",
+        help="If set, actually execute the Commandlet (requires real paths)."
+    )
+    p_cmd.set_defaults(func=cmd_cmd)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)

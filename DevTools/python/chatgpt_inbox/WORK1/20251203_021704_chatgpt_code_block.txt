@@ -1,0 +1,134 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/692fc016-a1f0-832c-b383-235fe3cd9693
+Type: code_block
+/*
+[SOTS_DEVTOOLS] – SOTS_Parkour V2_1
+Goal: Create a new SOTS_Parkour plugin with a minimal runtime module and
+      USOTS_ParkourComponent skeleton (no real logic yet). This pack just
+      writes the plugin .uplugin file, Build.cs, module .cpp, and the
+      basic ActorComponent header/cpp so the project compiles and the
+      component is visible in the editor.
+*/
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_Parkour/SOTS_Parkour.uplugin ===
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0.0",
+  "FriendlyName": "SOTS Parkour",
+  "Description": "Core parkour spine for Shadows And Shurikens, providing a C++ parkour component that will evolve from the original CGF ParkourComponent.",
+  "Category": "SOTS",
+  "CreatedBy": "Kuroryuu Dev",
+  "CreatedByURL": "",
+  "EnabledByDefault": false,
+  "SupportEmail": "",
+  "EngineVersion": "5.7.0",
+  "Modules": [
+    {
+      "Name": "SOTS_Parkour",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/SOTS_Parkour.Build.cs ===
+// SOTS_Parkour.Build.cs
+// Runtime module for the SOTS Parkour plugin (V2_1 skeleton)
+
+using UnrealBuildTool;
+
+public class SOTS_Parkour : ModuleRules
+{
+    public SOTS_Parkour(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
+                "CoreUObject",
+                "Engine"
+            }
+        );
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+            }
+        );
+    }
+}
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourModule.cpp ===
+// SOTS_ParkourModule.cpp
+// Minimal module implementation for the SOTS_Parkour plugin (V2_1)
+
+#include "Modules/ModuleManager.h"
+
+IMPLEMENT_MODULE(FDefaultModuleImpl, SOTS_Parkour);
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Public/SOTS_ParkourComponent.h ===
+// SOTS_ParkourComponent.h
+// V2_1: Minimal skeleton ActorComponent for SOTS parkour.
+// This will eventually replace the old CGF ParkourComponent BP brain.
+// For now it only provides a placeholder flag and a simple accessor.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "SOTS_ParkourComponent.generated.h"
+
+UCLASS(ClassGroup = (SOTS), meta = (BlueprintSpawnableComponent))
+class SOTS_PARKOUR_API USOTS_ParkourComponent : public UActorComponent
+{
+    GENERATED_BODY()
+
+public:
+    USOTS_ParkourComponent();
+
+protected:
+    virtual void BeginPlay() override;
+
+public:
+    /** Returns whether Parkour is currently active (placeholder for now). */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Parkour")
+    bool IsParkourActive() const { return bIsParkourActive; }
+
+private:
+    /** Simple placeholder flag so we have at least one member in V2_1. */
+    UPROPERTY(VisibleAnywhere, Category = "SOTS|Parkour")
+    bool bIsParkourActive = false;
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_Parkour/Source/SOTS_Parkour/Private/SOTS_ParkourComponent.cpp ===
+// SOTS_ParkourComponent.cpp
+// V2_1: Minimal implementation, no real parkour logic yet.
+
+#include "SOTS_ParkourComponent.h"
+#include "GameFramework/Actor.h"
+
+USOTS_ParkourComponent::USOTS_ParkourComponent()
+{
+    PrimaryComponentTick.bCanEverTick = false; // No tick needed in the skeleton pass
+}
+
+void USOTS_ParkourComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // V2_1: No owner wiring or movement setup yet.
+    // Later passes will hook into the character, movement component, etc.
+}
+=== END FILE ===

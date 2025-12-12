@@ -1,0 +1,290 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/69305e4b-2aec-832f-9efb-243f72da899a
+Type: code_block
+/* 
+SOTS_BlueprintGen BUNDLE1
+-------------------------
+Goal: Capture the "big picture" for SOTS_BlueprintGen as a DevTools-driven
+Blueprint builder, so future prompts and pipelines can snap into this
+without re-deriving the architecture.
+
+What this pack does:
+- Adds a bundle notes file under DevTools/python:
+  - Summarizes SPINE + BRIDGE + TOOLS in one place.
+  - Describes the full end-to-end flow:
+      ChatGPT/Tampermonkey → DevTools/python → BPGen Job/GraphSpec →
+      SOTS_BPGenBuildCommandlet → Blueprint assets.
+  - Defines how to *ask* for BPGen work in future DEVTOOLS prompts.
+- No scripts are auto-run; this is reference/coordination only.
+*/
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/SOTS_BlueprintGen_BUNDLE1.txt ===
+SOTS_BlueprintGen – Bundle Overview (BUNDLE1)
+=============================================
+
+Purpose
+-------
+
+SOTS_BlueprintGen is the **Blueprint builder** in the Kuroryuu DevTools
+ecosystem.
+
+It is **not** an in-editor AI chat toy. Instead, it is:
+- A clean, SOTS-owned C++ Editor plugin.
+- Driven entirely by DevTools/python JSON jobs.
+- Executed manually via a Commandlet.
+
+End-to-end, the flow is:
+
+    1) You design what you want (function, structs, enums, small graph).
+    2) ChatGPT helps you shape a BPGen Job + GraphSpec JSON.
+    3) DevTools/python/sots_bpgen_tools.py creates/organizes those files.
+    4) SOTS_BPGenBuildCommandlet consumes them and builds Blueprint assets.
+    5) You inspect/commit the results in Unreal.
+
+
+Quick Map of the Pieces
+-----------------------
+
+Plugin side (UE, C++):
+
+- Module: SOTS_BlueprintGen
+- Types:  SOTS_BPGenTypes.h / .cpp
+    - FSOTS_BPGenPin
+    - FSOTS_BPGenStructDef
+    - FSOTS_BPGenEnumDef
+    - FSOTS_BPGenFunctionDef
+    - FSOTS_BPGenGraphNode
+    - FSOTS_BPGenGraphLink
+    - FSOTS_BPGenGraphSpec
+    - FSOTS_BPGenAssetResult
+    - FSOTS_BPGenApplyResult
+
+- Builder API: USOTS_BPGenBuilder
+    - CreateStructAssetFromDef(WorldContext, FSOTS_BPGenStructDef)
+    - CreateEnumAssetFromDef(WorldContext, FSOTS_BPGenEnumDef)
+    - ApplyFunctionSkeleton(WorldContext, FSOTS_BPGenFunctionDef)
+    - ApplyGraphSpecToFunction(WorldContext, FSOTS_BPGenFunctionDef, FSOTS_BPGenGraphSpec)
+
+- Commandlet: USOTS_BPGenBuildCommandlet
+    - Args:
+        -JobFile=".../bpgen_jobs/<JobId>.json"
+        -GraphSpecFile=".../bpgen_specs/<JobId>_graph.json" (optional)
+    - Responsibilities:
+        - Read + parse Job JSON.
+        - Optionally read GraphSpec JSON.
+        - Call USOTS_BPGenBuilder for structs/enums.
+        - Create/ensure the function + apply graph (if provided).
+        - Log all results; return non-zero on errors.
+
+
+DevTools side (Python):
+
+- DevTools/python/sots_bpgen_tools.py
+    - `new`:
+        - Creates skeleton bpgen_jobs/<JobId>.json
+        - Optionally creates bpgen_specs/<JobId>_graph.json
+        - Never auto-runs Unreal.
+        - Always logs to DevTools/python/logs/.
+
+    - `cmd`:
+        - Prints a ready-to-edit UnrealEditor-Cmd.exe invocation.
+        - Optionally runs the Commandlet if:
+            - `--run-now` AND
+            - `--ue-cmd` + `--uproject` (or env vars) are provided.
+        - Always logs commands and results.
+
+- DevTools/python/README_SOTS_BlueprintGen.txt
+    - Human-facing documentation:
+        - Schema summaries.
+        - Supported node types.
+        - Step-by-step CLI usage.
+
+- DevTools/python/examples/bpgen_sample_job.json
+    - A live example Job:
+        - Creates one struct.
+        - Creates one enum.
+        - Adds a small function on a sample Blueprint.
+        - Provides a tiny Branch + PrintString graph.
+
+
+Canonical BPGen Pipeline (Step-by-Step)
+---------------------------------------
+
+1) Decide the *scope* of the Blueprint work.
+
+    - Small, leaf-level helpers only:
+        - Formatting text.
+        - Simple condition branches.
+        - Data munging (arrays, loops) with limited side effects.
+    - No big systems.
+    - No core GSM/TagManager/KEM logic.
+
+2) Create a new Job & (optionally) GraphSpec skeleton.
+
+    From DevTools/python:
+
+        python sots_bpgen_tools.py new
+        # or
+        python sots_bpgen_tools.py new --job-id BPGEN_MyHUD
+        # or
+        python sots_bpgen_tools.py new --job-id BPGEN_MyHUD --separate-graph-spec
+
+    This creates:
+
+        bpgen_jobs/BPGEN_MyHUD.json
+        bpgen_specs/BPGEN_MyHUD_graph.json     (if --separate-graph-spec)
+
+3) Use ChatGPT to *fill in* the Job + GraphSpec.
+
+    High-level idea:
+
+    - You send a DEVTOOLS prompt (through your Save2SOTS bridge) containing:
+        - The JobId
+        - The target Blueprint
+        - What the function should do
+        - Which structs/enums you want
+        - Any constraints / naming conventions
+
+    - ChatGPT responds with edits / replacements for:
+        - bpgen_jobs/BPGEN_<JobId>.json
+        - bpgen_specs/BPGEN_<JobId>_graph.json (if using separate).
+
+    IMPORTANT:
+    - This is still **manual**:
+        - You paste the JSON into the files yourself, or
+        - You run your write_files pipeline explicitly.
+    - Nothing auto-runs Unreal at this stage.
+
+4) Print the Commandlet line.
+
+    From DevTools/python:
+
+        python sots_bpgen_tools.py cmd --job-id BPGEN_MyHUD --include-graph-spec
+
+    This prints something like:
+
+        "UnrealEditor-Cmd.exe" "PATH/TO/YourProject.uproject" \
+          -run=SOTS_BPGenBuildCommandlet \
+          -JobFile=".../DevTools/python/bpgen_jobs/BPGEN_MyHUD.json" \
+          -GraphSpecFile=".../DevTools/python/bpgen_specs/BPGEN_MyHUD_graph.json"
+
+    You can:
+    - Copy/paste this into a terminal and edit paths, OR
+    - Use `--ue-cmd` / `--uproject` / `--run-now` for a manual one-shot run.
+
+5) Run the Commandlet (optional helper mode).
+
+    Example:
+
+        python sots_bpgen_tools.py cmd \
+            --job-id BPGEN_MyHUD \
+            --include-graph-spec \
+            --ue-cmd "E:/UE5.7/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" \
+            --uproject "E:/SAS/ShadowsAndShurikens/ShadowsAndShurikens.uproject" \
+            --run-now
+
+    This:
+    - Executes SOTS_BPGenBuildCommandlet.
+    - Applies Job + GraphSpec.
+    - Logs everything under DevTools/python/logs/.
+
+6) Inspect the results in Unreal.
+
+    - Open the target Blueprint and verify:
+        - Struct/enum assets were created with the right names/paths.
+        - The function exists and has the expected pins.
+        - The graph looks sane and compiles cleanly.
+
+    - Refine manually as needed.
+    - Commit changes once you’re happy.
+
+
+How to Ask for BPGen Work in DEVTOOLS Prompts
+---------------------------------------------
+
+When you send a DEVTOOLS prompt (e.g. via Save2SOTS → sots_chatgpt_dispatcher)
+for SOTS_BlueprintGen, use a pattern like:
+
+    DEVTOOLS SOTS_BlueprintGen JOB
+    - JobId: BPGEN_MyHUD
+    - Goal:
+        Create a function "FormatAbilityHUDInfo" on
+        "/Game/SOTS/UI/WBP_AbilityHUD" that:
+          * Takes F_SOTS_AbilityData as input.
+          * Outputs NameText (Text), CooldownText (Text), CostText (Text).
+          * Uses existing GAS/SOTS APIs; no new gameplay logic.
+    - Constraints:
+        * No side-effects beyond formatting data.
+        * No global state changes.
+        * Follow FSOTS_BPGen* schema (pins/types).
+    - Deliverables:
+        1) Updated bpgen_jobs/BPGEN_MyHUD.json.
+        2) Updated bpgen_specs/BPGEN_MyHUD_graph.json.
+
+ChatGPT’s job in that scenario:
+
+- Only produce JSON content for those files (wrapped in write_files pack).
+- Never auto-run Unreal.
+- Never assume paths; always let you tweak/confirm.
+
+Your job:
+
+- Review + apply the JSON to disk.
+- Use `sots_bpgen_tools.py cmd` to print/run the Commandlet.
+- Inspect the generated Blueprint and iterate.
+
+
+Future Integration Points
+-------------------------
+
+1) Pipeline hub integration (sots_pipeline_hub.py)
+
+Later, you can:
+- Add a pipeline step like "bpgen_job" that:
+    - Calls sots_bpgen_tools.py new.
+    - Orchestrates ChatGPT to fill Job/GraphSpec.
+    - Builds a ready-to-run command line for you.
+
+2) KibibyteLabs adapter (optional)
+
+If you keep KibibyteLabs around for experiments:
+- It can be adapted to emit FSOTS_BPGen* specs and hand them to
+  USOTS_BPGenBuilder instead of its internal compiler.
+- SOTS_BlueprintGen remains the single source of truth for struct/enum/graph
+  building.
+
+3) Expanded node whitelist
+
+As SOTS stabilizes, you can:
+- Add more NodeTypes to FSOTS_BPGenGraphNode and ApplyGraphSpecToFunction.
+- Gradually support more node families (timeline, loops, arrays, etc.)
+  while keeping everything strictly controlled and logged.
+
+
+Key Laws (BPGen Edition)
+------------------------
+
+- No automatic Blueprint generation:
+    - Every run is a deliberate command with visible logs.
+
+- Leaf-level only:
+    - SOTS_BlueprintGen is for helper graphs and small data flows,
+      not core gameplay systems.
+
+- DevTools-first:
+    - Jobs/specs are created and versioned via DevTools/python.
+    - Unreal only consumes the JSON; it never invents it.
+
+- Logs everywhere:
+    - sots_bpgen_tools.py writes logs under DevTools/python/logs/.
+    - SOTS_BPGenBuildCommandlet logs to the Unreal log.
+
+If you stick to these, BPGen becomes a sharp, predictable tool in the SOTS
+toolbox instead of a magic box that randomly rewires your game.
+
+=== END FILE ===

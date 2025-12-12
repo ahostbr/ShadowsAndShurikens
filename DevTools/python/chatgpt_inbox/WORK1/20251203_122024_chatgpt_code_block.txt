@@ -1,0 +1,425 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/69305e4b-2aec-832f-9efb-243f72da899a
+Type: code_block
+/* 
+SOTS_BlueprintGen BRIDGE 1
+--------------------------
+Goal: Add an editor-side Commandlet so DevTools can drive SOTS_BlueprintGen in a 
+fully manual, file-based way.
+
+What this pack does:
+- Creates USOTS_BPGenBuildCommandlet (C++ Commandlet) inside SOTS_BlueprintGen.
+- Commandlet reads a JSON job file (and optional graph spec file).
+- Deserializes into FSOTS_BPGen* types using JsonUtilities.
+- Calls USOTS_BPGenBuilder to:
+    - Create/update struct assets.
+    - Create/update enum assets.
+    - Ensure a function graph exists.
+    - Optionally apply a graph spec.
+- Prints a clear summary + errors to the log (no silent behavior).
+
+NOT included yet (BRIDGE 2 will handle):
+- DevTools/python scripts to emit job/spec JSON and invoke this Commandlet.
+- Pipeline hub wiring / friendly wrappers.
+*/
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Public/SOTS_BPGenBuildCommandlet.h ===
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Commandlets/Commandlet.h"
+#include "SOTS_BPGenTypes.h"
+#include "SOTS_BPGenBuildCommandlet.generated.h"
+
+/**
+ * Commandlet entrypoint for BPGen jobs driven by DevTools.
+ *
+ * Usage (example):
+ *
+ *   UEEditor-Cmd.exe "ShadowsAndShurikens.uproject" ^
+ *     -run=SOTS_BPGenBuildCommandlet ^
+ *     -JobFile="E:/SAS/DevTools/bpgen_jobs/BPGEN_2025-12-03_001.json" ^
+ *     -GraphSpecFile="E:/SAS/DevTools/bpgen_specs/BPGEN_2025-12-03_001_graph.json"
+ *
+ * The job JSON is expected to contain:
+ * - "Function": FSOTS_BPGenFunctionDef-shaped object.
+ * - Optional "StructsToCreate": array of FSOTS_BPGenStructDef-shaped objects.
+ * - Optional "EnumsToCreate": array of FSOTS_BPGenEnumDef-shaped objects.
+ * - Optional inline "GraphSpec": FSOTS_BPGenGraphSpec-shaped object (if no GraphSpecFile is provided).
+ *
+ * BRIDGE 1 keeps the schema simple and aligned with FSOTS_BPGen* types. 
+ * BRIDGE 2 will introduce DevTools Python helpers and more detailed docs.
+ */
+UCLASS()
+class SOTS_BLUEPRINTGEN_API USOTS_BPGenBuildCommandlet : public UCommandlet
+{
+	GENERATED_BODY()
+
+public:
+	USOTS_BPGenBuildCommandlet();
+
+	// Entry point for commandlet execution.
+	virtual int32 Main(const FString& Params) override;
+};
+=== END FILE ===
+
+=== FILE: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenBuildCommandlet.cpp ===
+#include "SOTS_BPGenBuildCommandlet.h"
+
+#include "SOTS_BlueprintGen.h"
+#include "SOTS_BPGenBuilder.h"
+
+#include "Misc/CommandLine.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
+#include "JsonObjectConverter.h"
+
+/**
+ * Helper: Load a JSON file into a root object.
+ */
+static bool SOTS_BPGen_LoadJsonObject(const FString& FilePath, TSharedPtr<FJsonObject>& OutRoot, FString& OutError)
+{
+	FString JsonText;
+	if (!FFileHelper::LoadFileToString(JsonText, *FilePath))
+	{
+		OutError = FString::Printf(TEXT("Failed to load JSON file '%s'."), *FilePath);
+		return false;
+	}
+
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonText);
+	if (!FJsonSerializer::Deserialize(Reader, OutRoot) || !OutRoot.IsValid())
+	{
+		OutError = FString::Printf(TEXT("Failed to parse JSON in '%s'."), *FilePath);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Helper: Deserialize an array of UStructs from a JSON array field.
+ */
+template<typename TStructType>
+static void SOTS_BPGen_LoadArrayField(
+	const TSharedPtr<FJsonObject>& Root,
+	const FString& FieldName,
+	TArray<TStructType>& OutArray,
+	TArray<FString>& OutWarnings)
+{
+	if (!Root.IsValid())
+	{
+		return;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonArray = nullptr;
+	if (!Root->TryGetArrayField(FieldName, JsonArray) || !JsonArray)
+	{
+		return; // Field missing is not an error; just means "none".
+	}
+
+	for (const TSharedPtr<FJsonValue>& Value : *JsonArray)
+	{
+		if (!Value.IsValid())
+		{
+			continue;
+		}
+
+		TSharedPtr<FJsonObject> Obj = Value->AsObject();
+		if (!Obj.IsValid())
+		{
+			OutWarnings.Add(FString::Printf(
+				TEXT("Field '%s' contains a non-object entry; skipping."), *FieldName));
+			continue;
+		}
+
+		TStructType Item;
+		if (!FJsonObjectConverter::JsonObjectToUStruct(
+				Obj.ToSharedRef(),
+				TStructType::StaticStruct(),
+				&Item,
+				/*CheckFlags=*/0,
+				/*SkipFlags=*/0))
+		{
+			OutWarnings.Add(FString::Printf(
+				TEXT("Failed to convert entry in '%s' to struct '%s'; skipping."),
+				*FieldName,
+				*TStructType::StaticStruct()->GetName()));
+			continue;
+		}
+
+		OutArray.Add(MoveTemp(Item));
+	}
+}
+
+USOTS_BPGenBuildCommandlet::USOTS_BPGenBuildCommandlet()
+{
+	IsClient = false;
+	IsServer = false;
+	LogToConsole = true;
+}
+
+int32 USOTS_BPGenBuildCommandlet::Main(const FString& Params)
+{
+	UE_LOG(LogSOTS_BlueprintGen, Display, TEXT("SOTS_BPGenBuildCommandlet starting. Params: %s"), *Params);
+
+	FString JobFilePath;
+	FString GraphSpecFilePath;
+
+	// Parse command line params: -JobFile=..., -GraphSpecFile=...
+	if (!FParse::Value(*Params, TEXT("JobFile="), JobFilePath))
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Error,
+			TEXT("SOTS_BPGenBuildCommandlet: Missing -JobFile=<path> argument."));
+		return 1;
+	}
+	FParse::Value(*Params, TEXT("GraphSpecFile="), GraphSpecFilePath);
+
+	if (FPaths::IsRelative(JobFilePath))
+	{
+		JobFilePath = FPaths::ConvertRelativePathToFull(JobFilePath);
+	}
+	if (!GraphSpecFilePath.IsEmpty() && FPaths::IsRelative(GraphSpecFilePath))
+	{
+		GraphSpecFilePath = FPaths::ConvertRelativePathToFull(GraphSpecFilePath);
+	}
+
+	UE_LOG(LogSOTS_BlueprintGen, Display, TEXT("JobFile: '%s'"), *JobFilePath);
+	if (!GraphSpecFilePath.IsEmpty())
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Display, TEXT("GraphSpecFile: '%s'"), *GraphSpecFilePath);
+	}
+
+	// Load job JSON.
+	TSharedPtr<FJsonObject> JobRoot;
+	FString JsonError;
+	if (!SOTS_BPGen_LoadJsonObject(JobFilePath, JobRoot, JsonError))
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Error,
+			TEXT("SOTS_BPGenBuildCommandlet: %s"), *JsonError);
+		return 1;
+	}
+
+	// Required: "Function" (FSOTS_BPGenFunctionDef)
+	FSOTS_BPGenFunctionDef FunctionDef;
+	{
+		TSharedPtr<FJsonObject> FunctionObj;
+		if (!JobRoot->TryGetObjectField(TEXT("Function"), FunctionObj) || !FunctionObj.IsValid())
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("SOTS_BPGenBuildCommandlet: Job JSON is missing a valid 'Function' object."));
+			return 1;
+		}
+
+		if (!FJsonObjectConverter::JsonObjectToUStruct(
+				FunctionObj.ToSharedRef(),
+				FSOTS_BPGenFunctionDef::StaticStruct(),
+				&FunctionDef,
+				/*CheckFlags=*/0,
+				/*SkipFlags=*/0))
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("SOTS_BPGenBuildCommandlet: Failed to convert 'Function' object to FSOTS_BPGenFunctionDef."));
+			return 1;
+		}
+	}
+
+	// Optional: "StructsToCreate" (array of FSOTS_BPGenStructDef)
+	TArray<FSOTS_BPGenStructDef> StructDefs;
+	// Optional: "EnumsToCreate" (array of FSOTS_BPGenEnumDef)
+	TArray<FSOTS_BPGenEnumDef> EnumDefs;
+	// Optional: inline "GraphSpec" (FSOTS_BPGenGraphSpec)
+	FSOTS_BPGenGraphSpec InlineGraphSpec;
+	bool bHasInlineGraphSpec = false;
+
+	TArray<FString> ParseWarnings;
+	SOTS_BPGen_LoadArrayField(JobRoot, TEXT("StructsToCreate"), StructDefs, ParseWarnings);
+	SOTS_BPGen_LoadArrayField(JobRoot, TEXT("EnumsToCreate"), EnumDefs, ParseWarnings);
+
+	{
+		TSharedPtr<FJsonObject> GraphObj;
+		if (JobRoot->TryGetObjectField(TEXT("GraphSpec"), GraphObj) && GraphObj.IsValid())
+		{
+			if (FJsonObjectConverter::JsonObjectToUStruct(
+					GraphObj.ToSharedRef(),
+					FSOTS_BPGenGraphSpec::StaticStruct(),
+					&InlineGraphSpec,
+					/*CheckFlags=*/0,
+					/*SkipFlags=*/0))
+			{
+				bHasInlineGraphSpec = true;
+			}
+			else
+			{
+				ParseWarnings.Add(TEXT("Failed to convert inline 'GraphSpec' to FSOTS_BPGenGraphSpec; ignoring."));
+			}
+		}
+	}
+
+	// Optional external GraphSpec file takes precedence if present.
+	FSOTS_BPGenGraphSpec ExternalGraphSpec;
+	bool bHasExternalGraphSpec = false;
+
+	if (!GraphSpecFilePath.IsEmpty())
+	{
+		TSharedPtr<FJsonObject> GraphRoot;
+		FString GraphError;
+		if (!SOTS_BPGen_LoadJsonObject(GraphSpecFilePath, GraphRoot, GraphError))
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("SOTS_BPGenBuildCommandlet: %s"), *GraphError);
+			return 1;
+		}
+
+		if (!FJsonObjectConverter::JsonObjectToUStruct(
+				GraphRoot.ToSharedRef(),
+				FSOTS_BPGenGraphSpec::StaticStruct(),
+				&ExternalGraphSpec,
+				/*CheckFlags=*/0,
+				/*SkipFlags=*/0))
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("SOTS_BPGenBuildCommandlet: Failed to convert external GraphSpec JSON to FSOTS_BPGenGraphSpec."));
+			return 1;
+		}
+
+		bHasExternalGraphSpec = true;
+	}
+
+	// Log warnings from parse step, if any.
+	for (const FString& Warning : ParseWarnings)
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Warning,
+			TEXT("SOTS_BPGenBuildCommandlet: %s"), *Warning);
+	}
+
+	// Execute the job via USOTS_BPGenBuilder.
+	int32 ErrorCount = 0;
+
+	UE_LOG(LogSOTS_BlueprintGen, Display,
+		TEXT("SOTS_BPGenBuildCommandlet: Creating %d struct(s) and %d enum(s)."),
+		StructDefs.Num(), EnumDefs.Num());
+
+	for (const FSOTS_BPGenStructDef& StructDef : StructDefs)
+	{
+		const FSOTS_BPGenAssetResult StructResult =
+			USOTS_BPGenBuilder::CreateStructAssetFromDef(this, StructDef);
+
+		if (!StructResult.bSuccess)
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("Struct generation failed for '%s': %s"),
+				*StructResult.AssetPath,
+				*StructResult.Message);
+			++ErrorCount;
+		}
+		else
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Display,
+				TEXT("Struct OK: %s"), *StructResult.Message);
+		}
+	}
+
+	for (const FSOTS_BPGenEnumDef& EnumDef : EnumDefs)
+	{
+		const FSOTS_BPGenAssetResult EnumResult =
+			USOTS_BPGenBuilder::CreateEnumAssetFromDef(this, EnumDef);
+
+		if (!EnumResult.bSuccess)
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("Enum generation failed for '%s': %s"),
+				*EnumResult.AssetPath,
+				*EnumResult.Message);
+			++ErrorCount;
+		}
+		else
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Display,
+				TEXT("Enum OK: %s"), *EnumResult.Message);
+		}
+	}
+
+	UE_LOG(LogSOTS_BlueprintGen, Display,
+		TEXT("SOTS_BPGenBuildCommandlet: Applying function skeleton for '%s' in '%s'."),
+		*FunctionDef.FunctionName.ToString(),
+		*FunctionDef.TargetBlueprintPath);
+
+	const FSOTS_BPGenApplyResult SkeletonResult =
+		USOTS_BPGenBuilder::ApplyFunctionSkeleton(this, FunctionDef);
+
+	if (!SkeletonResult.bSuccess)
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Error,
+			TEXT("Function skeleton failed for '%s' in '%s': %s"),
+			*SkeletonResult.FunctionName.ToString(),
+			*SkeletonResult.TargetBlueprintPath,
+			*SkeletonResult.ErrorMessage);
+		++ErrorCount;
+	}
+	else
+	{
+		for (const FString& Warn : SkeletonResult.Warnings)
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Warning,
+				TEXT("Function skeleton warning: %s"), *Warn);
+		}
+	}
+
+	// Graph spec application (inline or external).
+	bool bHasGraphSpec = bHasExternalGraphSpec || bHasInlineGraphSpec;
+	if (bHasGraphSpec)
+	{
+		const FSOTS_BPGenGraphSpec& GraphSpecToUse =
+			bHasExternalGraphSpec ? ExternalGraphSpec : InlineGraphSpec;
+
+		UE_LOG(LogSOTS_BlueprintGen, Display,
+			TEXT("SOTS_BPGenBuildCommandlet: Applying graph spec with %d node(s) and %d link(s)."),
+			GraphSpecToUse.Nodes.Num(),
+			GraphSpecToUse.Links.Num());
+
+		const FSOTS_BPGenApplyResult GraphResult =
+			USOTS_BPGenBuilder::ApplyGraphSpecToFunction(this, FunctionDef, GraphSpecToUse);
+
+		if (!GraphResult.bSuccess)
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Error,
+				TEXT("Graph spec apply failed for '%s' in '%s': %s"),
+				*GraphResult.FunctionName.ToString(),
+				*GraphResult.TargetBlueprintPath,
+				*GraphResult.ErrorMessage);
+			++ErrorCount;
+		}
+		else
+		{
+			for (const FString& Warn : GraphResult.Warnings)
+			{
+				UE_LOG(LogSOTS_BlueprintGen, Warning,
+					TEXT("Graph apply warning: %s"), *Warn);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Display,
+			TEXT("SOTS_BPGenBuildCommandlet: No graph spec provided; only function skeleton applied."));
+	}
+
+	if (ErrorCount > 0)
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Error,
+			TEXT("SOTS_BPGenBuildCommandlet finished with %d error(s)."), ErrorCount);
+		return 1;
+	}
+
+	UE_LOG(LogSOTS_BlueprintGen, Display,
+		TEXT("SOTS_BPGenBuildCommandlet finished successfully with 0 errors."));
+	return 0;
+}
+=== END FILE ===

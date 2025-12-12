@@ -1,0 +1,211 @@
+ChatGPT inbox file
+Label: chatgpt_code_block
+URL: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/69305e4b-2aec-832f-9efb-243f72da899a
+Type: code_block
+# SOTS_BlueprintGen PLAN pipeline
+# This pack uses write_files to drop a docs/plan text file into DevTools/python/docs/.
+# It does NOT run any tools; it just records the architecture & data flow for SOTS_BlueprintGen
+# so future DevTools pipelines and plugin passes can reference a single, stable PLAN doc.
+
+[SOTS_DEVTOOLS]
+tool: write_files
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/docs/SOTS_BlueprintGen_PLAN_v1.txt ===
+SOTS_BlueprintGen – PLAN v1
+============================
+
+Role in the SOTS ecosystem
+--------------------------
+SOTS_BlueprintGen is an **Editor-only builder plugin** whose job is:
+
+- To take **DevTools-produced JSON specs** (Job + GraphSpec).
+- To **create or update Blueprint assets**:
+  - UUserDefinedStruct assets.
+  - UUserDefinedEnum assets.
+  - Blueprint functions / graphs inside existing BPs.
+- To **save packages and log** exactly what was built or modified.
+
+All LLM orchestration, prompting, and JSON generation happens in **SOTS_DEVTOOLS**,
+not inside the plugin.
+
+High-level data flow
+--------------------
+1. You describe what you want (in ChatGPT), e.g.
+   "Create a pure function FormatAbilityHUDInfo on WBP_AbilityHUD using F_SOTS_AbilityData".
+
+2. A SOTS_DEVTOOLS pipeline:
+   - Converts that request into:
+     - A **BPGen Job JSON**: high-level info (target BP path, function name, struct/enum defs).
+     - A **BPGen GraphSpec JSON**: nodes, pins, links, and any new assets required.
+   - Saves both JSON files into DevTools folders (e.g. bpgen_jobs/, bpgen_specs/).
+   - Logs the whole process (per DevTools laws).
+
+3. You manually trigger a UE commandlet (no daemons, no auto-runs):
+   - Runs SOTS_BlueprintGen’s build commandlet with:
+     - -JobFile=<Job JSON>
+     - -GraphSpecFile=<GraphSpec JSON>
+
+4. SOTS_BlueprintGen:
+   - Reads Job + GraphSpec.
+   - Creates/updates structs & enums under allowed content roots.
+   - Creates/updates the requested function graph inside the target Blueprint.
+   - Saves any modified packages.
+   - Prints a clear summary to the commandlet log.
+
+5. Result:
+   - Deterministic, replayable Blueprint generation driven by DevTools JSON,
+     not ad-hoc in-editor magic.
+
+Scope & responsibilities
+------------------------
+SOTS_BlueprintGen IS responsible for:
+- Reading and validating BPGen Job JSON.
+- Reading and validating BPGen GraphSpec JSON.
+- Creating:
+  - User-defined structs (UUserDefinedStruct).
+  - User-defined enums (UUserDefinedEnum).
+- Creating or updating a Blueprint function graph:
+  - Ensuring the function exists (create if needed).
+  - Setting up input/output pins to match the Job spec.
+  - Spawning K2 nodes and wiring pins based on GraphSpec.
+- Saving modified packages.
+- Emitting clear, structured logs.
+
+SOTS_BlueprintGen is NOT responsible for:
+- Calling OpenAI, Gemini, or any LLM.
+- Deciding what functions or graphs to build.
+- Explaining nodes, finding issues, or generating comments.
+- Modifying non-Blueprint assets (meshes, textures, etc.).
+- Exporting or analyzing existing Blueprints (that’s BEP/TNT territory).
+
+Target plugin structure
+-----------------------
+Plugin:
+- Name: SOTS_BlueprintGen
+- Type: Editor-only
+- Module: SOTS_BlueprintGen (single Editor module)
+
+Editor module dependencies (target):
+- Core, CoreUObject, Engine
+- UnrealEd
+- Kismet, KismetCompiler, BlueprintGraph, Kismet2
+- AssetTools, EditorAssetLibrary, UserDefinedStructure
+- Json, JsonUtilities
+- (Optional later) PythonScriptPlugin for extra helpers
+
+Key C++ types (concept)
+-----------------------
+Data structures (used for JSON round-trip):
+
+- FSOTS_BPGenPin
+  - Name
+  - Category/SubCategory/SubObject path
+  - ContainerType (None/Array/Set/Map)
+  - Direction (Input/Output)
+  - Optional default value
+
+- FSOTS_BPGenStructDef
+  - AssetPath (package path, e.g. /Game/SOTS/Generated/Structs/F_SOTS_AbilityHUDData)
+  - StructName
+  - Members : TArray<FSOTS_BPGenPin>
+
+- FSOTS_BPGenEnumDef
+  - AssetPath
+  - EnumName
+  - Values : TArray<FString>
+
+- FSOTS_BPGenFunctionDef
+  - TargetBlueprintPath
+  - FunctionName
+  - Inputs : TArray<FSOTS_BPGenPin>
+  - Outputs: TArray<FSOTS_BPGenPin>
+
+- FSOTS_BPGenGraphNode / FSOTS_BPGenGraphLink / FSOTS_BPGenGraphSpec
+  - Node:
+    - Id (string)
+    - Type (e.g. K2Node_CallFunction, K2Node_VariableGet, K2Node_Branch, etc.)
+    - Optional FunctionPath (for call function nodes)
+    - Optional VariableName (for var nodes)
+    - Position (X,Y)
+    - Additional metadata as needed
+  - Link:
+    - FromNodeId / FromPinName
+    - ToNodeId / ToPinName
+
+Builder API (conceptual):
+- USOTS_BPGenBuilder
+  - CreateStructAsset(const FSOTS_BPGenStructDef&, FSOTS_BPGenAssetResult&)
+  - CreateEnumAsset(const FSOTS_BPGenEnumDef&, FSOTS_BPGenAssetResult&)
+  - ApplyFunctionSkeleton(const FSOTS_BPGenFunctionDef&, FSOTS_BPGenApplyResult&)
+  - ApplyGraphSpecToFunction(const FSOTS_BPGenGraphSpec&, FSOTS_BPGenApplyResult&)
+
+Commandlet (conceptual):
+- USOTS_BPGenBuildCommandlet
+  - Args:
+    - -JobFile="<Job JSON path>"
+    - -GraphSpecFile="<GraphSpec JSON path>"
+  - Flow:
+    - Load & validate Job JSON.
+    - Create/update structs and enums via USOTS_BPGenBuilder.
+    - Create/update the target function skeleton.
+    - Load & apply GraphSpec (spawn nodes + connect pins).
+    - Save packages.
+    - Print a concise summary (what was built/failed).
+
+DevTools integration contract
+-----------------------------
+DevTools side (expected behaviour):
+
+- Pipelines produce:
+  - Job JSON (high-level what & where).
+  - GraphSpec JSON (detailed how).
+- Files live under e.g.:
+  - DevTools/bpgen_jobs/*.json
+  - DevTools/bpgen_specs/*.json
+- DevTools tools stay **manual** by default:
+  - A helper script (e.g. run_bpgen_build.py) can:
+    - Enumerate pending jobs/specs.
+    - Spawn UE commandlets to run USOTS_BPGenBuildCommandlet.
+    - Log to DevTools/logs/bpgen_*.log.
+
+SOTS_BlueprintGen only assumes:
+- It will be given valid filesystem paths.
+- The Job/Spec adhere to an agreed schema.
+- It never auto-runs; it only responds when a commandlet is invoked.
+
+Guardrails & naming conventions
+-------------------------------
+Planned guardrails (to bake into implementation):
+
+- Content roots:
+  - By default, only create assets under /Game/SOTS/Generated/...
+  - Configurable, but locked down by default.
+
+- Naming:
+  - Structs: F_SOTS_*
+  - Enums:  E_SOTS_*
+  - Functions: may use a BPGen_ prefix or have a comment tag.
+
+- Traceability:
+  - Add a comment node at the top of generated functions:
+    - "// Generated via SOTS_BlueprintGen Job <JobId>"
+  - Log all generated assets and functions per run.
+
+Implementation TODOs (for future passes)
+---------------------------------------
+This PLAN file is a reference for future DevTools + C++ work. Actual implementation will:
+
+- Create the SOTS_BlueprintGen plugin skeleton with correct dependencies.
+- Implement the FSOTS_* data types and JSON (de)serialization.
+- Implement USOTS_BPGenBuilder struct/enum/function/graph builders.
+- Implement USOTS_BPGenBuildCommandlet for DevTools-driven builds.
+- Define and stabilize the Job & GraphSpec JSON schema.
+- Add guardrails, logging, and traceability.
+- Add DevTools pipelines:
+  - To translate ChatGPT prompts into Job/GraphSpec.
+  - To call the commandlet manually.
+
+No 1–25 “sweeps” are implied by this PLAN. It’s a stable architectural reference
+for any future SOTS_BlueprintGen work.
+=== END FILE ===
