@@ -9,7 +9,7 @@
 
 namespace
 {
-	bool ConvertOmniTraceHit(const FOmniTracePatternResult& Result, const FVector& Start, const FVector& End, FHitResult& OutHit)
+	bool ConvertOmniTraceHit_Surface(const FOmniTracePatternResult& Result, const FVector& Start, const FVector& End, FHitResult& OutHit)
 	{
 		if (!Result.bAnyHit)
 		{
@@ -68,7 +68,7 @@ namespace
 		Request.DebugOptions.bEnableDebug = false;
 
 		const FOmniTracePatternResult PatternResult = UOmniTraceBlueprintLibrary::OmniTrace_Pattern(WorldContextObject, Request);
-		return ConvertOmniTraceHit(PatternResult, Start, Start + Dir * Request.MaxDistance, OutHit);
+		return ConvertOmniTraceHit_Surface(PatternResult, Start, Start + Dir * Request.MaxDistance, OutHit);
 	}
 }
 

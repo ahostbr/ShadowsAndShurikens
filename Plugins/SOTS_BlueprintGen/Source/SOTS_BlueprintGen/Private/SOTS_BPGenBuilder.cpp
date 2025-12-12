@@ -30,6 +30,9 @@
 #include "K2Node_FunctionResult.h"
 #include "K2Node_IfThenElse.h"
 #include "K2Node_Knot.h"
+#include "K2Node_DynamicCast.h"
+#include "K2Node_AddComponent.h"
+#include "K2Node_AddComponentByClass.h"
 #include "K2Node_MultiGate.h"
 #include "K2Node_MacroInstance.h"
 #include "GameplayTagsK2Node_SwitchGameplayTag.h"
@@ -44,6 +47,8 @@
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
 #include "UObject/UnrealType.h"
+#include "Math/Transform.h"
+#include "UObject/NoExportTypes.h"
 
 
 
@@ -347,6 +352,51 @@ namespace
 		return ESOTS_BPGenContainerType::None;
 	}
 
+	static void TryAssignDefaultObject(UEdGraphPin* Pin, const FString& DefaultValue)
+	{
+		if (!Pin || DefaultValue.IsEmpty())
+		{
+			return;
+		}
+
+		auto SanitizeObjectPath = [](const FString& InPath) -> FString
+		{
+			FString Result = InPath;
+			if ((Result.StartsWith(TEXT("Class'")) || Result.StartsWith(TEXT("Object'")) || Result.StartsWith(TEXT("BlueprintGeneratedClass'")))
+				&& Result.EndsWith(TEXT("'")))
+			{
+				Result = Result.Mid(Result.Find(TEXT("'")) + 1); // strip leading token and quote
+				Result.RemoveFromEnd(TEXT("'"));
+			}
+			return Result;
+		};
+
+		const FString SanitizedPath = SanitizeObjectPath(DefaultValue);
+
+		const FName Category = Pin->PinType.PinCategory;
+
+		if (Category == UEdGraphSchema_K2::PC_Class)
+		{
+			if (UClass* LoadedClass = LoadObject<UClass>(nullptr, *SanitizedPath))
+			{
+				Pin->DefaultObject = LoadedClass;
+				Pin->DefaultValue.Reset();
+			}
+			return;
+		}
+
+		if (Category == UEdGraphSchema_K2::PC_Object
+			|| Category == UEdGraphSchema_K2::PC_Interface
+			|| Category == UEdGraphSchema_K2::PC_SoftClass
+			|| Category == UEdGraphSchema_K2::PC_SoftObject)
+		{
+			if (UObject* LoadedObject = LoadObject<UObject>(nullptr, *SanitizedPath))
+			{
+				Pin->DefaultObject = LoadedObject;
+			}
+		}
+	}
+
 	static FSOTS_BPGenPin BuildPinDefFromNodeSpec(const FSOTS_BPGenGraphNode& NodeSpec)
 	{
 		FSOTS_BPGenPin PinDef;
@@ -585,6 +635,118 @@ namespace
 		return ArrayNode;
 	}
 
+	static UEdGraphNode* SpawnAddComponentByClassNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec)
+	{
+		if (!Graph)
+		{
+			return nullptr;
+		}
+
+		Graph->Modify();
+
+		UK2Node_AddComponentByClass* AddCompNode = NewObject<UK2Node_AddComponentByClass>(Graph);
+		Graph->AddNode(AddCompNode, /*bFromUI=*/false, /*bSelectNewNode=*/false);
+		AddCompNode->SetFlags(RF_Transactional);
+		AddCompNode->CreateNewGuid();
+		AddCompNode->PostPlacedNewNode();
+		AddCompNode->AllocateDefaultPins();
+
+		AddCompNode->NodePosX = static_cast<int32>(NodeSpec.NodePosition.X);
+		AddCompNode->NodePosY = static_cast<int32>(NodeSpec.NodePosition.Y);
+
+		ApplyExtraPinDefaults(AddCompNode, NodeSpec);
+
+		UE_LOG(LogSOTS_BlueprintGen, Display,
+			TEXT("SpawnAddComponentByClassNode: Node '%s' pins after creation:"), *NodeSpec.Id);
+		for (UEdGraphPin* Pin : AddCompNode->Pins)
+		{
+			if (Pin)
+			{
+				UE_LOG(LogSOTS_BlueprintGen, Display, TEXT("  Pin '%s' Dir=%s Cat=%s Container=%s Default='%s'"),
+					*Pin->PinName.ToString(),
+					*GetPinDirectionText(Pin->Direction),
+					*Pin->PinType.PinCategory.ToString(),
+					*UEnum::GetValueAsString(Pin->PinType.ContainerType),
+					*Pin->DefaultValue);
+			}
+		}
+
+		return AddCompNode;
+	}
+
+	static UEdGraphNode* SpawnDynamicCastNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec)
+	{
+		if (!Graph)
+		{
+			return nullptr;
+		}
+
+		FString TargetTypePath;
+		if (const FString* TargetTypeExtra = NodeSpec.ExtraData.Find(FName(TEXT("TargetType"))))
+		{
+			TargetTypePath = *TargetTypeExtra;
+		}
+		else if (!NodeSpec.StructPath.IsEmpty())
+		{
+			TargetTypePath = NodeSpec.StructPath;
+		}
+
+		if (TargetTypePath.IsEmpty())
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Warning,
+				TEXT("SpawnDynamicCastNode: Node '%s' missing TargetType/StructPath."), *NodeSpec.Id);
+			return nullptr;
+		}
+
+		UClass* TargetClass = FindObject<UClass>(nullptr, *TargetTypePath);
+		if (!TargetClass)
+		{
+			TargetClass = LoadObject<UClass>(nullptr, *TargetTypePath);
+		}
+
+		if (!TargetClass)
+		{
+			UE_LOG(LogSOTS_BlueprintGen, Warning,
+				TEXT("SpawnDynamicCastNode: Could not load TargetClass '%s' for node '%s'."),
+				*TargetTypePath, *NodeSpec.Id);
+			return nullptr;
+		}
+
+		Graph->Modify();
+
+		UK2Node_DynamicCast* CastNode = NewObject<UK2Node_DynamicCast>(Graph);
+		Graph->AddNode(CastNode, /*bFromUI=*/false, /*bSelectNewNode=*/false);
+		CastNode->SetFlags(RF_Transactional);
+		CastNode->TargetType = TargetClass;
+		CastNode->SetPurity(false);
+		CastNode->CreateNewGuid();
+		CastNode->PostPlacedNewNode();
+		CastNode->AllocateDefaultPins();
+
+		CastNode->NodePosX = static_cast<int32>(NodeSpec.NodePosition.X);
+		CastNode->NodePosY = static_cast<int32>(NodeSpec.NodePosition.Y);
+
+		ApplyExtraPinDefaults(CastNode, NodeSpec);
+
+		UE_LOG(LogSOTS_BlueprintGen, Display,
+			TEXT("SpawnDynamicCastNode: Node '%s' pins after creation (TargetType=%s):"),
+			*NodeSpec.Id, *TargetTypePath);
+		for (UEdGraphPin* Pin : CastNode->Pins)
+		{
+			if (Pin)
+			{
+				UE_LOG(LogSOTS_BlueprintGen, Display, TEXT("  Pin '%s' Dir=%s Cat=%s Container=%s Default='%s'"),
+					*Pin->PinName.ToString(),
+					*GetPinDirectionText(Pin->Direction),
+					*Pin->PinType.PinCategory.ToString(),
+					*UEnum::GetValueAsString(Pin->PinType.ContainerType),
+					*Pin->DefaultValue);
+			}
+		}
+
+		return CastNode;
+	}
+
 	static UEdGraphNode* SpawnVariableGetNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec, UBlueprint* Blueprint)
 	{
 		if (!Graph)
@@ -759,7 +921,13 @@ namespace
 
 			if (UEdGraphPin* Pin = FindPinByName(Node, ExtraPair.Key))
 			{
-				Pin->DefaultValue = ExtraPair.Value;
+				const bool bIsClassPin = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Class;
+				if (!bIsClassPin)
+				{
+					Pin->DefaultValue = ExtraPair.Value;
+				}
+
+				TryAssignDefaultObject(Pin, ExtraPair.Value);
 			}
 		}
 
@@ -775,7 +943,43 @@ namespace
 
 				if (!OverridePair.Value.DefaultValue.IsEmpty())
 				{
-					Pin->DefaultValue = OverridePair.Value.DefaultValue;
+					const bool bIsClassPin = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Class;
+					if (!bIsClassPin)
+					{
+						Pin->DefaultValue = OverridePair.Value.DefaultValue;
+					}
+
+					TryAssignDefaultObject(Pin, OverridePair.Value.DefaultValue);
+				}
+			}
+		}
+
+		for (UEdGraphPin* Pin : Node->Pins)
+		{
+			if (!Pin)
+			{
+				continue;
+			}
+
+			const bool bIsClassOrObjectPin = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Class
+				|| Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object;
+			if (bIsClassOrObjectPin && !Pin->DefaultValue.IsEmpty())
+			{
+				TryAssignDefaultObject(Pin, Pin->DefaultValue);
+			}
+
+			const bool bIsTransformPin = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct
+				&& Pin->PinType.PinSubCategoryObject == TBaseStructure<FTransform>::Get();
+			if (bIsTransformPin && !Pin->DefaultValue.IsEmpty())
+			{
+				FTransform ParsedTransform = FTransform::Identity;
+				if (ParsedTransform.InitFromString(Pin->DefaultValue))
+				{
+					Pin->DefaultValue = ParsedTransform.ToString();
+				}
+				else
+				{
+					Pin->DefaultValue = FTransform::Identity.ToString();
 				}
 			}
 		}
@@ -2469,6 +2673,10 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 		{
 			NewNode = SpawnCallFunctionNode(FunctionGraph, NodeSpec);
 		}
+		else if (NodeSpec.NodeType == FName(TEXT("K2Node_AddComponentByClass")))
+		{
+			NewNode = SpawnAddComponentByClassNode(FunctionGraph, NodeSpec);
+		}
 		else if (NodeSpec.NodeType == FName(TEXT("K2Node_CallArrayFunction")))
 		{
 			NewNode = SpawnArrayFunctionNode(FunctionGraph, NodeSpec);
@@ -2619,6 +2827,16 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 			{
 				Result.Warnings.Add(FString::Printf(
 					TEXT("Failed to spawn K2Node_CustomEvent for node '%s'."),
+					*NodeSpec.Id));
+			}
+		}
+		else if (NodeSpec.NodeType == FName(TEXT("K2Node_DynamicCast")))
+		{
+			NewNode = SpawnDynamicCastNode(FunctionGraph, NodeSpec);
+			if (!NewNode)
+			{
+				Result.Warnings.Add(FString::Printf(
+					TEXT("Failed to spawn K2Node_DynamicCast for node '%s'."),
 					*NodeSpec.Id));
 			}
 		}
