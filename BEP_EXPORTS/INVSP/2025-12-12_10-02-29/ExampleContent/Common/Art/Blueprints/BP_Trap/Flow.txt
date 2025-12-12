@@ -1,0 +1,117 @@
+Blueprint: BP_Trap (/Game/InventorySystemPro/ExampleContent/Common/Art/Blueprints/BP_Trap.BP_Trap)
+  Graph: EventGraph
+    Node: OnTriggerTrap
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Get RelativeLocation.self
+      Pin: self (object) Dir=In
+    Node: FallDown (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Progress (real) Dir=Out
+        -> Lerp (Vector).Alpha
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set TrapRelativeLocation.execute
+    Node: Get Trap (K2Node_VariableGet)
+      Pin: Trap (object) Dir=Out
+        -> Get RelativeLocation.self
+      Pin: self (object) Dir=In
+    Node: Get RelativeLocation (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+        -> Set TrapRelativeLocation.TrapRelativeLocation
+      Pin: self (object) Dir=In
+        -> Get Trap.Trap
+    Node: Set TrapRelativeLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: TrapRelativeLocation (struct) Dir=In
+        -> Get RelativeLocation.RelativeLocation
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Trap (K2Node_VariableGet)
+      Pin: Trap (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+        -> Get RelativeLocation.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FallDown.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Trap.Trap
+      Pin: NewLocation (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get RelativeLocation.RelativeLocation
+      Pin: B (struct) Dir=In
+        -> Get RelativeLocation.RelativeLocation
+      Pin: Alpha (real) Dir=In
+        -> FallDown.Progress
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+    Node: Get RelativeLocation (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+        -> Lerp (Vector).A
+      Pin: self (object) Dir=In
+        -> Get Trap.Trap
+    Node: Get RelativeLocation (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+        -> Lerp (Vector).B
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnTriggerTrap
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> FallDown.Play
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Setup (EdGraphNode_Comment)
+    Node: Trigger Trap (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

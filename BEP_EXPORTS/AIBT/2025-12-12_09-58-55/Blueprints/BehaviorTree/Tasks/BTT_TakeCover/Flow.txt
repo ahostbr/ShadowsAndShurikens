@@ -1,0 +1,335 @@
+Blueprint: BTT_TakeCover (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_TakeCover.BTT_TakeCover)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Set PawnRef.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Sphere Trace By Channel.ActorsToIgnore
+      Pin: [0] (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: [1] (object) Dir=In
+        -> Get PawnRef.PawnRef
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: ReturnValue (object) Dir=Out
+        -> Set PawnRef.PawnRef
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Set PawnRef.Output_Get
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+        -> Reroute Node.InputPin
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Crouch
+Target is Character.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Sphere Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set PawnRef.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: End (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Radius (real) Dir=In
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sphere Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Sphere Trace By Channel.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Sphere Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+        -> Make Rot from X.X
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Make Rot from X (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (struct) Dir=In
+        -> Break Hit Result.ImpactNormal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Rotator.InRot
+    Node: Set Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: NewRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bTeleportPhysics (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Cast To Character.execute
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Crouch
+Target is Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: AsCharacter (object) Dir=Out
+        -> Crouch
+Target is Character.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Crouch
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: bClientSimulation (bool) Dir=In
+    Node: Break Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Make Rot from X.ReturnValue
+      Pin: Roll (real) Dir=Out
+      Pin: Pitch (real) Dir=Out
+      Pin: Yaw (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> Break Rotator.Yaw
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.NewRotation
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Rotation
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Crouch
+Target is Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: AsCharacter (object) Dir=Out
+        -> Crouch
+Target is Character.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Crouch
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: bClientSimulation (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: OutputPin (object) Dir=Out
+        -> Make Array.[0]
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Sphere Trace By Channel.End
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Sphere Trace By Channel.Start
+    Node: Set PawnRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Sphere Trace By Channel.execute
+      Pin: PawnRef (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Forward Vector
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To Character.execute
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+        -> vector + vector.A
+    Node: Trace for a nearby cover object (EdGraphNode_Comment)
+    Node: Crouch if there is no cover object (EdGraphNode_Comment)
+    Node: Rotate the pawn to face backwards of the cover object (EdGraphNode_Comment)
+    Node: Line trace from above up to the middle of the Character to get the height of the cover object (EdGraphNode_Comment)
+    Node: If there is NO hit, that means the cover is too low, so enable Crouch (EdGraphNode_Comment)

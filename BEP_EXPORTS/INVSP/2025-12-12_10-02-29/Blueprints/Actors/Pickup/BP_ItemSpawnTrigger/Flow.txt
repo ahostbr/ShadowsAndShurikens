@@ -1,0 +1,145 @@
+Blueprint: BP_ItemSpawnTrigger (/Game/InventorySystemPro/Blueprints/Actors/Pickup/BP_ItemSpawnTrigger.BP_ItemSpawnTrigger)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: If the owning actor is the server, spawn the item (EdGraphNode_Comment)
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Get bHasItemSpawned (K2Node_VariableGet)
+      Pin: bHasItemSpawned (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: Condition (bool) Dir=In
+        -> Get bHasItemSpawned.bHasItemSpawned
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Cast To Character.execute
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Player Controlled
+Target is Pawn.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Is Player Controlled
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: Condition (bool) Dir=In
+        -> Is Player Controlled
+Target is Pawn.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Get ItemPickup (K2Node_VariableGet)
+      Pin: ItemPickup (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get bWaitForExternalSpawnEvent.self
+        -> Spawn Item by External Event Server
+Target is BP Item Pickup
+Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemPickup.ItemPickup
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get bWaitForExternalSpawnEvent (K2Node_VariableGet)
+      Pin: bWaitForExternalSpawnEvent (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get ItemPickup.ItemPickup
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Get bWaitForExternalSpawnEvent.bWaitForExternalSpawnEvent
+      Pin: then (exec) Dir=Out
+        -> Switch Has Authority.Execute
+      Pin: else (exec) Dir=Out
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Branch.then
+      Pin: Authority (exec) Dir=Out
+        -> Spawn Item by External Event Server
+Target is BP Item Pickup
+Replicated To Server (if owning client).execute
+      Pin: Remote (exec) Dir=Out
+    Node: Set bHasItemSpawned (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Spawn Item by External Event Server
+Target is BP Item Pickup
+Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: bHasItemSpawned (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Spawn Item by External Event Server
+Target is BP Item Pickup
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: then (exec) Dir=Out
+        -> Set bHasItemSpawned.execute
+      Pin: self (object) Dir=In
+        -> Get ItemPickup.ItemPickup
+    Node: Spawn Item when player first walks into the trigger. (EdGraphNode_Comment)
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bHasItemSpawned.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

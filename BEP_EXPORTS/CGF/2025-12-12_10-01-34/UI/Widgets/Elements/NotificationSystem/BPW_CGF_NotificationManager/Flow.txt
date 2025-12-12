@@ -1,0 +1,933 @@
+Blueprint: BPW_CGF_NotificationManager (/Game/CoreGameFramework/UI/Widgets/Elements/NotificationSystem/BPW_CGF_NotificationManager.BPW_CGF_NotificationManager)
+  Graph: EventGraph
+    Node: AddToQueue
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: NotificationData (struct) Dir=Out
+        -> Add.NewItem
+        -> Break F CGF Notification Data.F_CGF_Notification_Data
+    Node: PlayNotification
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Notification Data.execute
+      Pin: Notification Data (struct) Dir=Out
+        -> Set Notification Data.Notification Data
+    Node: CheckQueue
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Create BPW CGF Notification Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Notification Widget.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Notification Widget.Notification Widget
+      Pin: OwningPlayer (object) Dir=In
+      Pin: Notification Data (struct) Dir=In
+        -> GET.Output
+      Pin: NotificationIndex (int) Dir=In
+        -> First in First Out?.CurrentIndex
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> Is Not Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> CheckQueue
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Create BPW CGF Notification Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Notification Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Notification Data.then
+      Pin: then (exec) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.execute
+      Pin: Notification Data (struct) Dir=In
+        -> Set Notification Data.Output_Get
+      Pin: Output_Get (struct) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.F_CGF_Notification_Data
+      Pin: self (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+    Node: Play Notification Anim
+Target is BPW CGF Notification (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Notification Data.then
+      Pin: then (exec) Dir=Out
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.execute
+      Pin: self (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Set Notification Data.Output_Get
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: Dimension 1 (int) Dir=In
+        -> First in First Out?.CurrentIndex
+      Pin: Output (struct) Dir=Out
+        -> Play Notification
+Target is BPW CGF Notification Manager.Notification Data
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Play Notification
+Target is BPW CGF Notification Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set NotificationIndex.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Notification Data (struct) Dir=In
+        -> GET.Output
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> Add.TargetArray
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> AddToQueue
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: NewItem (struct) Dir=In
+        -> AddToQueue
+Custom Event.NotificationData
+      Pin: ReturnValue (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Add Child
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Notification Animation Finished.execute
+      Pin: self (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Content (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Border (K2Node_VariableGet)
+      Pin: Border (object) Dir=Out
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.Border
+      Pin: self (object) Dir=In
+    Node: OnNotificationAnimationFinished_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then (exec) Dir=Out
+        -> Set OnFinishedNotificationREF.execute
+      Pin: Animation (object) Dir=Out
+      Pin: Notification (object) Dir=Out
+        -> Set OnFinishedNotificationREF.OnFinishedNotificationREF
+      Pin: NotificationIndex (int) Dir=Out
+      Pin: NotificationType (byte) Dir=Out
+        -> Equal (Enum).A
+        -> Equal (Enum).A
+    Node: Bind Event to On Notification Animation Finished (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Add Child
+Target is Panel Widget.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Notification Animation Started.execute
+      Pin: self (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+      Pin: Delegate (delegate) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Bind Event to On Notification Animation Finished.self
+      Pin: self (object) Dir=In
+    Node: Get Notification Data (K2Node_VariableGet)
+      Pin: Notification Data (struct) Dir=Out
+        -> Break F CGF Notification Data.F_CGF_Notification_Data
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get OnFinishedNotificationREF.OnFinishedNotificationREF
+    Node: Set Notification Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> PlayNotification
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Notification Data.execute
+      Pin: Notification Data (struct) Dir=In
+        -> PlayNotification
+Custom Event.Notification Data
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Notification Data.Notification Data
+      Pin: self (object) Dir=In
+    Node: Check Queue
+Target is BPW CGF Notification Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break F CGF Notification Data (K2Node_BreakStruct)
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Get Notification Data.Notification Data
+      Pin: TextData_69_BA57E14E46F2F3B4F08C989BB1C1E047 (struct) Dir=Out
+      Pin: Scroll_In_PlayBackDirection_48_5AD09D0F43E3831AE3CADC8CB351EFB0 (byte) Dir=Out
+        -> Switch on EUMGSequencePlayMode.Selection
+      Pin: Scroll_In_PlaybackTimeInSeconds_42_569563B443AB182A4DDD7BA2999CEB1E (real) Dir=Out
+        -> float + float.A
+      Pin: Scroll_In_TimeToDisplayWidgetForAfterScroll_68_F1AA974844A426BFD2A86AB743B9922F (real) Dir=Out
+        -> float + float.B
+    Node: Switch on EUMGSequencePlayMode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Selection (byte) Dir=In
+        -> Break F CGF Notification Data.Scroll_In_PlayBackDirection_48_5AD09D0F43E3831AE3CADC8CB351EFB0
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Forward (exec) Dir=Out
+        -> Delay.execute
+      Pin: Reverse (exec) Dir=Out
+        -> Remove Index.execute
+      Pin: PingPong (exec) Dir=Out
+    Node: Play Notification Anim
+Target is BPW CGF Notification (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Notification Data.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get OnFinishedNotificationREF.OnFinishedNotificationREF
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Set members in F CGF Notification Data.StructOut
+    Node: Set members in F CGF Notification Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.execute
+      Pin: StructRef (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StructOut (struct) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.F_CGF_Notification_Data
+      Pin: Scroll_In_WidgetStartingPosition_41_B418D6B3420494A73CCFCBA3CF618FD2 (struct) Dir=In
+      Pin: Scroll_In_PlayBackDirection_48_5AD09D0F43E3831AE3CADC8CB351EFB0 (byte) Dir=In
+    Node: OnNotificationAnimationStarted_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Notification Animation Started.Delegate
+      Pin: then (exec) Dir=Out
+        -> Set Animation.execute
+      Pin: Animation (object) Dir=Out
+        -> Set Animation.Animation
+      Pin: Notification (object) Dir=Out
+      Pin: NotificationIndex (int) Dir=Out
+    Node: Bind Event to On Notification Animation Started (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On Notification Animation Finished.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+      Pin: Delegate (delegate) Dir=In
+        -> OnNotificationAnimationStarted_Event
+Custom Event.OutputDelegate
+    Node: Set Animation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OnNotificationAnimationStarted_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: Animation (object) Dir=In
+        -> OnNotificationAnimationStarted_Event
+Custom Event.Animation
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Check Queue
+Target is BPW CGF Notification Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Notification Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set OnFinishedNotificationREF.execute
+      Pin: self (object) Dir=In
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Add.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Check Queue
+Target is BPW CGF Notification Manager.execute
+      Pin: else (exec) Dir=Out
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: Dimension 1 (int) Dir=In
+        -> First in First Out?.CurrentIndex
+      Pin: Output (struct) Dir=Out
+        -> Create BPW CGF Notification Widget.Notification Data
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Set NotificationIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Notification Widget.then
+      Pin: then (exec) Dir=Out
+        -> Play Notification
+Target is BPW CGF Notification Manager.execute
+      Pin: NotificationIndex (int) Dir=In
+        -> First in First Out?.CurrentIndex
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set Notification Widget.Output_Get
+    Node: Set Notification Widget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create BPW CGF Notification Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set NotificationIndex.execute
+      Pin: Notification Widget (object) Dir=In
+        -> Create BPW CGF Notification Widget.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set NotificationIndex.self
+      Pin: self (object) Dir=In
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> Remove Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: Remove Index (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EUMGSequencePlayMode.Reverse
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: IndexToRemove (int) Dir=In
+        -> First in First Out?.CurrentIndex
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Set Notification Data.self
+      Pin: self (object) Dir=In
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove Index.then
+      Pin: then (exec) Dir=Out
+        -> Set Notification Widget.execute
+      Pin: self (object) Dir=In
+        -> Get OnFinishedNotificationREF.OnFinishedNotificationREF
+    Node: Set Notification Widget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Remove from Parent
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Check Queue
+Target is BPW CGF Notification Manager.execute
+      Pin: Notification Widget (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Border Pre Add Setup
+Target is BPW CGF Notification Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Notification Anim
+Target is BPW CGF Notification.then
+      Pin: then (exec) Dir=Out
+        -> Add Child
+Target is Panel Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Border (object) Dir=In
+        -> Get Border.Border
+      Pin: BorderOut (object) Dir=Out
+        -> Select.NewEnumerator2
+        -> Select.NewEnumerator1
+        -> Select.NewEnumerator0
+        -> Select.NewEnumerator3
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.self
+      Pin: self (object) Dir=In
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Add Child
+Target is Panel Widget.Content
+      Pin: self (object) Dir=In
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Bind Event to On Notification Animation Started.self
+      Pin: self (object) Dir=In
+    Node: SetCurrentlyPlayingAnimation. NotCurrently In Use But Could Be Usefull (EdGraphNode_Comment)
+    Node: Animation Finished (EdGraphNode_Comment)
+    Node: Play The Anim 1 Time In Reverse If Its going Forward. (EdGraphNode_Comment)
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EUMGSequencePlayMode.Forward
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Notification Data.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: LatentInfo (struct) Dir=In
+    Node: Remove The Notification And Check Next In Line. (EdGraphNode_Comment)
+    Node: BIND
+OnNotificationAnimationFinished_Event (EdGraphNode_Comment)
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break F CGF Notification Data.Scroll_In_PlaybackTimeInSeconds_42_569563B443AB182A4DDD7BA2999CEB1E
+      Pin: B (real) Dir=In
+        -> Break F CGF Notification Data.Scroll_In_TimeToDisplayWidgetForAfterScroll_68_F1AA974844A426BFD2A86AB743B9922F
+      Pin: ReturnValue (real) Dir=Out
+        -> Delay.Duration
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: A (byte) Dir=In
+        -> OnNotificationAnimationFinished_Event
+Custom Event.NotificationType
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set OnFinishedNotificationREF.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove Index.execute
+      Pin: else (exec) Dir=Out
+        -> Switch on EUMGSequencePlayMode.execute
+    Node: Set OnFinishedNotificationREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OnNotificationAnimationFinished_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OnFinishedNotificationREF (object) Dir=In
+        -> OnNotificationAnimationFinished_Event
+Custom Event.Notification
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get OnFinishedNotificationREF (K2Node_VariableGet)
+      Pin: OnFinishedNotificationREF (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get OnFinishedNotificationREF (K2Node_VariableGet)
+      Pin: OnFinishedNotificationREF (object) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.self
+      Pin: self (object) Dir=In
+    Node: Get OnFinishedNotificationREF (K2Node_VariableGet)
+      Pin: OnFinishedNotificationREF (object) Dir=Out
+        -> Get Notification Data.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Notification Data.Notification Data
+      Pin: OutputPin (struct) Dir=Out
+        -> Set members in F CGF Notification Data.StructRef
+    Node: First in First Out? (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurrentIndex (int) Dir=Out
+        -> Remove Index.IndexToRemove
+    Node: First in First Out? (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurrentIndex (int) Dir=Out
+        -> GET.Dimension 1
+        -> Create BPW CGF Notification Widget.NotificationIndex
+    Node: First in First Out? (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurrentIndex (int) Dir=Out
+        -> GET.Dimension 1
+        -> Set NotificationIndex.NotificationIndex
+    Node: Set OnFinishedNotificationREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Check Queue
+Target is BPW CGF Notification Manager.then
+      Pin: then (exec) Dir=Out
+      Pin: OnFinishedNotificationREF (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set OnFinishedNotificationREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: OnFinishedNotificationREF (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (delegate) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (delegate) Dir=Out
+        -> Bind Event to On Notification Animation Finished.Delegate
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (delegate) Dir=In
+        -> OnNotificationAnimationFinished_Event
+Custom Event.OutputDelegate
+      Pin: OutputPin (delegate) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get VerticalBox_35 (K2Node_VariableGet)
+      Pin: VerticalBox_35 (object) Dir=Out
+        -> Select.NewEnumerator4
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator3 (object) Dir=In
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.BorderOut
+      Pin: NewEnumerator0 (object) Dir=In
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.BorderOut
+      Pin: NewEnumerator1 (object) Dir=In
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.BorderOut
+      Pin: NewEnumerator2 (object) Dir=In
+        -> Border Pre Add Setup
+Target is BPW CGF Notification Manager.BorderOut
+      Pin: NewEnumerator4 (object) Dir=In
+        -> Get VerticalBox_35.VerticalBox_35
+      Pin: Index (byte) Dir=In
+        -> Break F CGF Notification Data.Scroll_In_AnimationType_40_F25A39684393FE77A22BF28E765D9650
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Child
+Target is Panel Widget.self
+    Node: Get Notification Data (K2Node_VariableGet)
+      Pin: Notification Data (struct) Dir=Out
+        -> Break F CGF Notification Data.F_CGF_Notification_Data
+      Pin: self (object) Dir=In
+    Node: Break F CGF Notification Data (K2Node_BreakStruct)
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Get Notification Data.Notification Data
+      Pin: TrayImage_72_029A3A4440FDD512DF282FB78D8E30DE (softobject) Dir=Out
+      Pin: Scroll_In_AnimationType_40_F25A39684393FE77A22BF28E765D9650 (byte) Dir=Out
+        -> Select.Index
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: A (byte) Dir=In
+        -> OnNotificationAnimationFinished_Event
+Custom Event.NotificationType
+      Pin: B (byte) Dir=In
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Break F CGF Notification Data (K2Node_BreakStruct)
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> AddToQueue
+Custom Event.NotificationData
+      Pin: TrayImage_72_029A3A4440FDD512DF282FB78D8E30DE (softobject) Dir=Out
+      Pin: Scroll_In_AnimationType_40_F25A39684393FE77A22BF28E765D9650 (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Break F CGF Notification Data.Scroll_In_AnimationType_40_F25A39684393FE77A22BF28E765D9650
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Create BPW CGF Notification Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Add Child
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set NotificationIndex.then
+      Pin: then (exec) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.execute
+      Pin: self (object) Dir=In
+        -> Get VerticalBox_35.VerticalBox_35
+      Pin: Content (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Add Child
+Target is Panel Widget.Content
+      Pin: self (object) Dir=In
+    Node: Animation Finished (EdGraphNode_Comment)
+    Node: Get VerticalBox_35 (K2Node_VariableGet)
+      Pin: VerticalBox_35 (object) Dir=Out
+        -> Add Child
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Create BPW CGF Notification Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Notification Widget.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Notification Widget.Notification Widget
+      Pin: OwningPlayer (object) Dir=In
+      Pin: Notification Data (struct) Dir=In
+        -> GET.Output
+      Pin: NotificationIndex (int) Dir=In
+        -> First in First Out?.CurrentIndex
+    Node: Set Notification Widget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create BPW CGF Notification Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Notification Data.execute
+      Pin: Notification Widget (object) Dir=In
+        -> Create BPW CGF Notification Widget.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set NotificationIndex.self
+        -> Set Notification Data.self
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: Dimension 1 (int) Dir=In
+        -> First in First Out?.CurrentIndex
+      Pin: Output (struct) Dir=Out
+        -> Create BPW CGF Notification Widget.Notification Data
+    Node: Play Notification
+Target is BPW CGF Notification Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Notification Data (struct) Dir=In
+        -> GET.Output
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: Dimension 1 (int) Dir=In
+        -> First in First Out?.CurrentIndex
+      Pin: Output (struct) Dir=Out
+        -> Play Notification
+Target is BPW CGF Notification Manager.Notification Data
+        -> Set Notification Data.Notification Data
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Set NotificationIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Notification Data.then
+      Pin: then (exec) Dir=Out
+        -> Add Child
+Target is Panel Widget.execute
+      Pin: NotificationIndex (int) Dir=In
+        -> First in First Out?.CurrentIndex
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set Notification Widget.Output_Get
+    Node: First in First Out? (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurrentIndex (int) Dir=Out
+        -> GET.Dimension 1
+        -> Set NotificationIndex.NotificationIndex
+    Node: First in First Out? (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurrentIndex (int) Dir=Out
+        -> GET.Dimension 1
+        -> Create BPW CGF Notification Widget.NotificationIndex
+    Node: Set Notification Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Notification Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set NotificationIndex.execute
+      Pin: Notification Data (struct) Dir=In
+        -> GET.Output
+      Pin: Output_Get (struct) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.F_CGF_Notification_Data
+      Pin: self (object) Dir=In
+        -> Set Notification Widget.Output_Get
+    Node: Play Notification Anim
+Target is BPW CGF Notification (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Child
+Target is Panel Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Notification Widget.Notification Widget
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Set Notification Data.Output_Get
+    Node: Get Notification Widget (K2Node_VariableGet)
+      Pin: Notification Widget (object) Dir=Out
+        -> Play Notification Anim
+Target is BPW CGF Notification.self
+      Pin: self (object) Dir=In
+  Graph: BorderPreAddSetup
+    Node: BorderPreAddSetup (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Local_Border.execute
+      Pin: Border (object) Dir=Out
+    Node: Set Horizontal Alignment
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set HorizontalAlignment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Local_Border.Local_Border
+      Pin: InHorizontalAlignment (byte) Dir=In
+        -> Set HorizontalAlignment.Output_Get
+    Node: Set Vertical Alignment
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set VerticalAlignment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Local_Border.Local_Border
+      Pin: InVerticalAlignment (byte) Dir=In
+        -> Set VerticalAlignment.Output_Get
+    Node: Set HorizontalAlignment (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Horizontal Alignment
+Target is Border.execute
+      Pin: HorizontalAlignment (byte) Dir=In
+        -> Break F CGF Notification Data.HorizontalAllignment_59_02FF994B4235024A5178EE88C5912DAE
+      Pin: Output_Get (byte) Dir=Out
+        -> Set Horizontal Alignment
+Target is Border.InHorizontalAlignment
+      Pin: self (object) Dir=In
+        -> Get Local_Border.Local_Border
+    Node: Set VerticalAlignment (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Vertical Alignment
+Target is Border.execute
+      Pin: VerticalAlignment (byte) Dir=In
+        -> Break F CGF Notification Data.VerticalAllignment_60_79C69AFA46C50D69D60BA793255BA124
+      Pin: Output_Get (byte) Dir=Out
+        -> Set Vertical Alignment
+Target is Border.InVerticalAlignment
+      Pin: self (object) Dir=In
+        -> Get Local_Border.Local_Border
+    Node: Break F CGF Notification Data (K2Node_BreakStruct)
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Get Notification Data.Notification Data
+      Pin: TrayImage_72_029A3A4440FDD512DF282FB78D8E30DE (softobject) Dir=Out
+      Pin: Scroll_In_AnimationType_40_F25A39684393FE77A22BF28E765D9650 (byte) Dir=Out
+        -> Switch on E_CGF_Notification_Display_Animation_Type.Selection
+    Node: Get Notification Data (K2Node_VariableGet)
+      Pin: Notification Data (struct) Dir=Out
+        -> Break F CGF Notification Data.F_CGF_Notification_Data
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+        -> Sequence.then_0
+      Pin: then_0 (exec) Dir=Out
+        -> Set VerticalAlignment.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set HorizontalAlignment.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_Notification_Display_Animation_Type.NewEnumerator3
+        -> Switch on E_CGF_Notification_Display_Animation_Type.NewEnumerator0
+        -> Switch on E_CGF_Notification_Display_Animation_Type.NewEnumerator1
+        -> Switch on E_CGF_Notification_Display_Animation_Type.NewEnumerator2
+      Pin: then_0 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Clear Children
+Target is Panel Widget.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Clear Children
+Target is Panel Widget.then
+      Pin: BorderOut (object) Dir=In
+        -> Get Local_Border.Local_Border
+    Node: Clear Children
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Local_Border.Local_Border
+    Node: Get Local_Border (K2Node_VariableGet)
+      Pin: Local_Border (object) Dir=Out
+        -> Clear Children
+Target is Panel Widget.self
+        -> Return Node.BorderOut
+        -> Return Node.BorderOut
+    Node: Switch on E_CGF_Notification_Display_Animation_Type (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Set Local_Border.then
+      Pin: Selection (byte) Dir=In
+        -> Break F CGF Notification Data.Scroll_In_AnimationType_40_F25A39684393FE77A22BF28E765D9650
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator3 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: NewEnumerator4 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Break F CGF Notification Data (K2Node_BreakStruct)
+      Pin: F_CGF_Notification_Data (struct) Dir=In
+        -> Get Notification Data.Notification Data
+      Pin: TrayImage_72_029A3A4440FDD512DF282FB78D8E30DE (softobject) Dir=Out
+      Pin: HorizontalAllignment_59_02FF994B4235024A5178EE88C5912DAE (byte) Dir=Out
+        -> Set HorizontalAlignment.HorizontalAlignment
+      Pin: VerticalAllignment_60_79C69AFA46C50D69D60BA793255BA124 (byte) Dir=Out
+        -> Set VerticalAlignment.VerticalAlignment
+    Node: Get Notification Data (K2Node_VariableGet)
+      Pin: Notification Data (struct) Dir=Out
+        -> Break F CGF Notification Data.F_CGF_Notification_Data
+      Pin: self (object) Dir=In
+    Node: Get Tray_Border (K2Node_VariableGet)
+      Pin: Tray_Border (object) Dir=Out
+        -> Select.NewEnumerator4
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator3 (object) Dir=In
+        -> Get Border.Border
+      Pin: NewEnumerator0 (object) Dir=In
+        -> Get Border.Border
+      Pin: NewEnumerator1 (object) Dir=In
+        -> Get Border.Border
+      Pin: NewEnumerator2 (object) Dir=In
+        -> Get Border.Border
+      Pin: NewEnumerator4 (object) Dir=In
+        -> Get Tray_Border.Tray_Border
+      Pin: Index (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Local_Border.Local_Border
+    Node: Get Border (K2Node_VariableGet)
+      Pin: Border (object) Dir=Out
+        -> Select.NewEnumerator3
+        -> Select.NewEnumerator0
+        -> Select.NewEnumerator1
+        -> Select.NewEnumerator2
+      Pin: self (object) Dir=In
+    Node: Set Local_Border (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> BorderPreAddSetup.then
+      Pin: then (exec) Dir=Out
+        -> Switch on E_CGF_Notification_Display_Animation_Type.execute
+      Pin: Local_Border (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Local_Border (K2Node_VariableGet)
+      Pin: Local_Border (object) Dir=Out
+        -> Set HorizontalAlignment.self
+        -> Set Horizontal Alignment
+Target is Border.self
+    Node: Get Local_Border (K2Node_VariableGet)
+      Pin: Local_Border (object) Dir=Out
+        -> Set VerticalAlignment.self
+        -> Set Vertical Alignment
+Target is Border.self
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_Notification_Display_Animation_Type.NewEnumerator4
+      Pin: then_0 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Clear Children
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get VerticalBox_35.VerticalBox_35
+    Node: Get VerticalBox_35 (K2Node_VariableGet)
+      Pin: VerticalBox_35 (object) Dir=Out
+        -> Clear Children
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Clear Children
+Target is Panel Widget.then
+        -> Sequence.then_1
+      Pin: BorderOut (object) Dir=In
+        -> Get Local_Border.Local_Border
+  Graph: FirstInFirstOut?
+    Node: FirstInFirstOut? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: CurrentIndex (int) Dir=In
+        -> Select Int.ReturnValue
+    Node: Select Int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+      Pin: B (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get First_In_First_Out?.First_In_First_Out?
+      Pin: ReturnValue (int) Dir=Out
+        -> Return Node.CurrentIndex
+    Node: Get First_In_First_Out? (K2Node_VariableGet)
+      Pin: First_In_First_Out? (bool) Dir=Out
+        -> Select Int.bPickA
+      Pin: self (object) Dir=In
+    Node: Get Notification_Queue (K2Node_VariableGet)
+      Pin: Notification_Queue (struct) Dir=Out
+        -> Last Index.TargetArray
+        -> Is Not Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: ReturnValue (int) Dir=Out
+        -> Select Int.B
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Notification_Queue.Notification_Queue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> FirstInFirstOut?.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: CurrentIndex (int) Dir=In
+  Graph: OnAddedToQueue
+    Node: OnAddedToQueue (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Notification (object) Dir=Out
+      Pin: ChangedIndex (int) Dir=Out

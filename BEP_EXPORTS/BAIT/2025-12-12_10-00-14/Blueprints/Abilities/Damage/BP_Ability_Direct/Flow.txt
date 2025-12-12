@@ -1,0 +1,115 @@
+Blueprint: BP_Ability_Direct (/Game/BossAIToolkit/Blueprints/Abilities/Damage/BP_Ability_Direct.BP_Ability_Direct)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Force Rotate AI
+Target is BP Boss Ability Base.execute
+      Pin: self (object) Dir=In
+    Node: Event OnBeginDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CanDealDamage.execute
+      Pin: Duration (real) Dir=Out
+    Node: Event OnEndDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CanDealDamage.execute
+    Node: Get DamagedActors (K2Node_VariableGet)
+      Pin: DamagedActors (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CanDealDamage.then
+      Pin: then (exec) Dir=Out
+        -> Reset Rotation
+Target is BP Boss Ability Base.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get DamagedActors.DamagedActors
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Force Rotate AI
+Target is BP Boss Ability Base.LookAtLocation
+    Node: Set CanDealDamage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event OnBeginDamage.then
+      Pin: then (exec) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.execute
+      Pin: CanDealDamage (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CanDealDamage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndDamage.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: CanDealDamage (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Force Rotate AI
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: LookAtLocation (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: LookAtActor (object) Dir=In
+      Pin: UseActor (bool) Dir=In
+    Node: Reset Rotation
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.DamagedActor
+      Pin: self (object) Dir=In
+    Node: Apply Ability Damage
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CanDealDamage.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Radial (bool) Dir=In
+      Pin: Radius (real) Dir=In
+      Pin: AddToDamagedActors (bool) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.Origin
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

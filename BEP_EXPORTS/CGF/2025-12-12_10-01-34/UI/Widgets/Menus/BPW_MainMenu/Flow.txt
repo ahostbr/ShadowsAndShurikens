@@ -1,0 +1,258 @@
+Blueprint: BPW_MainMenu (/Game/CoreGameFramework/UI/Widgets/Menus/BPW_MainMenu.BPW_MainMenu)
+  Graph: EventGraph
+    Node: Constuct (EdGraphNode_Comment)
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set DefaultFocusableWidget.execute
+    Node: Get ShowNews (K2Node_VariableGet)
+      Pin: ShowNews (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get ShowNews.ShowNews
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set As BP GI.As BP GI
+    Node: Set As BP GI (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DefaultFocusableWidget.then
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: As BP GI (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+        -> Get UsingGamepad?.self
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Event SetFocusToDefaultFocusableWidget
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Set DefaultFocusableWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set As BP GI.execute
+      Pin: DefaultFocusableWidget (object) Dir=In
+        -> Get BTN.BTN
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_MainMenuContent (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuContent (object) Dir=Out
+        -> Get BPW_CGF_MainMenuNewGameButton.self
+      Pin: self (object) Dir=In
+    Node: Get DefaultFocusableWidget (K2Node_VariableGet)
+      Pin: DefaultFocusableWidget (object) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get UsingGamepad? (K2Node_VariableGet)
+      Pin: UsingGamepad? (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+        -> Set As BP GI.Output_Get
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set As BP GI.then
+      Pin: then (exec) Dir=Out
+        -> Set Game State
+Target is BP CGF Game State.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PC.PlayerController
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get UsingGamepad?.UsingGamepad?
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set bShowMouseCursor.bShowMouseCursor
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Set bShowMouseCursor.self
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Game State
+Target is BP CGF Game State.then
+      Pin: then_0 (exec) Dir=Out
+        -> CGF Do Once This Interval.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+    Node: Get BPW_CGF_MainMenuNewGameButton (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuNewGameButton (object) Dir=Out
+        -> Get BTN.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_MainMenuContent.BPW_CGF_MainMenuContent
+    Node: Get BTN (K2Node_VariableGet)
+      Pin: BTN (object) Dir=Out
+        -> Set DefaultFocusableWidget.DefaultFocusableWidget
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_MainMenuNewGameButton.BPW_CGF_MainMenuNewGameButton
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get DefaultFocusableWidget.DefaultFocusableWidget
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SetFocusToDefaultFocusableWidget
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+      Pin: CGF Game State (object) Dir=Out
+        -> Set Game State
+Target is BP CGF Game State.self
+    Node: Set Game State
+Target is BP CGF Game State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> Get GS.CGF Game State
+      Pin: CGFGameState (byte) Dir=In
+    Node: CGF Do Once This Interval (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Interval (real) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+    Node: Get As BP GI (K2Node_VariableGet)
+      Pin: As BP GI (object) Dir=Out
+        -> Play Meta Sound
+Target is BP CGF Game Instance.self
+        -> Play Sound CUE
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Play Meta Sound
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As BP GI.As BP GI
+      Pin: MetaSound_Data (struct) Dir=In
+    Node: Play Sound CUE
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As BP GI.As BP GI
+      Pin: SoundCueData (struct) Dir=In
+        -> Make F CGF Sound Cue Data.F_CGF_SoundCueData
+    Node: Make F CGF Sound Cue Data (K2Node_MakeStruct)
+      Pin: F_CGF_SoundCueData (struct) Dir=Out
+        -> Play Sound CUE
+Target is BP CGF Game Instance.SoundCueData
+      Pin: SoundFile_23_0E0781BB4E51F2D16A8490BF21871534 (object) Dir=In
+      Pin: NameInDTRow_41_41E1CA844289C29513DA0A99F0D2FF95 (name) Dir=In
+      Pin: IsMusic?_40_2400E3774C08F1A08B741FB441E17F40 (bool) Dir=In
+      Pin: IsUISound?_25_04F013FB458A0CF1589CE0ACD48624F3 (bool) Dir=In
+      Pin: SFXLocation_26_56FE00BF46AAAED1A69C01A1C6222ADA (struct) Dir=In
+      Pin: SFXRotation_27_C2DE5D164067D560F5A33CA46E159D1C (struct) Dir=In
+      Pin: SFXAttenuationSettings_28_0B60D77944AD35FD4DD01A942ADDE166 (struct) Dir=In
+      Pin: UseAttenuation?_29_84539F0345506990611127BB0532C6DD (bool) Dir=In
+      Pin: CanRestart_30_A1D849C34B691FA6263322A0ADE8A5FE (bool) Dir=In
+      Pin: PersistAcrossLevelTransition_31_20ECB7F7449603CE71FABE8766FBD5D0 (bool) Dir=In
+      Pin: AutoDestroy_32_4EA46D514B023CF4DC272D8B8322506D (bool) Dir=In
+      Pin: Fade?_42_C0792A3245CD2302C444808108310E7F (bool) Dir=In
+      Pin: FadeInLength_36_366243304CB3763329AC40BFF48AC1F2 (real) Dir=In
+      Pin: FadeOutLength_35_009C12DC436021C8344A5FB1456C4732 (real) Dir=In
+  Graph: Sequencer Events
+  Graph: DoCustomNavigation
+    Node: DoCustomNavigation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EUINavigation.execute
+      Pin: Navigation (byte) Dir=Out
+        -> Switch on EUINavigation.Selection
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EUINavigation.Up
+      Pin: ReturnValue (object) Dir=In
+        -> Get BPW_CGF_MainMenuNewGameButton.BPW_CGF_MainMenuNewGameButton
+    Node: Switch on EUINavigation (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> DoCustomNavigation.then
+      Pin: Selection (byte) Dir=In
+        -> DoCustomNavigation.Navigation
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Left (exec) Dir=Out
+      Pin: Right (exec) Dir=Out
+      Pin: Up (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Down (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Next (exec) Dir=Out
+      Pin: Previous (exec) Dir=Out
+      Pin: Invalid (exec) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EUINavigation.Down
+      Pin: ReturnValue (object) Dir=In
+        -> Get BPW_CGF_MainMenuNewGameButton.BPW_CGF_MainMenuNewGameButton
+    Node: Get BPW_CGF_MainMenuContent (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuContent (object) Dir=Out
+        -> Get BPW_CGF_MainMenuNewGameButton.self
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_MainMenuNewGameButton (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuNewGameButton (object) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_MainMenuContent.BPW_CGF_MainMenuContent
+    Node: Get BPW_CGF_MainMenuContent (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuContent (object) Dir=Out
+        -> Get BPW_CGF_MainMenuNewGameButton.self
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_MainMenuNewGameButton (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuNewGameButton (object) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_MainMenuContent.BPW_CGF_MainMenuContent
+  Graph: OnMainMenuIsVisible
+    Node: OnMainMenuIsVisible (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Vis (byte) Dir=Out

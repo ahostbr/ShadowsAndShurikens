@@ -1,0 +1,3467 @@
+Blueprint: BPW_CGF_GameProfileManager (/Game/CoreGameFramework/UI/Widgets/Elements/SaveSystem/BPW_CGF_GameProfileManager.BPW_CGF_GameProfileManager)
+  Graph: EventGraph
+    Node: On Text Changed (ProfileCreation_EditableTextBox) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Return Clean Profile Name
+Target is BPW CGF Game Profile Manager.execute
+      Pin: Text (text) Dir=Out
+        -> To String (Text).InText
+    Node: Return Clean Profile Name
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Text Changed (ProfileCreation_EditableTextBox).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: GivenProfileNameToTest (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: CleanedProfileName (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Return Clean Profile Name
+Target is BPW CGF Game Profile Manager.CleanedProfileName
+      Pin: ReturnValue (text) Dir=Out
+        -> To String (Text).InText
+    Node: On Text Changed Clean It (EdGraphNode_Comment)
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> On Text Changed (ProfileCreation_EditableTextBox).Text
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Clean Profile Name
+Target is BPW CGF Game Profile Manager.GivenProfileNameToTest
+    Node: Get ProfileCreation_EditableTextBox (K2Node_VariableGet)
+      Pin: ProfileCreation_EditableTextBox (object) Dir=Out
+        -> Get Text.self
+      Pin: self (object) Dir=In
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (text) Dir=Out
+        -> To String (Text).InText
+      Pin: self (object) Dir=In
+        -> Get ProfileCreation_EditableTextBox.ProfileCreation_EditableTextBox
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Text.Text
+      Pin: ReturnValue (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Is Empty.InString
+    Node: Add Item
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+        -> Set HasProfileBeenMade?.execute
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Construct BP CGF Profiles Listview Entry (K2Node_GenericCreateObject)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+    Node: Set List View Data
+Target is BP CGF Profiles Listview Entry (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Add Item
+Target is List View.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: GameSettings (struct) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: ProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SlotmodeEnabled? (bool) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> Return First Auto Save Path.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is List View.Item
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Create Game Profile
+Target is BP CGF Game Instance.then
+      Pin: Condition (bool) Dir=In
+        -> Create Game Profile
+Target is BP CGF Game Instance.Success?
+      Pin: then (exec) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.execute
+      Pin: else (exec) Dir=Out
+        -> Make Notification
+Target is BPW CGF Game Profile Manager.execute
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Add Item
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: On Item Selection Changed (ProfilesListView) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Item (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: bIsSelected (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Get Index for Item
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Get Index for Item
+Target is List View (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> Select Int.A
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Keys.TargetMap
+        -> Is Not Empty.TargetMap
+      Pin: LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6 (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Add Item
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Add Item
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Construct BP CGF Profiles Listview Entry (K2Node_GenericCreateObject)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+    Node: Set List View Data
+Target is BP CGF Profiles Listview Entry (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+        -> Add Item
+Target is List View.execute
+      Pin: self (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: GameSettings (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SlotmodeEnabled? (bool) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> GET.Output
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is List View.Item
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+      Pin: else (exec) Dir=Out
+        -> Catch Empty Profiles
+Target is BPW CGF Game Profile Manager.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.GameSettings
+        -> Reroute Node.InputPin
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Keys (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.execute
+      Pin: Array Element (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> SetFocusToProfileSlotWidget
+Collapsed Graph.execute
+    Node: Is Not Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+        -> Catch Empty Profiles
+Target is BPW CGF Game Profile Manager.Empty?
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.ProfileName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.ProfileName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Create Game Profile
+Target is BP CGF Game Instance.ProfileName
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SearchIn (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Substring (string) Dir=In
+      Pin: bUseCase (bool) Dir=In
+      Pin: bSearchFromEnd (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Return Clean Profile Name
+Target is BPW CGF Game Profile Manager.then
+      Pin: Condition (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Text.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: Get ProfileCreation_EditableTextBox (K2Node_VariableGet)
+      Pin: ProfileCreation_EditableTextBox (object) Dir=Out
+        -> Set Text.self
+        -> Set Text.self
+      Pin: self (object) Dir=In
+    Node: Set Text (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Text (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProfileCreation_EditableTextBox.ProfileCreation_EditableTextBox
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Replace.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text.Text
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> On Item Selection Changed (ProfilesListView).Item
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Construct \ Load Data (EdGraphNode_Comment)
+    Node: Make New Profile (EdGraphNode_Comment)
+    Node: Selection Changed (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Replace.SourceString
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Left.ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Contains.SearchIn
+        -> Reroute Node.InputPin
+        -> To Text (String).InString
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Text (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: Text (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProfileCreation_EditableTextBox.ProfileCreation_EditableTextBox
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Text.execute
+    Node: Left (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: Count (int) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Left.SourceString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text.Text
+    Node: Is Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> MakeNewProfile
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Make Notification
+Target is BPW CGF Game Profile Manager.execute
+      Pin: else (exec) Dir=Out
+        -> Create Game Profile
+Target is BP CGF Game Instance.execute
+    Node: LoadProfilesListView
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.execute
+    Node: Load Profiles List View
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear List Items
+Target is List View.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Clear List Items
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Clear List Items
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Load Profiles List View
+Target is BPW CGF Game Profile Manager.execute
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+        -> Get SlotsListView.SlotsListView
+    Node: Get SlotsListView (K2Node_VariableGet)
+      Pin: SlotsListView (object) Dir=Out
+        -> Clear List Items
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Not Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal Exactly (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set SelectedProfileName.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set SelectedProfileName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Clear List Items
+Target is List View.execute
+      Pin: SelectedProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Break F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set SelectedProfileName.SelectedProfileName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Break F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: OutputPin (string) Dir=Out
+        -> Not Equal Exactly (String).A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Keys.Keys
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> For Each Loop.Array
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Clear List Items
+Target is List View.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ProfileSlotHeaderText (K2Node_VariableGet)
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ResetListview
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Clear List Items
+Target is List View.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get SelectedProfileName (K2Node_VariableGet)
+      Pin: SelectedProfileName (string) Dir=Out
+        -> Append.B
+      Pin: self (object) Dir=In
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get WelcomeMsg.WelcomeMsg
+      Pin: B (string) Dir=In
+        -> Get SelectedProfileName.SelectedProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: Get WelcomeMsg (K2Node_VariableGet)
+      Pin: WelcomeMsg (string) Dir=Out
+        -> Append.A
+      Pin: self (object) Dir=In
+    Node: Get SelectedProfileName (K2Node_VariableGet)
+      Pin: SelectedProfileName (string) Dir=Out
+        -> Append.B
+      Pin: self (object) Dir=In
+    Node: Set SelectedProfileName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Selected Profile Name
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: SelectedProfileName (string) Dir=In
+        -> Get Selected Profile Name
+Target is BP CGF Game Instance.Name
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Get This Profiles Index in Map
+Target is BPW CGF Game Profile Manager.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get WelcomeMsg (K2Node_VariableGet)
+      Pin: WelcomeMsg (string) Dir=Out
+        -> Append.A
+      Pin: self (object) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get WelcomeMsg.WelcomeMsg
+      Pin: B (string) Dir=In
+        -> Get SelectedProfileName.SelectedProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set SelectedProfileName.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ProfileSlotHeaderText (K2Node_VariableGet)
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: ResetListview
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ProfileSlotHeaderText (K2Node_VariableGet)
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: LoadSlotListView
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: IsSaveSlot? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: GameProfilesStruct (struct) Dir=Out
+        -> Break F CGF Game Profiles.F_CGF_GameProfiles
+    Node: Add Item
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SlotsListView.SlotsListView
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Construct BP CGF Profiles Listview Entry (K2Node_GenericCreateObject)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get SlotsListView.SlotsListView
+    Node: Set List View Data
+Target is BP CGF Profiles Listview Entry (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Add Item
+Target is List View.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: GameSettings (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SlotmodeEnabled? (bool) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is List View.Item
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: OutputPin (struct) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.GameSettings
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear List Items
+Target is List View.then
+      Pin: Array (string) Dir=In
+        -> Break F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: LoopBody (exec) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.execute
+      Pin: Array Element (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.SlotPath
+    Node: Break F CGF Game Profiles (K2Node_BreakStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> LoadSlotListView
+Custom Event.GameProfilesStruct
+      Pin: ProfileName_18_97EFD06444B60172F55B0E8950257FCF (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ProfileImage_46_6394245B4ADB9CCDEE550282849E7B77 (softobject) Dir=Out
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=Out
+        -> For Each Loop.Array
+      Pin: ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318 (string) Dir=Out
+      Pin: SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49 (int) Dir=Out
+      Pin: AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017 (int) Dir=Out
+      Pin: TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21 (string) Dir=Out
+      Pin: PlayedTime_29_1560B78245ED515763D610BBA10F14C2 (string) Dir=Out
+      Pin: GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C (string) Dir=Out
+      Pin: PlayerLevel_30_1B6ECE4E4C611573496BD8AA8B19E45C (int) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> LoadSlotListView
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> LoadSlotListView
+Custom Event.IsSaveSlot?
+      Pin: then (exec) Dir=Out
+        -> Clear List Items
+Target is List View.execute
+      Pin: else (exec) Dir=Out
+    Node: Get SlotsListView (K2Node_VariableGet)
+      Pin: SlotsListView (object) Dir=Out
+        -> Add Item
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Clear List Items
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+        -> Get SlotsListView.SlotsListView
+    Node: Get SlotsListView (K2Node_VariableGet)
+      Pin: SlotsListView (object) Dir=Out
+        -> Clear List Items
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: On Item Selection Changed (SlotsListView) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.execute
+      Pin: Item (object) Dir=Out
+        -> Get Index for Item
+Target is List View.Item
+      Pin: bIsSelected (bool) Dir=Out
+    Node: Get Index for Item
+Target is List View (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get SlotsListView.SlotsListView
+      Pin: Item (object) Dir=In
+        -> On Item Selection Changed (SlotsListView).Item
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.Index
+    Node: Get SlotsListView (K2Node_VariableGet)
+      Pin: SlotsListView (object) Dir=Out
+        -> Get Index for Item
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get ProfileSlotHeaderText.ProfileSlotHeaderText
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get ProfileSlotHeaderText.ProfileSlotHeaderText
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+        -> Get ProfileSlotHeaderText.ProfileSlotHeaderText
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Break F CGF Game Profiles.ProfileName_18_97EFD06444B60172F55B0E8950257FCF
+      Pin: OutputPin (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.ProfileName
+    Node: Event SetActiveWidgetSwitcherIndex_ProfileManager
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager.execute
+      Pin: Index (int) Dir=Out
+        -> Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.self
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set HasProfileBeenMade?.self
+    Node: Set HasProfileBeenMade? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Item
+Target is List View.then
+      Pin: then (exec) Dir=Out
+        -> Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager.execute
+      Pin: HasProfileBeenMade? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+    Node: Clear List Items
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set SelectedProfileName.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Clear List Items
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Gamepad Vis Switch / Bindings
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Event On Initialized.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Find.TargetMap
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Get SelectedProfileName.SelectedProfileName
+      Pin: Value (struct) Dir=Out
+        -> Break F CGF Game Profiles.F_CGF_GameProfiles
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get SelectedProfileName (K2Node_VariableGet)
+      Pin: SelectedProfileName (string) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Profiles (K2Node_BreakStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> Find.Value
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=Out
+        -> GET.Array
+      Pin: SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49 (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (string) Dir=In
+        -> Break F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: Dimension 1 (int) Dir=In
+        -> Break F CGF Game Profiles.SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49
+      Pin: Output (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.SlotPath
+        -> Reroute Node.InputPin
+    Node: MakeNewProfile
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: On Image Button Base Clicked Dispatcher (RightCreationButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Make New Profile
+Target is BPW CGF Game Profile Manager.execute
+    Node: Make New Profile
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Image Button Base Clicked Dispatcher (RightCreationButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Return First Auto Save Path (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.SlotPath
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Bind Event to Game Settings Loaded.self
+      Pin: self (object) Dir=In
+    Node: GameSettingsLoaded_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Game Settings Loaded.Delegate
+      Pin: then (exec) Dir=Out
+        -> Reset Listview
+Target is BPW CGF Game Profile Manager.execute
+      Pin: GameSettingsREF (object) Dir=Out
+    Node: Bind Event to Game Settings Loaded (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Request Load Game Settings
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Delegate (delegate) Dir=In
+        -> GameSettingsLoaded_Event
+Custom Event.OutputDelegate
+    Node: Request Load Game Settings
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to Game Settings Loaded.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+    Node: Scroll to Bottom
+Target is List View Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Scroll to Bottom
+Target is List View Base.self
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Request Load Game Settings
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Catch Empty Profiles
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Empty? (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+    Node: SetFocusToProfileSlotWidget
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+    Node: On Image Button Base Clicked Dispatcher (LeftCreationButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+    Node: Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set HasProfileBeenMade?.then
+      Pin: then (exec) Dir=Out
+        -> Scroll to Bottom
+Target is List View Base.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+    Node: Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SetActiveWidgetSwitcherIndex_ProfileManager
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Event SetActiveWidgetSwitcherIndex_ProfileManager
+From BPI CGF User Interface.Index
+    Node: EnhancedInputAction IA_Slot_Interaction_Alternate (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+      Pin: Started (exec) Dir=Out
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Attempt Delete Slot
+Target is BPW CGF Game Profile Manager.execute
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Attempt Delete Slot
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Slot_Interaction_Alternate.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.self
+    Node: Pop Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> On Image Button Base Clicked Dispatcher (LeftCreationButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: Widget (struct) Dir=In
+        -> Get ThisWidgetsGameplaytag.ThisWidgetsGameplaytag
+    Node: Get ThisWidgetsGameplaytag (K2Node_VariableGet)
+      Pin: ThisWidgetsGameplaytag (struct) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.Widget
+      Pin: self (object) Dir=In
+    Node: Get ProfileManagerWidgetSwitcher (K2Node_VariableGet)
+      Pin: ProfileManagerWidgetSwitcher (object) Dir=Out
+        -> Get ActiveWidgetIndex.self
+      Pin: self (object) Dir=In
+    Node: Get ActiveWidgetIndex (K2Node_VariableGet)
+      Pin: ActiveWidgetIndex (int) Dir=Out
+        -> Switch on Int.Selection
+        -> Select.Index
+      Pin: self (object) Dir=In
+        -> Get ProfileManagerWidgetSwitcher.ProfileManagerWidgetSwitcher
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_InputActionState.NewEnumerator4
+      Pin: Selection (int) Dir=In
+        -> Get ActiveWidgetIndex.ActiveWidgetIndex
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+      Pin: 1 (exec) Dir=Out
+        -> Switch on E_CGF_GameState.execute
+      Pin: 2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (int) Dir=In
+      Pin: Option 1 (int) Dir=In
+      Pin: Option 2 (int) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get ActiveWidgetIndex.ActiveWidgetIndex
+      Pin: ReturnValue (int) Dir=Out
+        -> Set TabIndexToSwitchTo.TabIndexToSwitchTo
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.self
+    Node: Pop Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.0
+        -> Switch on E_CGF_GameState.NewEnumerator1
+      Pin: then (exec) Dir=Out
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: Widget (struct) Dir=In
+    Node: Event On Initialized (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Gamepad Vis Switch / Bindings
+Collapsed Graph.execute
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: OnInit Input Bindings (EdGraphNode_Comment)
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Create Game Profile
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set Selected Player Profile Index and Name
+Target is BP CGF Game Instance.self
+        -> Get Selected Profile Name
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Set Selected Player Profile Index and Name
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get This Profiles Index in Map
+Target is BPW CGF Game Profile Manager.then
+      Pin: then (exec) Dir=Out
+        -> Get Selected Profile Name
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Index (int) Dir=In
+        -> Select Int.ReturnValue
+    Node: Get Selected Profile Name
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Player Profile Index and Name
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set SelectedProfileName.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Name (string) Dir=Out
+        -> Set SelectedProfileName.SelectedProfileName
+    Node: Create Game Profile
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: ProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Success? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Get Game Settings Data
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: CGFGameSettings (struct) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.GameSettings
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Get Game Settings Data
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> LoadProfilesListView
+Custom Event.then
+        -> Set As BP CGF HUD.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: CGFGameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+        -> Reroute Node.InputPin
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Get Game Settings Data
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: CGFGameSettings (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.self
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Set Selected Slot Index
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Selection Changed (SlotsListView).then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Index (int) Dir=In
+        -> Get Index for Item
+Target is List View.ReturnValue
+      Pin: SaveAfterSettingIndex? (bool) Dir=In
+    Node: Set Selected Slot Path
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: SlotPath (string) Dir=In
+      Pin: DirectSet? (bool) Dir=In
+    Node: Event CGF_IA_Confirm
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Switch on E_CGF_InputActionState.execute
+      Pin: IA Data (struct) Dir=Out
+        -> Break F CGF Input Action Data.F_CGF_InputActionData
+    Node: Get ActiveWidgetIndex (K2Node_VariableGet)
+      Pin: ActiveWidgetIndex (int) Dir=Out
+        -> Switch on Int.Selection
+      Pin: self (object) Dir=In
+        -> Get ProfileManagerWidgetSwitcher.ProfileManagerWidgetSwitcher
+    Node: Get ProfileManagerWidgetSwitcher (K2Node_VariableGet)
+      Pin: ProfileManagerWidgetSwitcher (object) Dir=Out
+        -> Get ActiveWidgetIndex.self
+      Pin: self (object) Dir=In
+    Node: Event CGF_IA_Cancel
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Switch on E_CGF_InputActionState.execute
+      Pin: IA Data (struct) Dir=Out
+        -> Break F CGF Input Action Data.F_CGF_InputActionData
+    Node: Break F CGF Input Action Data (K2Node_BreakStruct)
+      Pin: F_CGF_InputActionData (struct) Dir=In
+        -> Event CGF_IA_Cancel
+From BPI CGF User Interface.IA Data
+      Pin: State_2_7B4F61F245186AF38FD3739E0B421AB5 (byte) Dir=Out
+        -> Switch on E_CGF_InputActionState.Selection
+    Node: Switch on E_CGF_InputActionState (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Event CGF_IA_Cancel
+From BPI CGF User Interface.then
+      Pin: Selection (byte) Dir=In
+        -> Break F CGF Input Action Data.State_2_7B4F61F245186AF38FD3739E0B421AB5
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+      Pin: NewEnumerator1 (exec) Dir=Out
+      Pin: NewEnumerator2 (exec) Dir=Out
+      Pin: NewEnumerator3 (exec) Dir=Out
+      Pin: NewEnumerator4 (exec) Dir=Out
+        -> Switch on Int.execute
+    Node: Make New Profile
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Item Selection Changed (ProfilesListView).then
+      Pin: Condition (bool) Dir=In
+        -> On Item Selection Changed (ProfilesListView).bIsSelected
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> On Item Selection Changed (ProfilesListView).Item
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Switch on E_CGF_InputActionState (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Event CGF_IA_Confirm
+From BPI CGF User Interface.then
+      Pin: Selection (byte) Dir=In
+        -> Break F CGF Input Action Data.State_2_7B4F61F245186AF38FD3739E0B421AB5
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+      Pin: NewEnumerator1 (exec) Dir=Out
+      Pin: NewEnumerator2 (exec) Dir=Out
+      Pin: NewEnumerator3 (exec) Dir=Out
+      Pin: NewEnumerator4 (exec) Dir=Out
+        -> Switch on Int.execute
+    Node: Break F CGF Input Action Data (K2Node_BreakStruct)
+      Pin: F_CGF_InputActionData (struct) Dir=In
+        -> Event CGF_IA_Confirm
+From BPI CGF User Interface.IA Data
+      Pin: State_2_7B4F61F245186AF38FD3739E0B421AB5 (byte) Dir=Out
+        -> Switch on E_CGF_InputActionState.Selection
+    Node: Event Destruct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Handle Destruction
+Target is BPW CGF Game Profile Manager.execute
+    Node: Focus And Input Bindings (EdGraphNode_Comment)
+    Node: Event OnVisibilityChanged_Event (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnVisibilityChanged_Event.execute
+      Pin: InVisibility (byte) Dir=Out
+        -> Parent: OnVisibilityChanged_Event.InVisibility
+    Node: Parent: OnVisibilityChanged_Event (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnVisibilityChanged_Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+        -> Event OnVisibilityChanged_Event.InVisibility
+    Node: Handle Destruction
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Destruct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Hovered (Close_X_Button) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Opacity
+Target is Image.execute
+    Node: On Unhovered (Close_X_Button) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Opacity
+Target is Image.execute
+    Node: On Clicked (Close_X_Button) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+    Node: Get Close_X_Button_Image (K2Node_VariableGet)
+      Pin: Close_X_Button_Image (object) Dir=Out
+        -> Set Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Hovered (Close_X_Button).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Close_X_Button_Image.Close_X_Button_Image
+      Pin: InOpacity (real) Dir=In
+    Node: Get Close_X_Button_Image (K2Node_VariableGet)
+      Pin: Close_X_Button_Image (object) Dir=Out
+        -> Set Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Unhovered (Close_X_Button).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Close_X_Button_Image.Close_X_Button_Image
+      Pin: InOpacity (real) Dir=In
+    Node: Pop Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Close_X_Button).then
+      Pin: then (exec) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: Widget (struct) Dir=In
+        -> Get ThisWidgetsGameplaytag.ThisWidgetsGameplaytag
+    Node: Close Button (EdGraphNode_Comment)
+    Node: Get ThisWidgetsGameplaytag (K2Node_VariableGet)
+      Pin: ThisWidgetsGameplaytag (struct) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.Widget
+      Pin: self (object) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.self
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get TabIndexToSwitchTo.TabIndexToSwitchTo
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Game Settings Loaded.execute
+      Pin: else (exec) Dir=Out
+    Node: Reset Listview
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> GameSettingsLoaded_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TabIndexToSwitchTo (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_GameState.NewEnumerator0
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager.execute
+      Pin: TabIndexToSwitchTo (int) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager.Index
+      Pin: self (object) Dir=In
+    Node: Get TabIndexToSwitchTo (K2Node_VariableGet)
+      Pin: TabIndexToSwitchTo (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: self (object) Dir=In
+    Node: Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+        -> Select.Index
+      Pin: CGF Game State (object) Dir=Out
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Cast To BP_CGF_HUD.Object
+    Node: Cast To BP_CGF_HUD (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set As BP CGF HUD.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get HUD.HUD
+      Pin: AsBP CGF HUD (object) Dir=Out
+        -> Set As BP CGF HUD.As BP CGF HUD
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set As BP CGF HUD (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_HUD.then
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.execute
+      Pin: As BP CGF HUD (object) Dir=In
+        -> Cast To BP_CGF_HUD.AsBP CGF HUD
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get As BP CGF HUD (K2Node_VariableGet)
+      Pin: As BP CGF HUD (object) Dir=Out
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.self
+      Pin: self (object) Dir=In
+    Node: Return Widget Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get As BP CGF HUD.As BP CGF HUD
+      Pin: Layer (struct) Dir=In
+      Pin: TagToMatch (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: Found? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: FoundWidgetViaTag (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Focus to Default Focusable Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (struct) Dir=In
+      Pin: NewEnumerator1 (struct) Dir=In
+      Pin: NewEnumerator2 (struct) Dir=In
+      Pin: Index (byte) Dir=In
+        -> Get GS.GameState
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.TagToMatch
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.then
+      Pin: Condition (bool) Dir=In
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.Found?
+      Pin: then (exec) Dir=Out
+        -> Set Focus to Default Focusable Widget
+Target is BPI CGF User Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.FoundWidgetViaTag
+      Pin: OutputPin (object) Dir=Out
+        -> Set Focus to Default Focusable Widget
+Target is BPI CGF User Interface.self
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: Default (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_InputActionState.NewEnumerator4
+      Pin: Selection (int) Dir=In
+        -> Get ActiveWidgetIndex.ActiveWidgetIndex
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: 1 (exec) Dir=Out
+      Pin: 2 (exec) Dir=Out
+    Node: Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TabIndexToSwitchTo.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Set TabIndexToSwitchTo.Output_Get
+    Node: Get SlotsListView (K2Node_VariableGet)
+      Pin: SlotsListView (object) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+    Node: Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Select Int.ReturnValue
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get CGF_GameInstanceCopy_GameSettings.self
+      Pin: self (object) Dir=In
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Is Not Empty.TargetMap
+    Node: Is Not Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select Int.bPickA
+    Node: Select Int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+      Pin: B (int) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPW CGF Game Profile Manager.Index
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To BP_CGF_HUD.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Reset (exec) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Setup Type Writer Textblock
+Target is BPW CGF Game Profile Manager.execute
+    Node: Setup Type Writer Textblock
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ProfileCreation_EditableTextBox (K2Node_VariableGet)
+      Pin: ProfileCreation_EditableTextBox (object) Dir=Out
+        -> Get Text.self
+      Pin: self (object) Dir=In
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (text) Dir=Out
+        -> Equal Exactly (Text).A
+        -> Equal Exactly (Text).A
+      Pin: self (object) Dir=In
+        -> Get ProfileCreation_EditableTextBox.ProfileCreation_EditableTextBox
+    Node: Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> Get Text.Text
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Equal Exactly (Text).B
+    Node: Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> Get Text.Text
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Equal Exactly (Text).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.0
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Make New Profile
+Target is BPW CGF Game Profile Manager.execute
+      Pin: else (exec) Dir=Out
+        -> CGF Create Notification
+Target is BP CGF HUD.execute
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Make Notification
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Body (text) Dir=In
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=In
+      Pin: DisplayType (byte) Dir=In
+    Node: Make Notification
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Body (text) Dir=In
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=In
+      Pin: DisplayType (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Clear List Items
+Target is List View.then
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Add Item
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Add Item
+Target is List View (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Construct BP CGF Profiles Listview Entry (K2Node_GenericCreateObject)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+    Node: Set List View Data
+Target is BP CGF Profiles Listview Entry (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+        -> Add Item
+Target is List View.execute
+      Pin: self (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: GameSettings (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SlotmodeEnabled? (bool) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Construct BP CGF Profiles Listview Entry.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is List View.Item
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.GameSettings
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Array (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Get Selected Profile Name
+Target is BPI CGF Data Management.execute
+      Pin: Array Element (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> SetFocusToProfileSlotWidget_2
+Collapsed Graph.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.ProfileName
+    Node: SetFocusToProfileSlotWidget_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Keys.Keys
+      Pin: OutputPin (string) Dir=Out
+        -> For Each Loop.Array
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (string) Dir=In
+        -> Get Selected Profile Name
+Target is BPI CGF Data Management.Name
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Selected Profile Name
+Target is BPI CGF Data Management.then
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Construct BP CGF Profiles Listview Entry.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Selected Profile Name
+Target is BPI CGF Data Management (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Name (string) Dir=Out
+        -> Equal Exactly (String).B
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Selected Profile Name
+Target is BPI CGF Data Management.self
+      Pin: self (object) Dir=In
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Select Int.bPickA
+    Node: Select Int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get Index for Item
+Target is List View.ReturnValue
+      Pin: B (int) Dir=In
+        -> Get This Profiles Index in Map
+Target is BPW CGF Game Profile Manager.Index
+      Pin: bPickA (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Selected Player Profile Index and Name
+Target is BP CGF Game Instance.Index
+    Node: Get This Profiles Index in Map
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Selected Player Profile Index and Name
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Index (int) Dir=Out
+        -> Select Int.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get Index for Item
+Target is List View.Item
+        -> Get This Profiles Index in Map
+Target is BPW CGF Game Profile Manager.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> GET.Output
+      Pin: OutputPin (string) Dir=Out
+        -> Set List View Data
+Target is BP CGF Profiles Listview Entry.SlotPath
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (string) Dir=Out
+        -> Equal Exactly (String).A
+    Node: InGame (EdGraphNode_Comment)
+    Node: In Menu (EdGraphNode_Comment)
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+        -> Switch on E_CGF_GameState.Selection
+      Pin: CGF Game State (object) Dir=Out
+    Node: Switch on E_CGF_GameState (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.1
+      Pin: Selection (byte) Dir=In
+        -> Get GS.GameState
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Set TabIndexToSwitchTo.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Do Once.execute
+    Node: SaveSlots (EdGraphNode_Comment)
+    Node: Profiles (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on Int.2
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Set TabIndexToSwitchTo.execute
+    Node: Get As BP CGF HUD (K2Node_VariableGet)
+      Pin: As BP CGF HUD (object) Dir=Out
+        -> CGF Create Notification
+Target is BP CGF HUD.self
+      Pin: self (object) Dir=In
+    Node: CGF Create Notification
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As BP CGF HUD.As BP CGF HUD
+      Pin: TextData (struct) Dir=In
+        -> Make F CGF Notification Text Data.F_CGF_Notification_Text_Data
+      Pin: DisplayType (byte) Dir=In
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=In
+    Node: Make F CGF Notification Text Data (K2Node_MakeStruct)
+      Pin: F_CGF_Notification_Text_Data (struct) Dir=Out
+        -> CGF Create Notification
+Target is BP CGF HUD.TextData
+      Pin: Header_40_8A509430412FFFF6E324848CD5EF5000 (text) Dir=In
+      Pin: Header_Font_17_B8F66C2E4FFE46F608D958A134ADEE29 (struct) Dir=In
+      Pin: Header_Color_36_AA025A944BDBB39A7E53DFBBB06A3DB3 (struct) Dir=In
+      Pin: Header_Justification_21_1995F29645B0D4E3D0F276972EECBE30 (byte) Dir=In
+      Pin: Body_13_B24B612341E5A9237D203BB27662B033 (text) Dir=In
+      Pin: Body_Font_18_EDDF90F34F7F3F98EDA134BFF367CE2B (struct) Dir=In
+        -> Make Slate Font Info.ReturnValue
+      Pin: Body_Color_37_67580074498E9D64B9C2A8AE11C66126 (struct) Dir=In
+      Pin: Body_Justification_25_AB5616E74CF0B16C8C7D35887811A289 (byte) Dir=In
+      Pin: Footer_14_4BDFC71B4521C8BC0BED388E13505C4F (text) Dir=In
+      Pin: Footer_Font_20_AB6188754B6B63528F62E3ACEC5ABBA8 (struct) Dir=In
+      Pin: Footer_Color_38_396FF8094D8694AF6A8ABD8172E280DC (struct) Dir=In
+      Pin: Footer_Justification_28_06D4378C402BA1F49F8D11AA91AC0362 (byte) Dir=In
+    Node: Get ProfileCreation_EditableTextBox (K2Node_VariableGet)
+      Pin: ProfileCreation_EditableTextBox (object) Dir=Out
+        -> Get Text.self
+      Pin: self (object) Dir=In
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (text) Dir=Out
+        -> Equal Exactly (Text).A
+      Pin: self (object) Dir=In
+        -> Get ProfileCreation_EditableTextBox.ProfileCreation_EditableTextBox
+    Node: Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> Get Text.Text
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Equal Exactly (Text).B
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal Exactly (Text).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal Exactly (Text).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal Exactly (Text).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Make Slate Font Info (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FontObject (object) Dir=In
+      Pin: FontMaterial (object) Dir=In
+      Pin: OutlineSettings (struct) Dir=In
+      Pin: TypefaceFontName (name) Dir=In
+      Pin: Size (real) Dir=In
+      Pin: LetterSpacing (int) Dir=In
+      Pin: SkewAmount (real) Dir=In
+      Pin: bForceMonospaced (bool) Dir=In
+      Pin: bMaterialIsStencil (bool) Dir=In
+      Pin: MonospacedWidth (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make F CGF Notification Text Data.Body_Font_18_EDDF90F34F7F3F98EDA134BFF367CE2B
+  Graph: Return Clean Profile Name
+    Node: Return Clean Profile Name (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: GivenProfileNameToTest (string) Dir=Out
+        -> Get Character Array from String.SourceString
+    Node: Get Character Array from String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Return Clean Profile Name.GivenProfileNameToTest
+      Pin: ReturnValue (string) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Return Clean Profile Name.then
+      Pin: Array (string) Dir=In
+        -> Get Character Array from String.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (string) Dir=Out
+        -> Contains.Substring
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SearchIn (string) Dir=In
+        -> Make Literal String.ReturnValue
+      Pin: Substring (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: bUseCase (bool) Dir=In
+      Pin: bSearchFromEnd (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Literal String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Contains.SearchIn
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Set ReturnProfileName.execute
+    Node: Set ReturnProfileName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: ReturnProfileName (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get ReturnProfileName.ReturnProfileName
+      Pin: B (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Set ReturnProfileName.ReturnProfileName
+    Node: Get ReturnProfileName (K2Node_VariableGet)
+      Pin: ReturnProfileName (string) Dir=Out
+        -> Append.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: CleanedProfileName (string) Dir=In
+        -> Get ReturnProfileName.ReturnProfileName
+    Node: Get ReturnProfileName (K2Node_VariableGet)
+      Pin: ReturnProfileName (string) Dir=Out
+        -> Return Node.CleanedProfileName
+    Node: Very Basic Special Char Search, "Space" is the last char if you want to remove it from exclusion. "-" and "_" are allowed chars (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Append.B
+  Graph: ToggleHeaderText
+    Node: ToggleHeaderText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Empty? (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Get SaveSlotHeaderText (K2Node_VariableGet)
+      Pin: SaveSlotHeaderText (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ToggleHeaderText.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SaveSlotHeaderText.SaveSlotHeaderText
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> ToggleHeaderText.Empty?
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+  Graph: SetupTypeWriterTextblock
+    Node: SetupTypeWriterTextblock (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Loop?.execute
+    Node: Get SelectedProfileName (K2Node_VariableGet)
+      Pin: SelectedProfileName (string) Dir=Out
+        -> Equal Exactly (String).A
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Option 1 (string) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Set TextToAnimate.TextToAnimate
+    Node: Get SelectedProfileName (K2Node_VariableGet)
+      Pin: SelectedProfileName (string) Dir=Out
+        -> Append.B
+      Pin: self (object) Dir=In
+    Node: Set TextToAnimate (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Loop?.then
+      Pin: then (exec) Dir=Out
+        -> Set TempMsg.execute
+      Pin: TextToAnimate (string) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+        -> Set TempMsg.TempMsg
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Loop? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetupTypeWriterTextblock.then
+      Pin: then (exec) Dir=Out
+        -> Set TextToAnimate.execute
+      Pin: Loop? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProfileSlotHeaderText.ProfileSlotHeaderText
+    Node: Set TempMsg (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TextToAnimate.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: TempMsg (string) Dir=In
+        -> Set TextToAnimate.Output_Get
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get ProfileSlotHeaderText (K2Node_VariableGet)
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Set Loop?.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get ProfileSlotHeaderText.ProfileSlotHeaderText
+      Pin: OutputPin (object) Dir=Out
+        -> Set TextToAnimate.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set TempMsg.self
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get SelectedProfileName.SelectedProfileName
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+        -> Select.Index
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get WelcomeMsg.WelcomeMsg
+      Pin: B (string) Dir=In
+        -> Get SelectedProfileName.SelectedProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Select.Option 0
+    Node: Get WelcomeMsg (K2Node_VariableGet)
+      Pin: WelcomeMsg (string) Dir=Out
+        -> Append.A
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempMsg.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get ProfileSlotHeaderText (K2Node_VariableGet)
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+        -> Get ProfileSlotHeaderText.ProfileSlotHeaderText
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+  Graph: ReturnFirstAutoSavePath
+    Node: ReturnFirstAutoSavePath (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> ReturnFirstAutoSavePath.then
+      Pin: ReturnValue (string) Dir=In
+        -> Append.ReturnValue
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: C (string) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get SelectedPlayerProfileName.self
+      Pin: self (object) Dir=In
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Append.B
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+  Graph: CatchEmptyProfiles
+    Node: CatchEmptyProfiles (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Toggle Header Text
+Target is BPW CGF Game Profile Manager.execute
+      Pin: Empty? (bool) Dir=Out
+        -> Toggle Header Text
+Target is BPW CGF Game Profile Manager.Empty?
+    Node: Toggle Header Text
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CatchEmptyProfiles.then
+      Pin: then (exec) Dir=Out
+        -> Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager.execute
+      Pin: self (object) Dir=In
+      Pin: Empty? (bool) Dir=In
+        -> CatchEmptyProfiles.Empty?
+    Node: Get ProfileCreation_EditableTextBox (K2Node_VariableGet)
+      Pin: ProfileCreation_EditableTextBox (object) Dir=Out
+        -> Set Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager.then
+      Pin: then (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ProfileCreation_EditableTextBox.ProfileCreation_EditableTextBox
+    Node: Get RightCreationButton (K2Node_VariableGet)
+      Pin: RightCreationButton (object) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Focus
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get RightCreationButton.RightCreationButton
+    Node: Update Profile Manager Tab and Footer Buttons
+Target is BPW CGF Game Profile Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Toggle Header Text
+Target is BPW CGF Game Profile Manager.then
+      Pin: then (exec) Dir=Out
+        -> Set Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+  Graph: Update Profile Manager Tab And Footer Buttons
+    Node: Update Profile Manager Tab And Footer Buttons (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Active Widget Index
+Target is Widget Switcher.execute
+      Pin: Index (int) Dir=Out
+        -> Set Active Widget Index
+Target is Widget Switcher.Index
+    Node: Get ProfileManagerWidgetSwitcher (K2Node_VariableGet)
+      Pin: ProfileManagerWidgetSwitcher (object) Dir=Out
+        -> Set Active Widget Index
+Target is Widget Switcher.self
+      Pin: self (object) Dir=In
+    Node: Set Active Widget Index
+Target is Widget Switcher (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Profile Manager Tab And Footer Buttons.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ProfileManagerWidgetSwitcher.ProfileManagerWidgetSwitcher
+      Pin: Index (int) Dir=In
+        -> Update Profile Manager Tab And Footer Buttons.Index
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Active Widget Index
+Target is Widget Switcher.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter.BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter
+      Pin: InVisibility (byte) Dir=In
+    Node: Get BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter (K2Node_VariableGet)
+      Pin: BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter (K2Node_VariableGet)
+      Pin: BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter (object) Dir=Out
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.self
+      Pin: self (object) Dir=In
+    Node: Start Animation
+Target is BPW CGF Animated Widget Parent (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.then
+      Pin: then (exec) Dir=Out
+        -> Call On Profile Tab Changed.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter.BPW_CGF_AnimatedWidgetParent_ProfileManagerFooter
+      Pin: DirectStart (bool) Dir=In
+    Node: Get FooterButton_Left (K2Node_VariableGet)
+      Pin: FooterButton_Left (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get FooterButton_Left.FooterButton_Left
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Option 2 (byte) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get Index.Index
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get FooterButton_Right (K2Node_VariableGet)
+      Pin: FooterButton_Right (object) Dir=Out
+        -> Get BPW_CGF_SettingsMenu_TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+        -> Get FooterButton_Right.FooterButton_Right
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (text) Dir=In
+      Pin: Option 1 (text) Dir=In
+      Pin: Option 2 (text) Dir=In
+      Pin: Option 3 (text) Dir=In
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+        -> Get FooterButton_Middle.FooterButton_Middle
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+        -> Set ColorAndOpacity.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ColorAndOpacity.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (text) Dir=In
+      Pin: Option 1 (text) Dir=In
+      Pin: Option 2 (text) Dir=In
+      Pin: Option 3 (text) Dir=In
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Select.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: OutputPin (int) Dir=Out
+        -> Select.Index
+        -> Reroute Node.InputPin
+    Node: Get FooterButton_Middle (K2Node_VariableGet)
+      Pin: FooterButton_Middle (object) Dir=Out
+        -> Get BPW_CGF_SettingsMenu_TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Set ColorAndOpacity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set ColorAndOpacity.ColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Get FooterButtonsTextColor.FooterButtonsTextColor
+      Pin: ColorUseRule (byte) Dir=In
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Index.Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get FooterButtonsTextColor (K2Node_VariableGet)
+      Pin: FooterButtonsTextColor (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+      Pin: self (object) Dir=In
+    Node: Call On Profile Tab Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TabIndex (int) Dir=In
+        -> Get Index.Index
+    Node: Get Index (K2Node_VariableGet)
+      Pin: Index (int) Dir=Out
+        -> Call On Profile Tab Changed.TabIndex
+    Node: Get Index (K2Node_VariableGet)
+      Pin: Index (int) Dir=Out
+        -> int + int.A
+        -> Select.Index
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.execute
+      Pin: else (exec) Dir=Out
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.self
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set TempMsg.execute
+      Pin: self (object) Dir=In
+        -> Get.ProfileSlotHeaderText
+      Pin: Paused? (bool) Dir=In
+        -> Select.ReturnValue
+    Node: Get Index (K2Node_VariableGet)
+      Pin: Index (int) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (bool) Dir=In
+      Pin: Option 1 (bool) Dir=In
+      Pin: Option 2 (bool) Dir=In
+      Pin: Option 3 (bool) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get Index.Index
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.Paused?
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set TempMsg.execute
+      Pin: else (exec) Dir=Out
+      Pin: SaveSlotHeaderText (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set TempMsg.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Paused? (bool) Dir=In
+        -> Select.ReturnValue
+    Node: Get Index (K2Node_VariableGet)
+      Pin: Index (int) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (bool) Dir=In
+      Pin: Option 1 (bool) Dir=In
+      Pin: Option 2 (bool) Dir=In
+      Pin: Option 3 (bool) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get Index.Index
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.Paused?
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempMsg.then
+      Pin: then (exec) Dir=Out
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempMsg.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Set TempMsg (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: TempMsg (string) Dir=In
+      Pin: Output_Get (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Set TempMsg.Output_Get
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.SaveSlotHeaderText
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Typewriter Pause State
+Target is BPW CGF Typewriter Text Block.self
+    Node: Set TempMsg (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: TempMsg (string) Dir=In
+      Pin: Output_Get (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+        -> Get.SaveSlotHeaderText
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Set TempMsg.Output_Get
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.SaveSlotHeaderText
+      Pin: OutputPin (object) Dir=Out
+        -> Get TextBlock.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.ProfileSlotHeaderText
+      Pin: OutputPin (object) Dir=Out
+        -> Get TextBlock.self
+    Node: TypeWriter (EdGraphNode_Comment)
+    Node: Footer And Tabs (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set ColorAndOpacity.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Get.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set TempMsg.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.ProfileSlotHeaderText
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: SaveSlot (EdGraphNode_Comment)
+    Node: ProfileSlot (EdGraphNode_Comment)
+    Node: StartFooter Anim And Alert Listeners (EdGraphNode_Comment)
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get FooterButton_Middle (K2Node_VariableGet)
+      Pin: FooterButton_Middle (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set ColorAndOpacity.execute
+      Pin: self (object) Dir=In
+        -> Get FooterButton_Middle.FooterButton_Middle
+      Pin: InVisibility (byte) Dir=In
+  Graph: AttemptDeleteSlot
+    Node: AttemptDeleteSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on Int.execute
+    Node: Get ProfilesListView (K2Node_VariableGet)
+      Pin: ProfilesListView (object) Dir=Out
+        -> Get List Items
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Get List Items
+Target is List View (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ProfilesListView.ProfilesListView
+      Pin: ReturnValue (object) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Switch on Int.1
+      Pin: Array (object) Dir=In
+        -> Get List Items
+Target is List View.ReturnValue
+      Pin: Break (exec) Dir=In
+        -> Delete Slot
+Target is BPW CGF Profiles Listview Entry.then
+      Pin: LoopBody (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Array Element (object) Dir=Out
+        -> Cast To BP_CGF_Profiles_Listview_Entry.Object
+        -> Is Valid.InputObject
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Cast To BP_CGF_Profiles_Listview_Entry (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: AsBP CGF Profiles Listview Entry (object) Dir=Out
+        -> Get OwningWidget.self
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get OwningWidget (K2Node_VariableGet)
+      Pin: OwningWidget (object) Dir=Out
+        -> Get IsFocusedForDelete?.self
+        -> Get FooterText.self
+        -> Delete Slot
+Target is BPW CGF Profiles Listview Entry.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.AsBP CGF Profiles Listview Entry
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delete Slot
+Target is BPW CGF Profiles Listview Entry.execute
+      Pin: else (exec) Dir=Out
+    Node: Get IsFocusedForDelete? (K2Node_VariableGet)
+      Pin: IsFocusedForDelete? (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+        -> Get OwningWidget.OwningWidget
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SearchIn (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: Substring (string) Dir=In
+      Pin: bUseCase (bool) Dir=In
+      Pin: bSearchFromEnd (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get IsFocusedForDelete?.IsFocusedForDelete?
+      Pin: B (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get FooterText (K2Node_VariableGet)
+      Pin: FooterText (object) Dir=Out
+        -> Get Text.self
+      Pin: self (object) Dir=In
+        -> Get OwningWidget.OwningWidget
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (text) Dir=Out
+        -> To String (Text).InText
+      Pin: self (object) Dir=In
+        -> Get FooterText.FooterText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Text.Text
+      Pin: ReturnValue (string) Dir=Out
+        -> Contains.SearchIn
+    Node: Delete Slot
+Target is BPW CGF Profiles Listview Entry (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Break
+      Pin: self (object) Dir=In
+        -> Get OwningWidget.OwningWidget
+    Node: Get SlotsListView (K2Node_VariableGet)
+      Pin: SlotsListView (object) Dir=Out
+        -> Get List Items
+Target is List View.self
+      Pin: self (object) Dir=In
+    Node: Get List Items
+Target is List View (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get SlotsListView.SlotsListView
+      Pin: ReturnValue (object) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Switch on Int.2
+      Pin: Array (object) Dir=In
+        -> Get List Items
+Target is List View.ReturnValue
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Array Element (object) Dir=Out
+        -> Cast To BP_CGF_Profiles_Listview_Entry.Object
+        -> Is Valid.InputObject
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Cast To BP_CGF_Profiles_Listview_Entry (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: AsBP CGF Profiles Listview Entry (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+      Pin: OwningWidget (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.AsBP CGF Profiles Listview Entry
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delete Slot
+Target is BPW CGF Profiles Listview Entry.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get IsFocusedForDelete? (K2Node_VariableGet)
+      Pin: IsFocusedForDelete? (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SearchIn (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: Substring (string) Dir=In
+      Pin: bUseCase (bool) Dir=In
+      Pin: bSearchFromEnd (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get IsFocusedForDelete?.IsFocusedForDelete?
+      Pin: B (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+      Pin: FooterText (object) Dir=Out
+        -> Get Text.self
+      Pin: self (object) Dir=In
+        -> Get.OwningWidget
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (text) Dir=Out
+        -> To String (Text).InText
+      Pin: self (object) Dir=In
+        -> Get.FooterText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Text.Text
+      Pin: ReturnValue (string) Dir=Out
+        -> Contains.SearchIn
+    Node: Delete Slot
+Target is BPW CGF Profiles Listview Entry (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set autosave?.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: InputObject (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To BP_CGF_Profiles_Listview_Entry.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get.then
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: InputObject (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To BP_CGF_Profiles_Listview_Entry.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.AsBP CGF Profiles Listview Entry
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set autosave? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: autosave? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Set autosave? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delete Slot
+Target is BPW CGF Profiles Listview Entry.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: autosave? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Condition (bool) Dir=In
+        -> Get autosave?.autosave?
+      Pin: then (exec) Dir=Out
+        -> CGF Create Notification
+Target is BP CGF HUD.execute
+      Pin: else (exec) Dir=Out
+    Node: Get autosave? (K2Node_VariableGet)
+      Pin: autosave? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ProfileManagerWidgetSwitcher (K2Node_VariableGet)
+      Pin: ProfileManagerWidgetSwitcher (object) Dir=Out
+        -> Get ActiveWidgetIndex.self
+      Pin: self (object) Dir=In
+    Node: Get ActiveWidgetIndex (K2Node_VariableGet)
+      Pin: ActiveWidgetIndex (int) Dir=Out
+        -> Switch on Int.Selection
+      Pin: self (object) Dir=In
+        -> Get ProfileManagerWidgetSwitcher.ProfileManagerWidgetSwitcher
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: execute (exec) Dir=In
+        -> AttemptDeleteSlot.then
+      Pin: Selection (int) Dir=In
+        -> Get ActiveWidgetIndex.ActiveWidgetIndex
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+      Pin: 1 (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: 2 (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+    Node: Make F CGF Notification Text Data (K2Node_MakeStruct)
+      Pin: F_CGF_Notification_Text_Data (struct) Dir=Out
+        -> CGF Create Notification
+Target is BP CGF HUD.TextData
+      Pin: Header_40_8A509430412FFFF6E324848CD5EF5000 (text) Dir=In
+      Pin: Header_Font_17_B8F66C2E4FFE46F608D958A134ADEE29 (struct) Dir=In
+      Pin: Header_Color_36_AA025A944BDBB39A7E53DFBBB06A3DB3 (struct) Dir=In
+      Pin: Header_Justification_21_1995F29645B0D4E3D0F276972EECBE30 (byte) Dir=In
+      Pin: Body_13_B24B612341E5A9237D203BB27662B033 (text) Dir=In
+      Pin: Body_Font_18_EDDF90F34F7F3F98EDA134BFF367CE2B (struct) Dir=In
+        -> Make Slate Font Info.ReturnValue
+      Pin: Body_Color_37_67580074498E9D64B9C2A8AE11C66126 (struct) Dir=In
+      Pin: Body_Justification_25_AB5616E74CF0B16C8C7D35887811A289 (byte) Dir=In
+      Pin: Footer_14_4BDFC71B4521C8BC0BED388E13505C4F (text) Dir=In
+      Pin: Footer_Font_20_AB6188754B6B63528F62E3ACEC5ABBA8 (struct) Dir=In
+      Pin: Footer_Color_38_396FF8094D8694AF6A8ABD8172E280DC (struct) Dir=In
+      Pin: Footer_Justification_28_06D4378C402BA1F49F8D11AA91AC0362 (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set autosave?.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Get As BP CGF HUD (K2Node_VariableGet)
+      Pin: As BP CGF HUD (object) Dir=Out
+        -> CGF Create Notification
+Target is BP CGF HUD.self
+      Pin: self (object) Dir=In
+    Node: CGF Create Notification
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As BP CGF HUD.As BP CGF HUD
+      Pin: TextData (struct) Dir=In
+        -> Make F CGF Notification Text Data.F_CGF_Notification_Text_Data
+      Pin: DisplayType (byte) Dir=In
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.AsBP CGF Profiles Listview Entry
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.OwningWidget
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Delete Slot
+Target is BPW CGF Profiles Listview Entry.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.OwningWidget
+      Pin: OutputPin (object) Dir=Out
+        -> Get IsFocusedForDelete?.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set autosave?.execute
+    Node: Make Slate Font Info (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FontObject (object) Dir=In
+      Pin: FontMaterial (object) Dir=In
+      Pin: OutlineSettings (struct) Dir=In
+      Pin: TypefaceFontName (name) Dir=In
+      Pin: Size (real) Dir=In
+      Pin: LetterSpacing (int) Dir=In
+      Pin: SkewAmount (real) Dir=In
+      Pin: bForceMonospaced (bool) Dir=In
+      Pin: bMaterialIsStencil (bool) Dir=In
+      Pin: MonospacedWidth (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make F CGF Notification Text Data.Body_Font_18_EDDF90F34F7F3F98EDA134BFF367CE2B
+  Graph: GetLayersStack
+    Node: GetLayersStack (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Layer (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetLayersStack.then
+      Pin: Stack (object) Dir=In
+  Graph: SetIsSelectingInput?
+    Node: SetIsSelectingInput? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: In (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> SetIsSelectingInput?.then
+      Pin: Out (bool) Dir=In
+  Graph: GetIsSelectingInput?
+    Node: GetIsSelectingInput? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetIsSelectingInput?.then
+      Pin: Out (bool) Dir=In
+  Graph: GetLastFocusedWidget
+    Node: GetLastFocusedWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetLastFocusedWidget.then
+      Pin: LastFocused (object) Dir=In
+      Pin: Valid (bool) Dir=In
+  Graph: GetGameplayTagContainer
+    Node: GetGameplayTagContainer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetGameplayTagContainer.then
+      Pin: NewParam1 (struct) Dir=In
+  Graph: RemoveGameplayTag
+    Node: RemoveGameplayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: GameplayTag (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> RemoveGameplayTag.then
+      Pin: Success? (bool) Dir=In
+  Graph: RemoveAllGameplayTags
+    Node: RemoveAllGameplayTags (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> RemoveAllGameplayTags.then
+      Pin: Success? (bool) Dir=In
+  Graph: HasGameplayTag?
+    Node: HasGameplayTag? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: TagToMatch (struct) Dir=Out
+        -> Equal (GameplayTag).A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasGameplayTag?.then
+      Pin: HasTag? (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> HasGameplayTag?.TagToMatch
+      Pin: B (struct) Dir=In
+        -> Get ThisWidgetsGameplaytag.ThisWidgetsGameplaytag
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.HasTag?
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get ThisWidgetsGameplaytag (K2Node_VariableGet)
+      Pin: ThisWidgetsGameplaytag (struct) Dir=Out
+        -> Equal (GameplayTag).B
+      Pin: self (object) Dir=In
+  Graph: PeekAtLayer
+    Node: PeekAtLayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Layer (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> PeekAtLayer.then
+      Pin: UserWidget (object) Dir=In
+  Graph: HandleDestruction
+    Node: HandleDestruction (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.then
+      Pin: then (exec) Dir=Out
+        -> Clear Type Writer Handle
+Target is BPW CGF Typewriter Text Block.execute
+      Pin: else (exec) Dir=Out
+      Pin: ProfileSlotHeaderText (object) Dir=Out
+        -> Clear Type Writer Handle
+Target is BPW CGF Typewriter Text Block.self
+      Pin: self (object) Dir=In
+    Node: Clear Type Writer Handle
+Target is BPW CGF Typewriter Text Block (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Unbind all Events from On Visibility Changed.execute
+      Pin: self (object) Dir=In
+        -> Get.ProfileSlotHeaderText
+    Node: Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> HandleDestruction.then
+      Pin: then (exec) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.Widget
+    Node: Unbind all Events from On Visibility Changed (K2Node_ClearDelegate)
+      Pin: execute (exec) Dir=In
+        -> Clear Type Writer Handle
+Target is BPW CGF Typewriter Text Block.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: MakeNotification
+    Node: MakeNotification (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> CGF Create Notification
+Target is BPI CGF User Interface.execute
+      Pin: Body (text) Dir=Out
+        -> Make F CGF Notification Text Data.Body_13_B24B612341E5A9237D203BB27662B033
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=Out
+        -> CGF Create Notification
+Target is BPI CGF User Interface.RemoveFromParentAfterDisplay?
+      Pin: DisplayType (byte) Dir=Out
+        -> CGF Create Notification
+Target is BPI CGF User Interface.DisplayType
+    Node: Get As BP CGF HUD (K2Node_VariableGet)
+      Pin: As BP CGF HUD (object) Dir=Out
+        -> CGF Create Notification
+Target is BPI CGF User Interface.self
+      Pin: self (object) Dir=In
+    Node: Make F CGF Notification Text Data (K2Node_MakeStruct)
+      Pin: F_CGF_Notification_Text_Data (struct) Dir=Out
+        -> CGF Create Notification
+Target is BPI CGF User Interface.TextData
+      Pin: Body_13_B24B612341E5A9237D203BB27662B033 (text) Dir=In
+        -> MakeNotification.Body
+      Pin: Body_Font_18_EDDF90F34F7F3F98EDA134BFF367CE2B (struct) Dir=In
+        -> Make Slate Font Info.ReturnValue
+      Pin: Body_Color_37_67580074498E9D64B9C2A8AE11C66126 (struct) Dir=In
+    Node: CGF Create Notification
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> MakeNotification.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As BP CGF HUD.As BP CGF HUD
+      Pin: TextData (struct) Dir=In
+        -> Make F CGF Notification Text Data.F_CGF_Notification_Text_Data
+      Pin: DisplayType (byte) Dir=In
+        -> MakeNotification.DisplayType
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=In
+        -> MakeNotification.RemoveFromParentAfterDisplay?
+    Node: Make Slate Font Info (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FontObject (object) Dir=In
+      Pin: FontMaterial (object) Dir=In
+      Pin: OutlineSettings (struct) Dir=In
+      Pin: TypefaceFontName (name) Dir=In
+      Pin: Size (real) Dir=In
+      Pin: LetterSpacing (int) Dir=In
+      Pin: SkewAmount (real) Dir=In
+      Pin: bForceMonospaced (bool) Dir=In
+      Pin: bMaterialIsStencil (bool) Dir=In
+      Pin: MonospacedWidth (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make F CGF Notification Text Data.Body_Font_18_EDDF90F34F7F3F98EDA134BFF367CE2B
+  Graph: GetThisProfilesIndexInMap
+    Node: GetThisProfilesIndexInMap (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_Profiles_Listview_Entry.execute
+      Pin: Object (Object) Dir=Out
+        -> Cast To BP_CGF_Profiles_Listview_Entry.Object
+    Node: Cast To BP_CGF_Profiles_Listview_Entry (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetThisProfilesIndexInMap.then
+      Pin: then (exec) Dir=Out
+        -> Set This Profile Index in Profiles Map.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> GetThisProfilesIndexInMap.Object
+      Pin: AsBP CGF Profiles Listview Entry (object) Dir=Out
+        -> Get ThisProfileIndexInProfilesMap.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ThisProfileIndexInProfilesMap (K2Node_VariableGet)
+      Pin: ThisProfileIndexInProfilesMap (int) Dir=Out
+        -> Set This Profile Index in Profiles Map.This Profile Index in Profiles Map
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.AsBP CGF Profiles Listview Entry
+    Node: Set This Profile Index in Profiles Map (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_Profiles_Listview_Entry.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: This Profile Index in Profiles Map (int) Dir=In
+        -> Get ThisProfileIndexInProfilesMap.ThisProfileIndexInProfilesMap
+      Pin: Output_Get (int) Dir=Out
+        -> Return Node.Index
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set This Profile Index in Profiles Map.then
+      Pin: Index (int) Dir=In
+        -> Set This Profile Index in Profiles Map.Output_Get
+  Graph: OnProfileTabChanged
+    Node: OnProfileTabChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: TabIndex (int) Dir=Out

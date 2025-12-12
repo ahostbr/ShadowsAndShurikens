@@ -1,0 +1,150 @@
+Blueprint: BP_ProjectileMagic (/Game/AIBehaviorToolkit/Examples/BP_ProjectileMagic.BP_ProjectileMagic)
+  Graph: EventGraph
+    Node: Cast To BP_NPC_Base (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Hit (Sphere).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> On Component Hit (Sphere).OtherActor
+      Pin: AsBP NPC Base (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Point Damage.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get IsAlive.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get IsAlive (K2Node_VariableGet)
+      Pin: IsAlive (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_NPC_Base.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsAlive.IsAlive
+      Pin: then (exec) Dir=Out
+        -> Apply Point Damage.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: On Component Hit (Sphere) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_NPC_Base.execute
+      Pin: HitComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To BP_NPC_Base.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+        -> Apply Point Damage.HitInfo
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Apply Point Damage.DamagedActor
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To BP_NPC_Base.AsBP NPC Base
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get BehaviorComponent.self
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Apply Point Damage.DamageCauser
+    Node: Apply Point Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: BaseDamage (real) Dir=In
+        -> Get Damage.Damage
+      Pin: HitFromDirection (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: HitInfo (struct) Dir=In
+        -> On Component Hit (Sphere).Hit
+      Pin: EventInstigator (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: DamageTypeClass (class) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Get Damage (K2Node_VariableGet)
+      Pin: Damage (real) Dir=Out
+        -> Apply Point Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Point Damage.HitFromDirection
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_NPC_Base.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Apply Point Damage.execute
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Ignore Actor when Moving
+Target is Primitive Component.execute
+    Node: Ignore Actor when Moving
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Sphere.Sphere
+      Pin: Actor (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: bShouldIgnore (bool) Dir=In
+    Node: Get Sphere (K2Node_VariableGet)
+      Pin: Sphere (object) Dir=Out
+        -> Ignore Actor when Moving
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Ignore Actor when Moving
+Target is Primitive Component.Actor
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

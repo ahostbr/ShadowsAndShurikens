@@ -1,0 +1,239 @@
+Blueprint: BP_SOTS_AbilityRegistrySubsystem (/Game/SOTS/SubSystems/BP_SOTS_AbilityRegistrySubsystem.BP_SOTS_AbilityRegistrySubsystem)
+  Graph: EventGraph
+    Node: Event OnInit (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event OnTick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaTime (real) Dir=Out
+    Node: Event OnShutdown (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+  Graph: GetAllAbilities
+    Node: GetAllAbilities (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get AllPossibleAbilitys (K2Node_VariableGet)
+      Pin: AllPossibleAbilitys (struct) Dir=Out
+        -> Return Node.AllAvailableAbilitys
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetAllAbilities.then
+      Pin: AllAvailableAbilitys (struct) Dir=In
+        -> Get AllPossibleAbilitys.AllPossibleAbilitys
+  Graph: GetAbilityByAbilityTag
+    Node: GetAbilityByAbilityTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: AbilityTag (struct) Dir=Out
+        -> Find.Key
+    Node: Get GrantedAbilitys (K2Node_VariableGet)
+      Pin: GrantedAbilitys (struct) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Get GrantedAbilitys.GrantedAbilitys
+      Pin: Key (struct) Dir=In
+        -> GetAbilityByAbilityTag.AbilityTag
+      Pin: Value (softclass) Dir=Out
+        -> Return Node.AbilitySoftRef
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Found?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetAbilityByAbilityTag.then
+      Pin: AbilitySoftRef (softclass) Dir=In
+        -> Find.Value
+      Pin: Found? (bool) Dir=In
+        -> Find.ReturnValue
+  Graph: IsAbilityGranted?
+    Node: IsAbilityGranted? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+      Pin: AbilityTagToSearchFor (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get GrantedAbilitys (K2Node_VariableGet)
+      Pin: GrantedAbilitys (struct) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> IsAbilityGranted?.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Get GrantedAbilitys.GrantedAbilitys
+      Pin: Keys (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (struct) Dir=In
+        -> Keys.Keys
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Equal (GameplayTag).A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: B (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set LocalFoundTag.execute
+      Pin: else (exec) Dir=Out
+    Node: Set LocalFoundTag (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: LocalFoundTag (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set LocalFoundTag.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Equal (GameplayTag).B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> IsAbilityGranted?.AbilityTagToSearchFor
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Found? (bool) Dir=In
+        -> Get LocalFoundTag.LocalFoundTag
+    Node: Get LocalFoundTag (K2Node_VariableGet)
+      Pin: LocalFoundTag (bool) Dir=Out
+        -> Return Node.Found?
+  Graph: GrantAbility
+    Node: GrantAbility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Key (struct) Dir=Out
+        -> Find.Key
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Get AllPossibleAbilitys (K2Node_VariableGet)
+      Pin: AllPossibleAbilitys (struct) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Get AllPossibleAbilitys.AllPossibleAbilitys
+      Pin: Key (struct) Dir=In
+        -> GrantAbility.Key
+      Pin: Value (softclass) Dir=Out
+        -> Add.Value
+        -> Reroute Node.InputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get GrantedAbilitys (K2Node_VariableGet)
+      Pin: GrantedAbilitys (struct) Dir=Out
+        -> Add.TargetMap
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Call On Ability Granted.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Get GrantedAbilitys.GrantedAbilitys
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (softclass) Dir=In
+        -> Find.Value
+    Node: Call On Ability Granted (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: AbilityTagGranted (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AbilityClassGranted (softclass) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Call On Ability Granted.AbilityTagGranted
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> GrantAbility.Key
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (softclass) Dir=In
+        -> Find.Value
+      Pin: OutputPin (softclass) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (softclass) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (softclass) Dir=Out
+        -> Call On Ability Granted.AbilityClassGranted
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GrantAbility.then
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> GrantAbility.Key
+      Pin: OutputPin (struct) Dir=Out
+        -> Add.Key
+  Graph: OnAbilityGranted
+    Node: OnAbilityGranted (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: AbilityTagGranted (struct) Dir=Out
+      Pin: AbilityClassGranted (softclass) Dir=Out

@@ -1,0 +1,725 @@
+Blueprint: BP_ThrowableExplosiveProjectile (/Game/InventorySystemPro/Blueprints/Weapons/Projectiles/BP_ThrowableExplosiveProjectile.BP_ThrowableExplosiveProjectile)
+  Graph: EventGraph
+    Node: Set Simulate Physics
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Physics Linear Velocity
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get StaticMesh.StaticMesh
+      Pin: bSimulate (bool) Dir=In
+    Node: Set Physics Linear Velocity
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Simulate Physics
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.execute
+      Pin: self (object) Dir=In
+        -> Get StaticMesh.StaticMesh
+      Pin: NewVel (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: bAddToCurrent (bool) Dir=In
+      Pin: BoneName (name) Dir=In
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reset (exec) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.execute
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Physics Linear Velocity
+Target is Primitive Component.NewVel
+    Node: Simulate Physics on Impact (EdGraphNode_Comment)
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set bExploded.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get ExplosionDelay.ExplosionDelay
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get ExplosionDelay (K2Node_VariableGet)
+      Pin: ExplosionDelay (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get CollisionSound.CollisionSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Get CollisionSound (K2Node_VariableGet)
+      Pin: CollisionSound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: self (object) Dir=In
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bExploded.then
+      Pin: then (exec) Dir=Out
+        -> Spawn System at Location.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get ExplosionSound.ExplosionSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Get ExplosionSound (K2Node_VariableGet)
+      Pin: ExplosionSound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: self (object) Dir=In
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Reset (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Play Sound at Location.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Delay.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Play collision sounds (EdGraphNode_Comment)
+    Node: Explosion after Delay (EdGraphNode_Comment)
+    Node: Get bExploded (K2Node_VariableGet)
+      Pin: bExploded (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set bHitDetected.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: else (exec) Dir=Out
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bExploded.bExploded
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set bExploded (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: bExploded (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Play Sound at Location.VolumeMultiplier
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Spawn System at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: then (exec) Dir=Out
+        -> Apply Radial Damage with Falloff.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: SystemTemplate (object) Dir=In
+        -> Get ExplosionParticles.ExplosionParticles
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: bAutoActivate (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bPreCullCheck (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Spawn System at Location.Location
+    Node: Get ExplosionParticles (K2Node_VariableGet)
+      Pin: ExplosionParticles (object) Dir=Out
+        -> Spawn System at Location.SystemTemplate
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Radial Damage with Falloff.Origin
+    Node: Apply Radial Damage with Falloff (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn System at Location.then
+      Pin: then (exec) Dir=Out
+        -> Draw Radial Damage Debug Spheres
+Target is BP Throwable Explosive Projectile.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: BaseDamage (real) Dir=In
+        -> Get Damage.Damage
+      Pin: MinimumDamage (real) Dir=In
+        -> Get MinimumDamage.MinimumDamage
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: DamageInnerRadius (real) Dir=In
+        -> Get ExplosionInnerRadius.ExplosionInnerRadius
+      Pin: DamageOuterRadius (real) Dir=In
+        -> Get ExplosionOuterRadius.ExplosionOuterRadius
+      Pin: DamageFalloff (real) Dir=In
+        -> Get DamageFalloff.DamageFalloff
+      Pin: DamageTypeClass (class) Dir=In
+      Pin: IgnoreActors (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+      Pin: InstigatedByController (object) Dir=In
+      Pin: DamagePreventionChannel (byte) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Damage (K2Node_VariableGet)
+      Pin: Damage (real) Dir=Out
+        -> Apply Radial Damage with Falloff.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get ExplosionInnerRadius (K2Node_VariableGet)
+      Pin: ExplosionInnerRadius (real) Dir=Out
+        -> Apply Radial Damage with Falloff.DamageInnerRadius
+      Pin: self (object) Dir=In
+    Node: Get ExplosionOuterRadius (K2Node_VariableGet)
+      Pin: ExplosionOuterRadius (real) Dir=Out
+        -> Apply Radial Damage with Falloff.DamageOuterRadius
+      Pin: self (object) Dir=In
+    Node: Get MinimumDamage (K2Node_VariableGet)
+      Pin: MinimumDamage (real) Dir=Out
+        -> Apply Radial Damage with Falloff.MinimumDamage
+      Pin: self (object) Dir=In
+    Node: Get DamageFalloff (K2Node_VariableGet)
+      Pin: DamageFalloff (real) Dir=Out
+        -> Apply Radial Damage with Falloff.DamageFalloff
+      Pin: self (object) Dir=In
+    Node: Draw Radial Damage Debug Spheres
+Target is BP Throwable Explosive Projectile (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Radial Damage with Falloff.then
+      Pin: then (exec) Dir=Out
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.execute
+      Pin: self (object) Dir=In
+    Node: Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Draw Radial Damage Debug Spheres
+Target is BP Throwable Explosive Projectile.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: Scale (struct) Dir=In
+        -> Get ExplosionMasterFieldScale.ExplosionMasterFieldScale
+      Pin: Radial Magnitude (real) Dir=In
+        -> Get ExplosionMasterFieldRadialMagnitude.ExplosionMasterFieldRadialMagnitude
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: Pitch (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: Yaw (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Actor World Rotation
+Target is Actor.DeltaRotation
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Roll
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Pitch
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Apply Random Rotation until first Hit occurs (EdGraphNode_Comment)
+    Node: Set bHitDetected (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Component Hit (StaticMesh).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bHitDetected (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get bHitDetected (K2Node_VariableGet)
+      Pin: bHitDetected (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Get bHitDetected.bHitDetected
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Add Actor World Rotation
+Target is Actor.execute
+    Node: On Component Hit (StaticMesh) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set bHitDetected.execute
+      Pin: HitComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get StaticMesh (K2Node_VariableGet)
+      Pin: StaticMesh (object) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.self
+        -> Set Physics Linear Velocity
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Damage (EdGraphNode_Comment)
+    Node: Apply Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set bShouldBounce.execute
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Break Hit Result.HitActor
+      Pin: BaseDamage (real) Dir=In
+        -> Get HitDamage.HitDamage
+      Pin: EventInstigator (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+      Pin: DamageTypeClass (class) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Get HitDamage (K2Node_VariableGet)
+      Pin: HitDamage (real) Dir=Out
+        -> Apply Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+        -> Apply Damage.DamagedActor
+        -> Is Valid.InputObject
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.then
+      Pin: InputObject (object) Dir=In
+        -> Break Hit Result.HitActor
+      Pin: Is Valid (exec) Dir=Out
+        -> Apply Damage.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Physics Linear Velocity
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: Scale (struct) Dir=In
+        -> Get HitMasterFieldScale.HitMasterFieldScale
+      Pin: Radial Magnitude (real) Dir=In
+        -> Get HitMasterFieldRadialMagnitude.HitMasterFieldRadialMagnitude
+    Node: Get ExplosionMasterFieldScale (K2Node_VariableGet)
+      Pin: ExplosionMasterFieldScale (struct) Dir=Out
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.Scale
+      Pin: self (object) Dir=In
+    Node: Get ExplosionMasterFieldRadialMagnitude (K2Node_VariableGet)
+      Pin: ExplosionMasterFieldRadialMagnitude (real) Dir=Out
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.Radial Magnitude
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Break Hit Result.Hit
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> On Component Hit (StaticMesh).Hit
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get HitMasterFieldScale (K2Node_VariableGet)
+      Pin: HitMasterFieldScale (struct) Dir=Out
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.Scale
+      Pin: self (object) Dir=In
+    Node: Get HitMasterFieldRadialMagnitude (K2Node_VariableGet)
+      Pin: HitMasterFieldRadialMagnitude (real) Dir=Out
+        -> Spawn Chaos Impact Field
+Target is BP Throwable Explosive Projectile.Radial Magnitude
+      Pin: self (object) Dir=In
+    Node: Get ProjectileMovement (K2Node_VariableGet)
+      Pin: ProjectileMovement (object) Dir=Out
+        -> Set Bounciness.self
+        -> Set bShouldBounce.self
+      Pin: self (object) Dir=In
+    Node: Set Bounciness (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bShouldBounce.then
+      Pin: then (exec) Dir=Out
+      Pin: Bounciness (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+    Node: Set bShouldBounce (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Apply Damage.then
+      Pin: then (exec) Dir=Out
+        -> Set Bounciness.execute
+      Pin: bShouldBounce (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+    Node: Disable Bounce (EdGraphNode_Comment)
+    Node: Add Actor World Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+    Node: The static mesh of this actor detected a hit (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: DrawRadialDamageDebugSpheres
+    Node: DrawRadialDamageDebugSpheres (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Draw Debug Sphere (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Draw Debug Sphere.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Center (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Radius (real) Dir=In
+        -> Get ExplosionInnerRadius.ExplosionInnerRadius
+      Pin: Segments (int) Dir=In
+      Pin: LineColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Thickness (real) Dir=In
+      Pin: DepthPriority (byte) Dir=In
+    Node: Draw Debug Sphere (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Draw Debug Sphere.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Center (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Radius (real) Dir=In
+        -> Get ExplosionOuterRadius.ExplosionOuterRadius
+      Pin: Segments (int) Dir=In
+      Pin: LineColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Thickness (real) Dir=In
+      Pin: DepthPriority (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> DrawRadialDamageDebugSpheres.then
+      Pin: Condition (bool) Dir=In
+        -> Get bDebug.bDebug
+      Pin: then (exec) Dir=Out
+        -> Draw Debug Sphere.execute
+      Pin: else (exec) Dir=Out
+    Node: Get bDebug (K2Node_VariableGet)
+      Pin: bDebug (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug Sphere.Center
+        -> Draw Debug Sphere.Center
+    Node: Get ExplosionInnerRadius (K2Node_VariableGet)
+      Pin: ExplosionInnerRadius (real) Dir=Out
+        -> Draw Debug Sphere.Radius
+      Pin: self (object) Dir=In
+    Node: Get ExplosionOuterRadius (K2Node_VariableGet)
+      Pin: ExplosionOuterRadius (real) Dir=Out
+        -> Draw Debug Sphere.Radius
+      Pin: self (object) Dir=In
+  Graph: SpawnChaosImpactField
+    Node: SpawnChaosImpactField (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> SpawnActor FS Master Field.execute
+      Pin: Scale (struct) Dir=Out
+        -> Make Transform.Scale
+      Pin: Radial Magnitude (real) Dir=Out
+        -> Set Radial Magnitude.Radial Magnitude
+    Node: SpawnActor FS Master Field (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> SpawnChaosImpactField.then
+      Pin: then (exec) Dir=Out
+        -> Set Debug.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set ActivationType.self
+        -> CE Trigger
+Target is FS Master Field.self
+        -> Set FieldLifespan.self
+        -> Set Radial Magnitude.self
+        -> Set StrainFalloffType.self
+        -> Set NumStrainHits.self
+        -> Set Debug.self
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+        -> SpawnChaosImpactField.Scale
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor FS Master Field.SpawnTransform
+    Node: Set ActivationType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Debug.then
+      Pin: then (exec) Dir=Out
+        -> Set StrainFalloffType.execute
+      Pin: ActivationType (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: CE Trigger
+Target is FS Master Field (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Radial Magnitude.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: Set FieldLifespan (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set NumStrainHits.then
+      Pin: then (exec) Dir=Out
+        -> Set Radial Magnitude.execute
+      Pin: FieldLifespan (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: Set Radial Magnitude (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FieldLifespan.then
+      Pin: then (exec) Dir=Out
+        -> CE Trigger
+Target is FS Master Field.execute
+      Pin: Radial Magnitude (real) Dir=In
+        -> SpawnChaosImpactField.Radial Magnitude
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: Set StrainFalloffType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ActivationType.then
+      Pin: then (exec) Dir=Out
+        -> Set NumStrainHits.execute
+      Pin: StrainFalloffType (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: Set NumStrainHits (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set StrainFalloffType.then
+      Pin: then (exec) Dir=Out
+        -> Set FieldLifespan.execute
+      Pin: NumStrainHits (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Transform.Location
+    Node: Set Debug (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor FS Master Field.then
+      Pin: then (exec) Dir=Out
+        -> Set ActivationType.execute
+      Pin: Debug (bool) Dir=In
+        -> Get bDebug.bDebug
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+    Node: Get bDebug (K2Node_VariableGet)
+      Pin: bDebug (bool) Dir=Out
+        -> Set Debug.Debug
+      Pin: self (object) Dir=In

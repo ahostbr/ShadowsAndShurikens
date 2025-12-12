@@ -1,0 +1,215 @@
+Blueprint: BTT_AttackTarget (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_AttackTarget.BTT_AttackTarget)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> On Rotate To
+Target is BPI Parkour.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+        -> Get Current Attack Target
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Play Animation
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set IsAttacking.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AnimLength (real) Dir=Out
+        -> Delay.Duration
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set IsAttacking.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Animation
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+        -> Set IsAttacking.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Play Animation
+Target is BP Behavior Component.AnimLength
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Play Animation
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: RetCharacter (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: On Rotate To
+Target is BPI Parkour (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Set IsAttacking.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: TargetRot (struct) Dir=In
+      Pin: TargetRot_Roll (real) Dir=In
+      Pin: TargetRot_Pitch (real) Dir=In
+      Pin: TargetRot_Yaw (real) Dir=In
+        -> Find Look at Rotation.ReturnValue_Yaw
+      Pin: PlayRate (real) Dir=In
+      Pin: RotateXY (bool) Dir=In
+    Node: Get Current Attack Target
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: TargetRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> On Rotate To
+Target is BPI Parkour.TargetRot_Yaw
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Attack Target
+Target is BP Behavior Component.TargetRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: OutputPin (object) Dir=Out
+        -> On Rotate To
+Target is BPI Parkour.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set IsAttacking.self
+    Node: Set IsAttacking (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Rotate To
+Target is BPI Parkour.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is BP Behavior Component.execute
+      Pin: IsAttacking (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set IsAttacking (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: IsAttacking (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set IsAttacking.self
+    Node: Event Receive Abort (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Set IsAttacking (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Finish Abort
+Target is BTTask Blueprint Base.execute
+      Pin: IsAttacking (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Abort.then
+      Pin: then (exec) Dir=Out
+        -> Set IsAttacking.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Abort.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Set IsAttacking.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Finish Abort
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set IsAttacking.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Rotate towards the attack target (EdGraphNode_Comment)

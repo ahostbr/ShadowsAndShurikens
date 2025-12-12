@@ -242,8 +242,14 @@ void FBEPModule::RegisterMenus_Impl()
 		return;
 	}
 
-	FToolMenuSection& Section = Menu->AddSection("BEP", FText::FromString(TEXT("BEP")));
-	Section.AddMenuEntry(
+	static const FName SectionName("SOTS_Tools");
+	FToolMenuSection* Section = Menu->FindSection(SectionName);
+	if (!Section)
+	{
+		Section = &Menu->AddSection(SectionName, FText::FromString(TEXT("SOTS Tools")));
+	}
+
+	Section->AddMenuEntry(
 		"OpenBEPExporter",
 		FText::FromString(TEXT("BEP Exporter")),
 		FText::FromString(TEXT("Open the BEP Exporter panel.")),

@@ -1,0 +1,180 @@
+Blueprint: BP_Projectile_Water (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Projectile_Water.BP_Projectile_Water)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Velocity.execute
+    Node: Get ProjectileMovement1 (K2Node_VariableGet)
+      Pin: ProjectileMovement1 (object) Dir=Out
+        -> Set Velocity.self
+      Pin: self (object) Dir=In
+    Node: Set Velocity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> LifeSpan.Play
+      Pin: Velocity (struct) Dir=In
+        -> Rotate Vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement1.ProjectileMovement1
+    Node: Get Velocity (K2Node_VariableGet)
+      Pin: Velocity (struct) Dir=Out
+        -> Rotate Vector.A
+      Pin: self (object) Dir=In
+    Node: Rotate Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity.Velocity
+      Pin: B (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Velocity.Velocity
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Rotate Vector.B
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_Projectile_Fireball.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Elemental Damage
+Target is BPI CGF Elemental Projectiles.self
+        -> Cast To BP_Projectile_Fireball.Object
+    Node: Event Hit (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn Emitter at Location.execute
+      Pin: MyComp (object) Dir=Out
+      Pin: Other (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: bSelfMoved (bool) Dir=Out
+      Pin: HitLocation (struct) Dir=Out
+      Pin: HitNormal (struct) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn Emitter at Location.then
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Spawn Emitter at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Hit.then
+        -> Elemental Damage
+Target is BPI CGF Elemental Projectiles.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: EmitterTemplate (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bAutoActivateSystem (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Spawn Emitter at Location.Location
+    Node: LifeSpan (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Set Velocity.then
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Actor Relative Scale 3D
+Target is Actor.execute
+      Pin: Finished (exec) Dir=Out
+        -> Toggle Active
+Target is Actor Component.execute
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Scale (real) Dir=Out
+        -> vector * float.B
+    Node: Set Actor Relative Scale 3D
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> LifeSpan.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewRelativeScale (struct) Dir=In
+        -> vector * float.ReturnValue
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> LifeSpan.Scale
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Relative Scale 3D
+Target is Actor.NewRelativeScale
+    Node: Get Effect (K2Node_VariableGet)
+      Pin: Effect (object) Dir=Out
+        -> Toggle Active
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Toggle Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> LifeSpan.Finished
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Effect.Effect
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Toggle Active
+Target is Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Elemental Damage
+Target is BPI CGF Elemental Projectiles (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_Projectile_Fireball.CastFailed
+      Pin: then (exec) Dir=Out
+        -> Spawn Emitter at Location.execute
+      Pin: self (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+      Pin: Heat (real) Dir=In
+      Pin: Water (real) Dir=In
+    Node: Cast To BP_Projectile_Fireball (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: CastFailed (exec) Dir=Out
+        -> Elemental Damage
+Target is BPI CGF Elemental Projectiles.execute
+      Pin: Object (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+      Pin: AsBP Projectile Fireball (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

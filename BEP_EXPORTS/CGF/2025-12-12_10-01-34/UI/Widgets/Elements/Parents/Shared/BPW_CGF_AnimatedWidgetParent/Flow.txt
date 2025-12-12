@@ -1,0 +1,1362 @@
+Blueprint: BPW_CGF_AnimatedWidgetParent (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_AnimatedWidgetParent.BPW_CGF_AnimatedWidgetParent)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set WasGamePausedWhenStarted?.execute
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Animation Starting.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Find Animation to Play.Animation
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Animation
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Call On Fade in Completed.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LatentInfo (struct) Dir=In
+    Node: Play Animation Reverse
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get Animation to Play with Fading Widget.FadeOutWithRemovingNamedWidget
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Animation Reverse
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Call On Fade Out Completed.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get End Time
+Target is Widget Animation.ReturnValue
+      Pin: LatentInfo (struct) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Call On Fade in Completed.then
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Play Animation Reverse
+Target is User Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Remove From Parent After Fade Out? (K2Node_VariableGet)
+      Pin: Remove From Parent After Fade Out? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: Condition (bool) Dir=In
+        -> Get Remove From Parent After Fade Out?.Remove From Parent After Fade Out?
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: else (exec) Dir=Out
+        -> Increment Int. 
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: else (exec) Dir=Out
+    Node: Get DoLoop? (K2Node_VariableGet)
+      Pin: DoLoop? (bool) Dir=Out
+        -> AND Boolean.A
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+    Node: Get End Time
+Target is Widget Animation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Animation to Play with Fading Widget.FadeOutWithRemovingNamedWidget
+      Pin: ReturnValue (real) Dir=Out
+        -> Delay.Duration
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Fade Out Completed.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+        -> Get Widget Visiblity While Faded Out.Widget Visiblity While Faded Out
+    Node: Get Time To Wait Before Displaying Widget Again (K2Node_VariableGet)
+      Pin: Time To Wait Before Displaying Widget Again (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Call On Loop.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get Time To Wait Before Displaying Widget Again.Time To Wait Before Displaying Widget Again
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Widget Visiblity While Faded Out (K2Node_VariableGet)
+      Pin: Widget Visiblity While Faded Out (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+      Pin: self (object) Dir=In
+    Node: Get FX_Image (K2Node_VariableGet)
+      Pin: FX_Image (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Fade Out Completed.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get FX_Image.FX_Image
+      Pin: InVisibility (byte) Dir=In
+    Node: Get Remove Masks After FadeOut? (K2Node_VariableGet)
+      Pin: Remove Masks After FadeOut? (bool) Dir=Out
+        -> NOT Boolean.A
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get Remove Masks After FadeOut?.Remove Masks After FadeOut?
+      Pin: then (exec) Dir=Out
+        -> Play Animation Reverse
+Target is User Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Get WidgetNamedSlot (K2Node_VariableGet)
+      Pin: WidgetNamedSlot (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set AnimationCanPlay?.execute
+      Pin: self (object) Dir=In
+        -> Get WidgetNamedSlot.WidgetNamedSlot
+      Pin: InVisibility (byte) Dir=In
+        -> Get Widget Visiblity While Faded In.Widget Visiblity While Faded In
+    Node: Play Animation Reverse
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get Animation to Play Without Fading Widget.FadeOutWithoutRemovingNamedWidget
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Animation Reverse
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Call On Fade Out Completed.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get End Time
+Target is Widget Animation.ReturnValue
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get End Time
+Target is Widget Animation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Animation to Play Without Fading Widget.FadeOutWithoutRemovingNamedWidget
+      Pin: ReturnValue (real) Dir=Out
+        -> Delay.Duration
+    Node: Get Widget Visiblity While Faded In (K2Node_VariableGet)
+      Pin: Widget Visiblity While Faded In (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+      Pin: self (object) Dir=In
+    Node: Get Animation to Play with Fading Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FadeOutWithRemovingNamedWidget (object) Dir=Out
+        -> Play Animation Reverse
+Target is User Widget.InAnimation
+        -> Get End Time
+Target is Widget Animation.self
+    Node: Get Animation to Play Without Fading Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FadeOutWithoutRemovingNamedWidget (object) Dir=Out
+        -> Get End Time
+Target is Widget Animation.self
+        -> Play Animation Reverse
+Target is User Widget.InAnimation
+    Node: You could change the system to use 1 animation with a length of 1sec
+and change the animation playrate aswell however this method allows more control over each animation. (EdGraphNode_Comment)
+    Node: Get WidgetNamedSlot (K2Node_VariableGet)
+      Pin: WidgetNamedSlot (object) Dir=Out
+        -> Slot as Overlay Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Overlay Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get WidgetNamedSlot.WidgetNamedSlot
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Horizontal Alignment
+Target is Overlay Slot.self
+        -> Reroute Node.InputPin
+    Node: Set Vertical Alignment
+Target is Overlay Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Horizontal Alignment
+Target is Overlay Slot.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InVerticalAlignment (byte) Dir=In
+        -> Get Named Widgets Vertical Alignment.Named Widgets Vertical Alignment
+    Node: Set Horizontal Alignment
+Target is Overlay Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Setup Materials
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+        -> Set Vertical Alignment
+Target is Overlay Slot.execute
+      Pin: self (object) Dir=In
+        -> Slot as Overlay Slot.ReturnValue
+      Pin: InHorizontalAlignment (byte) Dir=In
+        -> Get Named Widgets Horizontal Alignment.Named Widgets Horizontal Alignment
+    Node: Get Named Widgets Horizontal Alignment (K2Node_VariableGet)
+      Pin: Named Widgets Horizontal Alignment (byte) Dir=Out
+        -> Set Horizontal Alignment
+Target is Overlay Slot.InHorizontalAlignment
+      Pin: self (object) Dir=In
+    Node: Get Named Widgets Vertical Alignment (K2Node_VariableGet)
+      Pin: Named Widgets Vertical Alignment (byte) Dir=Out
+        -> Set Vertical Alignment
+Target is Overlay Slot.InVerticalAlignment
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Slot as Overlay Slot.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set Vertical Alignment
+Target is Overlay Slot.self
+    Node: If False Escape No Fade Out Or Any Other Proccesing Should Occur (EdGraphNode_Comment)
+    Node: TimeToDisplayWidgetForWas0AndRemoveMasksTrue (EdGraphNode_Comment)
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get DoLoop?.DoLoop?
+      Pin: B (bool) Dir=In
+        -> integer <= integer.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get LoopCount (K2Node_VariableGet)
+      Pin: LoopCount (int) Dir=Out
+        -> integer <= integer.B
+        -> Equal (Integer).A
+      Pin: self (object) Dir=In
+    Node: Get LoopIndex (K2Node_VariableGet)
+      Pin: LoopIndex (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (int) Dir=In
+        -> Get LoopIndex.LoopIndex
+      Pin:    (exec) Dir=Out
+        -> Delay.execute
+      Pin: Result (int) Dir=Out
+    Node: integer <= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: B (int) Dir=In
+        -> Get LoopCount.LoopCount
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get LoopIndex (K2Node_VariableGet)
+      Pin: LoopIndex (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Call On Fade in Completed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Find Animation to Play (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Animation (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+        -> Call On Animation Starting.StartedAnimation
+      Pin: DelayLength (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: WidgetShouldFade (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Find Animation to Play.WidgetShouldFade
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Find Animation to Play.DelayLength
+      Pin: OutputPin (real) Dir=Out
+        -> Delay.Duration
+    Node: Call On Fade Out Completed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+    Node: Call On Fade Out Completed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get RemoveFromParentDelay.RemoveFromParentDelay
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get RemoveFromParentDelay (K2Node_VariableGet)
+      Pin: RemoveFromParentDelay (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Call On Animation Starting (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+      Pin: StartedAnimation (object) Dir=In
+        -> Find Animation to Play.Animation
+    Node: RollCredits
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.execute
+    Node: Get ScrollUp (K2Node_VariableGet)
+      Pin: ScrollUp (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Start Animation
+Target is BPW CGF Animated Widget Parent (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+        -> RollCredits
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+      Pin: DirectStart (bool) Dir=In
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get ScrollUp.ScrollUp
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Set AnimationCanPlay? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: AnimationCanPlay? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Vertical Alignment
+Target is Overlay Slot.then
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get AnimationCanPlay?.AnimationCanPlay?
+      Pin: then (exec) Dir=Out
+        -> Call On Animation Starting.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get AnimationCanPlay? (K2Node_VariableGet)
+      Pin: AnimationCanPlay? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Call On Loop (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: LoopIndex (int) Dir=In
+        -> Get LoopIndex.LoopIndex
+      Pin: LoopCount (int) Dir=In
+        -> Get LoopCount.LoopCount
+    Node: Get LoopCount (K2Node_VariableGet)
+      Pin: LoopCount (int) Dir=Out
+        -> Call On Loop.LoopCount
+      Pin: self (object) Dir=In
+    Node: Get LoopIndex (K2Node_VariableGet)
+      Pin: LoopIndex (int) Dir=Out
+        -> Call On Loop.LoopIndex
+      Pin: self (object) Dir=In
+    Node: Event On Animation Finished (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Animation Finished Dispatcher.execute
+      Pin: Animation (object) Dir=Out
+        -> Call On Animation Finished Dispatcher.FinishedAnimation
+    Node: Call On Animation Finished Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Animation Finished.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: FinishedAnimation (object) Dir=In
+        -> Event On Animation Finished.Animation
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+        -> Get WasGamePausedWhenStarted?.WasGamePausedWhenStarted?
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WasGamePausedWhenStarted?.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Game Paused.then
+      Pin: then (exec) Dir=Out
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Game Paused.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Check If The Game Was Paused When Rolling Credits. UnPause For 1 Tick Or The Animation Wont Play When Paused Then Check And RePause if It Was (EdGraphNode_Comment)
+    Node: Get WasGamePausedWhenStarted? (K2Node_VariableGet)
+      Pin: WasGamePausedWhenStarted? (bool) Dir=Out
+        -> Set Game Paused.bPaused
+      Pin: self (object) Dir=In
+    Node: ResetAnimationForRestart
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set AnimationCanPlay?.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AnimationCanPlay?.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get FX_Image.FX_Image
+      Pin: InVisibility (byte) Dir=In
+    Node: Get FX_Image (K2Node_VariableGet)
+      Pin: FX_Image (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set AnimationCanPlay? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ResetAnimationForRestart
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: AnimationCanPlay? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reset The Widget To Play Again,Called From Interaction Comp (EdGraphNode_Comment)
+    Node: Is Game Paused (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set WasGamePausedWhenStarted?.WasGamePausedWhenStarted?
+    Node: Set WasGamePausedWhenStarted? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Set Game Paused.execute
+      Pin: WasGamePausedWhenStarted? (bool) Dir=In
+        -> Is Game Paused.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Fade In (EdGraphNode_Comment)
+    Node: RemoveFromParent (EdGraphNode_Comment)
+    Node:                                        Loop (EdGraphNode_Comment)
+    Node: Setup How The Widget Looks (EdGraphNode_Comment)
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WasGamePausedWhenStarted?.then
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Is Game Paused (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set WasGamePausedWhenStarted?.WasGamePausedWhenStarted?
+    Node: Set WasGamePausedWhenStarted? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Game Paused.execute
+      Pin: WasGamePausedWhenStarted? (bool) Dir=In
+        -> Is Game Paused.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Load Data from Struct
+Target is BPW CGF Animated Widget Parent (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: Condition (bool) Dir=In
+        -> Get LoadFromDataStruct?.LoadFromDataStruct?
+      Pin: then (exec) Dir=Out
+        -> Load Data from Struct
+Target is BPW CGF Animated Widget Parent.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get LoadFromDataStruct? (K2Node_VariableGet)
+      Pin: LoadFromDataStruct? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Use Data Struct? (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Load Data from Struct
+Target is BPW CGF Animated Widget Parent.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Setup Materials
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set Horizontal Alignment
+Target is Overlay Slot.execute
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+        -> Branch.then
+      Pin: DirectStart? (bool) Dir=In
+        -> StartAnimation
+Custom Event.DirectStart
+    Node: StartAnimation
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: DirectStart (bool) Dir=Out
+        -> Setup Materials
+Collapsed Graph.DirectStart?
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get PlayAnimationOnConstuct?.PlayAnimationOnConstuct?
+      Pin: then (exec) Dir=Out
+        -> Setup Materials
+Collapsed Graph.execute
+      Pin: else (exec) Dir=Out
+    Node: Get PlayAnimationOnConstuct? (K2Node_VariableGet)
+      Pin: PlayAnimationOnConstuct? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Manual Start (EdGraphNode_Comment)
+    Node: Get FX_Image (K2Node_VariableGet)
+      Pin: FX_Image (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> StartAnimation
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Setup Materials
+Collapsed Graph.execute
+      Pin: self (object) Dir=In
+        -> Get FX_Image.FX_Image
+      Pin: InVisibility (byte) Dir=In
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get LoopCount.LoopCount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get DoLoop?.DoLoop?
+      Pin: B (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Branch.else
+      Pin: Value (int) Dir=In
+        -> Get LoopIndex.LoopIndex
+      Pin:    (exec) Dir=Out
+        -> Branch.execute
+      Pin: Result (int) Dir=Out
+    Node: Get LoopIndex (K2Node_VariableGet)
+      Pin: LoopIndex (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get LoopIndex.LoopIndex
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> integer <= integer.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Increment Int. 
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Call On Loop.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get FX_Image (K2Node_VariableGet)
+      Pin: FX_Image (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get FX_Image.FX_Image
+      Pin: InVisibility (byte) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get Remove Masks After FadeOut?.Remove Masks After FadeOut?
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Delay And Call Fade In Complete Based On Animation Length, Calculated in Find Animation to Play Func (EdGraphNode_Comment)
+  Graph: GetAnimationToPlay_WithFadingWidget
+    Node: GetAnimationToPlay_WithFadingWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetAnimationToPlay_WithFadingWidget.then
+      Pin: FadeOutWithRemovingNamedWidget (object) Dir=In
+        -> Select.ReturnValue
+    Node: Get FadeWithTintBlend (K2Node_VariableGet)
+      Pin: FadeWithTintBlend (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get FadeWithTintBlend.FadeWithTintBlend
+      Pin: Option 1 (object) Dir=In
+        -> Get FadeWithoutTintBlend.FadeWithoutTintBlend
+      Pin: Index (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 0
+    Node: Get TintBlendOut (K2Node_VariableGet)
+      Pin: TintBlendOut (real) Dir=Out
+        -> Equal (Float).A
+      Pin: self (object) Dir=In
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get TintBlendOut.TintBlendOut
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get FadeWithoutTintBlend (K2Node_VariableGet)
+      Pin: FadeWithoutTintBlend (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (object) Dir=In
+        -> Get Burn.Burn
+      Pin: Index (bool) Dir=In
+        -> Get UseBurn?.UseBurn?
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.FadeOutWithRemovingNamedWidget
+    Node: Get UseBurn? (K2Node_VariableGet)
+      Pin: UseBurn? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Burn (K2Node_VariableGet)
+      Pin: Burn (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+  Graph: GetAnimationToPlay_WithoutFadingWidget
+    Node: GetAnimationToPlay_WithoutFadingWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetAnimationToPlay_WithoutFadingWidget.then
+      Pin: FadeOutWithoutRemovingNamedWidget (object) Dir=In
+        -> Select.ReturnValue
+    Node: Get FadeOutWithoutRemovingNamedWidget (K2Node_VariableGet)
+      Pin: FadeOutWithoutRemovingNamedWidget (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get FadeOutWithoutRemovingNamedWidget.FadeOutWithoutRemovingNamedWidget
+      Pin: Option 1 (object) Dir=In
+        -> Get FadeOutWithoutRemovingNamedWidgetAndTintBlend.FadeOutWithoutRemovingNamedWidgetAndTintBlend
+      Pin: Index (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 0
+    Node: Get TintBlendOut (K2Node_VariableGet)
+      Pin: TintBlendOut (real) Dir=Out
+        -> Equal (Float).A
+      Pin: self (object) Dir=In
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get TintBlendOut.TintBlendOut
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get FadeOutWithoutRemovingNamedWidgetAndTintBlend (K2Node_VariableGet)
+      Pin: FadeOutWithoutRemovingNamedWidgetAndTintBlend (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (object) Dir=In
+        -> Get Burn.Burn
+      Pin: Index (bool) Dir=In
+        -> Get UseBurn?.UseBurn?
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.FadeOutWithoutRemovingNamedWidget
+    Node: Get UseBurn? (K2Node_VariableGet)
+      Pin: UseBurn? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Burn (K2Node_VariableGet)
+      Pin: Burn (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+  Graph: FindAnimationToPlay
+    Node: FindAnimationToPlay (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> FindAnimationToPlay.then
+      Pin: Animation (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DelayLength (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetShouldFade (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get End Time
+Target is Widget Animation.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Time To Display Widget For.Time To Display Widget For
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 1
+    Node: Get End Time
+Target is Widget Animation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+        -> Select.Option 0
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Time To Display Widget For.Time To Display Widget For
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Time To Display Widget For (K2Node_VariableGet)
+      Pin: Time To Display Widget For (real) Dir=Out
+        -> float + float.B
+        -> Equal (Float).A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+        -> Reroute Node.InputPin
+    Node: Get Animation to Play with Fading Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FadeOutWithRemovingNamedWidget (object) Dir=Out
+        -> Select.Option 0
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Get IsWebBrowser?.IsWebBrowser?
+      Pin: ReturnValue (object) Dir=Out
+        -> Get End Time
+Target is Widget Animation.self
+        -> Reroute Node.InputPin
+    Node: Get IsWebBrowser? (K2Node_VariableGet)
+      Pin: IsWebBrowser? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get FadeOutWithoutRemovingNamedWidgetAndTintBlend (K2Node_VariableGet)
+      Pin: FadeOutWithoutRemovingNamedWidgetAndTintBlend (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> Get End Time
+Target is Widget Animation.ReturnValue
+      Pin: Option 1 (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Select.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Return Node.Animation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Select.ReturnValue
+      Pin: OutputPin (real) Dir=Out
+        -> Return Node.DelayLength
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Return Node.WidgetShouldFade
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get FadeOutWithoutRemovingNamedWidgetAndTintBlend.FadeOutWithoutRemovingNamedWidgetAndTintBlend
+      Pin: Option 1 (object) Dir=In
+        -> Get Burn.Burn
+      Pin: Index (bool) Dir=In
+        -> Get UseBurn?.UseBurn?
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 1
+    Node: Get UseBurn? (K2Node_VariableGet)
+      Pin: UseBurn? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Burn (K2Node_VariableGet)
+      Pin: Burn (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get Animation to Play with Fading Widget.FadeOutWithRemovingNamedWidget
+      Pin: Option 1 (object) Dir=In
+        -> Get Burn.Burn
+      Pin: Index (bool) Dir=In
+        -> Get UseBurn?.UseBurn?
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 0
+    Node: Get UseBurn? (K2Node_VariableGet)
+      Pin: UseBurn? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Burn (K2Node_VariableGet)
+      Pin: Burn (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+  Graph: FadeChildWidget
+    Node: FadeChildWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Playback Speed
+Target is User Widget.execute
+      Pin: PlayMode (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: FadeOutDuration (real) Dir=Out
+        -> float / float.B
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Playback Speed
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get FadeChild_1-0 (K2Node_VariableGet)
+      Pin: FadeChild_1-0 (object) Dir=Out
+        -> Set Playback Speed
+Target is User Widget.InAnimation
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set Playback Speed
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FadeChildWidget.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get FadeChild_1-0.FadeChild_1-0
+      Pin: PlaybackSpeed (real) Dir=In
+        -> float / float.ReturnValue
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> FadeChildWidget.FadeOutDuration
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Playback Speed
+Target is User Widget.PlaybackSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get FadeChild_1-0.FadeChild_1-0
+      Pin: OutputPin (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Play Animation
+Target is User Widget.PlayMode
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> FadeChildWidget.PlayMode
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: LoadDataFromStruct
+    Node: LoadDataFromStruct (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Named Widgets Horizontal Alignment.execute
+    Node: Get AWP_Data (K2Node_VariableGet)
+      Pin: AWP_Data (struct) Dir=Out
+        -> Break F CGF Animated Widget Parent Data.F_CGF_AnimatedWidgetParent_Data
+      Pin: self (object) Dir=In
+    Node: Break F CGF Animated Widget Parent Data (K2Node_BreakStruct)
+      Pin: F_CGF_AnimatedWidgetParent_Data (struct) Dir=In
+        -> Get AWP_Data.AWP_Data
+      Pin: NamedWidgetsHorizontalAlignment_60_5C87114A48F6E6D98A5765B8D81EF3AA (byte) Dir=Out
+        -> Set Named Widgets Horizontal Alignment.Named Widgets Horizontal Alignment
+      Pin: NamedWidgetsVerticalAlignment_61_8A5189004695BB827C55F4AD445661F0 (byte) Dir=Out
+        -> Set Named Widgets Vertical Alignment.Named Widgets Vertical Alignment
+      Pin: TimeToDisplayWidgetFor_58_71B5323742C39B1018749EB113333180 (real) Dir=Out
+        -> Set Time To Display Widget For.Time To Display Widget For
+      Pin: TimeToWaitBeforeDisplayingWidgetAgain_57_C41074DE42B9BDE8309C3C93E84E8AEC (real) Dir=Out
+        -> Set Time To Wait Before Displaying Widget Again.Time To Wait Before Displaying Widget Again
+      Pin: PlayAnimationOnConstuct?_56_67C1D07541D39994A452E4A5033000EF (bool) Dir=Out
+        -> Set PlayAnimationOnConstuct?.PlayAnimationOnConstuct?
+      Pin: RemoveMasksAfterFadeOut?_55_E2D061744382E00E2A7DB7A949BB180F (bool) Dir=Out
+        -> Set Remove Masks After FadeOut?.Remove Masks After FadeOut?
+      Pin: RemoveFromParentAfterFadeOut?_54_F910D51743CE56622D53CBAA74A3C40B (bool) Dir=Out
+        -> Set Remove From Parent After Fade Out?.Remove From Parent After Fade Out?
+      Pin: RemoveFromParentDelay_53_0E4B30674FF0B12BE969CD89A3354252 (real) Dir=Out
+        -> Set RemoveFromParentDelay.RemoveFromParentDelay
+      Pin: DoLoop?_52_CF8C3AE641F490AAE97195BF82C403B9 (bool) Dir=Out
+        -> Set DoLoop?.DoLoop?
+      Pin: LoopCount_51_8EAAABDC42FBEBC4CECBBA86C10D7C70 (int) Dir=Out
+        -> Set LoopCount.LoopCount
+      Pin: WidgetVisiblityWhileFadedIn_50_C8F229CD4069CE7F57BEF2AC02A34F65 (byte) Dir=Out
+        -> Set Widget Visiblity While Faded In.Widget Visiblity While Faded In
+      Pin: WidgetVisiblityWhileFadedOut_49_A15F0C55418F54EAA1D60F9A0D7ABAD8 (byte) Dir=Out
+        -> Set Widget Visiblity While Faded Out.Widget Visiblity While Faded Out
+      Pin: StartMaskTexture_48_60D595144831D36BC369378CF6A9FA9F (softobject) Dir=Out
+        -> Set StartMaskTexture.StartMaskTexture
+      Pin: EndMaskTexture_47_79E57C16438E1EF9E1F4CBAF2E15CF2D (softobject) Dir=Out
+        -> Set EndMaskTexture.EndMaskTexture
+      Pin: FireTexture_46_2CDCA6B84F8F45108209FF991683AD5D (softobject) Dir=Out
+        -> Set FireTexture.FireTexture
+      Pin: TintColor_45_8325D2C24B5AC96BF9CE93978C2A1B1B (struct) Dir=Out
+        -> Set TintColor.TintColor
+      Pin: TintBlendOut_44_05E8CA8147BA97D956F0448D8FD272C6 (real) Dir=Out
+        -> Set TintBlendOut.TintBlendOut
+      Pin: WaveWarpStrength_42_EF978B804DFB0BB26A264FBBC7FBED96 (real) Dir=Out
+        -> Set WaveWarpStrength.WaveWarpStrength
+      Pin: PannerSpeed_41_CCD61DBC419F4E30E063318D8453A6E6 (real) Dir=Out
+        -> Set PannerSpeed.PannerSpeed
+      Pin: IsWebBrowser?_40_E7AA6DDE4E12143F5EDE7DBA3D230F27 (bool) Dir=Out
+        -> Set IsWebBrowser?.IsWebBrowser?
+      Pin: UseBurn?_39_0E4406D04A36AFE92AC7308EA9170690 (bool) Dir=Out
+        -> Set UseBurn?.UseBurn?
+    Node: Set UseBurn? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsWebBrowser?.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: UseBurn? (bool) Dir=In
+        -> Break F CGF Animated Widget Parent Data.UseBurn?_39_0E4406D04A36AFE92AC7308EA9170690
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsWebBrowser? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set PannerSpeed.then
+      Pin: then (exec) Dir=Out
+        -> Set UseBurn?.execute
+      Pin: IsWebBrowser? (bool) Dir=In
+        -> Break F CGF Animated Widget Parent Data.IsWebBrowser?_40_E7AA6DDE4E12143F5EDE7DBA3D230F27
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set PannerSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set WaveWarpStrength.then
+      Pin: then (exec) Dir=Out
+        -> Set IsWebBrowser?.execute
+      Pin: PannerSpeed (real) Dir=In
+        -> Break F CGF Animated Widget Parent Data.PannerSpeed_41_CCD61DBC419F4E30E063318D8453A6E6
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set WaveWarpStrength (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TintBlendOut.then
+      Pin: then (exec) Dir=Out
+        -> Set PannerSpeed.execute
+      Pin: WaveWarpStrength (real) Dir=In
+        -> Break F CGF Animated Widget Parent Data.WaveWarpStrength_42_EF978B804DFB0BB26A264FBBC7FBED96
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TintBlendOut (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TintColor.then
+      Pin: then (exec) Dir=Out
+        -> Set WaveWarpStrength.execute
+      Pin: TintBlendOut (real) Dir=In
+        -> Break F CGF Animated Widget Parent Data.TintBlendOut_44_05E8CA8147BA97D956F0448D8FD272C6
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TintColor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FireTexture.then
+      Pin: then (exec) Dir=Out
+        -> Set TintBlendOut.execute
+      Pin: TintColor (struct) Dir=In
+        -> Break F CGF Animated Widget Parent Data.TintColor_45_8325D2C24B5AC96BF9CE93978C2A1B1B
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FireTexture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set EndMaskTexture.then
+      Pin: then (exec) Dir=Out
+        -> Set TintColor.execute
+      Pin: FireTexture (softobject) Dir=In
+        -> Break F CGF Animated Widget Parent Data.FireTexture_46_2CDCA6B84F8F45108209FF991683AD5D
+      Pin: Output_Get (softobject) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set EndMaskTexture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set StartMaskTexture.then
+      Pin: then (exec) Dir=Out
+        -> Set FireTexture.execute
+      Pin: EndMaskTexture (softobject) Dir=In
+        -> Break F CGF Animated Widget Parent Data.EndMaskTexture_47_79E57C16438E1EF9E1F4CBAF2E15CF2D
+      Pin: Output_Get (softobject) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set StartMaskTexture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Widget Visiblity While Faded Out.then
+      Pin: then (exec) Dir=Out
+        -> Set EndMaskTexture.execute
+      Pin: StartMaskTexture (softobject) Dir=In
+        -> Break F CGF Animated Widget Parent Data.StartMaskTexture_48_60D595144831D36BC369378CF6A9FA9F
+      Pin: Output_Get (softobject) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Widget Visiblity While Faded Out (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Widget Visiblity While Faded In.then
+      Pin: then (exec) Dir=Out
+        -> Set StartMaskTexture.execute
+      Pin: Widget Visiblity While Faded Out (byte) Dir=In
+        -> Break F CGF Animated Widget Parent Data.WidgetVisiblityWhileFadedOut_49_A15F0C55418F54EAA1D60F9A0D7ABAD8
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Widget Visiblity While Faded In (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LoopCount.then
+      Pin: then (exec) Dir=Out
+        -> Set Widget Visiblity While Faded Out.execute
+      Pin: Widget Visiblity While Faded In (byte) Dir=In
+        -> Break F CGF Animated Widget Parent Data.WidgetVisiblityWhileFadedIn_50_C8F229CD4069CE7F57BEF2AC02A34F65
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set LoopCount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DoLoop?.then
+      Pin: then (exec) Dir=Out
+        -> Set Widget Visiblity While Faded In.execute
+      Pin: LoopCount (int) Dir=In
+        -> Break F CGF Animated Widget Parent Data.LoopCount_51_8EAAABDC42FBEBC4CECBBA86C10D7C70
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set DoLoop? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set RemoveFromParentDelay.then
+      Pin: then (exec) Dir=Out
+        -> Set LoopCount.execute
+      Pin: DoLoop? (bool) Dir=In
+        -> Break F CGF Animated Widget Parent Data.DoLoop?_52_CF8C3AE641F490AAE97195BF82C403B9
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RemoveFromParentDelay (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Remove From Parent After Fade Out?.then
+      Pin: then (exec) Dir=Out
+        -> Set DoLoop?.execute
+      Pin: RemoveFromParentDelay (real) Dir=In
+        -> Break F CGF Animated Widget Parent Data.RemoveFromParentDelay_53_0E4B30674FF0B12BE969CD89A3354252
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Remove From Parent After Fade Out? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Remove Masks After FadeOut?.then
+      Pin: then (exec) Dir=Out
+        -> Set RemoveFromParentDelay.execute
+      Pin: Remove From Parent After Fade Out? (bool) Dir=In
+        -> Break F CGF Animated Widget Parent Data.RemoveFromParentAfterFadeOut?_54_F910D51743CE56622D53CBAA74A3C40B
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Remove Masks After FadeOut? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set PlayAnimationOnConstuct?.then
+      Pin: then (exec) Dir=Out
+        -> Set Remove From Parent After Fade Out?.execute
+      Pin: Remove Masks After FadeOut? (bool) Dir=In
+        -> Break F CGF Animated Widget Parent Data.RemoveMasksAfterFadeOut?_55_E2D061744382E00E2A7DB7A949BB180F
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set PlayAnimationOnConstuct? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Time To Wait Before Displaying Widget Again.then
+      Pin: then (exec) Dir=Out
+        -> Set Remove Masks After FadeOut?.execute
+      Pin: PlayAnimationOnConstuct? (bool) Dir=In
+        -> Break F CGF Animated Widget Parent Data.PlayAnimationOnConstuct?_56_67C1D07541D39994A452E4A5033000EF
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Time To Wait Before Displaying Widget Again (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Time To Display Widget For.then
+      Pin: then (exec) Dir=Out
+        -> Set PlayAnimationOnConstuct?.execute
+      Pin: Time To Wait Before Displaying Widget Again (real) Dir=In
+        -> Break F CGF Animated Widget Parent Data.TimeToWaitBeforeDisplayingWidgetAgain_57_C41074DE42B9BDE8309C3C93E84E8AEC
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Time To Display Widget For (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Named Widgets Vertical Alignment.then
+      Pin: then (exec) Dir=Out
+        -> Set Time To Wait Before Displaying Widget Again.execute
+      Pin: Time To Display Widget For (real) Dir=In
+        -> Break F CGF Animated Widget Parent Data.TimeToDisplayWidgetFor_58_71B5323742C39B1018749EB113333180
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Named Widgets Horizontal Alignment (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> LoadDataFromStruct.then
+      Pin: then (exec) Dir=Out
+        -> Set Named Widgets Vertical Alignment.execute
+      Pin: Named Widgets Horizontal Alignment (byte) Dir=In
+        -> Break F CGF Animated Widget Parent Data.NamedWidgetsHorizontalAlignment_60_5C87114A48F6E6D98A5765B8D81EF3AA
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Named Widgets Vertical Alignment (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Named Widgets Horizontal Alignment.then
+      Pin: then (exec) Dir=Out
+        -> Set Time To Display Widget For.execute
+      Pin: Named Widgets Vertical Alignment (byte) Dir=In
+        -> Break F CGF Animated Widget Parent Data.NamedWidgetsVerticalAlignment_61_8A5189004695BB827C55F4AD445661F0
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set UseBurn?.then
+  Graph: SetWidgetInNamedSlotVis
+    Node: SetWidgetInNamedSlotVis (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: InVisibility (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get WidgetNamedSlot (K2Node_VariableGet)
+      Pin: WidgetNamedSlot (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetWidgetInNamedSlotVis.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WidgetNamedSlot.WidgetNamedSlot
+      Pin: InVisibility (byte) Dir=In
+        -> SetWidgetInNamedSlotVis.InVisibility
+  Graph: OnFadeInCompleted
+    Node: OnFadeInCompleted (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnFadeOutCompleted
+    Node: OnFadeOutCompleted (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnAnimationStarting
+    Node: OnAnimationStarting (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: StartedAnimation (object) Dir=Out
+  Graph: OnLoop
+    Node: OnLoop (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: LoopIndex (int) Dir=Out
+      Pin: LoopCount (int) Dir=Out
+  Graph: OnAnimationFinishedDispatcher
+    Node: OnAnimationFinishedDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: FinishedAnimation (object) Dir=Out

@@ -1,0 +1,1000 @@
+Blueprint: BP_FighterAICharacter (/Game/InventorySystemPro/Blueprints/AI/BP_FighterAICharacter.BP_FighterAICharacter)
+  Graph: EventGraph
+    Node: Event AnyDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Health.execute
+      Pin: Damage (real) Dir=Out
+        -> float - float.B
+      Pin: DamageType (object) Dir=Out
+      Pin: InstigatedBy (object) Dir=Out
+      Pin: DamageCauser (object) Dir=Out
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Health.Health
+      Pin: B (real) Dir=In
+        -> Event AnyDamage.Damage
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Health.Health
+    Node: Get Health (K2Node_VariableGet)
+      Pin: Health (real) Dir=Out
+        -> float - float.A
+      Pin: self (object) Dir=In
+    Node: Set Health (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event AnyDamage.then
+      Pin: then (exec) Dir=Out
+        -> On Play Hit Montage Multicast
+Target is BP Fighter AICharacter
+RELIABLE Replicated To All (if server).execute
+      Pin: Health (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float <= float.A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Play Hit Montage Multicast
+Target is BP Fighter AICharacter
+RELIABLE Replicated To All (if server).then
+      Pin: Condition (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: else (exec) Dir=Out
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Set Health.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Reset (exec) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> On Character Death Server
+Target is BP Fighter AICharacter
+Replicated To Server (if owning client).execute
+    Node: Example Damage & death code with item drop (EdGraphNode_Comment)
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: OnAttackPlayer_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Apply Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Get TargetPlayerCharacter.TargetPlayerCharacter
+      Pin: BaseDamage (real) Dir=In
+      Pin: EventInstigator (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: DamageCauser (object) Dir=In
+        -> Self-Reference.self
+      Pin: DamageTypeClass (class) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Apply Damage.DamageCauser
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Apply Damage.EventInstigator
+    Node: Get bAttackCooledDown (K2Node_VariableGet)
+      Pin: bAttackCooledDown (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get bAttackCooledDown.bAttackCooledDown
+      Pin: then (exec) Dir=Out
+        -> Set bAttackCooledDown.execute
+      Pin: else (exec) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Damage.then
+      Pin: then (exec) Dir=Out
+        -> Set bAttackCooledDown.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set bAttackCooledDown (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: bAttackCooledDown (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bAttackCooledDown (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set TargetPlayerCharacter.execute
+      Pin: bAttackCooledDown (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> On Play Attack Animation Multicast
+Target is BP Fighter AICharacter
+Replicated To All (if server).then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+        -> Branch.execute
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+        -> GET.Output
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: OnCharacterDeath_ServerReplicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Character Death Server
+Target is BP Fighter AICharacter.execute
+    Node: AI Character Death (EdGraphNode_Comment)
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Character Death Server
+Target is BP Fighter AICharacter.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Character Death Server
+Target is BP Fighter AICharacter (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCharacterDeath_ServerReplicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+    Node: Attack Player (EdGraphNode_Comment)
+    Node: Update (EdGraphNode_Comment)
+    Node: Update AI
+Target is BP Fighter AICharacter (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get bIsDead (K2Node_VariableGet)
+      Pin: bIsDead (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnCompleted
+      Pin: Condition (bool) Dir=In
+        -> Get bIsDead.bIsDead
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Apply Damage.execute
+    Node: On Character Death Server
+Target is BP Fighter AICharacter
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: NOTE: This is just a simple demonstration on how you can use Inventory Components in your AI Characters.
+The AI code itself is not optimized or the 'best way' implement AI in Unreal.
+Check out Unreal's amazing features for AI such Behaviour Trees for your real AI characters. (EdGraphNode_Comment)
+    Node: OnPlayAttackAnimation_MulticastReplicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MontageToPlay (object) Dir=Out
+        -> Play Montage.MontageToPlay
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+        -> OnPlayAttackAnimation_MulticastReplicated From Server
+Executes On All
+Custom Event.MontageToPlay
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: On Play Attack Animation Multicast
+Target is BP Fighter AICharacter
+Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AttackAnimationIndex.then
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+      Pin: MontageToPlay (object) Dir=In
+        -> GET.Output
+    Node: Get TargetPlayerCharacter (K2Node_VariableGet)
+      Pin: TargetPlayerCharacter (object) Dir=Out
+        -> Apply Damage.DamagedActor
+      Pin: self (object) Dir=In
+    Node: Set TargetPlayerCharacter (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bAttackCooledDown.then
+      Pin: then (exec) Dir=Out
+        -> Set AttackAnimationIndex.execute
+      Pin: TargetPlayerCharacter (object) Dir=In
+        -> Get ClosestPlayerCharacter.ClosestPlayerCharacter
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ClosestPlayerCharacter (K2Node_VariableGet)
+      Pin: ClosestPlayerCharacter (object) Dir=Out
+        -> Set TargetPlayerCharacter.TargetPlayerCharacter
+      Pin: self (object) Dir=In
+    Node: Get AttackAnimations (K2Node_VariableGet)
+      Pin: AttackAnimations (object) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get AttackAnimations.AttackAnimations
+      Pin: Dimension 1 (int) Dir=In
+        -> Get AttackAnimationIndex.AttackAnimationIndex
+      Pin: Output (object) Dir=Out
+        -> Play Montage.MontageToPlay
+        -> On Play Attack Animation Multicast
+Target is BP Fighter AICharacter
+Replicated To All (if server).MontageToPlay
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get AttackAnimations.AttackAnimations
+      Pin: ReturnValue (int) Dir=Out
+        -> int - int.A
+    Node: Get AttackAnimationIndex (K2Node_VariableGet)
+      Pin: AttackAnimationIndex (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Get AttackAnimations (K2Node_VariableGet)
+      Pin: AttackAnimations (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Set AttackAnimationIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetPlayerCharacter.then
+      Pin: then (exec) Dir=Out
+        -> On Play Attack Animation Multicast
+Target is BP Fighter AICharacter
+Replicated To All (if server).execute
+      Pin: AttackAnimationIndex (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Set AttackAnimationIndex.AttackAnimationIndex
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Random Integer in Range.Max
+    Node: OnPlayHitMontage_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Set HitAnimationIndex.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+        -> GET.Output
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: On Play Hit Montage Multicast
+Target is BP Fighter AICharacter
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Health.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Get HitAnimations (K2Node_VariableGet)
+      Pin: HitAnimations (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get HitAnimations.HitAnimations
+      Pin: Dimension 1 (int) Dir=In
+        -> Set HitAnimationIndex.Output_Get
+      Pin: Output (object) Dir=Out
+        -> Play Montage.MontageToPlay
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get HitAnimations.HitAnimations
+      Pin: ReturnValue (int) Dir=Out
+        -> int - int.A
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Set HitAnimationIndex.HitAnimationIndex
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Random Integer in Range.Max
+    Node: Set HitAnimationIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: HitAnimationIndex (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Get HitAnimations (K2Node_VariableGet)
+      Pin: HitAnimations (object) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get bIsDead (K2Node_VariableGet)
+      Pin: bIsDead (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnAttackPlayer_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsDead.bIsDead
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsDead (K2Node_VariableGet)
+      Pin: bIsDead (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnPlayAttackAnimation_MulticastReplicated From Server
+Executes On All
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsDead.bIsDead
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Play Montage.execute
+    Node: Get bIsDead (K2Node_VariableGet)
+      Pin: bIsDead (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsDead.bIsDead
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Update AI
+Target is BP Fighter AICharacter.execute
+    Node: Get bIsDead (K2Node_VariableGet)
+      Pin: bIsDead (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnPlayHitMontage_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsDead.bIsDead
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Set HitAnimationIndex.execute
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WeaponMesh.WeaponMesh
+      Pin: Parent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+      Pin: self (object) Dir=In
+    Node: Get WeaponMesh (K2Node_VariableGet)
+      Pin: WeaponMesh (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+    Node: New Guid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set UniqueID.UniqueID
+    Node: Equal (Guid) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Equal (Guid).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set UniqueID.execute
+      Pin: else (exec) Dir=Out
+    Node: Generate a unique GUID that is only set once (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+    Node: Attach Weapon to Hand (EdGraphNode_Comment)
+    Node: Get BP_DropInventoryComponent (K2Node_VariableGet)
+      Pin: BP_DropInventoryComponent (object) Dir=Out
+        -> Get UniqueID.self
+        -> Set UniqueID.self
+      Pin: self (object) Dir=In
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Equal (Guid).A
+      Pin: self (object) Dir=In
+        -> Get BP_DropInventoryComponent.BP_DropInventoryComponent
+    Node: Set UniqueID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: UniqueID (struct) Dir=In
+        -> New Guid.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_DropInventoryComponent.BP_DropInventoryComponent
+  Graph: CharacterDeathServer
+    Node: CharacterDeathServer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set with Notify bIsDead.execute
+    Node: Set with Notify bIsDead (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> CharacterDeathServer.then
+      Pin: then (exec) Dir=Out
+        -> On Drop Items Server
+Target is BP Inventory Drop Component
+Replicated To Server (if owning client).execute
+      Pin: bIsDead (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BP_DropInventoryComponent (K2Node_VariableGet)
+      Pin: BP_DropInventoryComponent (object) Dir=Out
+        -> On Drop Items Server
+Target is BP Inventory Drop Component
+Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: On Drop Items Server
+Target is BP Inventory Drop Component
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set with Notify bIsDead.then
+      Pin: then (exec) Dir=Out
+        -> Disable Movement
+Target is Character Movement Component.execute
+      Pin: self (object) Dir=In
+        -> Get BP_DropInventoryComponent.BP_DropInventoryComponent
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component.self
+        -> Set Collision Enabled
+Target is Primitive Component.self
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Disable Movement
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Disable Movement
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Drop Items Server
+Target is BP Inventory Drop Component
+Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Response to Channel
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: InBoneName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: bNewSimulate (bool) Dir=In
+      Pin: bIncludeSelf (bool) Dir=In
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component.InBoneName
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: NewType (byte) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Response to Channel
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Movement
+Target is Character Movement Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: NewType (byte) Dir=In
+    Node: AI Character Death (EdGraphNode_Comment)
+  Graph: UpdateAI
+    Node: UpdateAI (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To AIController.execute
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To AIController.Object
+    Node: Cast To AIController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> UpdateAI.then
+      Pin: then (exec) Dir=Out
+        -> Move to Actor
+Target is AIController.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: AsAIController (object) Dir=Out
+        -> Move to Actor
+Target is AIController.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Move to Actor
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To AIController.then
+      Pin: then (exec) Dir=Out
+        -> Switch on EPathFollowingRequestResult.execute
+      Pin: self (object) Dir=In
+        -> Cast To AIController.AsAIController
+      Pin: Goal (object) Dir=In
+        -> Get Closest Player.PlayerCharacter
+      Pin: AcceptanceRadius (real) Dir=In
+      Pin: bStopOnOverlap (bool) Dir=In
+      Pin: bUsePathfinding (bool) Dir=In
+      Pin: bCanStrafe (bool) Dir=In
+      Pin: FilterClass (class) Dir=In
+      Pin: bAllowPartialPath (bool) Dir=In
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on EPathFollowingRequestResult.Selection
+    Node: Switch on EPathFollowingRequestResult (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Move to Actor
+Target is AIController.then
+      Pin: Selection (byte) Dir=In
+        -> Move to Actor
+Target is AIController.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Failed (exec) Dir=Out
+      Pin: AlreadyAtGoal (exec) Dir=Out
+        -> On Attack Player Server
+Target is BP Fighter AICharacter
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: RequestSuccessful (exec) Dir=Out
+    Node: On Attack Player Server
+Target is BP Fighter AICharacter
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EPathFollowingRequestResult.AlreadyAtGoal
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Very primitive AI setup for demo purposes.  (EdGraphNode_Comment)
+    Node: Get Closest Player (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: PlayerCharacter (object) Dir=Out
+        -> Move to Actor
+Target is AIController.Goal
+  Graph: GetClosestPlayer
+    Node: GetClosestPlayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set TempClosestPlayerDistance.execute
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempClosestPlayerDistance.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Is Player Controlled
+Target is Pawn.self
+        -> Set ClosestPlayerCharacter.ClosestPlayerCharacter
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (struct) Dir=Out
+        -> Distance (Vector).V1
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Distance (Vector).V2
+    Node: Distance (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: V1 (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: V2 (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set TempClosestPlayerDistance.TempClosestPlayerDistance
+        -> float < float.A
+    Node: Set TempClosestPlayerDistance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestPlayerCharacter.execute
+      Pin: TempClosestPlayerDistance (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set TempClosestPlayerDistance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+        -> GetClosestPlayer.then
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: TempClosestPlayerDistance (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get TempClosestPlayerDistance.TempClosestPlayerDistance
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get TempClosestPlayerDistance (K2Node_VariableGet)
+      Pin: TempClosestPlayerDistance (real) Dir=Out
+        -> float < float.B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set TempClosestPlayerDistance.execute
+      Pin: else (exec) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: PlayerCharacter (object) Dir=In
+        -> Get ClosestPlayerCharacter.ClosestPlayerCharacter
+    Node: Set ClosestPlayerCharacter (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TempClosestPlayerDistance.then
+      Pin: then (exec) Dir=Out
+      Pin: ClosestPlayerCharacter (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ClosestPlayerCharacter (K2Node_VariableGet)
+      Pin: ClosestPlayerCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+      Pin: InputObject (object) Dir=In
+        -> Get ClosestPlayerCharacter.ClosestPlayerCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set TempClosestPlayerDistance.execute
+    Node: Get ClosestPlayerCharacter (K2Node_VariableGet)
+      Pin: ClosestPlayerCharacter (object) Dir=Out
+        -> Return Node.PlayerCharacter
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Player Controlled
+Target is Pawn.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: PlayerCharacter (object) Dir=In
+        -> Get ClosestPlayerCharacter.ClosestPlayerCharacter
+    Node: Get ClosestPlayerCharacter (K2Node_VariableGet)
+      Pin: ClosestPlayerCharacter (object) Dir=Out
+        -> Return Node.PlayerCharacter
+      Pin: self (object) Dir=In
+    Node: Is Player Controlled
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Finds the player character that is the closest to this AI character (EdGraphNode_Comment)
+  Graph: OnRep_bIsDead
+    Node: OnRep_bIsDead (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsDead (K2Node_VariableGet)
+      Pin: bIsDead (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnRep_bIsDead.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsDead.bIsDead
+      Pin: then (exec) Dir=Out
+        -> Disable Movement
+Target is Character Movement Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component.self
+        -> Set Collision Enabled
+Target is Primitive Component.self
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Disable Movement
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Disable Movement
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Response to Channel
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: InBoneName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: bNewSimulate (bool) Dir=In
+      Pin: bIncludeSelf (bool) Dir=In
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component.InBoneName
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: NewType (byte) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Response to Channel
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set All Bodies Below Simulate Physics
+Target is Skeletal Mesh Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Movement
+Target is Character Movement Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: NewType (byte) Dir=In
+    Node: Replicate death to client (EdGraphNode_Comment)

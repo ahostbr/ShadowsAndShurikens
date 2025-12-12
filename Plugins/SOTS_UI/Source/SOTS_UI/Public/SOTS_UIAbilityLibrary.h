@@ -5,8 +5,7 @@
 #include "GameplayTagContainer.h"
 #include "SOTS_UIAbilityLibrary.generated.h"
 
-class USOTS_HUDSubsystem;
-class USOTS_NotificationSubsystem;
+class USOTS_UIRouterSubsystem;
 
 UCLASS()
 class SOTS_UI_API USOTS_UIAbilityLibrary : public UBlueprintFunctionLibrary

@@ -1,0 +1,110 @@
+Blueprint: WBP_FirstTimePickupNotification_RPG (/Game/InventorySystemPro/ExampleContent/RPG/UI/Widgets/WBP_FirstTimePickupNotification_RPG.WBP_FirstTimePickupNotification_RPG)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: self (object) Dir=In
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemImageRef.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Set ItemImageRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemNameRef.execute
+      Pin: ItemImageRef (object) Dir=In
+        -> Get ItemImage.ItemImage
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemNameRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ItemImageRef.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemDescriptionRef.execute
+      Pin: ItemNameRef (object) Dir=In
+        -> Get ItemNameText2.ItemNameText2
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemDescriptionRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ItemNameRef.then
+      Pin: then (exec) Dir=Out
+      Pin: ItemDescriptionRef (object) Dir=In
+        -> Get ItemDescriptionRichText.ItemDescriptionRichText
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ItemImage (K2Node_VariableGet)
+      Pin: ItemImage (object) Dir=Out
+        -> Set ItemImageRef.ItemImageRef
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Get ItemDescriptionRichText (K2Node_VariableGet)
+      Pin: ItemDescriptionRichText (object) Dir=Out
+        -> Set ItemDescriptionRef.ItemDescriptionRef
+      Pin: self (object) Dir=In
+    Node: Get ItemNameText2 (K2Node_VariableGet)
+      Pin: ItemNameText2 (object) Dir=Out
+        -> Set ItemNameRef.ItemNameRef
+      Pin: self (object) Dir=In
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get NewItemPickupSound.NewItemPickupSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get PlayerInventory (K2Node_VariableGet)
+      Pin: PlayerInventory (object) Dir=Out
+        -> Get PlayerController.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+        -> Get PlayerInventory.PlayerInventory
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerController.PlayerController
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get NewItemPickupSound.self
+    Node: Get NewItemPickupSound (K2Node_VariableGet)
+      Pin: NewItemPickupSound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig

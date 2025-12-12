@@ -1,0 +1,300 @@
+Blueprint: BPW_CGF_Focusable_ButtonBase (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_Focusable_ButtonBase.BPW_CGF_Focusable_ButtonBase)
+  Graph: EventGraph
+    Node: Event On Added to Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CGF Do Once This Interval.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Call On Focused Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set Keyboard Focus
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+    Node: Event On Mouse Enter (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Mouse Enter Dispatcher.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Event On Mouse Leave (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Mouse Leave Dispatcher.execute
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Call On Mouse Enter Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Mouse Enter.then
+      Pin: then (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+    Node: Call On Mouse Leave Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Mouse Leave.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Clicked (BTN) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Clicked Dispatcher.execute
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: else (exec) Dir=Out
+      Pin: BTNTEXT (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get.BTNTEXT
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get TextToDisplay (K2Node_VariableGet)
+      Pin: TextToDisplay (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get TextToDisplay.TextToDisplay
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Set Last Focused Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Call On Focused Dispatcher.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: LastFocused (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+    Node: Event On Removed from Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Focus Lost Dispatcher.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Call On Focus Lost Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Removed from Focus Path.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Mouse Enter Dispatcher.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call On Clicked Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (BTN).then
+        -> DoClick
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BTN (K2Node_VariableGet)
+      Pin: BTN (object) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CGF Do Once This Interval.Completed
+      Pin: then (exec) Dir=Out
+        -> Call On Focused Dispatcher.execute
+      Pin: self (object) Dir=In
+        -> Get BTN.BTN
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InFontInfo (struct) Dir=In
+        -> Get Font.Font
+    Node: Get Font (K2Node_VariableGet)
+      Pin: Font (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.BTNTEXT
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Font
+Target is Text.self
+        -> Reroute Node.InputPin
+    Node: Set Color and Opacity
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Font
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get In Color and Opacity.In Color and Opacity
+    Node: Get In Color and Opacity (K2Node_VariableGet)
+      Pin: In Color and Opacity (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Text.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: DoClick
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Clicked Dispatcher.execute
+    Node: Custom Event To Manually Click The Button
+Used When Gamepad Is Focused But Not Clicking
+This happens when first creating a new widget and
+setting keyboard focus, sometimes the widget will 
+recieve the focus but the default button press isnt
+fired. This is most likely a bug in the engine. This
+workaround isnt perfect but is one solution. (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Color and Opacity
+Target is Text.self
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.self
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Set ColorAndOpacity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: ColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.BTNTEXT
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set ColorAndOpacity.ColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Set ColorAndOpacity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: ColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.BTNTEXT
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set ColorAndOpacity.ColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Set ColorAndOpacity.execute
+      Pin: else (exec) Dir=Out
+      Pin: BTNTEXT (object) Dir=Out
+        -> Set ColorAndOpacity.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Call On Focus Lost Dispatcher.then
+      Pin: then (exec) Dir=Out
+        -> Set ColorAndOpacity.execute
+      Pin: else (exec) Dir=Out
+      Pin: BTNTEXT (object) Dir=Out
+        -> Set ColorAndOpacity.self
+      Pin: self (object) Dir=In
+    Node: CGF Do Once This Interval (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Event On Added to Focus Path.then
+      Pin: Interval (real) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+  Graph: OnFocusReceived
+    Node: On Focus Received (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Call On Focused Dispatcher.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Call On Focused Dispatcher.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Unhandled.ReturnValue
+    Node: Handled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Call On Focused Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Focus Received.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: Unhandled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: OnFocusedDispatcher
+    Node: OnFocusedDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnFocusLostDispatcher
+    Node: OnFocusLostDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnMouseEnterDispatcher
+    Node: OnMouseEnterDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnMouseLeaveDispatcher
+    Node: OnMouseLeaveDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnClickedDispatcher
+    Node: OnClickedDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

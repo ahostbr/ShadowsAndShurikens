@@ -1,0 +1,335 @@
+Blueprint: WBP_InteractionPopupBase (/Game/InventorySystemPro/Blueprints/UI/InputIcons/WBP_InteractionPopupBase.WBP_InteractionPopupBase)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Update widget position in 2D space based on 3D position of the DocumentActor (EdGraphNode_Comment)
+    Node: UpdatePopupPosition
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+    Node: Project World to Screen (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Player (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: WorldPosition (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ScreenPosition (struct) Dir=Out
+        -> vector2d + vector2d.A
+      Pin: bPlayerViewportRelative (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set bFadedIn.execute
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Position in Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Position (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: bRemoveDPIScale (bool) Dir=In
+    Node: vector2d + vector2d (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Project World to Screen.ScreenPosition
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B_Y (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Desired Size
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> float * float.A
+      Pin: ReturnValue_Y (real) Dir=Out
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Desired Size
+Target is Widget.ReturnValue_X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector2d + vector2d.B_X
+    Node: Get Viewport Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Viewport Size.ReturnValue
+      Pin: X (real) Dir=Out
+        -> float - float.A
+      Pin: Y (real) Dir=Out
+        -> float - float.A
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Y (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.Position
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Min (real) Dir=In
+        -> Get MinDistanceToScreenBorder.MinDistanceToScreenBorder
+      Pin: Max (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> vector2d + vector2d.ReturnValue
+      Pin: X (real) Dir=Out
+        -> Clamp (Float).Value
+      Pin: Y (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Min (real) Dir=In
+        -> Get MinDistanceToScreenBorder.MinDistanceToScreenBorder
+      Pin: Max (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+        -> Get MinDistanceToScreenBorder.MinDistanceToScreenBorder
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Max
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+        -> Get MinDistanceToScreenBorder.MinDistanceToScreenBorder
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Max
+    Node: Get MinDistanceToScreenBorder (K2Node_VariableGet)
+      Pin: MinDistanceToScreenBorder (real) Dir=Out
+        -> Clamp (Float).Min
+      Pin: self (object) Dir=In
+    Node: Get MinDistanceToScreenBorder (K2Node_VariableGet)
+      Pin: MinDistanceToScreenBorder (real) Dir=Out
+        -> Clamp (Float).Min
+      Pin: self (object) Dir=In
+    Node: Get MinDistanceToScreenBorder (K2Node_VariableGet)
+      Pin: MinDistanceToScreenBorder (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: Get MinDistanceToScreenBorder (K2Node_VariableGet)
+      Pin: MinDistanceToScreenBorder (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: Update position of the widget and ensure that it never goes off-screen. NOTE: If it ever goes off-screen Unreal will disable Tick and break this widget (EdGraphNode_Comment)
+    Node: Show widget on top of the interactable actor position (EdGraphNode_Comment)
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Project World to Screen.WorldPosition
+    Node: Get InteractionPopupAnchor (K2Node_VariableGet)
+      Pin: InteractionPopupAnchor (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Project World to Screen.Player
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Position in Viewport
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+    Node: Get bFadedIn (K2Node_VariableGet)
+      Pin: bFadedIn (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: Condition (bool) Dir=In
+        -> Get bFadedIn.bFadedIn
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Play Animation Forward
+Target is User Widget.execute
+    Node: Play Animation Forward
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set bFadedIn.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get FadeAnimation.FadeAnimation
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get FadeAnimation (K2Node_VariableGet)
+      Pin: FadeAnimation (object) Dir=Out
+        -> Play Animation Forward
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Set bFadedIn (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Animation Forward
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: bFadedIn (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bFadedIn (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: bFadedIn (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> Is Valid.InputObject
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Interaction Allowed
+Target is BP Interaction Component.self
+        -> Is Valid.InputObject
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Project World to Screen.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Interaction Allowed
+Target is BP Interaction Component.bInteractionIsAllowed
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Is Valid.InputObject
+    Node: Is Interaction Allowed
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: bInteractionIsAllowed (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Parent: Construct.then
+        -> UpdatePopupPosition
+Custom Event.then
+      Pin: InputObject (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out

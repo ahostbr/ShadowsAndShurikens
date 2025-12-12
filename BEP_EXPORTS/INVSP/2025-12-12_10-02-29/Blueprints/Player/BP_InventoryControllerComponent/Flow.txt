@@ -1,0 +1,1288 @@
+Blueprint: BP_InventoryControllerComponent (/Game/InventorySystemPro/Blueprints/Player/BP_InventoryControllerComponent.BP_InventoryControllerComponent)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Usage Error Check
+Target is BP Inventory Controller Component.execute
+    Node: Add Player IMC
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Register IMCs
+Target is BP Inventory Controller Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Usage Error Check
+Target is BP Inventory Controller Component.then
+      Pin: then (exec) Dir=Out
+        -> Register IMCs
+Target is BP Inventory Controller Component.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Register IMCs
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Add Player IMC
+Target is BP Inventory Controller Component.execute
+      Pin: self (object) Dir=In
+    Node:  (EdGraphNode_Comment)
+    Node: OnUsageErrorCheck
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Usage Error Check (EdGraphNode_Comment)
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+      Pin: C (string) Dir=In
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: On Usage Error Check
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: CastFailed (exec) Dir=Out
+        -> Log Inventory System Error.execute
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+      Pin: bSuccess (bool) Dir=Out
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Log Inventory System Error.execute
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: CommonInput (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Gamepad Name
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> CommonInput.PlayerController
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Current Gamepad Name
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> To String (Name).InName
+    Node: To String (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+        -> Get Current Gamepad Name
+Target is CommonInput.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Equal Exactly (String).A
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Name).ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Log Inventory System Error.execute
+      Pin: else (exec) Dir=Out
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Is Server (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnUsageErrorCheck
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Is Server.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: AddPlayerIMC
+    Node: AddPlayerIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Update active Input Mapping Contexts (EdGraphNode_Comment)
+    Node: Make Modify Context Options (K2Node_MakeStruct)
+      Pin: ModifyContextOptions (struct) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.Options
+      Pin: bIgnoreAllPressedKeysUntilRelease (bool) Dir=In
+      Pin: bForceImmediately (bool) Dir=In
+      Pin: bNotifyUserSettings (bool) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Priority (int) Dir=In
+        -> GET.Output
+      Pin: Options (struct) Dir=In
+        -> Make Modify Context Options.ModifyContextOptions
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Values.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get PlayerCharacterIMC.PlayerCharacterIMC
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: Completed (exec) Dir=Out
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get PlayerCharacterIMC.PlayerCharacterIMC
+      Pin: Values (int) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (int) Dir=In
+        -> Values.Values
+      Pin: Dimension 1 (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output (int) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.Priority
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> AddPlayerIMC.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Keys.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get PlayerCharacterIMC.self
+    Node: Get PlayerCharacterIMC (K2Node_VariableGet)
+      Pin: PlayerCharacterIMC (object) Dir=Out
+        -> Keys.TargetMap
+        -> Values.TargetMap
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+  Graph: RemovePlayerIMC
+    Node: RemovePlayerIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Update active Input Mapping Contexts (EdGraphNode_Comment)
+    Node: Make Modify Context Options (K2Node_MakeStruct)
+      Pin: ModifyContextOptions (struct) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.Options
+      Pin: bIgnoreAllPressedKeysUntilRelease (bool) Dir=In
+      Pin: bForceImmediately (bool) Dir=In
+      Pin: bNotifyUserSettings (bool) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get PlayerCharacterIMC.PlayerCharacterIMC
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Remove Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Options (struct) Dir=In
+        -> Make Modify Context Options.ModifyContextOptions
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> RemovePlayerIMC.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Keys.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get PlayerCharacterIMC.self
+    Node: Get PlayerCharacterIMC (K2Node_VariableGet)
+      Pin: PlayerCharacterIMC (object) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+  Graph: AddInventoryIMC
+    Node: AddInventoryIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Update active Input Mapping Contexts (EdGraphNode_Comment)
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> AddInventoryIMC.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Make Modify Context Options (K2Node_MakeStruct)
+      Pin: ModifyContextOptions (struct) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.Options
+      Pin: bIgnoreAllPressedKeysUntilRelease (bool) Dir=In
+      Pin: bForceImmediately (bool) Dir=In
+      Pin: bNotifyUserSettings (bool) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Priority (int) Dir=In
+        -> GET.Output
+      Pin: Options (struct) Dir=In
+        -> Make Modify Context Options.ModifyContextOptions
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Values.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get InventorySystemIMC.InventorySystemIMC
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: Completed (exec) Dir=Out
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get InventorySystemIMC.InventorySystemIMC
+      Pin: Values (int) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (int) Dir=In
+        -> Values.Values
+      Pin: Dimension 1 (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output (int) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.Priority
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Keys.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get InventorySystemIMC.self
+    Node: Get InventorySystemIMC (K2Node_VariableGet)
+      Pin: InventorySystemIMC (object) Dir=Out
+        -> Keys.TargetMap
+        -> Values.TargetMap
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+  Graph: RemoveInventoryIMC
+    Node: RemoveInventoryIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Update active Input Mapping Contexts (EdGraphNode_Comment)
+    Node: Make Modify Context Options (K2Node_MakeStruct)
+      Pin: ModifyContextOptions (struct) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.Options
+      Pin: bIgnoreAllPressedKeysUntilRelease (bool) Dir=In
+      Pin: bForceImmediately (bool) Dir=In
+      Pin: bNotifyUserSettings (bool) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get InventorySystemIMC.InventorySystemIMC
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Remove Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Options (struct) Dir=In
+        -> Make Modify Context Options.ModifyContextOptions
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> RemoveInventoryIMC.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Keys.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get InventorySystemIMC.self
+    Node: Get InventorySystemIMC (K2Node_VariableGet)
+      Pin: InventorySystemIMC (object) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+  Graph: AddFirstTimePickupIMC
+    Node: AddFirstTimePickupIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Update active Input Mapping Contexts (EdGraphNode_Comment)
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> AddFirstTimePickupIMC.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Make Modify Context Options (K2Node_MakeStruct)
+      Pin: ModifyContextOptions (struct) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.Options
+      Pin: bIgnoreAllPressedKeysUntilRelease (bool) Dir=In
+      Pin: bForceImmediately (bool) Dir=In
+      Pin: bNotifyUserSettings (bool) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Priority (int) Dir=In
+        -> GET.Output
+      Pin: Options (struct) Dir=In
+        -> Make Modify Context Options.ModifyContextOptions
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Values.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get FirstTimePickupSystemIMC.FirstTimePickupSystemIMC
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: Completed (exec) Dir=Out
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get FirstTimePickupSystemIMC.FirstTimePickupSystemIMC
+      Pin: Values (int) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (int) Dir=In
+        -> Values.Values
+      Pin: Dimension 1 (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output (int) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.Priority
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Keys.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get FirstTimePickupSystemIMC.self
+    Node: Get FirstTimePickupSystemIMC (K2Node_VariableGet)
+      Pin: FirstTimePickupSystemIMC (object) Dir=Out
+        -> Keys.TargetMap
+        -> Values.TargetMap
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+  Graph: RemoveFirstTimePickupIMC
+    Node: RemoveFirstTimePickupIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Update active Input Mapping Contexts (EdGraphNode_Comment)
+    Node: Make Modify Context Options (K2Node_MakeStruct)
+      Pin: ModifyContextOptions (struct) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.Options
+      Pin: bIgnoreAllPressedKeysUntilRelease (bool) Dir=In
+      Pin: bForceImmediately (bool) Dir=In
+      Pin: bNotifyUserSettings (bool) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get FirstTimePickupSystemIMC.FirstTimePickupSystemIMC
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Remove Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Options (struct) Dir=In
+        -> Make Modify Context Options.ModifyContextOptions
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> RemoveFirstTimePickupIMC.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> Keys.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get FirstTimePickupSystemIMC.self
+    Node: Get FirstTimePickupSystemIMC (K2Node_VariableGet)
+      Pin: FirstTimePickupSystemIMC (object) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+  Graph: RegisterIMCs
+    Node: RegisterIMCs (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: Register Input Mapping Contexts that are saved to the Input User Settings. This is also used in the Key Bindings Menu. (EdGraphNode_Comment)
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Array (object) Dir=In
+        -> Get RegisteredInputMappingContexts.RegisteredInputMappingContexts
+      Pin: LoopBody (exec) Dir=Out
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.execute
+      Pin: Array Element (object) Dir=Out
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.IMC
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> RegisterIMCs.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Is Valid (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get RegisteredInputMappingContexts.self
+    Node: Get RegisteredInputMappingContexts (K2Node_VariableGet)
+      Pin: RegisteredInputMappingContexts (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.self
+    Node: Register Input Mapping Context
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: IMC (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (bool) Dir=Out
+  Graph: GetKeyMappingForInputAction
+    Node: GetKeyMappingForInputAction (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: InputMappingContext (object) Dir=Out
+      Pin: InputMappingName (name) Dir=Out
+      Pin: Slot (byte) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Find Mappings in Row
+Target is Enhanced Input User Settings.self
+    Node: Find Mappings in Row
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: MappingName (name) Dir=In
+        -> Get Mapping Name.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> To Array.A
+    Node: To Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Find Mappings in Row
+Target is Enhanced Input User Settings.ReturnValue
+      Pin: Result (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> To Array.then
+      Pin: Array (struct) Dir=In
+        -> To Array.Result
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+        -> Return Node.PlayerKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: MappingName (name) Dir=Out
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Get Mappings (K2Node_VariableGet)
+      Pin: Mappings (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get InputMappingContext.InputMappingContext
+    Node: Get Mapping Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ActionKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (name) Dir=Out
+        -> Find Mappings in Row
+Target is Enhanced Input User Settings.MappingName
+        -> Equal (Name).A
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Array (struct) Dir=In
+        -> Get Mappings.Mappings
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Get Mapping Name.ActionKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+    Node: Equal (Name) (K2Node_PromotableOperator)
+      Pin: A (name) Dir=In
+        -> Get Mapping Name.ReturnValue
+      Pin: B (name) Dir=In
+        -> Get InputMappingName.InputMappingName
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Name).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> To Array.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetKeyMappingForInputAction.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+      Pin: bSuccess (bool) Dir=Out
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Break Player Key Mapping.Slot
+      Pin: B (byte) Dir=In
+        -> Get Slot.Slot
+    Node: Iterate over all PlayerKeyMappings with matching Mapping Name and return if any PlayerKeyMapping has the same slot (EdGraphNode_Comment)
+    Node: Iterate over all Mappings in the input mapping context (EdGraphNode_Comment)
+    Node: Ensure the Mapping name matches (EdGraphNode_Comment)
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get InputMappingContext (K2Node_VariableGet)
+      Pin: InputMappingContext (object) Dir=Out
+        -> Get Mappings.self
+    Node: Get InputMappingName (K2Node_VariableGet)
+      Pin: InputMappingName (name) Dir=Out
+        -> Equal (Name).B
+    Node: Get Slot (K2Node_VariableGet)
+      Pin: Slot (byte) Dir=Out
+        -> Equal (Enum).B

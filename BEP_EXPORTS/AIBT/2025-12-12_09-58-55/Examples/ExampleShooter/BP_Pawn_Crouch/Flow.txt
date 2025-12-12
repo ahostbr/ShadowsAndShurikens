@@ -1,0 +1,37 @@
+Blueprint: BP_Pawn_Crouch (/Game/AIBehaviorToolkit/Examples/ExampleShooter/BP_Pawn_Crouch.BP_Pawn_Crouch)
+  Graph: EventGraph
+    Node: Event ActionStart (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: ControlledPawn (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event ActionStart.then
+      Pin: then (exec) Dir=Out
+        -> Crouch
+Target is Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event ActionStart.ControlledPawn
+      Pin: AsCharacter (object) Dir=Out
+        -> Crouch
+Target is Character.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Crouch
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Finish.execute
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: bClientSimulation (bool) Dir=In
+    Node: Finish (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Crouch
+Target is Character.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WithResult (byte) Dir=In

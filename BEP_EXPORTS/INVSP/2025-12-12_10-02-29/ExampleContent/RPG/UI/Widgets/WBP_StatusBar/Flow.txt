@@ -1,0 +1,419 @@
+Blueprint: WBP_StatusBar (/Game/InventorySystemPro/ExampleContent/RPG/UI/Widgets/WBP_StatusBar.WBP_StatusBar)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=Out
+        -> Animate Status Bar
+Target is WBP Status Bar.DeltaTime
+        -> Parent: Tick.InDeltaTime
+    Node: Setup (EdGraphNode_Comment)
+    Node: Smooth Bar Animation (EdGraphNode_Comment)
+    Node: Animate Status Bar
+Target is WBP Status Bar (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaTime (real) Dir=In
+        -> Event Tick.InDeltaTime
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Animate Status Bar
+Target is WBP Status Bar.execute
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> Event Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=In
+        -> Event Tick.InDeltaTime
+    Node: Setup Status Bar
+Target is WBP Status Bar (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Setup Status Bar
+Target is WBP Status Bar.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+  Graph: SetupStatusBar
+    Node: SetupStatusBar (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+    Node: Get BarSizeBox (K2Node_VariableGet)
+      Pin: BarSizeBox (object) Dir=Out
+        -> Set Width Override
+Target is Size Box.self
+        -> Set Height Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetupStatusBar.then
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get BarSizeBox.BarSizeBox
+      Pin: InWidthOverride (real) Dir=In
+        -> Get Width.Width
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Width Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Border.execute
+      Pin: self (object) Dir=In
+        -> Get BarSizeBox.BarSizeBox
+      Pin: InHeightOverride (real) Dir=In
+        -> Get Height.Height
+    Node: Get Width (K2Node_VariableGet)
+      Pin: Width (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+      Pin: self (object) Dir=In
+    Node: Get Height (K2Node_VariableGet)
+      Pin: Height (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get BarBorder.BarBorder
+      Pin: Texture (object) Dir=In
+        -> Get BarTexture.BarTexture
+    Node: Get BarTexture (K2Node_VariableGet)
+      Pin: BarTexture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Border.Texture
+      Pin: self (object) Dir=In
+    Node: Get StatusIconImage (K2Node_VariableGet)
+      Pin: StatusIconImage (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Border.then
+      Pin: then (exec) Dir=Out
+        -> Set Fill Color and Opacity
+Target is Progress Bar.execute
+      Pin: self (object) Dir=In
+        -> Get StatusIconImage.StatusIconImage
+      Pin: Texture (object) Dir=In
+        -> Get StatusIconTexture.StatusIconTexture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get StatusIconTexture (K2Node_VariableGet)
+      Pin: StatusIconTexture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Get StatusProgressBar (K2Node_VariableGet)
+      Pin: StatusProgressBar (object) Dir=Out
+        -> Set Fill Color and Opacity
+Target is Progress Bar.self
+      Pin: self (object) Dir=In
+    Node: Set Fill Color and Opacity
+Target is Progress Bar (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Padding
+Target is Overlay Slot.execute
+      Pin: self (object) Dir=In
+        -> Get StatusProgressBar.StatusProgressBar
+      Pin: InColor (struct) Dir=In
+        -> Get ProgessBarColor.ProgessBarColor
+    Node: Get ProgessBarColor (K2Node_VariableGet)
+      Pin: ProgessBarColor (struct) Dir=Out
+        -> Set Fill Color and Opacity
+Target is Progress Bar.InColor
+      Pin: self (object) Dir=In
+    Node: Get BarBorder (K2Node_VariableGet)
+      Pin: BarBorder (object) Dir=Out
+        -> Set Brush from Texture
+Target is Border.self
+      Pin: self (object) Dir=In
+    Node: Get StatusProgressBar (K2Node_VariableGet)
+      Pin: StatusProgressBar (object) Dir=Out
+        -> Slot as Overlay Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Overlay Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get StatusProgressBar.StatusProgressBar
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Padding
+Target is Overlay Slot.self
+    Node: Set Padding
+Target is Overlay Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Fill Color and Opacity
+Target is Progress Bar.then
+      Pin: then (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Slot as Overlay Slot.ReturnValue
+      Pin: InPadding (struct) Dir=In
+        -> Get ProgressBarPadding.ProgressBarPadding
+    Node: Get ProgressBarPadding (K2Node_VariableGet)
+      Pin: ProgressBarPadding (struct) Dir=Out
+        -> Set Padding
+Target is Overlay Slot.InPadding
+      Pin: self (object) Dir=In
+    Node: Get IconSizeBox (K2Node_VariableGet)
+      Pin: IconSizeBox (object) Dir=Out
+        -> Set Width Override
+Target is Size Box.self
+        -> Set Height Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Padding
+Target is Overlay Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get IconSizeBox.IconSizeBox
+      Pin: InWidthOverride (real) Dir=In
+        -> Get IconWidth.IconWidth
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Width Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Set Padding
+Target is Overlay Slot.execute
+      Pin: self (object) Dir=In
+        -> Get IconSizeBox.IconSizeBox
+      Pin: InHeightOverride (real) Dir=In
+        -> Get IconHeight.IconHeight
+    Node: Get IconWidth (K2Node_VariableGet)
+      Pin: IconWidth (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+      Pin: self (object) Dir=In
+    Node: Get IconHeight (K2Node_VariableGet)
+      Pin: IconHeight (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: self (object) Dir=In
+    Node: Get IconSizeBox (K2Node_VariableGet)
+      Pin: IconSizeBox (object) Dir=Out
+        -> Slot as Overlay Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Overlay Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get IconSizeBox.IconSizeBox
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Padding
+Target is Overlay Slot.self
+    Node: Set Padding
+Target is Overlay Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Slot as Overlay Slot.ReturnValue
+      Pin: InPadding (struct) Dir=In
+        -> Get IconPadding.IconPadding
+    Node: Get IconPadding (K2Node_VariableGet)
+      Pin: IconPadding (struct) Dir=Out
+        -> Set Padding
+Target is Overlay Slot.InPadding
+      Pin: self (object) Dir=In
+    Node: Get StatusIconImage (K2Node_VariableGet)
+      Pin: StatusIconImage (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Padding
+Target is Overlay Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatusIconImage.StatusIconImage
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get IconColor.IconColor
+    Node: Get IconColor (K2Node_VariableGet)
+      Pin: IconColor (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+  Graph: AnimateStatusBar
+    Node: AnimateStatusBar (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DeltaTime (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get StatusProgressBar (K2Node_VariableGet)
+      Pin: StatusProgressBar (object) Dir=Out
+        -> Set Percent
+Target is Progress Bar.self
+      Pin: self (object) Dir=In
+    Node: Set Percent
+Target is Progress Bar (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatusProgressBar.StatusProgressBar
+      Pin: InPercent (real) Dir=In
+        -> FInterp To.ReturnValue
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Percent.Percent
+      Pin: Target (real) Dir=In
+        -> Get PercentTarget.PercentTarget
+      Pin: DeltaTime (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Get BarUpdateSpeed.BarUpdateSpeed
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Percent
+Target is Progress Bar.InPercent
+    Node: Get StatusProgressBar (K2Node_VariableGet)
+      Pin: StatusProgressBar (object) Dir=Out
+        -> Get Percent.self
+      Pin: self (object) Dir=In
+    Node: Get Percent (K2Node_VariableGet)
+      Pin: Percent (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+        -> Get StatusProgressBar.StatusProgressBar
+    Node: Get PercentTarget (K2Node_VariableGet)
+      Pin: PercentTarget (real) Dir=Out
+        -> FInterp To.Target
+      Pin: self (object) Dir=In
+    Node: Get StatusProgressBar (K2Node_VariableGet)
+      Pin: StatusProgressBar (object) Dir=Out
+        -> Get Percent.self
+      Pin: self (object) Dir=In
+    Node: Get Percent (K2Node_VariableGet)
+      Pin: Percent (real) Dir=Out
+        -> Nearly Equal (Float).A
+      Pin: self (object) Dir=In
+        -> Get StatusProgressBar.StatusProgressBar
+    Node: Get PercentTarget (K2Node_VariableGet)
+      Pin: PercentTarget (real) Dir=Out
+        -> Nearly Equal (Float).B
+      Pin: self (object) Dir=In
+    Node: Nearly Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Percent.Percent
+      Pin: B (real) Dir=In
+        -> Get PercentTarget.PercentTarget
+      Pin: ErrorTolerance (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> AnimateStatusBar.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Percent
+Target is Progress Bar.execute
+      Pin: else (exec) Dir=Out
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Nearly Equal (Float).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> AnimateStatusBar.DeltaTime
+      Pin: OutputPin (real) Dir=Out
+        -> FInterp To.DeltaTime
+    Node: Get BarUpdateSpeed (K2Node_VariableGet)
+      Pin: BarUpdateSpeed (real) Dir=Out
+        -> FInterp To.InterpSpeed
+      Pin: self (object) Dir=In
+    Node: Animate Status Bar (EdGraphNode_Comment)
+  Graph: UpdateStatusBar
+    Node: UpdateStatusBar (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set PercentTarget.execute
+      Pin: InPercent (real) Dir=Out
+        -> Set PercentTarget.PercentTarget
+      Pin: bSkipInterpolation (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set PercentTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateStatusBar.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PercentTarget (real) Dir=In
+        -> UpdateStatusBar.InPercent
+      Pin: Output_Get (real) Dir=Out
+        -> Set Percent
+Target is Progress Bar.InPercent
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set PercentTarget.then
+      Pin: Condition (bool) Dir=In
+        -> UpdateStatusBar.bSkipInterpolation
+      Pin: then (exec) Dir=Out
+        -> Set Percent
+Target is Progress Bar.execute
+      Pin: else (exec) Dir=Out
+    Node: Get StatusProgressBar (K2Node_VariableGet)
+      Pin: StatusProgressBar (object) Dir=Out
+        -> Set Percent
+Target is Progress Bar.self
+      Pin: self (object) Dir=In
+    Node: Set Percent
+Target is Progress Bar (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatusProgressBar.StatusProgressBar
+      Pin: InPercent (real) Dir=In
+        -> Set PercentTarget.Output_Get

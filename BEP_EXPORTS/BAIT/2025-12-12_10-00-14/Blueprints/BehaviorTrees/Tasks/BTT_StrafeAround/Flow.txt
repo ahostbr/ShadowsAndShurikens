@@ -1,0 +1,324 @@
+Blueprint: BTT_StrafeAround (/Game/BossAIToolkit/Blueprints/BehaviorTrees/Tasks/BTT_StrafeAround.BTT_StrafeAround)
+  Graph: EventGraph
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set PawnRef.then
+      Pin: then (exec) Dir=Out
+        -> Set OrientRotToMove.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: Object (object) Dir=In
+        -> Set PawnRef.Output_Get
+      Pin: AsCharacter (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Get bOrientRotationToMovement.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+    Node: Get bOrientRotationToMovement (K2Node_VariableGet)
+      Pin: bOrientRotationToMovement (bool) Dir=Out
+        -> Set OrientRotToMove.OrientRotToMove
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Set bOrientRotationToMovement (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set UseControllerRot.then
+      Pin: then (exec) Dir=Out
+        -> Set bUseControllerDesiredRotation.execute
+      Pin: bOrientRotationToMovement (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set bOrientRotationToMovement.self
+        -> Reroute Node.InputPin
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Abort AI.then
+      Pin: then (exec) Dir=Out
+        -> Set bOrientRotationToMovement.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: AsCharacter (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set bOrientRotationToMovement.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+    Node: Set bOrientRotationToMovement (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Set bUseControllerDesiredRotation.execute
+      Pin: bOrientRotationToMovement (bool) Dir=In
+        -> Get OrientRotToMove.OrientRotToMove
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Finish Abort
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Stop Movement
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bUseControllerDesiredRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bOrientRotationToMovement.then
+      Pin: then (exec) Dir=Out
+        -> SetFocus
+Target is AIController.execute
+      Pin: bUseControllerDesiredRotation (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set bUseControllerDesiredRotation.self
+    Node: Get bUseControllerDesiredRotation (K2Node_VariableGet)
+      Pin: bUseControllerDesiredRotation (bool) Dir=Out
+        -> Set UseControllerRot.UseControllerRot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: SetFocus
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bUseControllerDesiredRotation.then
+      Pin: then (exec) Dir=Out
+        -> Get Random Location in Navigable Radius.execute
+      Pin: self (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+      Pin: NewFocus (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+    Node: Set bUseControllerDesiredRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bOrientRotationToMovement.then
+      Pin: then (exec) Dir=Out
+        -> SetFocus
+Target is AIController.execute
+      Pin: bUseControllerDesiredRotation (bool) Dir=In
+        -> Get UseControllerRot.UseControllerRot
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Set bUseControllerDesiredRotation.self
+    Node: SetFocus
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bUseControllerDesiredRotation.then
+      Pin: then (exec) Dir=Out
+        -> Stop Movement
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+      Pin: NewFocus (object) Dir=In
+    Node: Get Random Location in Navigable Radius (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetFocus
+Target is AIController.then
+      Pin: then (exec) Dir=Out
+        -> AI MoveTo.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: RandomLocation (struct) Dir=Out
+        -> AI MoveTo.Destination
+      Pin: Radius (real) Dir=In
+      Pin: NavData (object) Dir=In
+      Pin: FilterClass (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Random Location in Navigable Radius.Origin
+    Node: AI MoveTo (K2Node_AIMoveTo)
+      Pin: execute (exec) Dir=In
+        -> Get Random Location in Navigable Radius.then
+      Pin: then (exec) Dir=Out
+      Pin: OnSuccess (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: OnFail (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: MovementResult (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Pawn (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: Destination (struct) Dir=In
+        -> Get Random Location in Navigable Radius.RandomLocation
+      Pin: TargetActor (object) Dir=In
+      Pin: AcceptanceRadius (real) Dir=In
+      Pin: bStopOnOverlap (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AI MoveTo.OnSuccess
+        -> AI MoveTo.OnFail
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.bSuccess
+      Pin: A (byte) Dir=In
+        -> AI MoveTo.MovementResult
+      Pin: B (byte) Dir=In
+    Node: Stop Movement
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetFocus
+Target is AIController.then
+      Pin: then (exec) Dir=Out
+        -> Finish Abort
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Event Receive Execute AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ControllerRef.execute
+      Pin: OwnerController (object) Dir=Out
+        -> Set ControllerRef.ControllerRef
+      Pin: ControlledPawn (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set PawnRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ControllerRef.then
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: PawnRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: self (object) Dir=In
+    Node: Set OrientRotToMove (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Set UseControllerRot.execute
+      Pin: OrientRotToMove (bool) Dir=In
+        -> Get bOrientRotationToMovement.bOrientRotationToMovement
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set UseControllerRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set OrientRotToMove.then
+      Pin: then (exec) Dir=Out
+        -> Set bOrientRotationToMovement.execute
+      Pin: UseControllerRot (bool) Dir=In
+        -> Get bUseControllerDesiredRotation.bUseControllerDesiredRotation
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get TargetActorKey (K2Node_VariableGet)
+      Pin: TargetActorKey (struct) Dir=Out
+        -> Get Blackboard Value as Actor.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get TargetActorKey.TargetActorKey
+      Pin: ReturnValue (object) Dir=Out
+        -> SetFocus
+Target is AIController.NewFocus
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> AI MoveTo.Pawn
+      Pin: self (object) Dir=In
+    Node: Event Receive Abort AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: OwnerController (object) Dir=Out
+      Pin: ControlledPawn (object) Dir=Out
+    Node: Get OrientRotToMove (K2Node_VariableGet)
+      Pin: OrientRotToMove (bool) Dir=Out
+        -> Set bOrientRotationToMovement.bOrientRotationToMovement
+      Pin: self (object) Dir=In
+    Node: Get UseControllerRot (K2Node_VariableGet)
+      Pin: UseControllerRot (bool) Dir=Out
+        -> Set bUseControllerDesiredRotation.bUseControllerDesiredRotation
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get bUseControllerDesiredRotation.self
+        -> Reroute Node.InputPin
+    Node: Set ControllerRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute AI.then
+      Pin: then (exec) Dir=Out
+        -> Set PawnRef.execute
+      Pin: ControllerRef (object) Dir=In
+        -> Event Receive Execute AI.OwnerController
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Event Receive Execute AI.ControlledPawn
+      Pin: OutputPin (object) Dir=Out
+        -> Set PawnRef.PawnRef
+    Node: Get ControllerRef (K2Node_VariableGet)
+      Pin: ControllerRef (object) Dir=Out
+        -> SetFocus
+Target is AIController.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+      Pin: OutputPin (object) Dir=Out
+        -> Stop Movement
+Target is Controller.self
+    Node: Get ControllerRef (K2Node_VariableGet)
+      Pin: ControllerRef (object) Dir=Out
+        -> SetFocus
+Target is AIController.self
+      Pin: self (object) Dir=In

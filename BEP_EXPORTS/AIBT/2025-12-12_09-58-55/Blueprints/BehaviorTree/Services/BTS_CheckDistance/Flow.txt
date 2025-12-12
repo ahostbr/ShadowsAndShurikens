@@ -1,0 +1,70 @@
+Blueprint: BTS_CheckDistance (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Services/BTS_CheckDistance.BTS_CheckDistance)
+  Graph: EventGraph
+    Node: Event Receive Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Tick.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Tick.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Check for Distance Triggers
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+        -> Is Active
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Check for Distance Triggers
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Check for Distance Triggers
+Target is BP Behavior Component.execute
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: CheckWithin (bool) Dir=In
+    Node: Check for Distance Triggers
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Check for Distance Triggers
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: CheckWithin (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Check for Distance Triggers
+Target is BP Behavior Component.self
+    Node: Is Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: Condition (bool) Dir=In
+        -> Is Active
+Target is Actor Component.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Check for Distance Triggers
+Target is BP Behavior Component.execute
+      Pin: else (exec) Dir=Out

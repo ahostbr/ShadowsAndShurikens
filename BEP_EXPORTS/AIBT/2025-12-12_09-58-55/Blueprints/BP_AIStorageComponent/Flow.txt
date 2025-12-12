@@ -1,0 +1,152 @@
+Blueprint: BP_AIStorageComponent (/Game/AIBehaviorToolkit/Blueprints/BP_AIStorageComponent.BP_AIStorageComponent)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> Length.TargetArray
+        -> Reroute Node.InputPin
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: ReturnValue (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP AIStorage.execute
+      Pin: else (exec) Dir=Out
+        -> Set AiStorageRef.execute
+    Node: SpawnActor BP AIStorage (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set AiStorageRef.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set AiStorageRef.AiStorageRef
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor BP AIStorage.SpawnTransform
+    Node: Set AiStorageRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP AIStorage.then
+      Pin: then (exec) Dir=Out
+        -> Append Array.execute
+      Pin: AiStorageRef (object) Dir=In
+        -> SpawnActor BP AIStorage.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Add Actor to List
+Target is BP AIStorage.self
+      Pin: self (object) Dir=In
+    Node: Set AiStorageRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: AiStorageRef (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Add Actor to List
+Target is BP AIStorage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Append Array.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set AiStorageRef.Output_Get
+      Pin: ActorRef (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Tags.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set AiStorageRef.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Append Array.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: OutputPin (object) Dir=Out
+        -> GET.Array
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Add Actor to List
+Target is BP AIStorage.ActorRef
+    Node: Get Tags (K2Node_VariableGet)
+      Pin: Tags (name) Dir=Out
+        -> Append Array.TargetArray
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+    Node: Append Array (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AiStorageRef.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add Actor to List
+Target is BP AIStorage.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Get Tags.Tags
+      Pin: SourceArray (name) Dir=In
+        -> Get TargetTags.TargetTags
+    Node: Get TargetTags (K2Node_VariableGet)
+      Pin: TargetTags (name) Dir=Out
+        -> Append Array.SourceArray
+      Pin: self (object) Dir=In
+    Node: Check if an AI Global Storage already exists (EdGraphNode_Comment)
+    Node: Spawn a Storage if none exists (EdGraphNode_Comment)
+    Node: Add the owner of this component to the storage (EdGraphNode_Comment)
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set AiStorageRef.AiStorageRef

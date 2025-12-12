@@ -1,0 +1,499 @@
+Blueprint: BP_CGF_Player (/Game/CoreGameFramework/Characters/BP_CGF_Player.BP_CGF_Player)
+  Graph: EventGraph
+    Node: Event SaveActorData
+From BPI CGF Saveable (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Comp Save Actor Data
+Target is BPC CGF Save Game.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Comp Save Actor Data
+Target is BPC CGF Save Game.SaveGameREF
+    Node: Event LoadActorData
+From BPI CGF Saveable (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Comp Load Actor Data
+Target is BPC CGF Save Game.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Comp Load Actor Data
+Target is BPC CGF Save Game.SaveGameREF
+    Node: Data Management (EdGraphNode_Comment)
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Break F CGF Player Data (K2Node_BreakStruct)
+      Pin: F_CGF_PlayerData (struct) Dir=In
+        -> Get PlayerData.PlayerData
+      Pin: PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A (string) Dir=Out
+        -> Set PlayerName.PlayerName
+      Pin: PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93 (real) Dir=Out
+        -> Set PlayerHealth.PlayerHealth
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42 (struct) Dir=Out
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Location (struct) Dir=Out
+        -> Set PlayerLocation.PlayerLocation
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Rotation (struct) Dir=Out
+        -> Set PlayerRotation.PlayerRotation
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Scale (struct) Dir=Out
+      Pin: PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649 (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set PlayerName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: PlayerName (string) Dir=In
+        -> Break F CGF Player Data.PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Player State
+Target is BP CGF Player State.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set PlayerName.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set PlayerHealth.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Set PlayerLocation.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Set PlayerRotation.execute
+    Node: Set PlayerLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+      Pin: PlayerLocation (struct) Dir=In
+        -> Break F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Location
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.NewLocation
+      Pin: self (object) Dir=In
+    Node: Set PlayerHealth (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: PlayerHealth (real) Dir=In
+        -> Break F CGF Player Data.PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set PlayerRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.execute
+      Pin: PlayerRotation (struct) Dir=In
+        -> Break F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Rotation
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.NewRotation
+      Pin: self (object) Dir=In
+    Node: Set Actor Location And Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set PlayerRotation.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: NewLocation (struct) Dir=In
+        -> Set PlayerLocation.Output_Get
+      Pin: NewRotation (struct) Dir=In
+        -> Set PlayerRotation.Output_Get
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+        -> Select.Index
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.execute
+      Pin: else (exec) Dir=Out
+    Node: Get BPC_CGF_SaveComp (K2Node_VariableGet)
+      Pin: BPC_CGF_SaveComp (object) Dir=Out
+        -> Comp Save Actor Data
+Target is BPC CGF Save Game.self
+        -> Comp Load Actor Data
+Target is BPC CGF Save Game.self
+      Pin: self (object) Dir=In
+    Node: Comp Save Actor Data
+Target is BPC CGF Save Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SaveActorData
+From BPI CGF Saveable.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_CGF_SaveComp.BPC_CGF_SaveComp
+      Pin: SaveGameREF (object) Dir=In
+        -> Event SaveActorData
+From BPI CGF Saveable.SaveGameREF
+    Node: Event SetPlayerData
+From BPI CGF Data Management (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set PlayerData.execute
+      Pin: PlayerData (struct) Dir=Out
+        -> Set PlayerData.PlayerData
+    Node: Set PlayerData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event SetPlayerData
+From BPI CGF Data Management.then
+      Pin: then (exec) Dir=Out
+      Pin: PlayerData (struct) Dir=In
+        -> Event SetPlayerData
+From BPI CGF Data Management.PlayerData
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Comp Load Actor Data
+Target is BPC CGF Save Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event LoadActorData
+From BPI CGF Saveable.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_CGF_SaveComp.BPC_CGF_SaveComp
+      Pin: SaveGameREF (object) Dir=In
+        -> Event LoadActorData
+From BPI CGF Saveable.SaveGameREF
+    Node: Get PlayerData (K2Node_VariableGet)
+      Pin: PlayerData (struct) Dir=Out
+        -> Break F CGF Player Data.F_CGF_PlayerData
+      Pin: self (object) Dir=In
+    Node: Get PS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerState (byte) Dir=Out
+      Pin: CGF_PlayerState (object) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.self
+    Node: Set Player State
+Target is BP CGF Player State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Comp Player Data Loaded.execute
+      Pin: self (object) Dir=In
+        -> Get PS.CGF_PlayerState
+      Pin: PlayerState (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get PS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerState (byte) Dir=Out
+      Pin: CGF_PlayerState (object) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.self
+    Node: Set Player State
+Target is BP CGF Player State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PS.CGF_PlayerState
+      Pin: PlayerState (byte) Dir=In
+    Node: Get PS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerState (byte) Dir=Out
+      Pin: CGF_PlayerState (object) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.self
+    Node: Set Player State
+Target is BP CGF Player State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCompPlayerDataLoaded_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> Get PS.CGF_PlayerState
+      Pin: PlayerState (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.PlayerState
+    Node: Get BPC_CGF_SaveComp (K2Node_VariableGet)
+      Pin: BPC_CGF_SaveComp (object) Dir=Out
+        -> Bind Event to On Comp Player Data Loaded.self
+      Pin: self (object) Dir=In
+    Node: OnCompPlayerDataLoaded_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Comp Player Data Loaded.Delegate
+      Pin: then (exec) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.execute
+    Node: Bind Event to On Comp Player Data Loaded (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set Player State
+Target is BP CGF Player State.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_CGF_SaveComp.BPC_CGF_SaveComp
+      Pin: Delegate (delegate) Dir=In
+        -> OnCompPlayerDataLoaded_Event
+Custom Event.OutputDelegate
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Control Rotation
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get TransformComponent.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Player Data.PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.NewTransform
+    Node: Set Relative Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Location And Rotation
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Set Control Rotation
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Get TransformComponent.TransformComponent
+      Pin: NewTransform (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get TransformComponent (K2Node_VariableGet)
+      Pin: TransformComponent (object) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Control Rotation
+Target is Controller.self
+    Node: Set Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Transform
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: NewRotation (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Player Data.PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: EnhancedInputAction IA_Sprint (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+        -> Do Once.execute
+      Pin: Started (exec) Dir=Out
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Sequence.execute
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Sprint.Triggered
+      Pin: Reset (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set MaxWalkSpeed.execute
+    Node: Set MaxWalkSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: MaxWalkSpeed (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set MaxWalkSpeed.self
+        -> Set MaxWalkSpeed.self
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Sprint.Completed
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.Reset
+      Pin: then_1 (exec) Dir=Out
+        -> Set MaxWalkSpeed.execute
+    Node: Set MaxWalkSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: MaxWalkSpeed (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Control Rotation
+Target is Controller.NewRotation
+  Graph: PlayerCharacterSpecificInputs
+    Node: Jump
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Jump.Started
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Stop Jumping
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Jump.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Jump Input - Jump can be configured in the CharacterMovementComponent (EdGraphNode_Comment)
+    Node: EnhancedInputAction IA_Jump (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+      Pin: Started (exec) Dir=Out
+        -> Jump
+Target is Character.execute
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Stop Jumping
+Target is Character.execute
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: 1 (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+      Pin: Released (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+      Pin: Key (struct) Dir=Out
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> 1.Released
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Non Player Character Specific Inputs Are Handled In The PlayerController (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: Update Player Data Struct for Save Game
+    Node: Update Player Data Struct for Save Game (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Player Data.execute
+    Node: Get PlayerData (K2Node_VariableGet)
+      Pin: PlayerData (struct) Dir=Out
+        -> Set members in F CGF Player Data.StructRef
+      Pin: self (object) Dir=In
+    Node: Set members in F CGF Player Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Update Player Data Struct for Save Game.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get PlayerData.PlayerData
+      Pin: StructOut (struct) Dir=Out
+        -> Return Node.PlayerData
+      Pin: PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A (string) Dir=In
+        -> Get PlayerName.PlayerName
+      Pin: PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93 (real) Dir=In
+        -> Get PlayerHealth.PlayerHealth
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42 (struct) Dir=In
+        -> Get Actor Transform
+Target is Actor.ReturnValue
+      Pin: PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649 (struct) Dir=In
+        -> Get Relative Transform
+Target is Scene Component.ReturnValue
+      Pin: PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB (struct) Dir=In
+        -> Get Control Rotation
+Target is Pawn.ReturnValue
+    Node: Get PlayerName (K2Node_VariableGet)
+      Pin: PlayerName (string) Dir=Out
+        -> Set members in F CGF Player Data.PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A
+      Pin: self (object) Dir=In
+    Node: Get PlayerHealth (K2Node_VariableGet)
+      Pin: PlayerHealth (real) Dir=Out
+        -> Set members in F CGF Player Data.PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Player Data.then
+      Pin: PlayerData (struct) Dir=In
+        -> Set members in F CGF Player Data.StructOut
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get TransformComponent.self
+    Node: Get Relative Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TransformComponent.TransformComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649
+    Node: Get TransformComponent (K2Node_VariableGet)
+      Pin: TransformComponent (object) Dir=Out
+        -> Get Relative Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+    Node: Get Control Rotation
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB
+    Node: Get Actor Transform
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42

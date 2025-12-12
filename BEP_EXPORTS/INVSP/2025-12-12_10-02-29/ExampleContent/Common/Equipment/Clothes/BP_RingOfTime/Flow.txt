@@ -1,0 +1,191 @@
+Blueprint: BP_RingOfTime (/Game/InventorySystemPro/ExampleContent/Common/Equipment/Clothes/BP_RingOfTime.BP_RingOfTime)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Event OnSetupEquipment
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Attach Equipment to Character
+Target is BP Equipment Component.execute
+      Pin: Character (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Attach Equipment to Character
+Target is BP Equipment Component.Character
+      Pin: ItemSlot (struct) Dir=Out
+    Node: Get BP_EquipmentComponent (K2Node_VariableGet)
+      Pin: BP_EquipmentComponent (object) Dir=Out
+        -> Attach Equipment to Character
+Target is BP Equipment Component.self
+      Pin: self (object) Dir=In
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Global Time Dilation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event OnDestroyEquipment
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+      Pin: Character (object) Dir=Out
+    Node: Destroy Actor (EdGraphNode_Comment)
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Attach Equipment to Character
+Target is BP Equipment Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Event.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnDestroyEquipment
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Set Timer by Event (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Global Time Dilation.then
+      Pin: then (exec) Dir=Out
+        -> Set RemoveManaTimer.execute
+      Pin: self (object) Dir=In
+      Pin: Delegate (delegate) Dir=In
+        -> OnRemoveManaIteration
+Custom Event.OutputDelegate
+      Pin: Time (real) Dir=In
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set RemoveManaTimer.RemoveManaTimer
+    Node: OnRemoveManaIteration
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Set Timer by Event.Delegate
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event OnSetupEquipment
+From BPI Equipment.Character
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).self
+        -> Get PlayerMana.self
+    Node: On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: ManaAmount (real) Dir=In
+      Pin: bPlaySound (bool) Dir=In
+    Node: Set RemoveManaTimer (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Event.then
+      Pin: then (exec) Dir=Out
+      Pin: RemoveManaTimer (struct) Dir=In
+        -> Set Timer by Event.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PlayerMana (K2Node_VariableGet)
+      Pin: PlayerMana (real) Dir=Out
+        -> float <= float.A
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: float <= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get PlayerMana.PlayerMana
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnRemoveManaIteration
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+      Pin: else (exec) Dir=Out
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Attach Equipment to Character
+Target is BP Equipment Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnSetupEquipment
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+      Pin: self (object) Dir=In
+        -> Get BP_EquipmentComponent.BP_EquipmentComponent
+      Pin: Character (object) Dir=In
+        -> Event OnSetupEquipment
+From BPI Equipment.Character
+      Pin: SocketName (name) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set SkeletalMesh.execute
+      Pin: self (object) Dir=In
+    Node: Set Skeletal Mesh Reference in Equipment Component (EdGraphNode_Comment)
+    Node: Get BP_EquipmentComponent (K2Node_VariableGet)
+      Pin: BP_EquipmentComponent (object) Dir=Out
+        -> Set SkeletalMesh.self
+      Pin: self (object) Dir=In
+    Node: Set SkeletalMesh (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: SkeletalMesh (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_EquipmentComponent.BP_EquipmentComponent

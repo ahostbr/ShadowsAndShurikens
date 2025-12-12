@@ -1,0 +1,446 @@
+Blueprint: WBP_ItemDescriptionBase (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_ItemDescriptionBase.WBP_ItemDescriptionBase)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+  Graph: SetupItemStats
+    Node: SetupItemStats (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: ItemStats (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear Children
+Target is Panel Widget.then
+      Pin: Array (struct) Dir=In
+        -> SetupItemStats.ItemStats
+      Pin: LoopBody (exec) Dir=Out
+        -> Create WBP Stats Row Base Widget.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Get Value Text.FItemStats
+        -> Get Title Text.FItemStats
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Create WBP Stats Row Base Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add Child to Vertical Box
+Target is Vertical Box.execute
+      Pin: Class (class) Dir=In
+        -> Get ItemStatsRowWidgetClass.ItemStatsRowWidgetClass
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Child to Vertical Box
+Target is Vertical Box.Content
+      Pin: OwningPlayer (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ValueText (text) Dir=In
+        -> Get Value Text.ReturnValue
+      Pin: TitleText (text) Dir=In
+        -> Get Title Text.OutText
+    Node: Get Value Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FItemStats (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (text) Dir=Out
+        -> Create WBP Stats Row Base Widget.ValueText
+    Node: Add Child to Vertical Box
+Target is Vertical Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create WBP Stats Row Base Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: Content (object) Dir=In
+        -> Create WBP Stats Row Base Widget.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+    Node: Clear Children
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+    Node: Get ItemStatsRowWidgetClass (K2Node_VariableGet)
+      Pin: ItemStatsRowWidgetClass (class) Dir=Out
+        -> Create WBP Stats Row Base Widget.Class
+      Pin: self (object) Dir=In
+    Node: Get Title Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FItemStats (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutText (text) Dir=Out
+        -> Create WBP Stats Row Base Widget.TitleText
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Add Child to Vertical Box
+Target is Vertical Box.self
+      Pin: self (object) Dir=In
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Clear Children
+Target is Panel Widget.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Create WBP Stats Row Base Widget.OwningPlayer
+    Node: Setup Item Stats (EdGraphNode_Comment)
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> SetupItemStats.then
+      Pin: InputObject (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Clear Children
+Target is Panel Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Has Any Children
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Has Any Children
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Condition (bool) Dir=In
+        -> Has Any Children
+Target is Panel Widget.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: InVisibility (byte) Dir=In
+  Graph: GetTitleText
+    Node: GetTitleText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: FItemStats (struct) Dir=Out
+        -> Break FItem Stats.FItemStats
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: OutText (text) Dir=In
+        -> Find Text in Live Table (Advanced).OutText
+    Node: Break FItem Stats (K2Node_BreakStruct)
+      Pin: FItemStats (struct) Dir=In
+        -> GetTitleText.FItemStats
+      Pin: Tag_41_5F9E8ACB4B2911834DE935B0C2855D7D (struct) Dir=Out
+        -> Get Tag Name.GameplayTag
+      Pin: ValueType_44_8F222B7C4393B7C5531C28B8BEB18462 (byte) Dir=Out
+      Pin: IntegerValue_31_104218A5455A26E90252E09CF30DC2B0 (int) Dir=Out
+      Pin: FloatValue_29_28385F884FECDA0B344346A06B04F202 (real) Dir=Out
+      Pin: BoolValue_30_1537CB6048A6C6124B3897AC67D0DEA5 (bool) Dir=Out
+      Pin: TextValue_43_5088085D4D6D65C70F5863B118B00414 (text) Dir=Out
+      Pin: AlternativeLabel_47_2F69E55541AF1C26DB12658C4E4F67C1 (text) Dir=Out
+        -> Text Is Empty.InText
+        -> Reroute Node.InputPin
+    Node: Get Tag Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+        -> Break FItem Stats.Tag_41_5F9E8ACB4B2911834DE935B0C2855D7D
+      Pin: ReturnValue (name) Dir=Out
+        -> To String (Name).InName
+    Node: Find Text in Live Table (Advanced) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Namespace (string) Dir=In
+        -> Get LocalizationTableNamespace.LocalizationTableNamespace
+      Pin: Key (string) Dir=In
+        -> To String (Name).ReturnValue
+      Pin: OutText (text) Dir=Out
+        -> Return Node.OutText
+      Pin: SourceString (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: To String (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+        -> Get Tag Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Find Text in Live Table (Advanced).Key
+    Node: Get LocalizationTableNamespace (K2Node_VariableGet)
+      Pin: LocalizationTableNamespace (string) Dir=Out
+        -> Find Text in Live Table (Advanced).Namespace
+      Pin: self (object) Dir=In
+    Node: Text Is Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break FItem Stats.AlternativeLabel_47_2F69E55541AF1C26DB12658C4E4F67C1
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetTitleText.then
+      Pin: Condition (bool) Dir=In
+        -> Text Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Read Title from String Table dynamically (Gather Text in Localization Dashboard first!) (EdGraphNode_Comment)
+    Node: Set alternative title set in Item Data Asset (EdGraphNode_Comment)
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutText (text) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Break FItem Stats.AlternativeLabel_47_2F69E55541AF1C26DB12658C4E4F67C1
+      Pin: OutputPin (text) Dir=Out
+        -> Return Node.OutText
+    Node: Get Title Text (EdGraphNode_Comment)
+  Graph: GetValueText
+    Node: GetValueText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EValueType.execute
+      Pin: FItemStats (struct) Dir=Out
+        -> Break FItem Stats.FItemStats
+    Node: Break FItem Stats (K2Node_BreakStruct)
+      Pin: FItemStats (struct) Dir=In
+        -> GetValueText.FItemStats
+      Pin: Tag_41_5F9E8ACB4B2911834DE935B0C2855D7D (struct) Dir=Out
+      Pin: ValueType_44_8F222B7C4393B7C5531C28B8BEB18462 (byte) Dir=Out
+        -> Switch on EValueType.Selection
+      Pin: IntegerValue_31_104218A5455A26E90252E09CF30DC2B0 (int) Dir=Out
+        -> To Text (Integer).Value
+      Pin: FloatValue_29_28385F884FECDA0B344346A06B04F202 (real) Dir=Out
+        -> To Text (Float).Value
+      Pin: BoolValue_30_1537CB6048A6C6124B3897AC67D0DEA5 (bool) Dir=Out
+        -> To Text (Boolean).InBool
+      Pin: TextValue_43_5088085D4D6D65C70F5863B118B00414 (text) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: AlternativeLabel_47_2F69E55541AF1C26DB12658C4E4F67C1 (text) Dir=Out
+    Node: Switch on EValueType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> GetValueText.then
+      Pin: Selection (byte) Dir=In
+        -> Break FItem Stats.ValueType_44_8F222B7C4393B7C5531C28B8BEB18462
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator3 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator4 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EValueType.NewEnumerator0
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (Integer).ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EValueType.NewEnumerator1
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (Float).ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EValueType.NewEnumerator2
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (Boolean).ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EValueType.NewEnumerator3
+      Pin: ReturnValue (text) Dir=In
+        -> Break FItem Stats.TextValue_43_5088085D4D6D65C70F5863B118B00414
+    Node: To Text (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Break FItem Stats.IntegerValue_31_104218A5455A26E90252E09CF30DC2B0
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue
+    Node: To Text (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break FItem Stats.FloatValue_29_28385F884FECDA0B344346A06B04F202
+      Pin: RoundingMode (byte) Dir=In
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: MinimumFractionalDigits (int) Dir=In
+      Pin: MaximumFractionalDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue
+    Node: To Text (Boolean) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InBool (bool) Dir=In
+        -> Break FItem Stats.BoolValue_30_1537CB6048A6C6124B3897AC67D0DEA5
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on EValueType.NewEnumerator4
+      Pin: ReturnValue (text) Dir=In
+    Node: Get Value Text (EdGraphNode_Comment)
+  Graph: SetupItemWeight
+    Node: SetupItemWeight (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Weight (real) Dir=Out
+        -> To Text (Float).Value
+        -> float > float.A
+    Node: Get WeightValueTextRef (K2Node_VariableGet)
+      Pin: WeightValueTextRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> SetupItemWeight.then
+      Pin: InputObject (object) Dir=In
+        -> Get WeightValueTextRef.WeightValueTextRef
+      Pin: Is Valid (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get WeightValueTextRef.WeightValueTextRef
+      Pin: InText (text) Dir=In
+        -> To Text (Float).ReturnValue
+    Node: To Text (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> SetupItemWeight.Weight
+      Pin: RoundingMode (byte) Dir=In
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: MinimumFractionalDigits (int) Dir=In
+      Pin: MaximumFractionalDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get StatsVBoxRef (K2Node_VariableGet)
+      Pin: StatsVBoxRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatsVBoxRef.StatsVBoxRef
+      Pin: InVisibility (byte) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> SetupItemWeight.Weight
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Setup Item Weight (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute

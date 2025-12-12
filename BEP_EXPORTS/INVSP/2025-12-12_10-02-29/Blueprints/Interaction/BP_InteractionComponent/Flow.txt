@@ -1,0 +1,1560 @@
+Blueprint: BP_InteractionComponent (/Game/InventorySystemPro/Blueprints/Interaction/BP_InteractionComponent.BP_InteractionComponent)
+  Graph: EventGraph
+    Node: Get closest interactable actor (EdGraphNode_Comment)
+    Node: Setup Player Controller Reference
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnPossessed_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Usage Error Check
+Target is BP Interaction Component.execute
+      Pin: self (object) Dir=In
+      Pin: Controller (object) Dir=In
+        -> OnPossessed_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.Controller
+    Node: Setup (EdGraphNode_Comment)
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Update Interactables Client
+Target is BP Interaction Component
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: OnActorInteraction_ServerReplicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Actor Interaction Server
+Target is BP Interaction Component.execute
+      Pin: Actor (object) Dir=Out
+        -> Actor Interaction Server
+Target is BP Interaction Component.Actor
+      Pin: PlayerController (object) Dir=Out
+        -> Actor Interaction Server
+Target is BP Interaction Component.PlayerController
+    Node: OnUpdateInteractables_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Interactables Client
+Target is BP Interaction Component.execute
+    Node: On Update Interactables Client
+Target is BP Interaction Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnAddInteractable_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add Interactable Client
+Target is BP Interaction Component.execute
+      Pin: Interactable (object) Dir=Out
+        -> Add Interactable Client
+Target is BP Interaction Component.Interactable
+    Node: Add an interactable actor to the Interactables array (EdGraphNode_Comment)
+    Node: OnRemoveInteractable_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Remove Interactable Client
+Target is BP Interaction Component.execute
+      Pin: Interactable (object) Dir=Out
+        -> Remove Interactable Client
+Target is BP Interaction Component.Interactable
+    Node: Remove an interactable actor from the Interactables array (EdGraphNode_Comment)
+    Node: Interaction (EdGraphNode_Comment)
+    Node: Update (EdGraphNode_Comment)
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Actor Interaction Server
+Target is BP Interaction Component.then
+      Pin: then (exec) Dir=Out
+        -> Set bIsInteractionCooledDown.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get SecondsBetweenAllowInteraction.SecondsBetweenAllowInteraction
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get SecondsBetweenAllowInteraction (K2Node_VariableGet)
+      Pin: SecondsBetweenAllowInteraction (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Set bIsInteractionCooledDown (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: bIsInteractionCooledDown (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Interaction Failed (EdGraphNode_Comment)
+    Node: OnInteractionFailed_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Interaction Failed Client
+Target is BP Interaction Component.execute
+    Node: OnPossessed_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Setup Player Controller Reference
+Target is BP Interaction Component.execute
+      Pin: Controller (object) Dir=Out
+        -> Setup Player Controller Reference
+Target is BP Interaction Component.Controller
+    Node: MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).execute
+      Pin: InSkeletalMeshComponent (object) Dir=Out
+        -> Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).InSkeletalMeshComponent
+      Pin: MontageToPlay (object) Dir=Out
+        -> Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).MontageToPlay
+      Pin: InPlayRate (real) Dir=Out
+        -> Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).InPlayRate
+      Pin: InTimeToStartMontageAt (real) Dir=Out
+        -> Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).InTimeToStartMontageAt
+      Pin: StartingSection (name) Dir=Out
+        -> Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).StartingSection
+    Node: MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: InSkeletalMeshComponent (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: MontageToPlay (object) Dir=Out
+        -> Play Montage.MontageToPlay
+      Pin: InPlayRate (real) Dir=Out
+        -> Play Montage.PlayRate
+      Pin: InTimeToStartMontageAt (real) Dir=Out
+        -> Play Montage.StartingPosition
+      Pin: StartingSection (name) Dir=Out
+        -> Play Montage.StartingSection
+    Node: Montage Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.InSkeletalMeshComponent
+      Pin: MontageToPlay (object) Dir=In
+        -> MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.MontageToPlay
+      Pin: InPlayRate (real) Dir=In
+        -> MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.InPlayRate
+      Pin: InTimeToStartMontageAt (real) Dir=In
+        -> MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.InTimeToStartMontageAt
+      Pin: StartingSection (name) Dir=In
+        -> MontagePlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.StartingSection
+    Node: Replicate animations (EdGraphNode_Comment)
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.InSkeletalMeshComponent
+      Pin: MontageToPlay (object) Dir=In
+        -> MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.MontageToPlay
+      Pin: PlayRate (real) Dir=In
+        -> MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.InPlayRate
+      Pin: StartingPosition (real) Dir=In
+        -> MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.InTimeToStartMontageAt
+      Pin: StartingSection (name) Dir=In
+        -> MontagePlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.StartingSection
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sound Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).execute
+      Pin: Sound (object) Dir=Out
+        -> Sound Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).Sound
+      Pin: Location (struct) Dir=Out
+        -> Sound Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server).Location
+    Node: Play Sound on Client (EdGraphNode_Comment)
+    Node: SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: Sound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: Location (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.Sound
+      Pin: Location (struct) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.Location
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Sound Play Multicast
+Target is BP Interaction Component
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Sound
+      Pin: Location (struct) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Location
+    Node: Interaction Failed Client
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnInteractionFailed_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Actor Interaction Server
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnActorInteraction_ServerReplicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> OnActorInteraction_ServerReplicated From Client
+Executes On Server
+Custom Event.Actor
+      Pin: PlayerController (object) Dir=In
+        -> OnActorInteraction_ServerReplicated From Client
+Executes On Server
+Custom Event.PlayerController
+    Node: Remove Interactable Client
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRemoveInteractable_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Interactable (object) Dir=In
+        -> OnRemoveInteractable_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.Interactable
+    Node: Update Interactables Client
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateInteractables_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Add Interactable Client
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnAddInteractable_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Interactable (object) Dir=In
+        -> OnAddInteractable_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.Interactable
+    Node: OnUsageErrorCheck
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Usage Error Check (EdGraphNode_Comment)
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+      Pin: C (string) Dir=In
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: CastFailed (exec) Dir=Out
+        -> Log Inventory System Error.execute
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Usage Error Check
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Setup Player Controller Reference
+Target is BP Interaction Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Soft Class Reference.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Log Inventory System Error.execute
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+      Pin: C (string) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> OnUsageErrorCheck
+Custom Event.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Get InteractionPopupWidgetClassSoft (K2Node_VariableGet)
+      Pin: InteractionPopupWidgetClassSoft (softclass) Dir=Out
+        -> Is Valid Soft Class Reference.SoftClassReference
+      Pin: self (object) Dir=In
+    Node: Is Valid Soft Class Reference (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SoftClassReference (softclass) Dir=In
+        -> Get InteractionPopupWidgetClassSoft.InteractionPopupWidgetClassSoft
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: THIS IS OVERRIDING CGF - INTERACT FIX (EdGraphNode_Comment)
+  Graph: SetupPlayerControllerReference
+    Node: SetupPlayerControllerReference (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: Controller (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> SetupPlayerControllerReference.then
+      Pin: then (exec) Dir=Out
+        -> Set PlayerController.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> SetupPlayerControllerReference.Controller
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Set PlayerController.PlayerController
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set PlayerController (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Save the PlayerController, as it is needed to assign the interaction widget owner (EdGraphNode_Comment)
+  Graph: Interact
+    Node: Interact (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Owner
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: Is Valid (exec) Dir=Out
+        -> On Actor Interaction Server
+Target is BP Interaction Component
+Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: On Actor Interaction Server
+Target is BP Interaction Component
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: PlayerController (object) Dir=In
+        -> Get PlayerController.PlayerController
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> On Actor Interaction Server
+Target is BP Interaction Component
+Replicated To Server (if owning client).PlayerController
+      Pin: self (object) Dir=In
+    Node: Is the player next to an interactable? (EdGraphNode_Comment)
+    Node: Interact with the interactable (EdGraphNode_Comment)
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: ReturnValue (object) Dir=Out
+        -> On Actor Interaction Server
+Target is BP Interaction Component
+Replicated To Server (if owning client).Actor
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Interact.then
+      Pin: Condition (bool) Dir=In
+        -> Is Interaction Allowed.bInteractionIsAllowed
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Is Interaction Allowed? (EdGraphNode_Comment)
+    Node: Is Interaction Allowed (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: bInteractionIsAllowed (bool) Dir=Out
+        -> Branch.Condition
+  Graph: IsInteractionAllowed
+    Node: IsInteractionAllowed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: bInteractionIsAllowed (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: bInteractionIsAllowed (bool) Dir=In
+    Node: Is Interaction Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InteractingActor (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: InventoryActorComponent (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: bIsValid (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Interaction Valid.InteractingActor
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Is Interaction Valid.InventoryActorComponent
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.else
+      Pin: InputObject (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Is Interaction Valid.bIsValid
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+    Node: Is Any Menu Open (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: bIsAnyMenuOpen (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> IsInteractionAllowed.then
+      Pin: Condition (bool) Dir=In
+        -> Is Any Menu Open.bIsAnyMenuOpen
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Combines IsAnyMenuOpen & IsInteractionValid checks to ensure we can cleanly open the menu (EdGraphNode_Comment)
+  Graph: IsInteractionValid
+    Node: IsInteractionValid (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: InteractingActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Reroute Node.InputPin
+      Pin: InventoryActorComponent (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: End (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actors to Ignore.ActorsToIgnore
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+        -> Equal (Object).A
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bIsValid (bool) Dir=In
+    Node: Get PreventInteractionThroughWall (K2Node_VariableGet)
+      Pin: PreventInteractionThroughWall (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get PreventInteractionThroughWall.PreventInteractionThroughWall
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: else (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> IsInteractionValid.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> Break Hit Result.HitActor
+      Pin: B (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Is Overlapping Actor
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InteractionArea.InteractionArea
+      Pin: Other (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.bIsValid
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> IsInteractionValid.InteractingActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+    Node: Prevent interaction through wall check (EdGraphNode_Comment)
+    Node: Distance check (EdGraphNode_Comment)
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bIsValid (bool) Dir=In
+        -> Is Overlapping Actor
+Target is Primitive Component.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Simple Anti-Cheat Checks (EdGraphNode_Comment)
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InteractionCollision.InteractionCollision
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Break Hit Result.bBlockingHit
+      Pin: B (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Actors to Ignore (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ActorToExclude (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: ActorsToIgnore (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+    Node: Get InteractionCollision (K2Node_VariableGet)
+      Pin: InteractionCollision (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get InteractionArea (K2Node_VariableGet)
+      Pin: InteractionArea (object) Dir=Out
+        -> Is Overlapping Actor
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actors to Ignore.ActorToExclude
+        -> Equal (Object).B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> IsInteractionValid.InventoryActorComponent
+      Pin: OutputPin (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+        -> Get InteractionArea.self
+        -> Get InteractionCollision.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> IsInteractionValid.InteractingActor
+      Pin: OutputPin (object) Dir=Out
+        -> Is Overlapping Actor
+Target is Primitive Component.Other
+  Graph: IsAnyMenuOpen
+    Node: IsAnyMenuOpen (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bIsAnyMenuOpen (bool) Dir=In
+    Node: Get bInventoryMenuOpen (K2Node_VariableGet)
+      Pin: bInventoryMenuOpen (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get bFirstTimePickupMenuOpen (K2Node_VariableGet)
+      Pin: bFirstTimePickupMenuOpen (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> IsAnyMenuOpen.then
+      Pin: Condition (bool) Dir=In
+        -> Get bInventoryMenuOpen.bInventoryMenuOpen
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get bFirstTimePickupMenuOpen.bFirstTimePickupMenuOpen
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Branch.then
+      Pin: bIsAnyMenuOpen (bool) Dir=In
+    Node: Check if any other inventory menu is open (EdGraphNode_Comment)
+  Graph: UpdateInteractionPopupVisibility
+    Node: UpdateInteractionPopupVisibility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Get Interactables (K2Node_VariableGet)
+      Pin: Interactables (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> UpdateInteractionPopupVisibility.then
+      Pin: Array (object) Dir=In
+        -> Get Interactables.Interactables
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Not Equal (Object).A
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Not Equal (Object).B
+      Pin: self (object) Dir=In
+    Node: Not Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Destroy Interaction Popup
+Target is BP Inventory Actor Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Update Interaction Popup
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Update Interaction Popup
+Target is BP Inventory Actor Component.PlayerController
+      Pin: self (object) Dir=In
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: InputObject (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Is Interaction Allowed.bInteractionIsAllowed
+      Pin: then (exec) Dir=Out
+        -> Update Interaction Popup
+Target is BP Inventory Actor Component.execute
+      Pin: else (exec) Dir=Out
+        -> Is Valid.exec
+    Node:  (EdGraphNode_Comment)
+    Node: Update Interaction Popup
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: PlayerController (object) Dir=In
+        -> Get PlayerController.PlayerController
+    Node: Is Interaction Allowed (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: bInteractionIsAllowed (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Get InteractionPopupWidget.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get InteractionPopupWidget.InteractionPopupWidget
+      Pin: Output (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Is Valid.InputObject
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: InVisibility (byte) Dir=In
+    Node: Get InteractionPopupWidget (K2Node_VariableGet)
+      Pin: InteractionPopupWidget (softobject) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.else
+      Pin: InputObject (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Destroy Interaction Popup
+Target is BP Inventory Actor Component.self
+    Node: Destroy Interaction Popup
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: UpdateClosestInteractable
+    Node: UpdateClosestInteractable (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set ClosestInteractablePriority.execute
+    Node: Get Distance To
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: OtherActor (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+        -> Set ClosestInteractableDistance.ClosestInteractableDistance
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Distance To
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get ClosestInteractableDistance.ClosestInteractableDistance
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set ClosestInteractableDistance.execute
+      Pin: else (exec) Dir=Out
+    Node: Set ClosestInteractable (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ClosestInteractablePriority.then
+      Pin: then (exec) Dir=Out
+      Pin: ClosestInteractable (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Interactables (K2Node_VariableGet)
+      Pin: Interactables (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Set ClosestInteractableDistance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ClosestInteractablePriority.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestInteractable.execute
+      Pin: ClosestInteractableDistance (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ClosestInteractableDistance (K2Node_VariableGet)
+      Pin: ClosestInteractableDistance (real) Dir=Out
+        -> float < float.B
+      Pin: self (object) Dir=In
+    Node: Set ClosestInteractableDistance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestInteractablePriority.execute
+      Pin: ClosestInteractableDistance (real) Dir=In
+        -> Get Distance To
+Target is Actor.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Distance To
+Target is Actor.OtherActor
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set ClosestInteractable.then
+      Pin: Array (object) Dir=In
+        -> Get Interactables.Interactables
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Set ClosestInteractable.ClosestInteractable
+        -> Get Owner
+Target is Actor Component.self
+        -> Get Priority.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Set ClosestInteractable (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ClosestInteractableDistance.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: ClosestInteractable (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node:  (EdGraphNode_Comment)
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Distance To
+Target is Actor.self
+    Node: Get ClosestInteractablePriority (K2Node_VariableGet)
+      Pin: ClosestInteractablePriority (int) Dir=Out
+        -> integer >= integer.B
+      Pin: self (object) Dir=In
+    Node: Set ClosestInteractablePriority (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateClosestInteractable.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestInteractableDistance.execute
+      Pin: ClosestInteractablePriority (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Priority (K2Node_VariableGet)
+      Pin: Priority (int) Dir=Out
+        -> integer >= integer.A
+        -> Set ClosestInteractablePriority.ClosestInteractablePriority
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Priority.Priority
+      Pin: B (int) Dir=In
+        -> Get ClosestInteractablePriority.ClosestInteractablePriority
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set ClosestInteractablePriority (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ClosestInteractableDistance.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestInteractable.execute
+      Pin: ClosestInteractablePriority (int) Dir=In
+        -> Get Priority.Priority
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetActorsToIgnore
+    Node: GetActorsToIgnore (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: ActorToExclude (object) Dir=Out
+        -> Not Equal (Object).B
+        -> Remove Item.Item
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Remove Item.then
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get ActorsToIgnoreTemp.ActorsToIgnoreTemp
+    Node: Get Interactables (K2Node_VariableGet)
+      Pin: Interactables (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Get ActorsToIgnoreTemp (K2Node_VariableGet)
+      Pin: ActorsToIgnoreTemp (object) Dir=Out
+        -> Return Node.ActorsToIgnore
+        -> Remove Item.TargetArray
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear.then
+      Pin: Array (object) Dir=In
+        -> Get Interactables.Interactables
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+        -> Not Equal (Object).A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Remove Item.execute
+    Node: Get ActorsToIgnoreTemp (K2Node_VariableGet)
+      Pin: ActorsToIgnoreTemp (object) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ActorsToIgnoreTemp.ActorsToIgnoreTemp
+      Pin: NewItem (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (object) Dir=Out
+        -> Add.NewItem
+    Node: Not Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (object) Dir=In
+        -> GetActorsToIgnore.ActorToExclude
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ActorsToIgnoreTemp (K2Node_VariableGet)
+      Pin: ActorsToIgnoreTemp (object) Dir=Out
+        -> Clear.TargetArray
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> GetActorsToIgnore.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ActorsToIgnoreTemp.ActorsToIgnoreTemp
+    Node: Remove Item (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ActorsToIgnoreTemp.ActorsToIgnoreTemp
+      Pin: Item (object) Dir=In
+        -> GetActorsToIgnore.ActorToExclude
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Actors to ignore (EdGraphNode_Comment)
+  Graph: PlayPickupAnimation
+    Node: PlayPickupAnimation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Montage Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Montage Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> PlayPickupAnimation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+        -> Get PickupAnimation.PickupAnimation
+      Pin: InPlayRate (real) Dir=In
+      Pin: InTimeToStartMontageAt (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Montage Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client).InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+        -> Get Owning Character.Character
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get PickupAnimation.self
+    Node: Get PickupAnimation (K2Node_VariableGet)
+      Pin: PickupAnimation (object) Dir=Out
+        -> Montage Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client).MontageToPlay
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Get Owning Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Character (object) Dir=Out
+        -> Get Mesh.self
+    Node: Start Pickup Animation (EdGraphNode_Comment)
+  Graph: PlayPickupSound
+    Node: PlayPickupSound (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sound Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: bIsCurrency (bool) Dir=Out
+        -> Select.Index
+    Node: Sound Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> PlayPickupSound.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sound Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client).Location
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get ItemPickupSound.self
+    Node: Get ItemPickupSound (K2Node_VariableGet)
+      Pin: ItemPickupSound (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get ItemPickupSound.ItemPickupSound
+      Pin: Option 1 (object) Dir=In
+        -> Get CurrencyPickupSound.CurrencyPickupSound
+      Pin: Index (bool) Dir=In
+        -> PlayPickupSound.bIsCurrency
+      Pin: ReturnValue (object) Dir=Out
+        -> Sound Play Server
+Target is BP Interaction Component
+RELIABLE Replicated To Server (if owning client).Sound
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get CurrencyPickupSound.self
+    Node: Get CurrencyPickupSound (K2Node_VariableGet)
+      Pin: CurrencyPickupSound (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Start Pickup Sound (EdGraphNode_Comment)
+  Graph: GetOwningCharacter
+    Node: GetOwningCharacter (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetOwningCharacter.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Return Node.Character
+      Pin: bSuccess (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: Character (object) Dir=In
+        -> Cast To Character.AsCharacter
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Gets the owner of this interaction component (EdGraphNode_Comment)
+  Graph: UpdateInteractables_Client
+    Node: UpdateInteractables_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Closest Interactable
+Target is BP Interaction Component.execute
+    Node: Update Interaction Popup Visibility
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Closest Interactable
+Target is BP Interaction Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Closest Interactable
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateInteractables_Client.then
+      Pin: then (exec) Dir=Out
+        -> Update Interaction Popup Visibility
+Target is BP Interaction Component.execute
+      Pin: self (object) Dir=In
+    Node: Check every frame if an interactable is close and where to position the interaction popup on the screen (EdGraphNode_Comment)
+  Graph: ActorInteraction_Server
+    Node: ActorInteraction_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Actor (object) Dir=Out
+        -> On Interact
+Target is BPI Interaction.self
+      Pin: PlayerController (object) Dir=Out
+        -> On Interact
+Target is BPI Interaction.PlayerController
+    Node: On Interact
+Target is BPI Interaction (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set bIsInteractionCooledDown.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> ActorInteraction_Server.Actor
+      Pin: PlayerController (object) Dir=In
+        -> ActorInteraction_Server.PlayerController
+    Node: Get bIsInteractionCooledDown (K2Node_VariableGet)
+      Pin: bIsInteractionCooledDown (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> ActorInteraction_Server.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsInteractionCooledDown.bIsInteractionCooledDown
+      Pin: then (exec) Dir=Out
+        -> Set bIsInteractionCooledDown.execute
+      Pin: else (exec) Dir=Out
+    Node: Set bIsInteractionCooledDown (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> On Interact
+Target is BPI Interaction.execute
+      Pin: bIsInteractionCooledDown (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Actor Interaction (EdGraphNode_Comment)
+  Graph: AddInteractable_Client
+    Node: AddInteractable_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: Interactable (object) Dir=Out
+        -> Add Unique.NewItem
+    Node: Get Interactables (K2Node_VariableGet)
+      Pin: Interactables (object) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> AddInteractable_Client.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Interactables.Interactables
+      Pin: NewItem (object) Dir=In
+        -> AddInteractable_Client.Interactable
+      Pin: ReturnValue (int) Dir=Out
+    Node: Add an interactable actor to the Interactables array (EdGraphNode_Comment)
+  Graph: RemoveInteractable_Client
+    Node: RemoveInteractable_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Remove Item.execute
+      Pin: Interactable (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Interactables (K2Node_VariableGet)
+      Pin: Interactables (object) Dir=Out
+        -> Remove Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Remove Item (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> RemoveInteractable_Client.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Interactables.Interactables
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ClosestInteractable (K2Node_VariableGet)
+      Pin: ClosestInteractable (object) Dir=Out
+        -> Equal (Object).B
+      Pin: self (object) Dir=In
+    Node: Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (object) Dir=In
+        -> Get ClosestInteractable.ClosestInteractable
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Update Closest Interactable
+Target is BP Interaction Component.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Remove Item.then
+      Pin: Condition (bool) Dir=In
+        -> Remove Item.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Update Closest Interactable
+Target is BP Interaction Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Interaction Popup
+Target is BP Inventory Actor Component.execute
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Destroy Interaction Popup
+Target is BP Inventory Actor Component.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> RemoveInteractable_Client.Interactable
+      Pin: OutputPin (object) Dir=Out
+        -> Remove Item.Item
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Destroy Interaction Popup
+Target is BP Inventory Actor Component.self
+    Node: Destroy Interaction Popup
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Closest Interactable
+Target is BP Interaction Component.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Equal (Object).A
+    Node: Remove an interactable actor from the Interactables array (EdGraphNode_Comment)
+  Graph: InteractionFailed_Client
+    Node: InteractionFailed_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> InteractionFailed_Client.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get AlreadyInUseSound.AlreadyInUseSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get AlreadyInUseSound.self
+    Node: Get AlreadyInUseSound (K2Node_VariableGet)
+      Pin: AlreadyInUseSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Interaction Failed (EdGraphNode_Comment)

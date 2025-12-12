@@ -1,0 +1,295 @@
+Blueprint: BP_SOTS_Ability (/Game/SOTS/Player/Systems/Abilites/BP_SOTS_Ability.BP_SOTS_Ability)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Init Ability
+Target is BP SOTS Ability.execute
+    Node: On Init Ability
+Target is BP SOTS Ability (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: DelayedAbilityActivation
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Event.execute
+      Pin: Time (real) Dir=Out
+        -> Set Timer by Event.Time
+    Node: Set Timer by Event (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DelayedAbilityActivation
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set DelayedAbilityActivationHandle.execute
+      Pin: self (object) Dir=In
+      Pin: Delegate (delegate) Dir=In
+        -> DelayedAbilityActivationTick
+Custom Event.OutputDelegate
+      Pin: Time (real) Dir=In
+        -> DelayedAbilityActivation
+Custom Event.Time
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set DelayedAbilityActivationHandle.DelayedAbilityActivationHandle
+    Node: DelayedAbilityActivationTick
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Set Timer by Event.Delegate
+      Pin: then (exec) Dir=Out
+        -> Activate Ability
+Target is BP SOTS Ability.execute
+    Node: Activate Ability
+Target is BP SOTS Ability (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DelayedAbilityActivationTick
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Clear and Invalidate Timer by Handle.execute
+      Pin: self (object) Dir=In
+    Node: Set DelayedAbilityActivationHandle (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Event.then
+      Pin: then (exec) Dir=Out
+      Pin: DelayedAbilityActivationHandle (struct) Dir=In
+        -> Set Timer by Event.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get DelayedAbilityActivationHandle (K2Node_VariableGet)
+      Pin: DelayedAbilityActivationHandle (struct) Dir=Out
+        -> Clear and Invalidate Timer by Handle.Handle
+      Pin: self (object) Dir=In
+    Node: Clear and Invalidate Timer by Handle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Activate Ability
+Target is BP SOTS Ability.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Handle (struct) Dir=In
+        -> Get DelayedAbilityActivationHandle.DelayedAbilityActivationHandle
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnInitAbility
+    Node: OnInitAbility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Not Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get DelayDurationIfAny.DelayDurationIfAny
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Init Refs
+Target is BP SOTS Ability.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delayed Ability Activation
+Target is BP SOTS Ability.execute
+      Pin: else (exec) Dir=Out
+        -> Activate Ability
+Target is BP SOTS Ability.execute
+    Node: Activate Ability
+Target is BP SOTS Ability (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delayed Ability Activation
+Target is BP SOTS Ability (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Time (real) Dir=In
+        -> Get DelayDurationIfAny.DelayDurationIfAny
+    Node: Get DelayDurationIfAny (K2Node_VariableGet)
+      Pin: DelayDurationIfAny (real) Dir=Out
+        -> Delayed Ability Activation
+Target is BP SOTS Ability.Time
+        -> Not Equal (Float).A
+      Pin: self (object) Dir=In
+        -> Get AbilityData.AbilityData
+    Node: Init Refs
+Target is BP SOTS Ability (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Life Span
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Get AbilityData (K2Node_VariableGet)
+      Pin: AbilityData (object) Dir=Out
+        -> Get Lifetime.self
+        -> Get DelayDurationIfAny.self
+      Pin: self (object) Dir=In
+    Node: Set Life Span
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> Add to Active Map
+Target is AC SOTS Abilitys.then
+      Pin: then (exec) Dir=Out
+        -> Init Refs
+Target is BP SOTS Ability.execute
+      Pin: self (object) Dir=In
+      Pin: InLifespan (real) Dir=In
+        -> Get Lifetime.Lifetime
+    Node: Get Lifetime (K2Node_VariableGet)
+      Pin: Lifetime (real) Dir=Out
+        -> Set Life Span
+Target is Actor.InLifespan
+      Pin: self (object) Dir=In
+        -> Get AbilityData.AbilityData
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> OnInitAbility.then
+      Pin: InputObject (object) Dir=In
+        -> Get AbilityData.AbilityData
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get AbilityData (K2Node_VariableGet)
+      Pin: AbilityData (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get RegisterWithPlayerCompByDefault?.self
+        -> Get AbilitysTag.self
+      Pin: self (object) Dir=In
+    Node: Get RegisterWithPlayerCompByDefault? (K2Node_VariableGet)
+      Pin: RegisterWithPlayerCompByDefault? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get AbilityData.AbilityData
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add to Active Map
+Target is AC SOTS Abilitys.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Get RegisterWithPlayerCompByDefault?.RegisterWithPlayerCompByDefault?
+      Pin: then (exec) Dir=Out
+        -> Add to Active Map
+Target is AC SOTS Abilitys.execute
+      Pin: else (exec) Dir=Out
+        -> Set Life Span
+Target is Actor.execute
+    Node: Add to Active Map
+Target is AC SOTS Abilitys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Life Span
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Key (struct) Dir=In
+        -> Get AbilitysTag.AbilitysTag
+      Pin: Value (object) Dir=In
+        -> Self-Reference.self
+    Node: Get AbilitysTag (K2Node_VariableGet)
+      Pin: AbilitysTag (struct) Dir=Out
+        -> Add to Active Map
+Target is AC SOTS Abilitys.Key
+      Pin: self (object) Dir=In
+        -> Get AbilityData.AbilityData
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Add to Active Map
+Target is AC SOTS Abilitys.Value
+  Graph: ActivateAbility
+    Node: ActivateAbility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: InitRefs
+    Node: InitRefs (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get.OwnerRef
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set SOTS_AbilityComponent.SOTS_AbilityComponent
+        -> Is Valid.InputObject
+    Node: Set SOTS_AbilityComponent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: SOTS_AbilityComponent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> InitRefs.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: OwnerRef (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set SOTS_AbilityComponent.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+        -> Error Handling.Object

@@ -1,0 +1,478 @@
+Blueprint: BPW_CGF_BoundInputImage (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_BoundInputImage.BPW_CGF_BoundInputImage)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Get BoundImage (K2Node_VariableGet)
+      Pin: BoundImage (object) Dir=Out
+        -> Get Brush.self
+      Pin: self (object) Dir=In
+    Node: Get Brush (K2Node_VariableGet)
+      Pin: Brush (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: self (object) Dir=In
+        -> Get BoundImage.BoundImage
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: StructRef (struct) Dir=In
+        -> Get Brush.Brush
+      Pin: StructOut (struct) Dir=Out
+      Pin: ImageSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get ImageSize_X.ImageSize_X
+      Pin: Y (real) Dir=In
+        -> Get ImageSize_Y.ImageSize_Y
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in Slate Brush.ImageSize
+    Node: Get ImageSize_X (K2Node_VariableGet)
+      Pin: ImageSize_X (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: self (object) Dir=In
+    Node: Get ImageSize_Y (K2Node_VariableGet)
+      Pin: ImageSize_Y (real) Dir=Out
+        -> Make Vector 2D.Y
+      Pin: self (object) Dir=In
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+    Node: Bind to MappingChanged And Input Changed  (EdGraphNode_Comment)
+    Node: Setup Size (EdGraphNode_Comment)
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> Get BoundImage.BoundImage
+      Pin: Texture (object) Dir=In
+        -> Get DefaultTexture.DefaultTexture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get BoundImage (K2Node_VariableGet)
+      Pin: BoundImage (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get Input Action To Check (K2Node_VariableGet)
+      Pin: Input Action To Check (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set RetryCount.then
+      Pin: InputObject (object) Dir=In
+        -> Get Input Action To Check.Input Action To Check
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Branch.execute
+    Node: Get RetryCount (K2Node_VariableGet)
+      Pin: RetryCount (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: Value (int) Dir=In
+        -> Get RetryCount.RetryCount
+      Pin:    (exec) Dir=Out
+        -> Set RetryCount.execute
+      Pin: Result (int) Dir=Out
+        -> Set RetryCount.RetryCount
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get RetryCount.RetryCount
+      Pin: B (int) Dir=In
+        -> Get RetryMax.RetryMax
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set RetryCount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: RetryCount (int) Dir=In
+        -> Increment Int.Result
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get RetryMax (K2Node_VariableGet)
+      Pin: RetryMax (int) Dir=Out
+        -> Equal (Integer).B
+      Pin: self (object) Dir=In
+    Node: Get RetryCount (K2Node_VariableGet)
+      Pin: RetryCount (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BoundImage.BoundImage
+      Pin: Texture (object) Dir=In
+        -> Get DefaultTexture.DefaultTexture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get BoundImage (K2Node_VariableGet)
+      Pin: BoundImage (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get DefaultTexture (K2Node_VariableGet)
+      Pin: DefaultTexture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Get DefaultTexture (K2Node_VariableGet)
+      Pin: DefaultTexture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set CGF_PlayerController.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Set CGF_PlayerController.CGF_PlayerController
+      Pin: bSuccess (bool) Dir=Out
+    Node: OnInputDeviceChanged_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Input Device Changed.Delegate
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: UsingGamePad? (bool) Dir=Out
+    Node: Bind Event to On Input Device Changed (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Update Button Image
+Collapsed Graph.execute
+      Pin: self (object) Dir=In
+        -> Set CGF_PlayerController.Output_Get
+      Pin: Delegate (delegate) Dir=In
+        -> OnInputDeviceChanged_Event
+Custom Event.OutputDelegate
+    Node: Set CGF_PlayerController (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Input Device Changed.execute
+      Pin: CGF_PlayerController (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Output_Get (object) Dir=Out
+        -> Bind Event to On Input Device Changed.self
+      Pin: self (object) Dir=In
+    Node: Update Button Image
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On Input Device Changed.then
+        -> Reroute Node.OutputPin
+    Node: Create/Update The Image (EdGraphNode_Comment)
+    Node: If The IA isnt Valid Right Away Try For A Few Ticks (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> OnInputDeviceChanged_Event
+Custom Event.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Update Button Image
+Collapsed Graph.execute
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+  Graph: FindTextureAssetFromFoundSlot
+    Node: FindTextureAssetFromFoundSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set FoundKeyName.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set FoundKeyName.then
+      Pin: ReturnValue (softobject) Dir=In
+        -> To Soft Object Reference.ReturnValue
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Select.ReturnValue
+      Pin: B (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Make Soft Class Path.PathString
+      Pin: C (string) Dir=In
+        -> Get PathToTexturesSpliter1.PathToTexturesSpliter1
+      Pin: D (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: E (string) Dir=In
+        -> Get PathToTexturesSpliter2.PathToTexturesSpliter2
+    Node: Get PathToTexturesSpliter1 (K2Node_VariableGet)
+      Pin: PathToTexturesSpliter1 (string) Dir=Out
+        -> Append.C
+      Pin: self (object) Dir=In
+    Node: Make Soft Class Path (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: PathString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> To Soft Object Reference.SoftObjectPath
+    Node: To Soft Object Reference (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SoftObjectPath (struct) Dir=In
+        -> Make Soft Class Path.ReturnValue
+      Pin: ReturnValue (softobject) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get PathToTexturesSpliter2 (K2Node_VariableGet)
+      Pin: PathToTexturesSpliter2 (string) Dir=Out
+        -> Append.E
+      Pin: self (object) Dir=In
+    Node: Get PathToKMBTextures (K2Node_VariableGet)
+      Pin: PathToKMBTextures (string) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Set FoundKeyName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> FindTextureAssetFromFoundSlot.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: FoundKeyName (string) Dir=In
+        -> Return Key Name Replaced.KeyName
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (string) Dir=In
+        -> Get PathToKMBTextures.PathToKMBTextures
+      Pin: Option 1 (string) Dir=In
+        -> Get PathToGamepadTextures.PathToGamepadTextures
+      Pin: Index (bool) Dir=In
+        -> Is Gamepad Key.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Get KeyToLoadImageFor (K2Node_VariableGet)
+      Pin: KeyToLoadImageFor (struct) Dir=Out
+        -> Is Gamepad Key.Key
+      Pin: self (object) Dir=In
+    Node: Get PathToGamepadTextures (K2Node_VariableGet)
+      Pin: PathToGamepadTextures (string) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Return Key Name Replaced.KeyName
+      Pin: OutputPin (string) Dir=Out
+        -> Append.B
+        -> Append.D
+    Node: Get KeyToLoadImageFor (K2Node_VariableGet)
+      Pin: KeyToLoadImageFor (struct) Dir=Out
+        -> Return Key Name Replaced.Key
+      Pin: self (object) Dir=In
+    Node: Return Key Name Replaced (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get KeyToLoadImageFor.KeyToLoadImageFor
+      Pin: __WorldContext (object) Dir=In
+      Pin: KeyName (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set FoundKeyName.FoundKeyName
+    Node: Is Gamepad Key (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get KeyToLoadImageFor.KeyToLoadImageFor
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+  Graph: HasGamePadTag?
+    Node: HasGamePadTag? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+    Node: Get Input Action To Check (K2Node_VariableGet)
+      Pin: Input Action To Check (object) Dir=Out
+        -> Get PlayerMappableKeySettings.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerMappableKeySettings (K2Node_VariableGet)
+      Pin: PlayerMappableKeySettings (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Input Action To Check.Input Action To Check
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Rtnr.Rtnr
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: ReturnValue (bool) Dir=In
+        -> Get Rtnr.Rtnr
+      Pin: TagChecked (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+    Node: Set Rtnr (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Rtnr (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get Rtnr (K2Node_VariableGet)
+      Pin: Rtnr (bool) Dir=Out
+        -> Return Node.ReturnValue
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> HasGamePadTag?.then
+      Pin: Array (struct) Dir=In
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Rtnr.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Equal (GameplayTag).A
+        -> Return Node.TagChecked
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Rtnr.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: HasKeyboardAndMouseTag?
+    Node: HasKeyboardAndMouseTag? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> HasKeyboardAndMouseTag?.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Input Action To Check (object) Dir=Out
+        -> Get PlayerMappableKeySettings.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerMappableKeySettings (K2Node_VariableGet)
+      Pin: PlayerMappableKeySettings (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.Input Action To Check
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Rtnr.Rtnr
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: ReturnValue (bool) Dir=In
+        -> Get Rtnr.Rtnr
+      Pin: TagChecked (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+    Node: Set Rtnr (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Rtnr (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get Rtnr (K2Node_VariableGet)
+      Pin: Rtnr (bool) Dir=Out
+        -> Return Node.ReturnValue
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (struct) Dir=In
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Rtnr.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Equal (GameplayTag).A
+        -> Return Node.TagChecked
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Rtnr.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: Condition (bool) Dir=In
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+        -> Branch.else
+      Pin: ReturnValue (bool) Dir=In
+      Pin: TagChecked (struct) Dir=In

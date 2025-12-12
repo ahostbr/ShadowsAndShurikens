@@ -1,0 +1,191 @@
+Blueprint: BP_Interactive_Crank (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Interactive_Crank.BP_Interactive_Crank)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Interact trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Interact trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Get Wheel highlighted (K2Node_VariableGet)
+      Pin: Wheel highlighted (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get Wheel (K2Node_VariableGet)
+      Pin: Wheel (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Toggle Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Interact trigger).then
+        -> On Component End Overlap (Interact trigger).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Wheel.Wheel
+        -> Get Wheel highlighted.Wheel highlighted
+        -> Get TextRender1.TextRender1
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Rotation value.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> FInterp To.DeltaTime
+    Node: Get Rotation value (K2Node_VariableGet)
+      Pin: Rotation value (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Dot Product.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> FInterp To.Target
+    Node: Get Wheel (K2Node_VariableGet)
+      Pin: Wheel (object) Dir=Out
+        -> Add Local Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Add Local Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Rotation value.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get Wheel.Wheel
+      Pin: DeltaRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+        -> Get Rotation value.Rotation value
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Local Rotation
+Target is Scene Component.DeltaRotation
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Rotation value.Rotation value
+      Pin: Target (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: DeltaTime (real) Dir=In
+        -> Event Tick.DeltaSeconds
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Rotation value.Rotation value
+    Node: Get Wheel (K2Node_VariableGet)
+      Pin: Wheel (object) Dir=Out
+        -> Get RelativeRotation.self
+      Pin: self (object) Dir=In
+    Node: Get RelativeRotation (K2Node_VariableGet)
+      Pin: RelativeRotation (struct) Dir=Out
+        -> Get Right Vector.InRot
+      Pin: self (object) Dir=In
+        -> Get Wheel.Wheel
+    Node: Dot Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Player drag direction.Player drag direction
+      Pin: B (struct) Dir=In
+        -> Get Right Vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Get Right Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get RelativeRotation.RelativeRotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.B
+    Node: Set Rotation value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Add Local Rotation
+Target is Scene Component.execute
+      Pin: Rotation value (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Player drag direction (K2Node_VariableGet)
+      Pin: Player drag direction (struct) Dir=Out
+        -> Dot Product.A
+      Pin: self (object) Dir=In
+    Node: Get Rotation value (K2Node_VariableGet)
+      Pin: Rotation value (real) Dir=Out
+        -> Make Rotator.Roll
+      Pin: self (object) Dir=In
+    Node: Get Target LED (K2Node_VariableGet)
+      Pin: Target LED (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Change Light Brightness
+Target is BP LED Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: New brightness (real) Dir=In
+        -> Absolute (Float).ReturnValue
+    Node: Get Rotation value (K2Node_VariableGet)
+      Pin: Rotation value (real) Dir=Out
+        -> Absolute (Float).A
+      Pin: self (object) Dir=In
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Rotation value.Rotation value
+      Pin: ReturnValue (real) Dir=Out
+        -> Change Light Brightness
+Target is BP LED Basic.New brightness
+    Node: Get TextRender1 (K2Node_VariableGet)
+      Pin: TextRender1 (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibilty of Components (EdGraphNode_Comment)
+    Node: Rotate Crank (EdGraphNode_Comment)
+    Node: Set Light Brightness depending on Rotation Value (EdGraphNode_Comment)
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Add Local Rotation
+Target is Scene Component.then
+      Pin: InputObject (object) Dir=In
+        -> Get Target LED.Target LED
+      Pin: Is Valid (exec) Dir=Out
+        -> Change Light Brightness
+Target is BP LED Basic.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Target LED.Target LED
+      Pin: OutputPin (object) Dir=Out
+        -> Change Light Brightness
+Target is BP LED Basic.self
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,72 @@
+Blueprint: BP_AnimNotify_DisableActorColision (/Game/SOTS/Notifies/BP_AnimNotify_DisableActorColision.BP_AnimNotify_DisableActorColision)
+  Graph: Received_Notify
+    Node: Received Notify (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_SOTS_Player.execute
+      Pin: MeshComp (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+      Pin: Animation (object) Dir=Out
+      Pin: EventReference (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Player Mesh
+Target is BPI Player Abilitys.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+        -> Get Player Mesh
+Target is BPI Player Abilitys.PlayersMesh
+      Pin: NewType (byte) Dir=In
+        -> Get CollisionState.CollisionState
+    Node: Get CollisionState (K2Node_VariableGet)
+      Pin: CollisionState (byte) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.NewType
+      Pin: self (object) Dir=In
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Received Notify.MeshComp
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_SOTS_Player.Object
+    Node: Cast To BP_SOTS_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Received Notify.then
+      Pin: then (exec) Dir=Out
+        -> Get Player Mesh
+Target is BPI Player Abilitys.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsBP SOTS Player (object) Dir=Out
+        -> Get CapsuleComponent.self
+        -> Get Player Mesh
+Target is BPI Player Abilitys.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_SOTS_Player.AsBP SOTS Player
+    Node: Get Player Mesh
+Target is BPI Player Abilitys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_SOTS_Player.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (interface) Dir=In
+        -> Cast To BP_SOTS_Player.AsBP SOTS Player
+      Pin: PlayersMesh (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self

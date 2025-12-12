@@ -1,0 +1,48 @@
+Blueprint: WBP_SaveLoadThrobber (/Game/InventorySystemPro/ExampleContent/Common/UI/WBP_SaveLoadThrobber.WBP_SaveLoadThrobber)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsSaving (K2Node_VariableGet)
+      Pin: bIsSaving (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsSaving.bIsSaving
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: else (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: Get SaveLoadText (K2Node_VariableGet)
+      Pin: SaveLoadText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SaveLoadText.SaveLoadText
+      Pin: InText (text) Dir=In
+    Node: Get SaveLoadText (K2Node_VariableGet)
+      Pin: SaveLoadText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SaveLoadText.SaveLoadText
+      Pin: InText (text) Dir=In
+    Node: Switch between loading/saving text, will be set on Create Widget node (EdGraphNode_Comment)

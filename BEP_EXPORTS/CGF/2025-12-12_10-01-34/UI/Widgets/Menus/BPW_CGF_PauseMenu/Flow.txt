@@ -1,0 +1,431 @@
+Blueprint: BPW_CGF_PauseMenu (/Game/CoreGameFramework/UI/Widgets/Menus/BPW_CGF_PauseMenu.BPW_CGF_PauseMenu)
+  Graph: EventGraph
+    Node: New game clicked Newest, still needs alot of work (EdGraphNode_Comment)
+    Node: Focus Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Collapse Top Widget
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: OwningPlayer (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: __WorldContext (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_HUD.execute
+    Node: Set BP GI (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DefaultFocusedWidget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: BP GI (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get BTNTEXT.BTNTEXT
+      Pin: InText (text) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set BP GI.then
+      Pin: Condition (bool) Dir=In
+        -> Directory Exists.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Find Recursive.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Construct (EdGraphNode_Comment)
+    Node: Get Project Saved Directory (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Directory Exists (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InPath (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Project Saved Directory.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Directory Exists.InPath
+        -> Reroute Node.InputPin
+    Node: Find Recursive (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: StartDirectory (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: FoundPaths (string) Dir=Out
+      Pin: Wildcard (string) Dir=In
+      Pin: bFindFiles (bool) Dir=In
+      Pin: bFindDirectories (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Find Recursive.then
+      Pin: Condition (bool) Dir=In
+        -> Find Recursive.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: On Clicked Dispatcher (BPW_CGF_MainMenuNewGameButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+    Node: Get BPW_CGF_MainMenuNewGameButton (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuNewGameButton (object) Dir=Out
+        -> Get BTNTEXT.self
+      Pin: self (object) Dir=In
+    Node: Get BTNTEXT (K2Node_VariableGet)
+      Pin: BTNTEXT (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_MainMenuNewGameButton.BPW_CGF_MainMenuNewGameButton
+    Node: Focus Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: OwningPlayer (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: WidgetToFocus (object) Dir=In
+        -> Get DefaultFocusedWidget.DefaultFocusedWidget
+      Pin: PauseGame? (bool) Dir=In
+      Pin: ShowMouseCursor? (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: UIOnlyInput? (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Append.ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Find Recursive.StartDirectory
+    Node: Set DefaultFocusedWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF HUD.then
+      Pin: then (exec) Dir=Out
+        -> Set BP GI.execute
+      Pin: DefaultFocusedWidget (object) Dir=In
+        -> Get BPW_CGF_MainMenuNewGameButton.BPW_CGF_MainMenuNewGameButton
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_MainMenuNewGameButton (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuNewGameButton (object) Dir=Out
+        -> Set DefaultFocusedWidget.DefaultFocusedWidget
+      Pin: self (object) Dir=In
+    Node: Get DefaultFocusedWidget (K2Node_VariableGet)
+      Pin: DefaultFocusedWidget (object) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SetFocusToDefaultFocusableWidget
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get DefaultFocusedWidget.DefaultFocusedWidget
+    Node: Get DefaultFocusedWidget (K2Node_VariableGet)
+      Pin: DefaultFocusedWidget (object) Dir=Out
+        -> Focus Widget.WidgetToFocus
+      Pin: self (object) Dir=In
+    Node: All Widgets Should Designate a Default Widget to Focus on Construct. Set Focus To Default Child Widget (EdGraphNode_Comment)
+    Node: On Clicked Dispatcher (BPW_CGF_MainMenuSettingsButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear Stack Layer
+Target is BPI CGF User Interface.execute
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Clear Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Clear Stack Layer
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Show Top Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Clear Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> On Clicked Dispatcher (BPW_CGF_MainMenuSettingsButton).then
+      Pin: then (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+    Node: Show Top Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+    Node: On Clicked Dispatcher (BPW_CGF_MainMenuQuitButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> HandleQuit
+Collapsed Graph.execute
+    Node: On Clicked Dispatcher (BPW_CGF_MainMenuLoadGameButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> On Clicked Dispatcher (BPW_CGF_MainMenuLoadGameButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Show Top Widget
+Target is BPI CGF User Interface.self
+    Node: Menu Clicks (EdGraphNode_Comment)
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP GI.BP GI
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: On Clicked Dispatcher (BPW_CGF_MainMenuCreditsButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Roll Credits
+Target is BPI CGF User Interface.execute
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Roll Credits
+Target is BPI CGF User Interface.self
+    Node: Roll Credits
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> On Clicked Dispatcher (BPW_CGF_MainMenuCreditsButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Cast To BP_CGF_HUD.Object
+    Node: Cast To BP_CGF_HUD (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF HUD.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get HUD.HUD
+      Pin: AsBP CGF HUD (object) Dir=Out
+        -> Set BP CGF HUD.BP CGF HUD
+      Pin: bSuccess (bool) Dir=Out
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_HUD.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Set BP CGF HUD (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_HUD.then
+      Pin: then (exec) Dir=Out
+        -> Set DefaultFocusedWidget.execute
+      Pin: BP CGF HUD (object) Dir=In
+        -> Cast To BP_CGF_HUD.AsBP CGF HUD
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: HandleQuit
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> On Clicked Dispatcher (BPW_CGF_MainMenuQuitButton).then
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Focus Widget.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_MainMenuLoadGameButton.BPW_CGF_MainMenuLoadGameButton
+      Pin: InVisibility (byte) Dir=In
+    Node: Get BPW_CGF_MainMenuLoadGameButton (K2Node_VariableGet)
+      Pin: BPW_CGF_MainMenuLoadGameButton (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Focus Widget.OwningPlayer
+    Node: Get BP GI (K2Node_VariableGet)
+      Pin: BP GI (object) Dir=Out
+        -> Get UsingGamepad?.self
+      Pin: self (object) Dir=In
+    Node: Get UsingGamepad? (K2Node_VariableGet)
+      Pin: UsingGamepad? (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+        -> Get BP GI.BP GI
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get UsingGamepad?.UsingGamepad?
+      Pin: ReturnValue (bool) Dir=Out
+        -> Focus Widget.ShowMouseCursor?
+    Node: Event SetFocusToDefaultFocusableWidget
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.self
+        -> Collapse Top Widget
+Target is BPI CGF User Interface.self
+    Node: Pop Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> On Clicked Dispatcher (BPW_CGF_MainMenuNewGameButton).then
+      Pin: then (exec) Dir=Out
+        -> Collapse Top Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: Widget (struct) Dir=In
+        -> Get GameplayTag.GameplayTag
+    Node: Get GameplayTag (K2Node_VariableGet)
+      Pin: GameplayTag (struct) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.Widget
+      Pin: self (object) Dir=In
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Focus Game.OwningPlayer
+    Node: Collapse Top Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Focus Game.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Laye (struct) Dir=In
+    Node: On Clicked Dispatcher (BPW_CGF_MainMenuSaveGameButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Request Save
+Target is BP CGF Game Instance.execute
+    Node: Get BP GI (K2Node_VariableGet)
+      Pin: BP GI (object) Dir=Out
+        -> Request Save
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Request Save
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked Dispatcher (BPW_CGF_MainMenuSaveGameButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP GI.BP GI
+      Pin: Async? (bool) Dir=In
+      Pin: IsAutoSave? (bool) Dir=In
+      Pin: PlaySaveAnimation? (bool) Dir=In

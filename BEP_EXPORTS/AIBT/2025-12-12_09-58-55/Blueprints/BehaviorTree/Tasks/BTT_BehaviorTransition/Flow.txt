@@ -1,0 +1,193 @@
+Blueprint: BTT_BehaviorTransition (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_BehaviorTransition.BTT_BehaviorTransition)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Get FleeTransition (K2Node_VariableGet)
+      Pin: FleeTransition (byte) Dir=Out
+        -> Select.NewEnumerator2
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Change Behavior
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set with Notify SeekTarget.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewBehaviorType (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StopAnimations (bool) Dir=In
+    Node: Get Current Behavior Type
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: CurrentBehaviorType (byte) Dir=Out
+        -> Select.Index
+        -> Reroute Node.InputPin
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (byte) Dir=In
+      Pin: NewEnumerator1 (byte) Dir=In
+      Pin: NewEnumerator2 (byte) Dir=In
+        -> Get FleeTransition.FleeTransition
+      Pin: NewEnumerator3 (byte) Dir=In
+      Pin: NewEnumerator5 (byte) Dir=In
+        -> Get SeekTransition.SeekTransition
+      Pin: NewEnumerator4 (byte) Dir=In
+        -> Get AttackMeleeTransition.AttackMeleeTransition
+      Pin: NewEnumerator9 (byte) Dir=In
+        -> Get AttackRangedTransition.AttackRangedTransition
+      Pin: NewEnumerator6 (byte) Dir=In
+        -> Get DefendTransition.DefendTransition
+      Pin: NewEnumerator10 (byte) Dir=In
+        -> Get HitTransition.HitTransition
+      Pin: NewEnumerator11 (byte) Dir=In
+        -> Get InvestigateTransition.InvestigateTransition
+      Pin: NewEnumerator12 (byte) Dir=In
+      Pin: NewEnumerator13 (byte) Dir=In
+        -> Get StunTransition.StunTransition
+      Pin: Index (byte) Dir=In
+        -> Get Current Behavior Type
+Target is BP Behavior Component.CurrentBehaviorType
+      Pin: ReturnValue (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get SeekTransition (K2Node_VariableGet)
+      Pin: SeekTransition (byte) Dir=Out
+        -> Select.NewEnumerator5
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Change Behavior
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Get AttackMeleeTransition (K2Node_VariableGet)
+      Pin: AttackMeleeTransition (byte) Dir=Out
+        -> Select.NewEnumerator4
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get AttackRangedTransition (K2Node_VariableGet)
+      Pin: AttackRangedTransition (byte) Dir=Out
+        -> Select.NewEnumerator9
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get DefendTransition (K2Node_VariableGet)
+      Pin: DefendTransition (byte) Dir=Out
+        -> Select.NewEnumerator6
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Get Current Behavior Type
+Target is BP Behavior Component.self
+        -> Get FleeTransition.self
+        -> Get SeekTransition.self
+        -> Get AttackMeleeTransition.self
+        -> Get AttackRangedTransition.self
+        -> Get DefendTransition.self
+        -> Get HitTransition.self
+        -> Get InvestigateTransition.self
+        -> Get StunTransition.self
+    Node: Get HitTransition (K2Node_VariableGet)
+      Pin: HitTransition (byte) Dir=Out
+        -> Select.NewEnumerator10
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Get Current Behavior Type
+Target is BP Behavior Component.CurrentBehaviorType
+      Pin: OutputPin (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set with Notify SeekTarget.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Select.ReturnValue
+      Pin: OutputPin (byte) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.NewBehaviorType
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set with Notify SeekTarget.self
+        -> Reroute Node.InputPin
+    Node: Set with Notify SeekTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.execute
+      Pin: SeekTarget (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.execute
+    Node: Get InvestigateTransition (K2Node_VariableGet)
+      Pin: InvestigateTransition (byte) Dir=Out
+        -> Select.NewEnumerator11
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get StunTransition (K2Node_VariableGet)
+      Pin: StunTransition (byte) Dir=Out
+        -> Select.NewEnumerator13
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin

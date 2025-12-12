@@ -1,0 +1,162 @@
+Blueprint: WBP_PickupNotification_Horror (/Game/InventorySystemPro/ExampleContent/Horror/UI/Widgets/WBP_PickupNotification_Horror.WBP_PickupNotification_Horror)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Initial State (EdGraphNode_Comment)
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemImageRef.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Set ItemAmountTextRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ItemImageRef.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemNameTextRef.execute
+      Pin: ItemAmountTextRef (object) Dir=In
+        -> Get ItemAmountText.ItemAmountText
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemImageRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemAmountTextRef.execute
+      Pin: ItemImageRef (object) Dir=In
+        -> Get ItemImage.ItemImage
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemNameTextRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ItemAmountTextRef.then
+      Pin: then (exec) Dir=Out
+      Pin: ItemNameTextRef (object) Dir=In
+        -> Get ItemNameText.ItemNameText
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ItemImage (K2Node_VariableGet)
+      Pin: ItemImage (object) Dir=Out
+        -> Set ItemImageRef.ItemImageRef
+      Pin: self (object) Dir=In
+    Node: Get ItemAmountText (K2Node_VariableGet)
+      Pin: ItemAmountText (object) Dir=Out
+        -> Set ItemAmountTextRef.ItemAmountTextRef
+      Pin: self (object) Dir=In
+    Node: Get ItemNameText (K2Node_VariableGet)
+      Pin: ItemNameText (object) Dir=Out
+        -> Set ItemNameTextRef.ItemNameTextRef
+      Pin: self (object) Dir=In
+    Node: Get ItemAmountText (K2Node_VariableGet)
+      Pin: ItemAmountText (object) Dir=Out
+        -> Get Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get Visibility
+Target is Widget.ReturnValue
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get PopIn.PopIn
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get PopIn (K2Node_VariableGet)
+      Pin: PopIn (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Get TimesText (K2Node_VariableGet)
+      Pin: TimesText (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TimesText.TimesText
+      Pin: InVisibility (byte) Dir=In
+    Node: Get Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemAmountText.ItemAmountText
+      Pin: ReturnValue (byte) Dir=Out
+        -> Equal (Enum).A
+  Graph: Sequencer Events
+    Node: OnPopInEnded
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Pickup Notification End.execute
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Pickup Notification End.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Make Soft Reference.Input
+    Node: Make Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (object) Dir=In
+        -> Self-Reference.self
+      Pin: Output (softobject) Dir=Out
+        -> Call On Pickup Notification End.NotificationWidget
+    Node: Call On Pickup Notification End (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> OnPopInEnded
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: NotificationWidget (softobject) Dir=In
+        -> Make Soft Reference.Output

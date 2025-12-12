@@ -1,0 +1,139 @@
+Blueprint: BP_SOTS_CinCameraActor (/Game/SOTS/Blueprints/BP_SOTS_CinCameraActor.BP_SOTS_CinCameraActor)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set LookAtRot.execute
+      Pin: else (exec) Dir=Out
+      Pin: ActorToTrack (object) Dir=Out
+        -> Get RootComponent.self
+        -> Ignore Actor when Moving
+Target is Primitive Component.Actor
+      Pin: self (object) Dir=In
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set LookAtRot.LookAtRot
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get RootComponent.RootComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: Get RootComponent (K2Node_VariableGet)
+      Pin: RootComponent (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get.ActorToTrack
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get DefaultSceneRoot.DefaultSceneRoot
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Get DefaultSceneRoot (K2Node_VariableGet)
+      Pin: DefaultSceneRoot (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get CineCamera (K2Node_VariableGet)
+      Pin: CineCamera (object) Dir=Out
+        -> Get World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CineCamera.CineCamera
+      Pin: NewRotation (struct) Dir=In
+        -> Get LookAtRot.LookAtRot
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Set LookAtRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: LookAtRot (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CineCamera.CineCamera
+      Pin: ReturnValue (struct) Dir=Out
+        -> Not Equal (Rotator).B
+    Node: Not Equal (Rotator) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get LookAtRot.LookAtRot
+      Pin: B (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (real) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set LookAtRot.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Rotator).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Get CineCamera (K2Node_VariableGet)
+      Pin: CineCamera (object) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get LookAtRot (K2Node_VariableGet)
+      Pin: LookAtRot (struct) Dir=Out
+        -> Not Equal (Rotator).A
+      Pin: self (object) Dir=In
+    Node: Get LookAtRot (K2Node_VariableGet)
+      Pin: LookAtRot (struct) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.NewRotation
+      Pin: self (object) Dir=In
+    Node: Ignore Actor when Moving
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Get.ActorToTrack
+      Pin: bShouldIgnore (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

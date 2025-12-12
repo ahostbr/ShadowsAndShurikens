@@ -1,0 +1,201 @@
+Blueprint: BP_Bomb (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Bomb.BP_Bomb)
+  Graph: EventGraph
+    Node: Fuse (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Set Physics Angular Velocity in Degrees
+Target is Primitive Component.then
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Finished (exec) Dir=Out
+        -> Set Active
+Target is Actor Component.execute
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Fuse lerp (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+        -> Lerp (Vector).Alpha
+    Node: Get Fuse material (K2Node_VariableGet)
+      Pin: Fuse material (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Fuse.Update
+      Pin: then (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get Fuse material.Fuse material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Fuse.Fuse lerp
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Physics Angular Velocity in Degrees
+Target is Primitive Component.execute
+    Node: Get fuse effect (K2Node_VariableGet)
+      Pin: fuse effect (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get fuse effect.fuse effect
+      Pin: NewLocation (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Fuse.Fuse lerp
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+    Node: Get fuse effect (K2Node_VariableGet)
+      Pin: fuse effect (object) Dir=Out
+        -> Set Active
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Set Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Fuse.Finished
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get fuse effect.fuse effect
+      Pin: bNewActive (bool) Dir=In
+      Pin: bReset (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Active
+Target is Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> Spawn Emitter at Location.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Spawn Emitter at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Call Bomb Exploded.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: EmitterTemplate (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bAutoActivateSystem (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Spawn Emitter at Location.Location
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call Bomb Exploded.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call Bomb Exploded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Spawn Emitter at Location.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+    Node: Get Bomb (K2Node_VariableGet)
+      Pin: Bomb (object) Dir=Out
+        -> Set Physics Angular Velocity in Degrees
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Random Unit Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Random Unit Vector.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Physics Angular Velocity in Degrees
+Target is Primitive Component.NewAngVel
+    Node: Explode (EdGraphNode_Comment)
+    Node: Animate Fuse (EdGraphNode_Comment)
+    Node: Start spinning (EdGraphNode_Comment)
+    Node: Set Physics Angular Velocity in Degrees
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Fuse.PlayFromStart
+      Pin: self (object) Dir=In
+        -> Get Bomb.Bomb
+      Pin: NewAngVel (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: bAddToCurrent (bool) Dir=In
+      Pin: BoneName (name) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.execute
+    Node: Get Bomb (K2Node_VariableGet)
+      Pin: Bomb (object) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Fuse material.execute
+      Pin: self (object) Dir=In
+        -> Get Bomb.Bomb
+      Pin: ElementIndex (int) Dir=In
+      Pin: SourceMaterial (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Fuse material.Fuse material
+    Node: Set Fuse material (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: Fuse material (object) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Create and set Dynamic Material Instance for Fuse (EdGraphNode_Comment)
+  Graph: Bomb Exploded
+    Node: Bomb Exploded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

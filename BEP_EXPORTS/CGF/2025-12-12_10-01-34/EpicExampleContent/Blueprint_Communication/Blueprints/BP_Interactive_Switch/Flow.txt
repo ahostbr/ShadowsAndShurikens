@@ -1,0 +1,157 @@
+Blueprint: BP_Interactive_Switch (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Interactive_Switch.BP_Interactive_Switch)
+  Graph: EventGraph
+    Node: Get Switch handle (K2Node_VariableGet)
+      Pin: Switch handle (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Flip switch
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Switch position (K2Node_VariableGet)
+      Pin: Switch position (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Flip switch
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get Switch position.Switch position
+      Pin: then (exec) Dir=Out
+        -> Rotate switch.Reverse
+      Pin: else (exec) Dir=Out
+        -> Rotate switch.Play
+    Node: Rotate switch (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Branch.else
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+        -> Branch.then
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+        -> Set Switch position.execute
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: Pitch value (real) Dir=Out
+        -> Make Rotator.Pitch
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Switch position.Switch position
+      Pin: A (byte) Dir=In
+        -> Rotate switch.Direction
+      Pin: B (byte) Dir=In
+    Node: Set Switch position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Rotate switch.Finished
+      Pin: then (exec) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.execute
+      Pin: Switch position (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Rotate switch.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Switch handle.Switch handle
+      Pin: NewRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+        -> Rotate switch.Pitch value
+      Pin: Yaw (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+    Node: On Component Begin Overlap (Interact trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Interact trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Get Switch handle (K2Node_VariableGet)
+      Pin: Switch handle (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get Switch handle highlighted (K2Node_VariableGet)
+      Pin: Switch handle highlighted (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Toggle Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Component End Overlap (Interact trigger).then
+        -> On Component Begin Overlap (Interact trigger).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Switch handle.Switch handle
+        -> Get Switch handle highlighted.Switch handle highlighted
+        -> Get TextRender1.TextRender1
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get Target LED (K2Node_VariableGet)
+      Pin: Target LED (object) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.self
+      Pin: self (object) Dir=In
+    Node: Toggle Light
+Target is BP LED Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Switch position.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Target LED.Target LED
+      Pin: Turn on/off (bool) Dir=In
+        -> Get Switch position.Switch position
+    Node: Get Switch position (K2Node_VariableGet)
+      Pin: Switch position (bool) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.Turn on/off
+      Pin: self (object) Dir=In
+    Node: Get TextRender1 (K2Node_VariableGet)
+      Pin: TextRender1 (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibilty of Components (EdGraphNode_Comment)
+    Node: Animate the Switch (EdGraphNode_Comment)
+    Node: When animation is finished it toggles the Light on or off depending of the direction of the animation (EdGraphNode_Comment)
+    Node: Event Pushed button
+From BPI CGF Player Interactions (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

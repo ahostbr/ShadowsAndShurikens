@@ -1,0 +1,326 @@
+Blueprint: BP_EquipItemAction (/Game/InventorySystemPro/Blueprints/Items/ActionClasses/BP_EquipItemAction.BP_EquipItemAction)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event OnUse
+From BPI Item Action (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: UsingActor (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Check and Spawn SOTSAbility
+Target is BP Equip Item Action.OwnerRef
+      Pin: ItemSlot (struct) Dir=Out
+        -> On Item Equip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).ItemSlot
+        -> Break FItem Slot.FItemSlot
+    Node: Event OnStopUse
+From BPI Item Action (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: UsingActor (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: ItemSlot (struct) Dir=Out
+        -> On Item Unequip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).ItemSlot
+        -> Break FItem Slot.FItemSlot
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event OnUse
+From BPI Item Action.UsingActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Item Equip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).self
+    Node: On Item Equip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: ItemSlot (struct) Dir=In
+        -> Event OnUse
+From BPI Item Action.ItemSlot
+    Node: Item Action: Equip item (EdGraphNode_Comment)
+    Node: Item Action: Unequip item (EdGraphNode_Comment)
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event OnStopUse
+From BPI Item Action.UsingActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Item Unequip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).self
+    Node: On Item Unequip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: ItemSlot (struct) Dir=In
+        -> Event OnStopUse
+From BPI Item Action.ItemSlot
+    Node: Setup (EdGraphNode_Comment)
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Unequip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Equip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Event OnUse
+From BPI Item Action.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Get ItemActionPayload.self
+        -> Get Display Name.Object
+        -> Check and Spawn SOTSAbility
+Target is BP Equip Item Action.Item
+        -> Get AbilityTag.self
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get ItemActionPayload (K2Node_VariableGet)
+      Pin: ItemActionPayload (struct) Dir=Out
+        -> Break FItem Action Payload.FItemActionPayload
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Break FItem Action Payload (K2Node_BreakStruct)
+      Pin: FItemActionPayload (struct) Dir=In
+        -> Get ItemActionPayload.ItemActionPayload
+      Pin: ObjectClass_4_F82CBACF4B990CC71426FEA4013739F5 (class) Dir=Out
+        -> Is Valid Class.Class
+    Node: Is Valid Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Class (class) Dir=In
+        -> Break FItem Action Payload.ObjectClass_4_F82CBACF4B990CC71426FEA4013739F5
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Check and Spawn SOTSAbility
+Target is BP Equip Item Action.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Class.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Item Equip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Log Inventory System Error.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Log Inventory System Error.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+    Node: Is Valid Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Class (class) Dir=In
+        -> Break FItem Action Payload.ObjectClass_4_F82CBACF4B990CC71426FEA4013739F5
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event OnStopUse
+From BPI Item Action.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Class.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Item Unequip Client
+Target is BP Character Equipment Component
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ItemActionPayload (K2Node_VariableGet)
+      Pin: ItemActionPayload (struct) Dir=Out
+        -> Break FItem Action Payload.FItemActionPayload
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Event OnStopUse
+From BPI Item Action.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Get ItemActionPayload.self
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Break FItem Action Payload (K2Node_BreakStruct)
+      Pin: FItemActionPayload (struct) Dir=In
+        -> Get ItemActionPayload.ItemActionPayload
+      Pin: ObjectClass_4_F82CBACF4B990CC71426FEA4013739F5 (class) Dir=Out
+        -> Is Valid Class.Class
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+      Pin: C (string) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event OnUse
+From BPI Item Action.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Check and Spawn SOTSAbility
+Target is BP Equip Item Action.execute
+    Node: Check and Spawn SOTSAbility
+Target is BP Equip Item Action (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: OwnerRef (object) Dir=In
+        -> Event OnUse
+From BPI Item Action.UsingActor
+      Pin: Item (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Get AbilityTag (K2Node_VariableGet)
+      Pin: AbilityTag (struct) Dir=Out
+        -> Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get AbilityTag.AbilityTag
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: CheckAndSpawnSOTSAbility
+    Node: CheckAndSpawnSOTSAbility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> SpawnActor.execute
+      Pin: OwnerRef (object) Dir=Out
+        -> SpawnActor.OwnerRef
+        -> SpawnActor.Owner
+      Pin: Item (object) Dir=Out
+        -> Get AbilityPayload.self
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor.then
+    Node: SpawnActor (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> CheckAndSpawnSOTSAbility.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Class (class) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: ReturnValue (object) Dir=Out
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+        -> CheckAndSpawnSOTSAbility.OwnerRef
+      Pin: OwnerRef (object) Dir=In
+        -> CheckAndSpawnSOTSAbility.OwnerRef
+      Pin: Instigator (object) Dir=In
+    Node: Get AbilityPayload (K2Node_VariableGet)
+      Pin: AbilityPayload (softclass) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> CheckAndSpawnSOTSAbility.Item
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softclass) Dir=In
+        -> Get AbilityPayload.AbilityPayload
+      Pin: Output (class) Dir=Out
+        -> SpawnActor.Class

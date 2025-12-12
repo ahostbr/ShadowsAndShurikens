@@ -1,0 +1,2467 @@
+Blueprint: CBP_SandboxCharacter_UE4_Mannequin (/Game/SOTS/Player/CBP_SandboxCharacter_UE4_Mannequin.CBP_SandboxCharacter_UE4_Mannequin)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Event SaveActorData
+From BPI CGF Saveable (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Comp Save Actor Data
+Target is BPC CGF Save Game.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Comp Save Actor Data
+Target is BPC CGF Save Game.SaveGameREF
+    Node: Event LoadActorData
+From BPI CGF Saveable (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Comp Load Actor Data
+Target is BPC CGF Save Game.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Comp Load Actor Data
+Target is BPC CGF Save Game.SaveGameREF
+    Node: Data Management (EdGraphNode_Comment)
+    Node: Break F CGF Player Data (K2Node_BreakStruct)
+      Pin: F_CGF_PlayerData (struct) Dir=In
+        -> Get PlayerData.PlayerData
+      Pin: PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A (string) Dir=Out
+        -> Set PlayerName.PlayerName
+      Pin: PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93 (real) Dir=Out
+        -> Set PlayerHealth.PlayerHealth
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42 (struct) Dir=Out
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Location (struct) Dir=Out
+        -> Set PlayerLocation.PlayerLocation
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Rotation (struct) Dir=Out
+        -> Set PlayerRotation.PlayerRotation
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Scale (struct) Dir=Out
+      Pin: PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649 (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set PlayerName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: PlayerName (string) Dir=In
+        -> Break F CGF Player Data.PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Player State
+Target is BP CGF Player State.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set PlayerName.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set PlayerHealth.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Set PlayerLocation.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Set PlayerRotation.execute
+    Node: Set PlayerLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+      Pin: PlayerLocation (struct) Dir=In
+        -> Break F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Location
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.NewLocation
+      Pin: self (object) Dir=In
+    Node: Set PlayerHealth (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: PlayerHealth (real) Dir=In
+        -> Break F CGF Player Data.PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set PlayerRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.execute
+      Pin: PlayerRotation (struct) Dir=In
+        -> Break F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42_Rotation
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.NewRotation
+      Pin: self (object) Dir=In
+    Node: Set Actor Location And Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set PlayerRotation.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: NewLocation (struct) Dir=In
+        -> Set PlayerLocation.Output_Get
+      Pin: NewRotation (struct) Dir=In
+        -> Set PlayerRotation.Output_Get
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+        -> Select.Index
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.execute
+      Pin: else (exec) Dir=Out
+    Node: Get BPC_CGF_SaveGame (K2Node_VariableGet)
+      Pin: BPC_CGF_SaveGame (object) Dir=Out
+        -> Comp Save Actor Data
+Target is BPC CGF Save Game.self
+        -> Comp Load Actor Data
+Target is BPC CGF Save Game.self
+      Pin: self (object) Dir=In
+    Node: Comp Save Actor Data
+Target is BPC CGF Save Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SaveActorData
+From BPI CGF Saveable.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_CGF_SaveGame.BPC_CGF_SaveGame
+      Pin: SaveGameREF (object) Dir=In
+        -> Event SaveActorData
+From BPI CGF Saveable.SaveGameREF
+    Node: Event SetPlayerData
+From BPI CGF Data Management (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set PlayerData.execute
+      Pin: PlayerData (struct) Dir=Out
+        -> Set PlayerData.PlayerData
+    Node: Set PlayerData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event SetPlayerData
+From BPI CGF Data Management.then
+      Pin: then (exec) Dir=Out
+      Pin: PlayerData (struct) Dir=In
+        -> Event SetPlayerData
+From BPI CGF Data Management.PlayerData
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Comp Load Actor Data
+Target is BPC CGF Save Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event LoadActorData
+From BPI CGF Saveable.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_CGF_SaveGame.BPC_CGF_SaveGame
+      Pin: SaveGameREF (object) Dir=In
+        -> Event LoadActorData
+From BPI CGF Saveable.SaveGameREF
+    Node: Get PlayerData (K2Node_VariableGet)
+      Pin: PlayerData (struct) Dir=Out
+        -> Break F CGF Player Data.F_CGF_PlayerData
+      Pin: self (object) Dir=In
+    Node: Get PS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerState (byte) Dir=Out
+      Pin: CGF_PlayerState (object) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.self
+    Node: Set Player State
+Target is BP CGF Player State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Comp Player Data Loaded.execute
+      Pin: self (object) Dir=In
+        -> Get PS.CGF_PlayerState
+      Pin: PlayerState (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get PS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerState (byte) Dir=Out
+      Pin: CGF_PlayerState (object) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.self
+    Node: Set Player State
+Target is BP CGF Player State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PS.CGF_PlayerState
+      Pin: PlayerState (byte) Dir=In
+    Node: Get PS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerState (byte) Dir=Out
+      Pin: CGF_PlayerState (object) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.self
+    Node: Set Player State
+Target is BP CGF Player State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCompPlayerDataLoaded_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> Get PS.CGF_PlayerState
+      Pin: PlayerState (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.PlayerState
+    Node: Get BPC_CGF_SaveGame (K2Node_VariableGet)
+      Pin: BPC_CGF_SaveGame (object) Dir=Out
+        -> Bind Event to On Comp Player Data Loaded.self
+      Pin: self (object) Dir=In
+    Node: OnCompPlayerDataLoaded_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Comp Player Data Loaded.Delegate
+      Pin: then (exec) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.execute
+    Node: Bind Event to On Comp Player Data Loaded (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set Player State
+Target is BP CGF Player State.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_CGF_SaveGame.BPC_CGF_SaveGame
+      Pin: Delegate (delegate) Dir=In
+        -> OnCompPlayerDataLoaded_Event
+Custom Event.OutputDelegate
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Control Rotation
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+        -> Set Player State
+Target is BP CGF Player State.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get TransformComponent.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Player Data.PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.NewTransform
+    Node: Set Relative Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Location And Rotation
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Set Control Rotation
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Get TransformComponent.TransformComponent
+      Pin: NewTransform (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get TransformComponent (K2Node_VariableGet)
+      Pin: TransformComponent (object) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Control Rotation
+Target is Controller.self
+    Node: Set Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Transform
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: NewRotation (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Player Data.PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: EnhancedInputAction IA_Sprint (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+        -> Do Once.execute
+      Pin: Started (exec) Dir=Out
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Sequence.execute
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Sprint.Triggered
+      Pin: Reset (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set MaxWalkSpeed.execute
+    Node: Set MaxWalkSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: MaxWalkSpeed (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set MaxWalkSpeed.self
+        -> Set MaxWalkSpeed.self
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Sprint.Completed
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.Reset
+      Pin: then_1 (exec) Dir=Out
+        -> Set MaxWalkSpeed.execute
+    Node: Set MaxWalkSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: MaxWalkSpeed (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Control Rotation
+Target is Controller.NewRotation
+    Node: CGF (EdGraphNode_Comment)
+    Node: Left Shift (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Play Reverse
+Target is Movie Scene Sequence Player.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get PlayersMesh.PlayersMesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Get PlayersMesh (K2Node_VariableGet)
+      Pin: PlayersMesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Create Level Sequence Player (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Set NewVar_0.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LevelSequence (object) Dir=In
+      Pin: Settings (struct) Dir=In
+        -> Make Movie Scene Sequence Playback Settings.MovieSceneSequencePlaybackSettings
+      Pin: OutActor (object) Dir=Out
+      Pin: ReturnValue (object) Dir=Out
+        -> Set NewVar_0.NewVar_0
+    Node: Play
+Target is Movie Scene Sequence Player (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Control Rotation
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+        -> Set NewVar_0.Output_Get
+    Node: Make Movie Scene Sequence Playback Settings (K2Node_MakeStruct)
+      Pin: MovieSceneSequencePlaybackSettings (struct) Dir=Out
+        -> Create Level Sequence Player.Settings
+      Pin: bAutoPlay (bool) Dir=In
+      Pin: LoopCount (struct) Dir=In
+      Pin: TickInterval (struct) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: bRandomStartTime (bool) Dir=In
+      Pin: bDisableMovementInput (bool) Dir=In
+      Pin: bDisableLookAtInput (bool) Dir=In
+      Pin: bHidePlayer (bool) Dir=In
+      Pin: bHideHud (bool) Dir=In
+      Pin: bDisableCameraCuts (bool) Dir=In
+      Pin: FinishCompletionStateOverride (byte) Dir=In
+      Pin: bPauseAtEnd (bool) Dir=In
+    Node: Flip Flop (K2Node_MacroInstance)
+      Pin: None (exec) Dir=In
+      Pin: A (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: B (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: IsA (bool) Dir=Out
+    Node: Play Reverse
+Target is Movie Scene Sequence Player (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+        -> Get NewVar_0.NewVar_0
+    Node: Set NewVar_0 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Level Sequence Player.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.execute
+      Pin: NewVar_0 (object) Dir=In
+        -> Create Level Sequence Player.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Play
+Target is Movie Scene Sequence Player.self
+      Pin: self (object) Dir=In
+    Node: Get NewVar_0 (K2Node_VariableGet)
+      Pin: NewVar_0 (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Flip Flop.A
+      Pin: InputObject (object) Dir=In
+        -> Get NewVar_0.NewVar_0
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Create Level Sequence Player.execute
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Flip Flop.B
+      Pin: InputObject (object) Dir=In
+        -> Get NewVar_0.NewVar_0
+      Pin: Is Valid (exec) Dir=Out
+        -> Play Reverse
+Target is Movie Scene Sequence Player.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Play
+Target is Movie Scene Sequence Player.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get PlayersMesh.PlayersMesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Get PlayersMesh (K2Node_VariableGet)
+      Pin: PlayersMesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Get NewVar_0 (K2Node_VariableGet)
+      Pin: NewVar_0 (object) Dir=Out
+        -> Play Reverse
+Target is Movie Scene Sequence Player.self
+      Pin: self (object) Dir=In
+    Node: V (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Show HUD
+Target is BPi HUDManager V2.execute
+      Pin: Released (exec) Dir=Out
+        -> Is AMontage Already Playing?.execute
+      Pin: Key (struct) Dir=Out
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set RightArmBlendWeight.execute
+      Pin: OnCompleted (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+        -> Switch on Name.execute
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+        -> Switch on Name.Selection
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get TransformComponent.self
+    Node: Set Relative Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set NewVar_0.then
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Control Rotation
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Get TransformComponent.TransformComponent
+      Pin: NewTransform (struct) Dir=In
+      Pin: NewTransform_Location (struct) Dir=In
+      Pin: NewTransform_Rotation (struct) Dir=In
+      Pin: NewTransform_Scale (struct) Dir=In
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get TransformComponent (K2Node_VariableGet)
+      Pin: TransformComponent (object) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Control Rotation
+Target is Controller.self
+    Node: Set Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Transform
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Play
+Target is Movie Scene Sequence Player.execute
+      Pin: self (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: NewRotation (struct) Dir=In
+      Pin: NewRotation_Roll (real) Dir=In
+      Pin: NewRotation_Pitch (real) Dir=In
+      Pin: NewRotation_Yaw (real) Dir=In
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Add or Update Warp Target
+Target is Motion Warping Component.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+        -> Set IsDoubleJumpWindowOpen?.execute
+      Pin: OnBlendOut (exec) Dir=Out
+        -> Set IsDoubleJumpWindowOpen?.execute
+      Pin: OnInterrupted (exec) Dir=Out
+        -> Set IsDoubleJumpWindowOpen?.execute
+      Pin: OnNotifyBegin (exec) Dir=Out
+        -> Switch on Name.execute
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+        -> Switch on Name.Selection
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Parkour Action
+Target is Parkour Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Jump
+Target is Character.execute
+      Pin: self (object) Dir=In
+        -> Get ParkourComponent.ParkourComponent
+      Pin: Auto Climb (bool) Dir=In
+    Node: Get MotionWarping (K2Node_VariableGet)
+      Pin: MotionWarping (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+        -> Find Look at Rotation.Start
+    Node: Add or Update Warp Target
+Target is Motion Warping Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+        -> Get MotionWarping.MotionWarping
+      Pin: WarpTarget (struct) Dir=In
+      Pin: WarpTarget_Name (name) Dir=In
+      Pin: WarpTarget_Location (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: WarpTarget_Rotation (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: WarpTarget_Component (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: WarpTarget_BoneName (name) Dir=In
+      Pin: WarpTarget_bFollowComponent (bool) Dir=In
+      Pin: WarpTarget_LocationOffsetDirection (byte) Dir=In
+      Pin: WarpTarget_AvatarActor (object) Dir=In
+      Pin: WarpTarget_LocationOffset (struct) Dir=In
+      Pin: WarpTarget_RotationOffset (struct) Dir=In
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: Switch on Name (K2Node_SwitchName)
+      Pin: Default (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnNotifyBegin
+      Pin: Selection (name) Dir=In
+        -> Play Montage.NotifyName
+      Pin: NotEqual_NameName (object) Dir=In
+      Pin: FindFloor (exec) Dir=Out
+      Pin: DisableInput (exec) Dir=Out
+        -> Disable Input
+Target is Actor.execute
+      Pin: EnableInput (exec) Dir=Out
+        -> Enable Input
+Target is Actor.execute
+      Pin: CameraShake (exec) Dir=Out
+        -> Start Camera Shake
+Target is Camera Shake Source Component.execute
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Disable Input
+Target is Actor.PlayerController
+        -> Enable Input
+Target is Actor.PlayerController
+        -> Disable Input
+Target is Actor.self
+        -> Enable Input
+Target is Actor.self
+    Node: Disable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.DisableInput
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: PlayerController (object) Dir=In
+        -> Get PC.PlayerController
+    Node: Enable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.EnableInput
+        -> Reset Double Jump Do Once
+Target is CBP Sandbox Character UE4 Mannequin.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: PlayerController (object) Dir=In
+        -> Get PC.PlayerController
+    Node: Start Camera Shake
+Target is Camera Shake Source Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.CameraShake
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CameraShakeSource.CameraShakeSource
+      Pin: InCameraShake (class) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: PlaySpace (byte) Dir=In
+      Pin: UserPlaySpaceRot (struct) Dir=In
+    Node: Get CameraShakeSource (K2Node_VariableGet)
+      Pin: CameraShakeSource (object) Dir=Out
+        -> Start Camera Shake
+Target is Camera Shake Source Component.self
+      Pin: self (object) Dir=In
+    Node: K (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+      Pin: B_Y (real) Dir=In
+      Pin: B_Z (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Location
+        -> Find Look at Rotation.Target
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Rotation
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Component
+      Pin: self (object) Dir=In
+    Node: Get Scaled Capsule Half Height
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.self
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector + vector.B_Z
+    Node: Get ParkourComponent (K2Node_VariableGet)
+      Pin: ParkourComponent (object) Dir=Out
+        -> Parkour Action
+Target is Parkour Component.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set WarpStartLocation.WarpStartLocation
+    Node: Multi Sphere Trace For Objects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WarpStartLocation.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Set WarpStartLocation.Output_Get
+      Pin: End (struct) Dir=In
+        -> Set WarpStartLocation.Output_Get
+      Pin: Radius (real) Dir=In
+      Pin: ObjectTypes (byte) Dir=In
+        -> Make Array.Array
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHits (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (byte) Dir=Out
+        -> Multi Sphere Trace For Objects.ObjectTypes
+      Pin: [0] (byte) Dir=In
+      Pin: [1] (byte) Dir=In
+      Pin: [2] (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Multi Sphere Trace For Objects.then
+      Pin: Condition (bool) Dir=In
+        -> Multi Sphere Trace For Objects.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: else (exec) Dir=Out
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Break (exec) Dir=In
+        -> Sequence.then_2
+      Pin: LoopBody (exec) Dir=Out
+        -> Cast To BP_SOTS_Hideable_Area_Beam.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+        -> Cast To BP_SOTS_Hideable_Area_Beam.Object
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Cast To BP_SOTS_Hideable_Area_Beam (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Break Hit Result.HitActor
+      Pin: AsBP SOTS Hideable Area Beam (object) Dir=Out
+        -> Get Components By Class
+Target is Actor.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Add or Update Warp Target
+Target is Motion Warping Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Movement Mode
+Target is Character Movement Component.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> Get MotionWarping.MotionWarping
+      Pin: WarpTarget (struct) Dir=In
+      Pin: WarpTarget_Name (name) Dir=In
+      Pin: WarpTarget_Location (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: WarpTarget_Rotation (struct) Dir=In
+      Pin: WarpTarget_Component (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: WarpTarget_BoneName (name) Dir=In
+      Pin: WarpTarget_bFollowComponent (bool) Dir=In
+      Pin: WarpTarget_LocationOffsetDirection (byte) Dir=In
+      Pin: WarpTarget_AvatarActor (object) Dir=In
+      Pin: WarpTarget_LocationOffset (struct) Dir=In
+      Pin: WarpTarget_RotationOffset (struct) Dir=In
+    Node: Get MotionWarping (K2Node_VariableGet)
+      Pin: MotionWarping (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.self
+      Pin: self (object) Dir=In
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set Movement Mode
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Set Movement Mode
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Enable Collision
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: NewMovementMode (byte) Dir=In
+      Pin: NewCustomMode (byte) Dir=In
+    Node: Set WarpStartLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Multi Sphere Trace For Objects.execute
+      Pin: WarpStartLocation (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Multi Sphere Trace For Objects.Start
+        -> Multi Sphere Trace For Objects.End
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> GET.Output
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+      Pin: B_Y (real) Dir=In
+      Pin: B_Z (real) Dir=In
+        -> Capsules Full Height.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Location
+    Node: Set Actor Enable Collision
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnCompleted
+      Pin: then (exec) Dir=Out
+        -> Set Movement Mode
+Target is Character Movement Component.execute
+      Pin: self (object) Dir=In
+      Pin: bNewActorEnableCollision (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Multi Sphere Trace For Objects.OutHits
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Components By Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To BP_SOTS_Hideable_Area_Beam.AsBP SOTS Hideable Area Beam
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Array (object) Dir=In
+        -> Get Components By Class
+Target is Actor.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Unique.NewItem
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_SOTS_Hideable_Area_Beam.then
+      Pin: then_0 (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: then_1 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_2 (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Get HoldPointsFound (K2Node_VariableGet)
+      Pin: HoldPointsFound (struct) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get HoldPointsFound.HoldPointsFound
+      Pin: NewItem (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get HoldPointsFound (K2Node_VariableGet)
+      Pin: HoldPointsFound (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Vector Get Distance To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Vector (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Other Vector (struct) Dir=In
+        -> Get WarpStartLocation.WarpStartLocation
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set Distance.Distance
+        -> Reroute Node.InputPin
+    Node: Set Distance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestPoint.execute
+      Pin: Distance (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Distance (K2Node_VariableGet)
+      Pin: Distance (real) Dir=Out
+        -> float < float.B
+      Pin: self (object) Dir=In
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+        -> Get Distance.Distance
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Distance.execute
+      Pin: else (exec) Dir=Out
+    Node: Set ClosestPoint (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Distance.then
+      Pin: then (exec) Dir=Out
+      Pin: ClosestPoint (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get HoldPointsFound (K2Node_VariableGet)
+      Pin: HoldPointsFound (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get HoldPointsFound.HoldPointsFound
+      Pin: Dimension 1 (int) Dir=In
+        -> Get ClosestPoint.ClosestPoint
+      Pin: Output (struct) Dir=Out
+        -> vector - vector.A
+    Node: Get ClosestPoint (K2Node_VariableGet)
+      Pin: ClosestPoint (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Set ClosestPoint.ClosestPoint
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Set Distance.Distance
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Vector Get Distance To.ReturnValue
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Distance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: Distance (real) Dir=In
+        -> Vector Get Distance To.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reset (exec) Dir=In
+        -> Clear.then
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set Distance.execute
+    Node: Get WarpStartLocation (K2Node_VariableGet)
+      Pin: WarpStartLocation (struct) Dir=Out
+        -> Vector Get Distance To.Other Vector
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Array (struct) Dir=In
+        -> Get HoldPointsFound.HoldPointsFound
+      Pin: LoopBody (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Vector Get Distance To.Vector
+      Pin: Array Index (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Vector Get Distance To.ReturnValue
+      Pin: OutputPin (real) Dir=Out
+        -> float < float.A
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Component
+      Pin: self (object) Dir=In
+    Node: Capsules Full Height (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CapsuleComponent (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> vector - vector.B_Z
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Capsules Full Height.CapsuleComponent
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Add or Update Warp Target
+Target is Motion Warping Component.then
+      Pin: then_0 (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+    Node: Set IsHidingOnBeam? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: IsHidingOnBeam? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set IsHidingOnBeam?.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: SpawnActor BP SOTS VFX SPAWNER (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.SpawnSmoke
+      Pin: then (exec) Dir=Out
+        -> Set Life Span
+Target is Actor.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Life Span
+Target is Actor.self
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+        -> FindFloor
+Target is Character Movement Component.FloorResult_HitResult_Location
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+        -> Self-Reference.self
+      Pin: UseLifeSpan? (bool) Dir=In
+      Pin: Lifespan (real) Dir=In
+      Pin: Custom Time Dilation (real) Dir=In
+      Pin: NiagaraSystem (object) Dir=In
+      Pin: CascadeTemplate (object) Dir=In
+      Pin: Instigator (object) Dir=In
+        -> Self-Reference.self
+    Node: Set Life Span
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP SOTS VFX SPAWNER.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> SpawnActor BP SOTS VFX SPAWNER.ReturnValue
+      Pin: InLifespan (real) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> SpawnActor BP SOTS VFX SPAWNER.Owner
+        -> SpawnActor BP SOTS VFX SPAWNER.Instigator
+    Node: Get WarpStartLocation (K2Node_VariableGet)
+      Pin: WarpStartLocation (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Stop Movement Immediately
+Target is Movement Component.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+        -> Set Actor Enable Collision
+Target is Actor.execute
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+        -> Switch on Name.execute
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+        -> Switch on Name.Selection
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Switch on Name (K2Node_SwitchName)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnNotifyBegin
+      Pin: Selection (name) Dir=In
+        -> Play Montage.NotifyName
+      Pin: NotEqual_NameName (object) Dir=In
+      Pin: SpawnSmoke (exec) Dir=Out
+        -> SpawnActor BP SOTS VFX SPAWNER.execute
+      Pin: BombVisible (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: ThrowBomb (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get WarpStartLocation.WarpStartLocation
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get WarpStartLocation (K2Node_VariableGet)
+      Pin: WarpStartLocation (struct) Dir=Out
+        -> Play Sound at Location.Location
+      Pin: self (object) Dir=In
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get WarpStartLocation.WarpStartLocation
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get WarpStartLocation (K2Node_VariableGet)
+      Pin: WarpStartLocation (struct) Dir=Out
+        -> Play Sound at Location.Location
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Life Span
+Target is Actor.then
+      Pin: then_0 (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Play Sound at Location.execute
+    Node: FindFloor
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: CapsuleLocation (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: FloorResult (struct) Dir=Out
+      Pin: FloorResult_bBlockingHit (bool) Dir=Out
+      Pin: FloorResult_bWalkableFloor (bool) Dir=Out
+      Pin: FloorResult_bLineTrace (bool) Dir=Out
+      Pin: FloorResult_FloorDist (real) Dir=Out
+      Pin: FloorResult_LineDist (real) Dir=Out
+      Pin: FloorResult_HitResult (struct) Dir=Out
+      Pin: FloorResult_HitResult_bBlockingHit (bool) Dir=Out
+      Pin: FloorResult_HitResult_bInitialOverlap (bool) Dir=Out
+      Pin: FloorResult_HitResult_Time (real) Dir=Out
+      Pin: FloorResult_HitResult_Distance (real) Dir=Out
+      Pin: FloorResult_HitResult_Location (struct) Dir=Out
+        -> SpawnActor BP SOTS VFX SPAWNER.SpawnTransform_Location
+      Pin: FloorResult_HitResult_ImpactPoint (struct) Dir=Out
+      Pin: FloorResult_HitResult_Normal (struct) Dir=Out
+      Pin: FloorResult_HitResult_ImpactNormal (struct) Dir=Out
+      Pin: FloorResult_HitResult_PhysMat (object) Dir=Out
+      Pin: FloorResult_HitResult_HitActor (object) Dir=Out
+      Pin: FloorResult_HitResult_HitComponent (object) Dir=Out
+      Pin: FloorResult_HitResult_HitBoneName (name) Dir=Out
+      Pin: FloorResult_HitResult_BoneName (name) Dir=Out
+      Pin: FloorResult_HitResult_HitItem (int) Dir=Out
+      Pin: FloorResult_HitResult_ElementIndex (int) Dir=Out
+      Pin: FloorResult_HitResult_FaceIndex (int) Dir=Out
+      Pin: FloorResult_HitResult_TraceStart (struct) Dir=Out
+      Pin: FloorResult_HitResult_TraceEnd (struct) Dir=Out
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> FindFloor
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> FindFloor
+Target is Character Movement Component.CapsuleLocation
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+      Pin: then_2 (exec) Dir=Out
+        -> Delay.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Toggle Recieve Decals
+Target is CBP Sandbox Character UE4 Mannequin.execute
+    Node: Get SM_Bomb (K2Node_VariableGet)
+      Pin: SM_Bomb (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.BombVisible
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SM_Bomb.SM_Bomb
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.ThrowBomb
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SM_Bomb.SM_Bomb
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Stop Movement Immediately
+Target is Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Stop Movement Immediately
+Target is Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Reset (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Stop Movement Immediately
+Target is Movement Component.execute
+    Node: Get ParkourComponent (K2Node_VariableGet)
+      Pin: ParkourComponent (object) Dir=Out
+        -> Get Parkour State
+Target is Parkour Component.self
+      Pin: self (object) Dir=In
+    Node: Get Parkour State
+Target is Parkour Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ParkourComponent.ParkourComponent
+      Pin: Parkour State (struct) Dir=Out
+        -> Equal (GameplayTag).A
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Parkour State
+Target is Parkour Component.Parkour State
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set WarpStartLocation.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set IsHidingOnBeam?.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: JUMP (EdGraphNode_Comment)
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Set SwordIsDrawn? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set RightArmBlendWeight.execute
+      Pin: SwordIsDrawn? (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get SwordIsDrawn? (K2Node_VariableGet)
+      Pin: SwordIsDrawn? (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get SwordIsDrawn?.SwordIsDrawn?
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set SwordIsDrawn?.SwordIsDrawn?
+    Node: Switch on Name (K2Node_SwitchName)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnNotifyBegin
+      Pin: Selection (name) Dir=In
+        -> Play Montage.NotifyName
+      Pin: NotEqual_NameName (object) Dir=In
+      Pin: Sheathe (exec) Dir=Out
+        -> Branch.execute
+      Pin: Draw (exec) Dir=Out
+        -> Play Sound 2D.execute
+    Node: Get SM_Wakizashi (K2Node_VariableGet)
+      Pin: SM_Wakizashi (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound 2D.then
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SM_Wakizashi.SM_Wakizashi
+      Pin: Parent (object) Dir=In
+        -> Select.ReturnValue
+      Pin: SocketName (name) Dir=In
+        -> Select Name.ReturnValue
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get PlayersMesh (K2Node_VariableGet)
+      Pin: PlayersMesh (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Select Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (name) Dir=In
+      Pin: B (name) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Get SwordIsDrawn?.SwordIsDrawn?
+      Pin: ReturnValue (name) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.SocketName
+    Node: Get SwordIsDrawn? (K2Node_VariableGet)
+      Pin: SwordIsDrawn? (bool) Dir=Out
+        -> Select Name.bPickA
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get PlayersMesh.PlayersMesh
+      Pin: Option 1 (object) Dir=In
+        -> Get Wakizashi_Sheathe.Wakizashi_Sheathe
+      Pin: Index (bool) Dir=In
+        -> Get SwordIsDrawn?.SwordIsDrawn?
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+    Node: Get Wakizashi_Sheathe (K2Node_VariableGet)
+      Pin: Wakizashi_Sheathe (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Play Sound 2D.then
+      Pin: Condition (bool) Dir=In
+        -> Get SwordIsDrawn?.SwordIsDrawn?
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Play Sound 2D.execute
+    Node: Get SwordIsDrawn? (K2Node_VariableGet)
+      Pin: SwordIsDrawn? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.Sheathe
+      Pin: Condition (bool) Dir=In
+        -> Get SwordIsDrawn?.SwordIsDrawn?
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get SwordIsDrawn? (K2Node_VariableGet)
+      Pin: SwordIsDrawn? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set RightArmBlendWeight (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.then
+      Pin: then (exec) Dir=Out
+      Pin: RightArmBlendWeight (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RightArmBlendWeight (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SwordIsDrawn?.then
+      Pin: then (exec) Dir=Out
+      Pin: RightArmBlendWeight (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Show HUD
+Target is BPi HUDManager V2.self
+    Node: Show HUD
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> V.Pressed
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Event Possessed (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Possessed.execute
+      Pin: NewController (object) Dir=Out
+        -> Parent: Possessed.NewController
+    Node: Parent: Possessed (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Possessed.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewController (object) Dir=In
+        -> Event Possessed.NewController
+    Node: Jump
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parkour Action
+Target is Parkour Component.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+    Node: Get ParkourComponent (K2Node_VariableGet)
+      Pin: ParkourComponent (object) Dir=Out
+        -> Parkour Action
+Target is Parkour Component.self
+      Pin: self (object) Dir=In
+    Node: Parkour Action
+Target is Parkour Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.1
+      Pin: then (exec) Dir=Out
+        -> Set IsDoubleJumpWindowOpen?.execute
+      Pin: self (object) Dir=In
+        -> Get ParkourComponent.ParkourComponent
+      Pin: Auto Climb (bool) Dir=In
+    Node: Jump
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get JumpCount (K2Node_VariableGet)
+      Pin: JumpCount (int) Dir=Out
+        -> Increment Int.Value
+        -> Switch on Int.Selection
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> EnhancedInputAction IA_Jump.Started
+      Pin: Value (int) Dir=In
+        -> Get JumpCount.JumpCount
+      Pin:    (exec) Dir=Out
+      Pin: Result (int) Dir=Out
+    Node: Get ParkourComponent (K2Node_VariableGet)
+      Pin: ParkourComponent (object) Dir=Out
+        -> Get Parkour State
+Target is Parkour Component.self
+      Pin: self (object) Dir=In
+    Node: Get Parkour State
+Target is Parkour Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ParkourComponent.ParkourComponent
+      Pin: Parkour State (struct) Dir=Out
+        -> Equal (GameplayTag).A
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Parkour State
+Target is Parkour Component.Parkour State
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: else (exec) Dir=Out
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_Jump.Completed
+      Pin: Selection (int) Dir=In
+        -> Get JumpCount.JumpCount
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+      Pin: 1 (exec) Dir=Out
+        -> Parkour Action
+Target is Parkour Component.execute
+      Pin: 2 (exec) Dir=Out
+        -> Branch.execute
+    Node: Set JumpCount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsDoubleJumpWindowOpen?.then
+      Pin: then (exec) Dir=Out
+        -> Reset Double Jump Do Once
+Target is CBP Sandbox Character UE4 Mannequin.execute
+      Pin: JumpCount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsDoubleJumpWindowOpen? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parkour Action
+Target is Parkour Component.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: IsDoubleJumpWindowOpen? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsDoubleJumpWindowOpen? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnCompleted
+        -> Play Montage.OnBlendOut
+        -> Play Montage.OnInterrupted
+      Pin: then (exec) Dir=Out
+        -> Set JumpCount.execute
+      Pin: IsDoubleJumpWindowOpen? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Jump
+Target is Character.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set IsDoubleJumpWindowOpen?.then
+      Pin: then (exec) Dir=Out
+        -> Set IsDoubleJumpWindowOpen?.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set IsDoubleJumpWindowOpen? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set JumpCount.execute
+      Pin: IsDoubleJumpWindowOpen? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get IsDoubleJumpWindowOpen? (K2Node_VariableGet)
+      Pin: IsDoubleJumpWindowOpen? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.2
+      Pin: Condition (bool) Dir=In
+        -> Get IsDoubleJumpWindowOpen?.IsDoubleJumpWindowOpen?
+      Pin: then (exec) Dir=Out
+        -> Parkour Action
+Target is Parkour Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Set JumpCount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsDoubleJumpWindowOpen?.then
+      Pin: then (exec) Dir=Out
+      Pin: JumpCount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Reset (exec) Dir=In
+        -> ResetDoubleJumpDoOnce
+Custom Event.then
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.execute
+    Node: ResetDoubleJumpDoOnce
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Reset Double Jump Do Once
+Target is CBP Sandbox Character UE4 Mannequin (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set JumpCount.then
+      Pin: then (exec) Dir=Out
+        -> Enable Input
+Target is Actor.execute
+      Pin: self (object) Dir=In
+    Node: EnhancedInputAction IA_Jump (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+      Pin: Started (exec) Dir=Out
+        -> Increment Int. 
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Switch on Int.execute
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Name.Draw
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Play Montage.OnCompleted
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SwordIsDrawn?.execute
+    Node: Get ParkourComponent (K2Node_VariableGet)
+      Pin: ParkourComponent (object) Dir=Out
+        -> Get Parkour State
+Target is Parkour Component.self
+      Pin: self (object) Dir=In
+    Node: Get Parkour State
+Target is Parkour Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ParkourComponent.ParkourComponent
+      Pin: Parkour State (struct) Dir=Out
+        -> Equal (GameplayTag).A
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Parkour State
+Target is Parkour Component.Parkour State
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is AMontage Already Playing?.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: else (exec) Dir=Out
+    Node: Is AMontage Already Playing? (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> V.Released
+      Pin: IsAnyMontagePlayingOnCharMesh? (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is AMontage Already Playing?.IsAnyMontagePlayingOnCharMesh?
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set UDS_REF.UDS_REF
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set UDS_REF.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set UDS_REF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: UDS_REF (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Clear.execute
+    Node: Get HoldPointsFound (K2Node_VariableGet)
+      Pin: HoldPointsFound (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Do Once.Reset
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get HoldPointsFound.HoldPointsFound
+    Node: HIDE (EdGraphNode_Comment)
+    Node: Draw\Sheathe Waki (EdGraphNode_Comment)
+    Node: Test Roll On Ground (EdGraphNode_Comment)
+    Node: Flip Flop (K2Node_MacroInstance)
+      Pin: None (exec) Dir=In
+        -> SpawnDragon
+Custom Event.then
+      Pin: A (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: B (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: IsA (bool) Dir=Out
+        -> Set Visibility
+Target is Scene Component.bNewVisibility
+    Node: Get Dragon_ChildActorComp (K2Node_VariableGet)
+      Pin: Dragon_ChildActorComp (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Flip Flop.A
+        -> Flip Flop.B
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP SOTS VFX SPAWNER.execute
+      Pin: self (object) Dir=In
+        -> Get Dragon_ChildActorComp.Dragon_ChildActorComp
+      Pin: bNewVisibility (bool) Dir=In
+        -> Flip Flop.IsA
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: SpawnActor BP SOTS VFX SPAWNER (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.self
+        -> Set Life Span
+Target is Actor.self
+        -> Bind Event to On Cascade Finished.self
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: UseLifeSpan? (bool) Dir=In
+      Pin: Lifespan (real) Dir=In
+      Pin: Custom Time Dilation (real) Dir=In
+      Pin: NiagaraSystem (object) Dir=In
+      Pin: CascadeTemplate (object) Dir=In
+      Pin: Instigator (object) Dir=In
+        -> Self-Reference.self
+    Node: Attach Actor To Component
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP SOTS VFX SPAWNER.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Cascade Finished.execute
+      Pin: self (object) Dir=In
+        -> SpawnActor BP SOTS VFX SPAWNER.ReturnValue
+      Pin: Parent (object) Dir=In
+        -> Get Dragon_ChildActorComp.Dragon_ChildActorComp
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Dragon_ChildActorComp (K2Node_VariableGet)
+      Pin: Dragon_ChildActorComp (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.Parent
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> SpawnActor BP SOTS VFX SPAWNER.Instigator
+    Node: Set Life Span
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCascadeFinished_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor BP SOTS VFX SPAWNER.ReturnValue
+      Pin: InLifespan (real) Dir=In
+    Node: OnCascadeFinished_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Cascade Finished.Delegate
+      Pin: then (exec) Dir=Out
+        -> Set Life Span
+Target is Actor.execute
+    Node: Bind Event to On Cascade Finished (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Attach Actor To Component
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor BP SOTS VFX SPAWNER.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> OnCascadeFinished_Event
+Custom Event.OutputDelegate
+    Node: SPAWN DRAGON (EdGraphNode_Comment)
+    Node: SpawnDragon
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Flip Flop.None
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Flip Flop.A
+      Pin: then (exec) Dir=Out
+        -> Set Actor Hidden In Game
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Actor Hidden In Game
+Target is Actor.self
+        -> Get RootComponent.self
+    Node: Set Actor Hidden In Game
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: bNewHidden (bool) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Hidden In Game
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get RootComponent.RootComponent
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get RootComponent (K2Node_VariableGet)
+      Pin: RootComponent (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Flip Flop (K2Node_MacroInstance)
+      Pin: None (exec) Dir=In
+      Pin: A (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: B (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: IsA (bool) Dir=Out
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Flip Flop.B
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Destroy Actor
+Target is Actor.self
+    Node: Spawn Dragon
+Target is CBP Sandbox Character UE4 Mannequin (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> B.Released
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Toggle Recieve Decals
+Target is CBP Sandbox Character UE4 Mannequin (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bNewReceivesDecals (bool) Dir=In
+    Node: B (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+      Pin: Released (exec) Dir=Out
+        -> Spawn Dragon
+Target is CBP Sandbox Character UE4 Mannequin.execute
+      Pin: Key (struct) Dir=Out
+    Node: World dragon eating house testing on old map (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Attach Actor To Component
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ChildActor.ChildActor
+      Pin: Parent (object) Dir=In
+        -> Get PlayersMesh.PlayersMesh
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get PlayersMesh (K2Node_VariableGet)
+      Pin: PlayersMesh (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.Parent
+      Pin: self (object) Dir=In
+    Node: Get ChildActor (K2Node_VariableGet)
+      Pin: ChildActor (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.self
+      Pin: self (object) Dir=In
+  Graph: Update Player Data Struct for Save Game
+    Node: Update Player Data Struct for Save Game (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Player Data.execute
+    Node: Get PlayerData (K2Node_VariableGet)
+      Pin: PlayerData (struct) Dir=Out
+        -> Set members in F CGF Player Data.StructRef
+      Pin: self (object) Dir=In
+    Node: Set members in F CGF Player Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Update Player Data Struct for Save Game.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get PlayerData.PlayerData
+      Pin: StructOut (struct) Dir=Out
+        -> Return Node.PlayerData
+      Pin: PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A (string) Dir=In
+        -> Get PlayerName.PlayerName
+      Pin: PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93 (real) Dir=In
+        -> Get PlayerHealth.PlayerHealth
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42 (struct) Dir=In
+        -> Get Actor Transform
+Target is Actor.ReturnValue
+      Pin: PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649 (struct) Dir=In
+        -> Get Relative Transform
+Target is Scene Component.ReturnValue
+      Pin: PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB (struct) Dir=In
+        -> Get Control Rotation
+Target is Pawn.ReturnValue
+    Node: Get PlayerName (K2Node_VariableGet)
+      Pin: PlayerName (string) Dir=Out
+        -> Set members in F CGF Player Data.PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A
+      Pin: self (object) Dir=In
+    Node: Get PlayerHealth (K2Node_VariableGet)
+      Pin: PlayerHealth (real) Dir=Out
+        -> Set members in F CGF Player Data.PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Player Data.then
+      Pin: PlayerData (struct) Dir=In
+        -> Set members in F CGF Player Data.StructOut
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get TransformComponent.self
+    Node: Get Relative Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TransformComponent.TransformComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649
+    Node: Get TransformComponent (K2Node_VariableGet)
+      Pin: TransformComponent (object) Dir=Out
+        -> Get Relative Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+    Node: Get Control Rotation
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB
+    Node: Get Actor Transform
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42
+  Graph: CapsulesFullHeight
+    Node: CapsulesFullHeight (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.self
+        -> Is Valid.InputObject
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: ReturnValue (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get Scaled Capsule Half Height
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CapsulesFullHeight.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> CapsulesFullHeight.then
+      Pin: InputObject (object) Dir=In
+        -> CapsulesFullHeight.CapsuleComponent
+      Pin: Is Valid (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: ToggleRecieveDecals
+    Node: ToggleRecieveDecals (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.execute
+      Pin: bNewReceivesDecals (bool) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.bNewReceivesDecals
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Receives Decals
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ToggleRecieveDecals.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+        -> Get PlayersMesh.PlayersMesh
+        -> Get Bamboo_Rolled.Bamboo_Rolled
+        -> Get SM_Bomb.SM_Bomb
+        -> Get SM_Wakizashi.SM_Wakizashi
+        -> Get Wakizashi_Sheathe.Wakizashi_Sheathe
+        -> Get Mask.Mask
+        -> Get Rope.Rope
+        -> Get Sai1.Sai1
+        -> Get Sai2.Sai2
+      Pin: bNewReceivesDecals (bool) Dir=In
+        -> ToggleRecieveDecals.bNewReceivesDecals
+    Node: Get PlayersMesh (K2Node_VariableGet)
+      Pin: PlayersMesh (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Bamboo_Rolled (K2Node_VariableGet)
+      Pin: Bamboo_Rolled (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get SM_Bomb (K2Node_VariableGet)
+      Pin: SM_Bomb (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get SM_Wakizashi (K2Node_VariableGet)
+      Pin: SM_Wakizashi (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Wakizashi_Sheathe (K2Node_VariableGet)
+      Pin: Wakizashi_Sheathe (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Mask (K2Node_VariableGet)
+      Pin: Mask (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Rope (K2Node_VariableGet)
+      Pin: Rope (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Sai1 (K2Node_VariableGet)
+      Pin: Sai1 (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Sai2 (K2Node_VariableGet)
+      Pin: Sai2 (object) Dir=Out
+        -> Set Receives Decals
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+  Graph: IsAMontageAlreadyPlaying?
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Get.execute
+    Node: Outputs (K2Node_Tunnel)
+      Pin: IsAnyMontagePlayingOnCharMesh? (bool) Dir=In
+        -> Is Any Montage Playing
+Target is Anim Instance.ReturnValue
+      Pin: Is Valid (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Is Not Valid (exec) Dir=In
+        -> Is Valid.Is Not Valid
+        -> Get.else
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Any Montage Playing
+Target is Anim Instance.self
+        -> Is Valid.InputObject
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+        -> Outputs.Is Not Valid
+      Pin: PlayersMesh (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Any Montage Playing
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Outputs.IsAnyMontagePlayingOnCharMesh?
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get.then
+      Pin: InputObject (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Outputs.Is Valid
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Outputs.Is Not Valid
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In

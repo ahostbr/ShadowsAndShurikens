@@ -1,0 +1,789 @@
+Blueprint: WBP_ItemShortcutCross_Horror (/Game/InventorySystemPro/ExampleContent/Horror/UI/Widgets/WBP_ItemShortcutCross_Horror.WBP_ItemShortcutCross_Horror)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=Out
+        -> Parent: Tick.InDeltaTime
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Add Item Shortcuts to Array
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> On Setup Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: self (object) Dir=In
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> Event Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=In
+        -> Event Tick.InDeltaTime
+    Node: Call parent events (EdGraphNode_Comment)
+    Node: On Setup Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set User Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+    Node: Add Item Shortcuts to Array
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set User Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Setup Shortcut Menu
+Target is WBP Item Shortcut Menu Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemButtonRef.ItemButtonRef
+      Pin: PlayerController (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set User Focus
+Target is Widget.PlayerController
+    Node: Get ItemButtonRef (K2Node_VariableGet)
+      Pin: ItemButtonRef (object) Dir=Out
+        -> Set User Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+        -> Get ShortcutItemLeft.ShortcutItemLeft
+    Node: Get ShortcutItemLeft (K2Node_VariableGet)
+      Pin: ShortcutItemLeft (object) Dir=Out
+        -> Get ItemButtonRef.self
+      Pin: self (object) Dir=In
+    Node: Assign item to shortcut by button click (EdGraphNode_Comment)
+    Node: On Item Pressed (ShortcutItemLeft) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Left Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: ItemWidget (object) Dir=Out
+    Node: On Item Pressed (ShortcutItemTop) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Top Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: ItemWidget (object) Dir=Out
+    Node: On Item Pressed (ShortcutItemRight) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Right Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: ItemWidget (object) Dir=Out
+    Node: On Item Pressed (ShortcutItemBottom) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: ItemWidget (object) Dir=Out
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> EnhancedInputAction IA_InventoryInspectionRotate.ActionValue
+      Pin: X (real) Dir=Out
+        -> float >= float.A
+        -> float <= float.A
+      Pin: Y (real) Dir=Out
+        -> float >= float.A
+        -> float <= float.A
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on ESlateVisibility.HitTestInvisible
+        -> Switch on ESlateVisibility.SelfHitTestInvisible
+        -> Switch on ESlateVisibility.Visible
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Right Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: float <= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: float <= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Top Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Left Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ESlateVisibility.Selection
+    Node: Switch on ESlateVisibility (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Get Visibility
+Target is Widget.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Visible (exec) Dir=Out
+        -> Branch.execute
+      Pin: Collapsed (exec) Dir=Out
+      Pin: Hidden (exec) Dir=Out
+      Pin: HitTestInvisible (exec) Dir=Out
+        -> Branch.execute
+      Pin: SelfHitTestInvisible (exec) Dir=Out
+        -> Branch.execute
+    Node: Assign item to shortcut by WASD + Analog Stick Shortcut binding (EdGraphNode_Comment)
+    Node: OnLeftPressed
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Assign Item to Shortcut.execute
+    Node: Call On Assign Item to Shortcut (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> OnLeftPressed
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: self (object) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+    Node: On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Assign Item to Shortcut.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Left Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Pressed (ShortcutItemLeft).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Left Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnTopPressed
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Assign Item to Shortcut.execute
+    Node: OnRightPressed
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Assign Item to Shortcut.execute
+    Node: OnBottomPressed
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Assign Item to Shortcut.execute
+    Node: Call On Assign Item to Shortcut (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> OnTopPressed
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: self (object) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+    Node: Call On Assign Item to Shortcut (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> OnRightPressed
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: self (object) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+    Node: Call On Assign Item to Shortcut (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> OnBottomPressed
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: self (object) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+    Node: On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Assign Item to Shortcut.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Assign Item to Shortcut.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Assign Item to Shortcut.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Directional Input (EdGraphNode_Comment)
+    Node: On Top Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Pressed (ShortcutItemTop).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Right Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Pressed (ShortcutItemRight).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Pressed (ShortcutItemBottom).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Right Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Top Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: EnhancedInputAction IA_InventoryInspectionRotate (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Started (exec) Dir=Out
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Is Activated
+Target is Common Activatable Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Is Activated
+Target is Common Activatable Widget.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Switch on ESlateVisibility.execute
+      Pin: else (exec) Dir=Out
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Is Activated
+Target is Common Activatable Widget.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> EnhancedInputAction IA_InventoryInspectionRotate.Triggered
+      Pin: InputObject (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: AddItemShortcutsToArray
+    Node: AddItemShortcutsToArray (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> AddItemShortcutsToArray.then
+      Pin: then_0 (exec) Dir=Out
+        -> Add.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Add.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Add.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Add.execute
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: NewItem (object) Dir=In
+        -> Get ShortcutItemLeft.ShortcutItemLeft
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: NewItem (object) Dir=In
+        -> Get ShortcutItemTop.ShortcutItemTop
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: NewItem (object) Dir=In
+        -> Get ShortcutItemRight.ShortcutItemRight
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: NewItem (object) Dir=In
+        -> Get ShortcutItemBottom.ShortcutItemBottom
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get ShortcutItemLeft (K2Node_VariableGet)
+      Pin: ShortcutItemLeft (object) Dir=Out
+        -> Add.NewItem
+      Pin: self (object) Dir=In
+    Node: Get ShortcutItemTop (K2Node_VariableGet)
+      Pin: ShortcutItemTop (object) Dir=Out
+        -> Add.NewItem
+      Pin: self (object) Dir=In
+    Node: Get ShortcutItemRight (K2Node_VariableGet)
+      Pin: ShortcutItemRight (object) Dir=Out
+        -> Add.NewItem
+      Pin: self (object) Dir=In
+    Node: Get ShortcutItemBottom (K2Node_VariableGet)
+      Pin: ShortcutItemBottom (object) Dir=Out
+        -> Add.NewItem
+      Pin: self (object) Dir=In
+  Graph: FadeInFadeOut
+    Node: FadeInFadeOut (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: FadeInFadeOut.execute
+    Node: Parent: FadeInFadeOut (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> FadeInFadeOut.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+    Node: Get StartAnimation (K2Node_VariableGet)
+      Pin: StartAnimation (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: FadeInFadeOut.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get StartAnimation.StartAnimation
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Fade In & Fade Out Animation (EdGraphNode_Comment)
+  Graph: OnPreviewKeyDown
+    Node: On Preview Key Down (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: On Preview Key Down.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: On Preview Key Down.MyGeometry
+      Pin: InKeyEvent (struct) Dir=Out
+        -> Parent: On Preview Key Down.InKeyEvent
+        -> Get Key.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Top Pressed
+Target is WBP Item Shortcut Cross Horror.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Parent: On Preview Key Down (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> On Preview Key Down.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> On Preview Key Down.MyGeometry
+      Pin: InKeyEvent (struct) Dir=In
+        -> On Preview Key Down.InKeyEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Key (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On Preview Key Down.InKeyEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+        -> Equal (Key).A
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: C (bool) Dir=In
+        -> Equal (Key).ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: On Preview Key Down.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Top Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: C (bool) Dir=In
+        -> Equal (Key).ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: C (bool) Dir=In
+        -> Equal (Key).ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Left Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: C (bool) Dir=In
+        -> Equal (Key).ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Right Pressed
+Target is WBP Item Shortcut Cross Horror.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Left Pressed
+Target is WBP Item Shortcut Cross Horror.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Right Pressed
+Target is WBP Item Shortcut Cross Horror.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Parent: On Preview Key Down.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Return Node.ReturnValue
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+        -> Return Node.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Workaround for Directional Input that Common UI & Unreal's UMG Navigation nornally consumes (EdGraphNode_Comment)
+    Node: On Top Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: On Left Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: On Bottom Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: On Right Pressed
+Target is WBP Item Shortcut Cross Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.C
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.C
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.C
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Key.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.C
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+        -> Reroute Node.OutputPin

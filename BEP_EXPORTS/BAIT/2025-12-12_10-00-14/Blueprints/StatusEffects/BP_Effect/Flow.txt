@@ -1,0 +1,315 @@
+Blueprint: BP_Effect (/Game/BossAIToolkit/Blueprints/StatusEffects/BP_Effect.BP_Effect)
+  Graph: EventGraph
+    Node: InitializeEffect
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set AffectedActor.execute
+      Pin: AffectedActor (object) Dir=Out
+        -> Set AffectedActor.AffectedActor
+      Pin: EffectCauser (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Duration (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Damage (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: StatusEffectComp (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Index (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set AffectedActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> InitializeEffect
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set EffectCauser.execute
+      Pin: AffectedActor (object) Dir=In
+        -> InitializeEffect
+Custom Event.AffectedActor
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get TickInterval (K2Node_VariableGet)
+      Pin: TickInterval (real) Dir=Out
+        -> Set Timer by Function Name.Time
+      Pin: self (object) Dir=In
+    Node: Set EffectCauser (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AffectedActor.then
+      Pin: then (exec) Dir=Out
+        -> Set Duration.execute
+      Pin: EffectCauser (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> InitializeEffect
+Custom Event.EffectCauser
+      Pin: OutputPin (object) Dir=Out
+        -> Set EffectCauser.EffectCauser
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Get TickInterval.TickInterval
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Set Duration (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set EffectCauser.then
+      Pin: then (exec) Dir=Out
+        -> Set DamagePerTick.execute
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set DamagePerTick (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Duration.then
+      Pin: then (exec) Dir=Out
+        -> Set StatusEffectComp.execute
+      Pin: DamagePerTick (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InitializeEffect
+Custom Event.Duration
+      Pin: OutputPin (real) Dir=Out
+        -> Set Duration.Duration
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InitializeEffect
+Custom Event.Damage
+      Pin: OutputPin (real) Dir=Out
+        -> Set DamagePerTick.DamagePerTick
+    Node: Set StatusEffectComp (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DamagePerTick.then
+      Pin: then (exec) Dir=Out
+        -> On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server).execute
+      Pin: StatusEffectComp (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+        -> On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server).self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> InitializeEffect
+Custom Event.StatusEffectComp
+      Pin: OutputPin (object) Dir=Out
+        -> Set StatusEffectComp.StatusEffectComp
+    Node: Get ParticleEffect (K2Node_VariableGet)
+      Pin: ParticleEffect (object) Dir=Out
+        -> On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server).Emitter
+      Pin: self (object) Dir=In
+    Node: Get AffectedActor (K2Node_VariableGet)
+      Pin: AffectedActor (object) Dir=Out
+        -> On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server).ActorRef
+      Pin: self (object) Dir=In
+    Node: On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set StatusEffectComp.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: self (object) Dir=In
+        -> Set StatusEffectComp.Output_Get
+      Pin: Emitter (object) Dir=In
+        -> Get ParticleEffect.ParticleEffect
+      Pin: ActorRef (object) Dir=In
+        -> Get AffectedActor.AffectedActor
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> InitializeEffect
+Custom Event.Index
+      Pin: OutputPin (int) Dir=Out
+        -> On Spawn Particle
+Target is BPC Status Effects
+RELIABLE Replicated To All (if server).Index
+  Graph: TickEffect
+    Node: TickEffect (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Apply Point Damage.execute
+    Node: Get DamagePerTick (K2Node_VariableGet)
+      Pin: DamagePerTick (real) Dir=Out
+        -> Apply Point Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get AffectedActor (K2Node_VariableGet)
+      Pin: AffectedActor (object) Dir=Out
+        -> Apply Point Damage.DamagedActor
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get EffectCauser (K2Node_VariableGet)
+      Pin: EffectCauser (object) Dir=Out
+        -> Apply Point Damage.DamageCauser
+      Pin: self (object) Dir=In
+    Node: Get Duration (K2Node_VariableGet)
+      Pin: Duration (real) Dir=Out
+        -> float - float.A
+      Pin: self (object) Dir=In
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Duration.Duration
+      Pin: B (real) Dir=In
+        -> Get TickInterval.TickInterval
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Duration.Duration
+    Node: Get TickInterval (K2Node_VariableGet)
+      Pin: TickInterval (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: Set Duration (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Apply Point Damage.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Duration (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float <= float.A
+      Pin: self (object) Dir=In
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Set Duration.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Duration.then
+      Pin: Condition (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Clear Timer by Function Name.execute
+      Pin: else (exec) Dir=Out
+    Node: Clear Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Remove Debuff
+Target is BPC Status Effects.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+    Node: Apply Point Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> TickEffect.then
+      Pin: then (exec) Dir=Out
+        -> Set Duration.execute
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Get AffectedActor.AffectedActor
+      Pin: BaseDamage (real) Dir=In
+        -> Get DamagePerTick.DamagePerTick
+      Pin: HitFromDirection (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: HitInfo (struct) Dir=In
+        -> Make Hit Result.ReturnValue
+      Pin: EventInstigator (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get EffectCauser.EffectCauser
+      Pin: DamageTypeClass (class) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Make Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: bBlockingHit (bool) Dir=In
+      Pin: bInitialOverlap (bool) Dir=In
+      Pin: Time (real) Dir=In
+      Pin: Distance (real) Dir=In
+      Pin: Location (struct) Dir=In
+      Pin: ImpactPoint (struct) Dir=In
+      Pin: Normal (struct) Dir=In
+      Pin: ImpactNormal (struct) Dir=In
+      Pin: PhysMat (object) Dir=In
+      Pin: HitActor (object) Dir=In
+      Pin: HitComponent (object) Dir=In
+      Pin: HitBoneName (name) Dir=In
+      Pin: BoneName (name) Dir=In
+      Pin: HitItem (int) Dir=In
+      Pin: ElementIndex (int) Dir=In
+      Pin: FaceIndex (int) Dir=In
+      Pin: TraceStart (struct) Dir=In
+      Pin: TraceEnd (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Point Damage.HitInfo
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get AffectedActor.AffectedActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Point Damage.HitFromDirection
+    Node: Get StatusEffectComp (K2Node_VariableGet)
+      Pin: StatusEffectComp (object) Dir=Out
+        -> Remove Debuff
+Target is BPC Status Effects.self
+      Pin: self (object) Dir=In
+    Node: Remove Debuff
+Target is BPC Status Effects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StatusEffectComp.StatusEffectComp
+      Pin: EffectRef (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Remove Debuff
+Target is BPC Status Effects.EffectRef
+    Node: Called every tick interval. Apply damage (if any) and reduce current duration by the interval (EdGraphNode_Comment)
+  Graph: UpdateValues
+    Node: UpdateValues (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Duration.execute
+      Pin: Duration (real) Dir=Out
+        -> Set Duration.Duration
+      Pin: Damage (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Duration (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateValues.then
+      Pin: then (exec) Dir=Out
+        -> Set DamagePerTick.execute
+      Pin: Duration (real) Dir=In
+        -> UpdateValues.Duration
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set DamagePerTick (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Duration.then
+      Pin: then (exec) Dir=Out
+      Pin: DamagePerTick (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> UpdateValues.Damage
+      Pin: OutputPin (real) Dir=Out
+        -> Set DamagePerTick.DamagePerTick

@@ -1,0 +1,667 @@
+Blueprint: BPML_CGF (/Game/CoreGameFramework/Core/Libraries/Macros/BPML_CGF.BPML_CGF)
+  Graph: CGF_DoOnceThisTick
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Start Closed (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Outputs (K2Node_Tunnel)
+      Pin: Completed (exec) Dir=In
+        -> Do Once.Completed
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reset (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: Start Closed (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Completed (exec) Dir=Out
+        -> Outputs.Completed
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Do Once.Reset
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Inputs.Start Closed
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Do Once.Start Closed
+  Graph: CGF_DoOnceThisInterval
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Interval (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Start Closed (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Outputs (K2Node_Tunnel)
+      Pin: Completed (exec) Dir=In
+        -> Do Once.Completed
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reset (exec) Dir=In
+        -> Delay.then
+      Pin: Start Closed (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Completed (exec) Dir=Out
+        -> Outputs.Completed
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Inputs.Interval
+      Pin: OutputPin (real) Dir=Out
+        -> Delay.Duration
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Inputs.Start Closed
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Do Once.Start Closed
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Do Once.Reset
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LatentInfo (struct) Dir=In
+  Graph: CGF_DoOnlyAfterGameTimeElapsed
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Branch.execute
+      Pin: Time (real) Dir=Out
+        -> float <= float.B
+    Node: Outputs (K2Node_Tunnel)
+      Pin: True (exec) Dir=In
+        -> Branch.else
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float <= float.A
+    Node: float <= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Inputs.Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: Condition (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Outputs.True
+  Graph: CGF_DoOnceFlipFlop
+    Node: Inputs (K2Node_Tunnel)
+      Pin: A (exec) Dir=Out
+        -> Sequence.execute
+      Pin: B (exec) Dir=Out
+        -> Sequence.execute
+      Pin: ResetA (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ResetB (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ResetBoth (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Start A Closed (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Start B Closed (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Outputs (K2Node_Tunnel)
+      Pin: A Out (exec) Dir=In
+        -> Do Once.Completed
+      Pin: B Out (exec) Dir=In
+        -> Do Once.Completed
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Inputs.A
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Do Once.execute
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Reset (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Start Closed (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Completed (exec) Dir=Out
+        -> Outputs.A Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Inputs.B
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Do Once.execute
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Reset (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: Start Closed (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Completed (exec) Dir=Out
+        -> Outputs.B Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Inputs.Start B Closed
+      Pin: OutputPin (bool) Dir=Out
+        -> Do Once.Start Closed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Inputs.Start A Closed
+      Pin: OutputPin (bool) Dir=Out
+        -> Do Once.Start Closed
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Inputs.ResetBoth
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Inputs.ResetA
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_0
+        -> Reroute Node.OutputPin
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Inputs.ResetB
+      Pin: OutputPin (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Stop A From Happening Until B Has Fired, Once B Has Fired Let A Fire Again And Repeat.  Used to stop unncessacary executions usually on timers. (EdGraphNode_Comment)
+  Graph: CGF_CheckActorsAngleToPlayer
+    Node: Inputs (K2Node_Tunnel)
+      Pin: exec (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Target (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+      Pin: AngleToCheck (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Print? (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Outputs (K2Node_Tunnel)
+      Pin: Is Valid (exec) Dir=In
+        -> Branch.else
+        -> Print String.then
+      Pin: GreaterOrEqual (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Acos (Degrees).ReturnValue
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Acos (Degrees) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Dot Product.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float >= float.A
+        -> To String (Float).InDouble
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Forward Vector
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Normalize.A
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.A
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: Dot Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Acos (Degrees).A
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.B
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Inputs.exec
+      Pin: InputObject (object) Dir=In
+        -> Inputs.Target
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Inputs.AngleToCheck
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Outputs.Is Valid
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: else (exec) Dir=Out
+        -> Outputs.Is Valid
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> float >= float.B
+        -> To String (Float).InDouble
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Outputs.GreaterOrEqual
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Inputs.Print?
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Inputs.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+        -> Reroute Node.InputPin
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Float).ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+      Pin: C (string) Dir=In
+        -> To String (Float).ReturnValue
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Acos (Degrees).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: CGF_ForEachLoopWithDelay
+    Node: Inputs (K2Node_Tunnel)
+      Pin: Exec (exec) Dir=Out
+        -> Assign.execute
+      Pin: Array (wildcard) Dir=Out
+        -> Length.TargetArray
+        -> Reroute Node.InputPin
+      Pin: Duration (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Outputs (K2Node_Tunnel)
+      Pin: LoopBody (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Array Element (wildcard) Dir=In
+        -> GET.Output
+      Pin: Array Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Completed (exec) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Warning: Do not add, remove, or reorder elements in the input array during the execution of the loop body! (EdGraphNode_Comment)
+    Node: Increment Loop Counter (EdGraphNode_Comment)
+    Node: Execute Loop Body (EdGraphNode_Comment)
+    Node: Test Loop Condition (EdGraphNode_Comment)
+    Node: Init Loop Counter (EdGraphNode_Comment)
+    Node: Local Integer (K2Node_TemporaryVariable)
+      Pin: Variable (int) Dir=Out
+        -> Assign.Variable
+        -> Reroute Node.InputPin
+    Node: Assign (K2Node_AssignmentStatement)
+      Pin: execute (exec) Dir=In
+        -> Inputs.Exec
+      Pin: then (exec) Dir=Out
+        -> Assign.execute
+      Pin: Variable (int) Dir=In
+        -> Local Integer.Variable
+      Pin: Value (int) Dir=In
+    Node: int + int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Assign (K2Node_AssignmentStatement)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Variable (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (int) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Assign.then
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> integer < integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Assign.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Assign.then
+      Pin: then_0 (exec) Dir=Out
+        -> Outputs.LoopBody
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (wildcard) Dir=In
+        -> Inputs.Array
+      Pin: ReturnValue (int) Dir=Out
+        -> integer < integer.B
+    Node: integer < integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+        -> Length.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Local Integer (K2Node_TemporaryVariable)
+      Pin: Variable (int) Dir=Out
+        -> Assign.Variable
+        -> Reroute Node.InputPin
+    Node: Init Array Index (EdGraphNode_Comment)
+    Node: Assign (K2Node_AssignmentStatement)
+      Pin: execute (exec) Dir=In
+        -> Assign.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Variable (int) Dir=In
+        -> Local Integer.Variable
+      Pin: Value (int) Dir=In
+    Node: Assign (K2Node_AssignmentStatement)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Variable (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (int) Dir=In
+        -> Reroute Node.OutputPin
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (wildcard) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (wildcard) Dir=Out
+        -> Outputs.Array Element
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> int + int.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Assign.Variable
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Local Integer.Variable
+      Pin: OutputPin (int) Dir=Out
+        -> GET.Dimension 1
+        -> Assign.Variable
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Assign.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Outputs.Completed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (wildcard) Dir=In
+        -> Inputs.Array
+      Pin: OutputPin (wildcard) Dir=Out
+        -> GET.Array
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Outputs.Array Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Local Integer.Variable
+      Pin: OutputPin (int) Dir=Out
+        -> integer < integer.A
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> Assign.Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Inputs.Duration
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: OutputPin (int) Dir=Out
+        -> Assign.Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Delay.Duration
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Assign.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LatentInfo (struct) Dir=In

@@ -1,0 +1,123 @@
+Blueprint: BPW_CGF_LoadingScreen (/Game/CoreGameFramework/UI/Widgets/Menus/BPW_CGF_LoadingScreen.BPW_CGF_LoadingScreen)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Brush Tint Color
+Target is Image.execute
+    Node: SetProgressBarPercent
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Percent
+Target is Progress Bar.execute
+      Pin: InPercent (real) Dir=Out
+        -> Set Percent
+Target is Progress Bar.InPercent
+        -> Reroute Node.InputPin
+    Node: Get ProgressBar (K2Node_VariableGet)
+      Pin: ProgressBar (object) Dir=Out
+        -> Set Percent
+Target is Progress Bar.self
+      Pin: self (object) Dir=In
+    Node: Set Percent
+Target is Progress Bar (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetProgressBarPercent
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get ProgressBar.ProgressBar
+      Pin: InPercent (real) Dir=In
+        -> SetProgressBarPercent
+Custom Event.InPercent
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Round.A
+    Node: Round (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: Get ProgressTextBlock (K2Node_VariableGet)
+      Pin: ProgressTextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Percent
+Target is Progress Bar.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProgressTextBlock.ProgressTextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SetProgressBarPercent
+Custom Event.InPercent
+      Pin: OutputPin (real) Dir=Out
+        -> float * float.A
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Round.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Get Background_Image (K2Node_VariableGet)
+      Pin: Background_Image (object) Dir=Out
+        -> Set Brush Tint Color
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush Tint Color
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get Background_Image.Background_Image
+      Pin: TintColor (struct) Dir=In
+        -> Get Tint Color.Tint Color
+    Node: Get Tint Color (K2Node_VariableGet)
+      Pin: Tint Color (struct) Dir=Out
+        -> Set Brush Tint Color
+Target is Image.TintColor
+      Pin: self (object) Dir=In
+    Node: Get ProgressTextBlock (K2Node_VariableGet)
+      Pin: ProgressTextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush Tint Color
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProgressTextBlock.ProgressTextBlock
+      Pin: InText (text) Dir=In

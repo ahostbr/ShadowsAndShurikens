@@ -1,0 +1,592 @@
+Blueprint: WBP_GridContainerBase (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_GridContainerBase.WBP_GridContainerBase)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Setup (EdGraphNode_Comment)
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Scrollbar Style
+Target is WBP Grid Container Base.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Scrollbar Style
+Target is WBP Grid Container Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ContentSizeBoxRef (K2Node_VariableGet)
+      Pin: ContentSizeBoxRef (object) Dir=Out
+        -> Set Height Override
+Target is Size Box.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ContentSizeBoxRef.ContentSizeBoxRef
+      Pin: InHeightOverride (real) Dir=In
+        -> Get ContentHeight.ContentHeight
+    Node: Get ContentHeight (K2Node_VariableGet)
+      Pin: ContentHeight (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: InputObject (object) Dir=In
+        -> Get ContentSizeBoxRef.ContentSizeBoxRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=Out
+        -> Parent: Tick.InDeltaTime
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> Event Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=In
+        -> Event Tick.InDeltaTime
+    Node: Update (EdGraphNode_Comment)
+  Graph: SetupGridContainer
+    Node: SetupGridContainer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetupGridContainer.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Brush Color
+Target is Border.execute
+      Pin: else (exec) Dir=Out
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bShowBackground.bShowBackground
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get bShowBackground (K2Node_VariableGet)
+      Pin: bShowBackground (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: Get GridContainerBorderRef (K2Node_VariableGet)
+      Pin: GridContainerBorderRef (object) Dir=Out
+        -> Set Brush Color
+Target is Border.self
+      Pin: self (object) Dir=In
+    Node: Set Brush Color
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get GridContainerBorderRef.GridContainerBorderRef
+      Pin: InBrushColor (struct) Dir=In
+    Node: Setup Grid Container (EdGraphNode_Comment)
+  Graph: SetScrollbarStyle
+    Node: SetScrollbarStyle (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Force Layout Prepass
+Target is Widget.execute
+    Node: Make Scroll Bar Style (K2Node_MakeStruct)
+      Pin: ScrollBarStyle (struct) Dir=Out
+        -> Set WidgetBarStyle.WidgetBarStyle
+      Pin: HorizontalBackgroundImage (struct) Dir=In
+        -> Break Scroll Bar Style.HorizontalBackgroundImage
+      Pin: VerticalBackgroundImage (struct) Dir=In
+        -> Break Scroll Bar Style.VerticalBackgroundImage
+      Pin: VerticalTopSlotImage (struct) Dir=In
+        -> Break Scroll Bar Style.VerticalTopSlotImage
+      Pin: HorizontalTopSlotImage (struct) Dir=In
+        -> Break Scroll Bar Style.HorizontalTopSlotImage
+      Pin: VerticalBottomSlotImage (struct) Dir=In
+        -> Break Scroll Bar Style.VerticalBottomSlotImage
+      Pin: HorizontalBottomSlotImage (struct) Dir=In
+        -> Break Scroll Bar Style.HorizontalBottomSlotImage
+      Pin: NormalThumbImage (struct) Dir=In
+        -> Make Slate Brush.SlateBrush
+      Pin: HoveredThumbImage (struct) Dir=In
+        -> Make Slate Brush.SlateBrush
+      Pin: DraggedThumbImage (struct) Dir=In
+        -> Make Slate Brush.SlateBrush
+      Pin: Thickness (real) Dir=In
+        -> Break Scroll Bar Style.Thickness
+    Node: Break Scroll Bar Style (K2Node_BreakStruct)
+      Pin: ScrollBarStyle (struct) Dir=In
+        -> Get WidgetBarStyle.WidgetBarStyle
+      Pin: HorizontalBackgroundImage (struct) Dir=Out
+        -> Make Scroll Bar Style.HorizontalBackgroundImage
+      Pin: VerticalBackgroundImage (struct) Dir=Out
+        -> Make Scroll Bar Style.VerticalBackgroundImage
+      Pin: VerticalTopSlotImage (struct) Dir=Out
+        -> Make Scroll Bar Style.VerticalTopSlotImage
+      Pin: HorizontalTopSlotImage (struct) Dir=Out
+        -> Make Scroll Bar Style.HorizontalTopSlotImage
+      Pin: VerticalBottomSlotImage (struct) Dir=Out
+        -> Make Scroll Bar Style.VerticalBottomSlotImage
+      Pin: HorizontalBottomSlotImage (struct) Dir=Out
+        -> Make Scroll Bar Style.HorizontalBottomSlotImage
+      Pin: NormalThumbImage (struct) Dir=Out
+        -> Break Slate Brush.SlateBrush
+      Pin: HoveredThumbImage (struct) Dir=Out
+        -> Break Slate Brush.SlateBrush
+      Pin: DraggedThumbImage (struct) Dir=Out
+        -> Break Slate Brush.SlateBrush
+      Pin: Thickness (real) Dir=Out
+        -> Make Scroll Bar Style.Thickness
+    Node: Break Slate Brush (K2Node_BreakStruct)
+      Pin: SlateBrush (struct) Dir=In
+        -> Break Scroll Bar Style.NormalThumbImage
+      Pin: TintColor (struct) Dir=Out
+      Pin: DrawAs (byte) Dir=Out
+      Pin: Tiling (byte) Dir=Out
+        -> Make Slate Brush.Tiling
+      Pin: Mirroring (byte) Dir=Out
+        -> Make Slate Brush.Mirroring
+      Pin: ImageSize (struct) Dir=Out
+        -> Make Slate Brush.ImageSize
+      Pin: Margin (struct) Dir=Out
+        -> Make Slate Brush.Margin
+      Pin: ResourceObject (object) Dir=Out
+        -> Make Slate Brush.ResourceObject
+      Pin: OutlineSettings (struct) Dir=Out
+        -> Break Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Break Slate Brush (K2Node_BreakStruct)
+      Pin: SlateBrush (struct) Dir=In
+        -> Break Scroll Bar Style.HoveredThumbImage
+      Pin: TintColor (struct) Dir=Out
+      Pin: DrawAs (byte) Dir=Out
+      Pin: Tiling (byte) Dir=Out
+        -> Make Slate Brush.Tiling
+      Pin: Mirroring (byte) Dir=Out
+        -> Make Slate Brush.Mirroring
+      Pin: ImageSize (struct) Dir=Out
+        -> Make Slate Brush.ImageSize
+      Pin: Margin (struct) Dir=Out
+        -> Make Slate Brush.Margin
+      Pin: ResourceObject (object) Dir=Out
+        -> Make Slate Brush.ResourceObject
+      Pin: OutlineSettings (struct) Dir=Out
+        -> Break Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Break Slate Brush (K2Node_BreakStruct)
+      Pin: SlateBrush (struct) Dir=In
+        -> Break Scroll Bar Style.DraggedThumbImage
+      Pin: TintColor (struct) Dir=Out
+      Pin: DrawAs (byte) Dir=Out
+      Pin: Tiling (byte) Dir=Out
+        -> Make Slate Brush.Tiling
+      Pin: Mirroring (byte) Dir=Out
+        -> Make Slate Brush.Mirroring
+      Pin: ImageSize (struct) Dir=Out
+        -> Make Slate Brush.ImageSize
+      Pin: Margin (struct) Dir=Out
+        -> Make Slate Brush.Margin
+      Pin: ResourceObject (object) Dir=Out
+        -> Make Slate Brush.ResourceObject
+      Pin: OutlineSettings (struct) Dir=Out
+        -> Break Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Make Slate Brush (K2Node_MakeStruct)
+      Pin: SlateBrush (struct) Dir=Out
+        -> Make Scroll Bar Style.NormalThumbImage
+      Pin: TintColor (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: DrawAs (byte) Dir=In
+      Pin: Tiling (byte) Dir=In
+        -> Break Slate Brush.Tiling
+      Pin: Mirroring (byte) Dir=In
+        -> Break Slate Brush.Mirroring
+      Pin: ImageSize (struct) Dir=In
+        -> Break Slate Brush.ImageSize
+      Pin: Margin (struct) Dir=In
+        -> Break Slate Brush.Margin
+      Pin: ResourceObject (object) Dir=In
+        -> Break Slate Brush.ResourceObject
+      Pin: OutlineSettings (struct) Dir=In
+        -> Make Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Make Slate Brush (K2Node_MakeStruct)
+      Pin: SlateBrush (struct) Dir=Out
+        -> Make Scroll Bar Style.HoveredThumbImage
+      Pin: TintColor (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: DrawAs (byte) Dir=In
+      Pin: Tiling (byte) Dir=In
+        -> Break Slate Brush.Tiling
+      Pin: Mirroring (byte) Dir=In
+        -> Break Slate Brush.Mirroring
+      Pin: ImageSize (struct) Dir=In
+        -> Break Slate Brush.ImageSize
+      Pin: Margin (struct) Dir=In
+        -> Break Slate Brush.Margin
+      Pin: ResourceObject (object) Dir=In
+        -> Break Slate Brush.ResourceObject
+      Pin: OutlineSettings (struct) Dir=In
+        -> Make Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Make Slate Brush (K2Node_MakeStruct)
+      Pin: SlateBrush (struct) Dir=Out
+        -> Make Scroll Bar Style.DraggedThumbImage
+      Pin: TintColor (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: DrawAs (byte) Dir=In
+      Pin: Tiling (byte) Dir=In
+        -> Break Slate Brush.Tiling
+      Pin: Mirroring (byte) Dir=In
+        -> Break Slate Brush.Mirroring
+      Pin: ImageSize (struct) Dir=In
+        -> Break Slate Brush.ImageSize
+      Pin: Margin (struct) Dir=In
+        -> Break Slate Brush.Margin
+      Pin: ResourceObject (object) Dir=In
+        -> Break Slate Brush.ResourceObject
+      Pin: OutlineSettings (struct) Dir=In
+        -> Make Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Make Slate Brush.TintColor
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Get Scroll Offset Of End
+Target is Scroll Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemsScrollBoxRef.ItemsScrollBoxRef
+      Pin: ReturnValue (real) Dir=Out
+        -> Equal (Float).A
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Scroll Offset Of End
+Target is Scroll Box.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+        -> Select.Index
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Get BarNormalColor.BarNormalColor
+      Pin: Option 1 (struct) Dir=In
+        -> Get BarTransparentColor.BarTransparentColor
+      Pin: Index (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Make Slate Brush.TintColor
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Get BarHighlightedColor.BarHighlightedColor
+      Pin: Option 1 (struct) Dir=In
+        -> Get BarTransparentColor.BarTransparentColor
+      Pin: Index (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Make Slate Brush.TintColor
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Get BarDragColor.BarDragColor
+      Pin: Option 1 (struct) Dir=In
+        -> Get BarTransparentColor.BarTransparentColor
+      Pin: Index (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+    Node: Break Slate Brush Outline Settings (K2Node_BreakStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=In
+        -> Break Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=Out
+      Pin: Color (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.Color
+      Pin: Width (real) Dir=Out
+        -> Make Slate Brush Outline Settings.Width
+      Pin: RoundingType (byte) Dir=Out
+      Pin: bUseBrushTransparency (bool) Dir=Out
+        -> Make Slate Brush Outline Settings.bUseBrushTransparency
+    Node: Make Slate Brush Outline Settings (K2Node_MakeStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=Out
+        -> Make Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=In
+        -> Make Vector 4.ReturnValue
+      Pin: Color (struct) Dir=In
+        -> Break Slate Brush Outline Settings.Color
+      Pin: Width (real) Dir=In
+        -> Break Slate Brush Outline Settings.Width
+      Pin: RoundingType (byte) Dir=In
+      Pin: bUseBrushTransparency (bool) Dir=In
+        -> Break Slate Brush Outline Settings.bUseBrushTransparency
+    Node: Make Vector 4 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: Y (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: Z (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: W (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.CornerRadii
+    Node: Break Slate Brush Outline Settings (K2Node_BreakStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=In
+        -> Break Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=Out
+      Pin: Color (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.Color
+      Pin: Width (real) Dir=Out
+        -> Make Slate Brush Outline Settings.Width
+      Pin: RoundingType (byte) Dir=Out
+      Pin: bUseBrushTransparency (bool) Dir=Out
+        -> Make Slate Brush Outline Settings.bUseBrushTransparency
+    Node: Make Slate Brush Outline Settings (K2Node_MakeStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=Out
+        -> Make Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=In
+        -> Make Vector 4.ReturnValue
+      Pin: Color (struct) Dir=In
+        -> Break Slate Brush Outline Settings.Color
+      Pin: Width (real) Dir=In
+        -> Break Slate Brush Outline Settings.Width
+      Pin: RoundingType (byte) Dir=In
+      Pin: bUseBrushTransparency (bool) Dir=In
+        -> Break Slate Brush Outline Settings.bUseBrushTransparency
+    Node: Make Vector 4 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: Y (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: Z (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: W (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.CornerRadii
+    Node: Break Slate Brush Outline Settings (K2Node_BreakStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=In
+        -> Break Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=Out
+      Pin: Color (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.Color
+      Pin: Width (real) Dir=Out
+        -> Make Slate Brush Outline Settings.Width
+      Pin: RoundingType (byte) Dir=Out
+      Pin: bUseBrushTransparency (bool) Dir=Out
+        -> Make Slate Brush Outline Settings.bUseBrushTransparency
+    Node: Make Slate Brush Outline Settings (K2Node_MakeStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=Out
+        -> Make Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=In
+        -> Make Vector 4.ReturnValue
+      Pin: Color (struct) Dir=In
+        -> Break Slate Brush Outline Settings.Color
+      Pin: Width (real) Dir=In
+        -> Break Slate Brush Outline Settings.Width
+      Pin: RoundingType (byte) Dir=In
+      Pin: bUseBrushTransparency (bool) Dir=In
+        -> Break Slate Brush Outline Settings.bUseBrushTransparency
+    Node: Make Vector 4 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: Y (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: Z (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: W (real) Dir=In
+        -> Get BarCornerRadius.BarCornerRadius
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.CornerRadii
+    Node: Get ItemsScrollBoxRef (K2Node_VariableGet)
+      Pin: ItemsScrollBoxRef (object) Dir=Out
+        -> Get WidgetBarStyle.self
+        -> Set Scrollbar Padding
+Target is Scroll Box.self
+      Pin: self (object) Dir=In
+    Node: Get WidgetBarStyle (K2Node_VariableGet)
+      Pin: WidgetBarStyle (struct) Dir=Out
+        -> Break Scroll Bar Style.ScrollBarStyle
+      Pin: self (object) Dir=In
+        -> Get ItemsScrollBoxRef.ItemsScrollBoxRef
+    Node: Get ItemsScrollBoxRef (K2Node_VariableGet)
+      Pin: ItemsScrollBoxRef (object) Dir=Out
+        -> Set WidgetBarStyle.self
+      Pin: self (object) Dir=In
+    Node: Set WidgetBarStyle (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Force Layout Prepass
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Scrollbar Padding
+Target is Scroll Box.execute
+      Pin: WidgetBarStyle (struct) Dir=In
+        -> Make Scroll Bar Style.ScrollBarStyle
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemsScrollBoxRef.ItemsScrollBoxRef
+    Node: Get ItemsScrollBoxRef (K2Node_VariableGet)
+      Pin: ItemsScrollBoxRef (object) Dir=Out
+        -> Get Scroll Offset Of End
+Target is Scroll Box.self
+      Pin: self (object) Dir=In
+    Node: Set Scrollbar Padding
+Target is Scroll Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WidgetBarStyle.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemsScrollBoxRef.ItemsScrollBoxRef
+      Pin: NewScrollbarPadding (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Make Margin.Margin
+      Pin: Option 1 (struct) Dir=In
+        -> Make Margin.Margin
+      Pin: Index (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Scrollbar Padding
+Target is Scroll Box.NewScrollbarPadding
+    Node: Get Scroll Offset Of End
+Target is Scroll Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemsScrollBoxRef.ItemsScrollBoxRef
+      Pin: ReturnValue (real) Dir=Out
+        -> Equal (Float).A
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Scroll Offset Of End
+Target is Scroll Box.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get ItemsScrollBoxRef (K2Node_VariableGet)
+      Pin: ItemsScrollBoxRef (object) Dir=Out
+        -> Get Scroll Offset Of End
+Target is Scroll Box.self
+      Pin: self (object) Dir=In
+    Node: Make Margin (K2Node_MakeStruct)
+      Pin: Margin (struct) Dir=Out
+        -> Select.Option 0
+      Pin: Left (real) Dir=In
+      Pin: Top (real) Dir=In
+      Pin: Right (real) Dir=In
+      Pin: Bottom (real) Dir=In
+    Node: Make Margin (K2Node_MakeStruct)
+      Pin: Margin (struct) Dir=Out
+        -> Select.Option 1
+      Pin: Left (real) Dir=In
+      Pin: Top (real) Dir=In
+      Pin: Right (real) Dir=In
+      Pin: Bottom (real) Dir=In
+    Node: Get ItemsScrollBoxRef (K2Node_VariableGet)
+      Pin: ItemsScrollBoxRef (object) Dir=Out
+        -> Force Layout Prepass
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Force Layout Prepass
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetScrollbarStyle.then
+      Pin: then (exec) Dir=Out
+        -> Set WidgetBarStyle.execute
+      Pin: self (object) Dir=In
+        -> Get ItemsScrollBoxRef.ItemsScrollBoxRef
+    Node: Get BarNormalColor (K2Node_VariableGet)
+      Pin: BarNormalColor (struct) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Get BarTransparentColor (K2Node_VariableGet)
+      Pin: BarTransparentColor (struct) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Get BarTransparentColor (K2Node_VariableGet)
+      Pin: BarTransparentColor (struct) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Get BarTransparentColor (K2Node_VariableGet)
+      Pin: BarTransparentColor (struct) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Get BarCornerRadius (K2Node_VariableGet)
+      Pin: BarCornerRadius (real) Dir=Out
+        -> Make Vector 4.X
+        -> Make Vector 4.Y
+        -> Make Vector 4.Z
+        -> Make Vector 4.W
+      Pin: self (object) Dir=In
+    Node: Get BarCornerRadius (K2Node_VariableGet)
+      Pin: BarCornerRadius (real) Dir=Out
+        -> Make Vector 4.X
+        -> Make Vector 4.Y
+        -> Make Vector 4.Z
+        -> Make Vector 4.W
+      Pin: self (object) Dir=In
+    Node: Get BarCornerRadius (K2Node_VariableGet)
+      Pin: BarCornerRadius (real) Dir=Out
+        -> Make Vector 4.X
+        -> Make Vector 4.Y
+        -> Make Vector 4.Z
+        -> Make Vector 4.W
+      Pin: self (object) Dir=In
+    Node: Get BarHighlightedColor (K2Node_VariableGet)
+      Pin: BarHighlightedColor (struct) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Get BarDragColor (K2Node_VariableGet)
+      Pin: BarDragColor (struct) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Set Scrollbar Style (EdGraphNode_Comment)

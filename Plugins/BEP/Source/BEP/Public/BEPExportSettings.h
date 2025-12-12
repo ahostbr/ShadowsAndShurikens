@@ -4,6 +4,9 @@
 #include "Misc/Paths.h"
 #include "BEPExportSettings.generated.h"
 
+/** Default BEP export root under the current project directory. */
+BEP_API FString GetDefaultBEPExportRoot();
+
 UENUM()
 enum class EBEPExportOutputFormat : uint8
 {
@@ -22,13 +25,25 @@ struct FBEPExportSettings
     UPROPERTY()
     FString RootPath = TEXT("/Game");
 
-    /** Disk output root, e.g. C:/BEP_EXPORTS/SOTS or <ProjectSavedDir>/BEPExport */
+    /** Disk output root; if relative or empty, it is placed under <ProjectDir>/BEP_EXPORTS. */
     UPROPERTY()
     FString OutputRootPath;
 
     /** Output format choice */
     UPROPERTY()
     EBEPExportOutputFormat OutputFormat = EBEPExportOutputFormat::Json;
+
+    /** Organize Blueprint flow exports under Blueprint/package folders (recommended). */
+    UPROPERTY()
+    bool bOrganizeBlueprintFlowsByPackagePath = true;
+
+    /** Place each export run under a timestamped subfolder for easier diffing. */
+    UPROPERTY()
+    bool bUseTimestampRunFolder = true;
+
+    /** Preserve the legacy flat BlueprintFlows layout (disables organize/timestamp). */
+    UPROPERTY()
+    bool bUseLegacyFlatBlueprintFlowsLayout = false;
 
     /** Comma- or newline-separated class names / substrings to exclude */
     UPROPERTY()
@@ -40,6 +55,6 @@ struct FBEPExportSettings
 
     FBEPExportSettings()
     {
-        OutputRootPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("BEPExport"));
+        OutputRootPath = GetDefaultBEPExportRoot();
     }
 };

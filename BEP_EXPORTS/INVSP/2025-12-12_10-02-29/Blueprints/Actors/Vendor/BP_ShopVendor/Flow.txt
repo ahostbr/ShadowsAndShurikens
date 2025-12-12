@@ -1,0 +1,2084 @@
+Blueprint: BP_ShopVendor (/Game/InventorySystemPro/Blueprints/Actors/Vendor/BP_ShopVendor.BP_ShopVendor)
+  Graph: EventGraph
+    Node: OnCreateContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Create Contained Items Server
+Target is BP Shop Vendor.execute
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Event OnCloseInventory
+From BPI Inventory (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Close Inventory Client
+Target is BP Shop Vendor.execute
+    Node: Interaction, this should only be called by an Actor with inventory & interaction component (EdGraphNode_Comment)
+    Node: Setup (EdGraphNode_Comment)
+    Node: Inventory logic (EdGraphNode_Comment)
+    Node: Fills the item crate inventory from the raw data in ContainedItems (EdGraphNode_Comment)
+    Node: OnCloseInventory_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Close Inventory Server
+Target is BP Shop Vendor.execute
+    Node: Event OnInteract
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Interact Client
+Target is BP Shop Vendor.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Interact Client
+Target is BP Shop Vendor.PlayerController
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.OtherActor
+    Node: Event ActorEndOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.execute
+      Pin: OtherActor (object) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.OtherActor
+    Node: Overlap events (EdGraphNode_Comment)
+    Node: Begin Overlap
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: End Overlap
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorEndOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorEndOverlap.OtherActor
+    Node: OnRandomizeContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Randomize Contained Items Server
+Target is BP Shop Vendor.execute
+    Node: Generates an array full of raw item data (EdGraphNode_Comment)
+    Node: OnBuyFromVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=Out
+        -> On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).ItemSlot
+      Pin: Amount (int) Dir=Out
+        -> On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).Amount
+      Pin: CurrencyAmount (int) Dir=Out
+        -> On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).CurrencyAmount
+    Node: OnSellToVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=Out
+        -> On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).ItemSlot
+      Pin: Amount (int) Dir=Out
+        -> On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).Amount
+      Pin: CurrencyAmount (int) Dir=Out
+        -> On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).CurrencyAmount
+    Node: Buy from Vendor Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnBuyFromVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerInventoryComponent (object) Dir=In
+        -> OnBuyFromVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=In
+        -> OnBuyFromVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.ItemSlot
+      Pin: Amount (int) Dir=In
+        -> OnBuyFromVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Amount
+      Pin: CurrencyAmount (int) Dir=In
+        -> OnBuyFromVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.CurrencyAmount
+      Pin: bSuccess (bool) Dir=Out
+    Node: Buy & Sell logic (EdGraphNode_Comment)
+    Node: Setup Actor
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Setup Actor
+Target is BP Shop Vendor.execute
+      Pin: self (object) Dir=In
+    Node: Interact Client
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnInteract
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnInteract
+From BPI Interaction.PlayerController
+    Node: Create Contained Items Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCreateContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Randomize Contained Items Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRandomizeContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory Client
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnCloseInventory
+From BPI Inventory.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCloseInventory_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnIncrementTradeAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Increment Trade Amount Client
+Target is BP Shop Vendor.execute
+    Node: OnDecrementTradeAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Decrement Trade Amount Client
+Target is BP Shop Vendor.execute
+    Node: Decrement Trade Amount Client
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnDecrementTradeAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: self (object) Dir=In
+    Node: Increment Trade Amount Client
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnIncrementTradeAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: self (object) Dir=In
+    Node: Update Trade Amount (EdGraphNode_Comment)
+    Node: OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Current Item Server
+Target is BP Shop Vendor.execute
+      Pin: CurrentItemSlot (struct) Dir=Out
+        -> On Update Current Item Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).CurrentItemSlot
+        -> Update Current Item Server
+Target is BP Shop Vendor.CurrentItemSlot
+      Pin: CurrentVendorItem (struct) Dir=Out
+        -> On Update Current Item Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).CurrentVendorItem
+        -> Update Current Item Server
+Target is BP Shop Vendor.CurrentVendorItem
+    Node: Update Current Item Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCurrentItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CurrentItemSlot (struct) Dir=In
+        -> OnUpdateCurrentItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.CurrentItemSlot
+      Pin: CurrentVendorItem (struct) Dir=In
+        -> OnUpdateCurrentItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.CurrentVendorItem
+    Node: Update current workbench item to craft (EdGraphNode_Comment)
+    Node: OnResetTradeAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Reset Trade Amount Client
+Target is BP Shop Vendor.execute
+    Node: Reset Trade Amount Client
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnResetTradeAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnBuyFromVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Buy from Vendor Server
+Target is BP Shop Vendor.execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Buy from Vendor Server
+Target is BP Shop Vendor.PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=Out
+        -> Buy from Vendor Server
+Target is BP Shop Vendor.ItemSlot
+      Pin: Amount (int) Dir=Out
+        -> Buy from Vendor Server
+Target is BP Shop Vendor.Amount
+      Pin: CurrencyAmount (int) Dir=Out
+        -> Buy from Vendor Server
+Target is BP Shop Vendor.CurrencyAmount
+    Node: On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnBuyFromVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Buy Sell Sound
+Target is BP Shop Vendor.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerInventoryComponent (object) Dir=In
+        -> OnBuyFromVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=In
+        -> OnBuyFromVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.ItemSlot
+      Pin: Amount (int) Dir=In
+        -> OnBuyFromVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.Amount
+      Pin: CurrencyAmount (int) Dir=In
+        -> OnBuyFromVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.CurrencyAmount
+    Node: OnSellToVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sell to Vendor Server
+Target is BP Shop Vendor.execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Sell to Vendor Server
+Target is BP Shop Vendor.PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=Out
+        -> Sell to Vendor Server
+Target is BP Shop Vendor.ItemSlot
+      Pin: Amount (int) Dir=Out
+        -> Sell to Vendor Server
+Target is BP Shop Vendor.Amount
+      Pin: CurrencyAmount (int) Dir=Out
+        -> Sell to Vendor Server
+Target is BP Shop Vendor.CurrencyAmount
+    Node: Sell to Vendor Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnSellToVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerInventoryComponent (object) Dir=In
+        -> OnSellToVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=In
+        -> OnSellToVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.ItemSlot
+      Pin: Amount (int) Dir=In
+        -> OnSellToVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Amount
+      Pin: CurrencyAmount (int) Dir=In
+        -> OnSellToVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.CurrencyAmount
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnSellToVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Buy Sell Sound
+Target is BP Shop Vendor.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerInventoryComponent (object) Dir=In
+        -> OnSellToVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.PlayerInventoryComponent
+      Pin: ItemSlot (struct) Dir=In
+        -> OnSellToVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.ItemSlot
+      Pin: Amount (int) Dir=In
+        -> OnSellToVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.Amount
+      Pin: CurrencyAmount (int) Dir=In
+        -> OnSellToVendor_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.CurrencyAmount
+    Node: Update current workbench item to craft (EdGraphNode_Comment)
+    Node: OnUpdateCurrentVendorMode_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Update Current Vendor Mode Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: VendorMode (byte) Dir=Out
+        -> Play Vendor Mode Sound
+Target is BP Shop Vendor.VendorMode
+        -> On Update Current Vendor Mode Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).VendorMode
+    Node: OnUpdateCurrentItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Current Item Server
+Target is BP Shop Vendor.execute
+      Pin: CurrentItemSlot (struct) Dir=Out
+        -> Update Current Item Server
+Target is BP Shop Vendor.CurrentItemSlot
+      Pin: CurrentVendorItem (struct) Dir=Out
+        -> Update Current Item Server
+Target is BP Shop Vendor.CurrentVendorItem
+    Node: On Update Current Item Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Current Item Server
+Target is BP Shop Vendor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CurrentItemSlot (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.CurrentItemSlot
+      Pin: CurrentVendorItem (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.CurrentVendorItem
+    Node: OnOpenShopVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Open Shop Vendor Server
+Target is BP Shop Vendor.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Open Shop Vendor Server
+Target is BP Shop Vendor.PlayerController
+    Node: Open Shop Vendor Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnOpenShopVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> OnOpenShopVendor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.PlayerController
+    Node: OnVendorShopUpdateUI_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Vendor Shop UI Client
+Target is BP Shop Vendor.execute
+    Node: Update Current Item Server
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Update Current Item Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: self (object) Dir=In
+      Pin: CurrentItemSlot (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.CurrentItemSlot
+      Pin: CurrentVendorItem (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.CurrentVendorItem
+    Node: Update Vendor Shop UI Client
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnVendorShopUpdateUI_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Current Vendor Mode
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCurrentVendorMode_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CurrentVendorMode (byte) Dir=In
+        -> OnUpdateCurrentVendorMode_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.VendorMode
+    Node: Play Vendor Mode Sound
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Update Current Vendor Mode Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: VendorMode (byte) Dir=In
+        -> OnUpdateCurrentVendorMode_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.VendorMode
+    Node: Play Vendor Mode Sound
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: VendorMode (byte) Dir=In
+        -> Get CurrentVendorMode.CurrentVendorMode
+    Node: Get CurrentVendorMode (K2Node_VariableGet)
+      Pin: CurrentVendorMode (byte) Dir=Out
+        -> Play Vendor Mode Sound
+Target is BP Shop Vendor.VendorMode
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Interact Client
+Target is BP Shop Vendor.then
+      Pin: then (exec) Dir=Out
+        -> Play Vendor Mode Sound
+Target is BP Shop Vendor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Play Buy Sell Sound
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Buy from Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: VendorMode (byte) Dir=In
+    Node: Play Buy Sell Sound
+Target is BP Shop Vendor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Sell to Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: VendorMode (byte) Dir=In
+    Node: OnUpdateCurrentVendorMode_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Current Vendor Mode
+Target is BP Shop Vendor.execute
+      Pin: VendorMode (byte) Dir=Out
+        -> Update Current Vendor Mode
+Target is BP Shop Vendor.CurrentVendorMode
+    Node: On Update Current Vendor Mode Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCurrentVendorMode_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Vendor Mode Sound
+Target is BP Shop Vendor.execute
+      Pin: self (object) Dir=In
+      Pin: VendorMode (byte) Dir=In
+        -> OnUpdateCurrentVendorMode_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.VendorMode
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Increment Trade Amount Client
+Target is BP Shop Vendor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Decrement Trade Amount Client
+Target is BP Shop Vendor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: New Guid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set UniqueID.UniqueID
+    Node: Equal (Guid) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Equal (Guid).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set UniqueID.execute
+      Pin: else (exec) Dir=Out
+    Node: Generate a unique GUID that is only set once (EdGraphNode_Comment)
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get UniqueID.self
+        -> Set UniqueID.self
+      Pin: self (object) Dir=In
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Equal (Guid).A
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Set UniqueID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: UniqueID (struct) Dir=In
+        -> New Guid.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+  Graph: OpenShopVendor_Server
+    Node: OpenShopVendor_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bPlayerIsUsingActor.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.PlayerController
+        -> Reroute Node.InputPin
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Set bPlayerIsUsingActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OpenShopVendor_Server.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentVendorMode.execute
+      Pin: bPlayerIsUsingActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+      Pin: InitialInventoryState (byte) Dir=In
+      Pin: OtherInventoryComponent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).OtherInventoryComponent
+    Node: Open Shop Vendor (EdGraphNode_Comment)
+    Node: Set References
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentVendorMode.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: PlayerController (object) Dir=In
+        -> OpenShopVendor_Server.PlayerController
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> OpenShopVendor_Server.PlayerController
+      Pin: OutputPin (object) Dir=Out
+        -> Cast To PlayerController.Object
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set References
+Target is BP Inventory Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).PlayerController
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set CurrentVendorMode (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bPlayerIsUsingActor.then
+      Pin: then (exec) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.execute
+      Pin: CurrentVendorMode (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: CreateContainedItems_Server
+    Node: CreateContainedItems_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Bulk Add Items
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+      Pin: Items (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: Amount (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: NewItem (object) Dir=In
+        -> Break FVendor Item.Item_2_EE573D8F4A94BD94DDE68DBE2DE16A91
+      Pin: ReturnValue (int) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> CreateContainedItems_Server.then
+      Pin: Array (struct) Dir=In
+        -> Get ItemsToBuy.ItemsToBuy
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FVendor Item.FVendorItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break FVendor Item (K2Node_BreakStruct)
+      Pin: FVendorItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Item_2_EE573D8F4A94BD94DDE68DBE2DE16A91 (object) Dir=Out
+        -> Add.NewItem
+      Pin: Price_13_6D0A237C4FB8274C3EF0C2B29B6071E9 (int) Dir=Out
+      Pin: Amount_12_654A73114D3116EBB81C82AF94F76640 (int) Dir=Out
+        -> Add.NewItem
+      Pin: RandomChanceToSpawn_24_4DE3ECCF40D444D5612DC185F97A38CB (real) Dir=Out
+      Pin: RandomMinAmount_25_59D4621E452DBA2A407CC9935C19E513 (int) Dir=Out
+      Pin: RandomMaxAmount_26_9832ABA84755483ECCDFCA880B2D0A4F (int) Dir=Out
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: NewItem (int) Dir=In
+        -> Break FVendor Item.Amount_12_654A73114D3116EBB81C82AF94F76640
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.Items
+      Pin: self (object) Dir=In
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.Amount
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.execute
+    Node: Get VendorItemData (K2Node_VariableGet)
+      Pin: VendorItemData (object) Dir=Out
+        -> Get ItemsToBuy.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.self
+      Pin: self (object) Dir=In
+    Node: Create contianed items (EdGraphNode_Comment)
+    Node: Get ItemsToBuy (K2Node_VariableGet)
+      Pin: ItemsToBuy (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get VendorItemData.VendorItemData
+  Graph: RandomizeContainedItems_Server
+    Node: RandomizeContainedItems_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Bulk Add Items
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+      Pin: Items (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: Amount (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> RandomizeContainedItems_Server.then
+      Pin: Array (struct) Dir=In
+        -> Get ItemsToBuy.ItemsToBuy
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FVendor Item.FVendorItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break FVendor Item (K2Node_BreakStruct)
+      Pin: FVendorItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Item_2_EE573D8F4A94BD94DDE68DBE2DE16A91 (object) Dir=Out
+        -> Add.NewItem
+      Pin: Price_13_6D0A237C4FB8274C3EF0C2B29B6071E9 (int) Dir=Out
+      Pin: Amount_12_654A73114D3116EBB81C82AF94F76640 (int) Dir=Out
+        -> Add.NewItem
+      Pin: RandomChanceToSpawn_24_4DE3ECCF40D444D5612DC185F97A38CB (real) Dir=Out
+        -> float >= float.A
+      Pin: RandomMinAmount_25_59D4621E452DBA2A407CC9935C19E513 (int) Dir=Out
+        -> Random Integer in Range.Min
+      Pin: RandomMaxAmount_26_9832ABA84755483ECCDFCA880B2D0A4F (int) Dir=Out
+        -> Random Integer in Range.Max
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.Items
+      Pin: self (object) Dir=In
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.Amount
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.execute
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.self
+      Pin: self (object) Dir=In
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: NewItem (object) Dir=In
+        -> Break FVendor Item.Item_2_EE573D8F4A94BD94DDE68DBE2DE16A91
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: NewItem (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float >= float.B
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break FVendor Item.RandomChanceToSpawn_24_4DE3ECCF40D444D5612DC185F97A38CB
+      Pin: B (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+        -> Break FVendor Item.RandomMinAmount_25_59D4621E452DBA2A407CC9935C19E513
+      Pin: Max (int) Dir=In
+        -> Break FVendor Item.RandomMaxAmount_26_9832ABA84755483ECCDFCA880B2D0A4F
+      Pin: ReturnValue (int) Dir=Out
+        -> Add.NewItem
+        -> integer > integer.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get bRandomizeItemAmount (K2Node_VariableGet)
+      Pin: bRandomizeItemAmount (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get bRandomizeItemAmount.bRandomizeItemAmount
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Add.execute
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: NewItem (int) Dir=In
+        -> Break FVendor Item.Amount_12_654A73114D3116EBB81C82AF94F76640
+      Pin: ReturnValue (int) Dir=Out
+    Node: Randomize contained items (EdGraphNode_Comment)
+    Node: Get VendorItemData (K2Node_VariableGet)
+      Pin: VendorItemData (object) Dir=Out
+        -> Get ItemsToBuy.self
+      Pin: self (object) Dir=In
+    Node: Get ItemsToBuy (K2Node_VariableGet)
+      Pin: ItemsToBuy (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get VendorItemData.VendorItemData
+  Graph: UpdateCurrentItem_Server
+    Node: UpdateCurrentItem_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set TradeAmount.execute
+      Pin: CurrentItemSlot (struct) Dir=Out
+        -> Set CurrentItemSlot.CurrentItemSlot
+      Pin: CurrentVendorItem (struct) Dir=Out
+        -> Set CurrentVendorItem.CurrentVendorItem
+    Node: Set CurrentItemSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TradeAmount.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentVendorItem.execute
+      Pin: CurrentItemSlot (struct) Dir=In
+        -> UpdateCurrentItem_Server.CurrentItemSlot
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update current item  (EdGraphNode_Comment)
+    Node: Set TradeAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateCurrentItem_Server.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentItemSlot.execute
+      Pin: TradeAmount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CurrentVendorItem (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentItemSlot.then
+      Pin: then (exec) Dir=Out
+        -> On Vendor Shop Update UI Client
+Target is BP Shop Vendor
+Replicated To Owning Client (if server).execute
+      Pin: CurrentVendorItem (struct) Dir=In
+        -> UpdateCurrentItem_Server.CurrentVendorItem
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Vendor Shop Update UI Client
+Target is BP Shop Vendor
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentVendorItem.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: BuyFromVendor_Server
+    Node: BuyFromVendor_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EVendorMode.execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Remove Currency
+Target is BP Inventory Component.self
+        -> Get Currency
+Target is BP Inventory Component.self
+        -> Add Item to Known Items
+Target is BP Inventory Component.self
+        -> Add Item Simple
+Target is BP Inventory Component.self
+      Pin: ItemSlot (struct) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.ItemSlotToRemove
+        -> Break FItem Slot.FItemSlot
+      Pin: Amount (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: CurrencyAmount (int) Dir=Out
+        -> integer >= integer.B
+        -> Reroute Node.InputPin
+    Node: Players buys item from Vendor (EdGraphNode_Comment)
+    Node: Remove Item by Amount
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+      Pin: ItemSlotToRemove (struct) Dir=In
+        -> BuyFromVendor_Server.ItemSlot
+      Pin: AmountToRemove (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bItemRemoved (bool) Dir=Out
+        -> Branch.Condition
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> BuyFromVendor_Server.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Set TempItem.TempItem
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Remove Currency
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Item Simple
+Target is BP Inventory Component.then
+      Pin: then (exec) Dir=Out
+        -> Add Item to Known Items
+Target is BP Inventory Component.execute
+      Pin: self (object) Dir=In
+        -> BuyFromVendor_Server.PlayerInventoryComponent
+      Pin: CurrencyAmount (int) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Currency
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> BuyFromVendor_Server.PlayerInventoryComponent
+      Pin: CurrencyAmount (int) Dir=Out
+        -> integer >= integer.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bSuccess (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Add Item to Known Items
+Target is BP Inventory Component.then
+      Pin: bSuccess (bool) Dir=In
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Currency
+Target is BP Inventory Component.CurrencyAmount
+      Pin: B (int) Dir=In
+        -> BuyFromVendor_Server.CurrencyAmount
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.self
+      Pin: self (object) Dir=In
+    Node: Set TempItem (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EVendorMode.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: TempItem (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+      Pin: Output_Get (object) Dir=Out
+    Node: Get TempItem (K2Node_VariableGet)
+      Pin: TempItem (object) Dir=Out
+        -> Add Item to Known Items
+Target is BP Inventory Component.NewKnownItem
+        -> Add Item Simple
+Target is BP Inventory Component.ItemToAdd
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Remove Currency
+Target is BP Inventory Component.CurrencyAmount
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> BuyFromVendor_Server.CurrencyAmount
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> integer >= integer.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> BuyFromVendor_Server.Amount
+      Pin: OutputPin (int) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.AmountToRemove
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Add Item Simple
+Target is BP Inventory Component.AddAmount
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Remove Item by Amount
+Target is BP Inventory Component.then
+      Pin: Condition (bool) Dir=In
+        -> Remove Item by Amount
+Target is BP Inventory Component.bItemRemoved
+      Pin: then (exec) Dir=Out
+        -> Add Item Simple
+Target is BP Inventory Component.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bSuccess (bool) Dir=In
+    Node: Add Item to Known Items
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove Currency
+Target is BP Inventory Component.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> BuyFromVendor_Server.PlayerInventoryComponent
+      Pin: NewKnownItem (object) Dir=In
+        -> Get TempItem.TempItem
+    Node: Get CurrentVendorMode (K2Node_VariableGet)
+      Pin: CurrentVendorMode (byte) Dir=Out
+        -> Switch on EVendorMode.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on EVendorMode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> BuyFromVendor_Server.then
+      Pin: Selection (byte) Dir=In
+        -> Get CurrentVendorMode.CurrentVendorMode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Set TempItem.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set TempItem.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Add Item Simple
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Remove Currency
+Target is BP Inventory Component.execute
+      Pin: self (object) Dir=In
+        -> BuyFromVendor_Server.PlayerInventoryComponent
+      Pin: ItemToAdd (object) Dir=In
+        -> Get TempItem.TempItem
+      Pin: AddAmount (int) Dir=In
+        -> Reroute Node.OutputPin
+  Graph: SellToVendor_Server
+    Node: SellToVendor_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EVendorMode.execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.self
+        -> Add Currency
+Target is BP Inventory Component.self
+      Pin: ItemSlot (struct) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.ItemSlotToRemove
+        -> Break FItem Slot.FItemSlot
+      Pin: Amount (int) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.AmountToRemove
+      Pin: CurrencyAmount (int) Dir=Out
+        -> Add Currency
+Target is BP Inventory Component.CurrencyAmount
+    Node: Player sells item to vendor (EdGraphNode_Comment)
+    Node: Remove Item by Amount
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> SellToVendor_Server.PlayerInventoryComponent
+      Pin: ItemSlotToRemove (struct) Dir=In
+        -> SellToVendor_Server.ItemSlot
+      Pin: AmountToRemove (int) Dir=In
+        -> SellToVendor_Server.Amount
+      Pin: bItemRemoved (bool) Dir=Out
+        -> Branch.Condition
+    Node: Add Currency
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> SellToVendor_Server.PlayerInventoryComponent
+      Pin: CurrencyAmount (int) Dir=In
+        -> SellToVendor_Server.CurrencyAmount
+      Pin: Item (object) Dir=In
+        -> Get CurrencyItem.CurrencyItem
+      Pin: bHidePickupNotification (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Remove Item by Amount
+Target is BP Inventory Component.then
+      Pin: Condition (bool) Dir=In
+        -> Remove Item by Amount
+Target is BP Inventory Component.bItemRemoved
+      Pin: then (exec) Dir=Out
+        -> Add Currency
+Target is BP Inventory Component.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bSuccess (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Add Currency
+Target is BP Inventory Component.then
+      Pin: bSuccess (bool) Dir=In
+    Node: Is Item Sale Allowed (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Item (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+      Pin: bSaleIsAllowed (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on EVendorMode.NewEnumerator1
+      Pin: Condition (bool) Dir=In
+        -> Is Item Sale Allowed.bSaleIsAllowed
+      Pin: then (exec) Dir=Out
+        -> Remove Item by Amount
+Target is BP Inventory Component.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bSuccess (bool) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> SellToVendor_Server.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Is Item Sale Allowed.Item
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get CurrentVendorMode (K2Node_VariableGet)
+      Pin: CurrentVendorMode (byte) Dir=Out
+        -> Switch on EVendorMode.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on EVendorMode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> SellToVendor_Server.then
+      Pin: Selection (byte) Dir=In
+        -> Get CurrentVendorMode.CurrentVendorMode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Get CurrencyItem (K2Node_VariableGet)
+      Pin: CurrencyItem (object) Dir=Out
+        -> Add Currency
+Target is BP Inventory Component.Item
+      Pin: self (object) Dir=In
+  Graph: DecrementTradeAmount_Client
+    Node: DecrementTradeAmount_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Reduces the crafting amount (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> DecrementTradeAmount_Client.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> On Vendor Shop Update UI Client
+Target is BP Shop Vendor
+Replicated To Owning Client (if server).execute
+    Node: Decrement Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Branch.then
+      Pin: Value (int) Dir=In
+        -> Get TradeAmount.TradeAmount
+      Pin:    (exec) Dir=Out
+      Pin: Result (int) Dir=Out
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get TradeAmount.TradeAmount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Decrement Int. 
+      Pin: else (exec) Dir=Out
+        -> Set TradeAmount.execute
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get CurrentItemSlot.CurrentItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+        -> Set TradeAmount.TradeAmount
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get CurrentItemSlot (K2Node_VariableGet)
+      Pin: CurrentItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Get TradeAmount (K2Node_VariableGet)
+      Pin: TradeAmount (int) Dir=Out
+        -> Decrement Int.Value
+        -> integer > integer.A
+      Pin: self (object) Dir=In
+    Node: Set TradeAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: TradeAmount (int) Dir=In
+        -> Break FItem Slot.Amount_5_93873189485FCC0525EAD39BD80340CF
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Vendor Shop Update UI Client
+Target is BP Shop Vendor
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: IncrementTradeAmount_Client
+    Node: IncrementTradeAmount_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Increase the crafting amount (EdGraphNode_Comment)
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Branch.then
+      Pin: Value (int) Dir=In
+        -> Get TradeAmount.TradeAmount
+      Pin:    (exec) Dir=Out
+      Pin: Result (int) Dir=Out
+    Node: integer < integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get TradeAmount.TradeAmount
+      Pin: B (int) Dir=In
+        -> Break FItem Slot.Amount_5_93873189485FCC0525EAD39BD80340CF
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get CurrentItemSlot.CurrentItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+        -> integer < integer.B
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> integer < integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: else (exec) Dir=Out
+        -> Set TradeAmount.execute
+    Node: Get TradeAmount (K2Node_VariableGet)
+      Pin: TradeAmount (int) Dir=Out
+        -> Increment Int.Value
+        -> integer < integer.A
+      Pin: self (object) Dir=In
+    Node: Set TradeAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: TradeAmount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CurrentItemSlot (K2Node_VariableGet)
+      Pin: CurrentItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> IncrementTradeAmount_Client.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> On Vendor Shop Update UI Client
+Target is BP Shop Vendor
+Replicated To Owning Client (if server).execute
+    Node: On Vendor Shop Update UI Client
+Target is BP Shop Vendor
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: ResetTradeAmount_Client
+    Node: ResetTradeAmount_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set TradeAmount.execute
+    Node: Reduces the crafting amount (EdGraphNode_Comment)
+    Node: Set TradeAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ResetTradeAmount_Client.then
+      Pin: then (exec) Dir=Out
+      Pin: TradeAmount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: SetupActor
+    Node: SetupActor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Authority (exec) Dir=Out
+        -> Branch.execute
+      Pin: Remote (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> SetupActor.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set InteractionArea.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Switch Has Authority.Execute
+    Node: Get InteractionArea (K2Node_VariableGet)
+      Pin: InteractionArea (object) Dir=Out
+        -> Set InteractionArea.InteractionArea
+      Pin: self (object) Dir=In
+    Node: Get InteractionCollision (K2Node_VariableGet)
+      Pin: InteractionCollision (object) Dir=Out
+        -> Set InteractionCollision.InteractionCollision
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionArea.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionCollision.self
+      Pin: self (object) Dir=In
+    Node: Set InteractionArea (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set InteractionCollision.execute
+      Pin: InteractionArea (object) Dir=In
+        -> Get InteractionArea.InteractionArea
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Set InteractionCollision (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionArea.then
+      Pin: then (exec) Dir=Out
+        -> Set InteractionPopupAnchor.execute
+      Pin: InteractionCollision (object) Dir=In
+        -> Get InteractionCollision.InteractionCollision
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Set InteractionPopupAnchor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionCollision.then
+      Pin: then (exec) Dir=Out
+      Pin: InteractionPopupAnchor (object) Dir=In
+        -> Get InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Get InteractionPopupAnchor (K2Node_VariableGet)
+      Pin: InteractionPopupAnchor (object) Dir=Out
+        -> Set InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionPopupAnchor.self
+      Pin: self (object) Dir=In
+    Node: On Create Contained Items Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get bRandomizeItems (K2Node_VariableGet)
+      Pin: bRandomizeItems (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: Condition (bool) Dir=In
+        -> Get bRandomizeItems.bRandomizeItems
+      Pin: then (exec) Dir=Out
+        -> On Randomize Contained Items Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: else (exec) Dir=Out
+        -> On Create Contained Items Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Randomize Contained Items Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+  Graph: Interact_Client
+    Node: Interact_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PlayerController (object) Dir=Out
+        -> On Open Shop Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Interact_Client.then
+      Pin: Condition (bool) Dir=In
+        -> Get bPlayerIsUsingActor.bPlayerIsUsingActor
+      Pin: then (exec) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).execute
+      Pin: else (exec) Dir=Out
+        -> On Open Shop Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Get bPlayerIsUsingActor (K2Node_VariableGet)
+      Pin: bPlayerIsUsingActor (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Interaction (EdGraphNode_Comment)
+    Node: On Open Shop Vendor Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Interact_Client.PlayerController
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Interact_Client.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).self
+    Node: On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+  Graph: CloseInventory_Client
+    Node: CloseInventory_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> On Close Inventory Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Close Inventory Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CloseInventory_Client.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> On Close Inventory
+Target is BPI Inventory.self
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Close Inventory Server
+Target is BP Shop Vendor
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+        -> On Close Inventory
+Target is BPI Inventory.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Close Inventory
+Target is BPI Inventory (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+    Node: Close inventory client (EdGraphNode_Comment)
+  Graph: CloseInventory_Server
+    Node: CloseInventory_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bPlayerIsUsingActor.execute
+    Node: Set bPlayerIsUsingActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> CloseInventory_Server.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentVendorMode.execute
+      Pin: bPlayerIsUsingActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory (EdGraphNode_Comment)
+    Node: Set CurrentVendorMode (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bPlayerIsUsingActor.then
+      Pin: then (exec) Dir=Out
+      Pin: CurrentVendorMode (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UpdateVendorShopUI_Client
+    Node: UpdateVendorShopUI_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Output (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Update Menu from Actor
+Target is WBP Inventory Menu.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> UpdateVendorShopUI_Client.then
+      Pin: InputObject (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: Is Valid (exec) Dir=Out
+        -> Update Menu from Actor
+Target is WBP Inventory Menu.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (softobject) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Trigger a UI update from this actor (EdGraphNode_Comment)
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get InventoryMenu.self
+      Pin: self (object) Dir=In
+    Node: Update Menu from Actor
+Target is WBP Inventory Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Resolve Soft Reference.Output
+  Graph: UpdateCurrentVendorMode
+    Node: UpdateCurrentVendorMode (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set CurrentVendorMode.execute
+      Pin: CurrentVendorMode (byte) Dir=Out
+        -> Set CurrentVendorMode.CurrentVendorMode
+    Node: Set CurrentVendorMode (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateCurrentVendorMode.then
+      Pin: then (exec) Dir=Out
+      Pin: CurrentVendorMode (byte) Dir=In
+        -> UpdateCurrentVendorMode.CurrentVendorMode
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Current Vendor Mode (EdGraphNode_Comment)
+  Graph: PlayVendorModeSound
+    Node: PlayVendorModeSound (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EVendorMode.execute
+      Pin: VendorMode (byte) Dir=Out
+        -> Switch on EVendorMode.Selection
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Play Sound 2D.then
+        -> Play Sound 2D.then
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EVendorMode.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get BuyModeSound.BuyModeSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+        -> Self-Reference.self
+      Pin: bIsUISound (bool) Dir=In
+    Node: Switch on EVendorMode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> PlayVendorModeSound.then
+      Pin: Selection (byte) Dir=In
+        -> PlayVendorModeSound.VendorMode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Play Sound 2D.execute
+    Node: Get BuyModeSound (K2Node_VariableGet)
+      Pin: BuyModeSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EVendorMode.NewEnumerator1
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get SellModeSound.SellModeSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+        -> Self-Reference.self
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get SellModeSound (K2Node_VariableGet)
+      Pin: SellModeSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Play Sound 2D.OwningActor
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Play Sound 2D.OwningActor
+    Node: Play Sound when switching between Buy and Sell (EdGraphNode_Comment)
+  Graph: PlayBuySellSound
+    Node: PlayBuySellSound (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EVendorMode.execute
+      Pin: VendorMode (byte) Dir=Out
+        -> Switch on EVendorMode.Selection
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Play Sound 2D.then
+        -> Play Sound 2D.then
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EVendorMode.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get BuySound.BuySound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Switch on EVendorMode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> PlayBuySellSound.then
+      Pin: Selection (byte) Dir=In
+        -> PlayBuySellSound.VendorMode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Play Sound 2D.execute
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EVendorMode.NewEnumerator1
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get SellSound.SellSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get BuySound (K2Node_VariableGet)
+      Pin: BuySound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+    Node: Get SellSound (K2Node_VariableGet)
+      Pin: SellSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+    Node: Play Sound on Buy or Sale (EdGraphNode_Comment)
+  Graph: IsItemSaleAllowed
+    Node: IsItemSaleAllowed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: Item (object) Dir=Out
+        -> Equal (Object).B
+    Node: Get VendorItemData (K2Node_VariableGet)
+      Pin: VendorItemData (object) Dir=Out
+        -> Get ItemsToSell.self
+      Pin: self (object) Dir=In
+    Node: Get ItemsToSell (K2Node_VariableGet)
+      Pin: ItemsToSell (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get VendorItemData.VendorItemData
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> IsItemSaleAllowed.then
+      Pin: Array (struct) Dir=In
+        -> Get ItemsToSell.ItemsToSell
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FVendor Item.FVendorItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break FVendor Item (K2Node_BreakStruct)
+      Pin: FVendorItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Item_2_EE573D8F4A94BD94DDE68DBE2DE16A91 (object) Dir=Out
+        -> Equal (Object).A
+      Pin: Price_13_6D0A237C4FB8274C3EF0C2B29B6071E9 (int) Dir=Out
+      Pin: Amount_12_654A73114D3116EBB81C82AF94F76640 (int) Dir=Out
+      Pin: RandomChanceToSpawn_24_4DE3ECCF40D444D5612DC185F97A38CB (real) Dir=Out
+      Pin: RandomMinAmount_25_59D4621E452DBA2A407CC9935C19E513 (int) Dir=Out
+      Pin: RandomMaxAmount_26_9832ABA84755483ECCDFCA880B2D0A4F (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: bSaleIsAllowed (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: bSaleIsAllowed (bool) Dir=In
+    Node: Check if Sale of an Item is allowed at this Vendor (EdGraphNode_Comment)
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Break FVendor Item.Item_2_EE573D8F4A94BD94DDE68DBE2DE16A91
+      Pin: B (object) Dir=In
+        -> IsItemSaleAllowed.Item
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In

@@ -1,0 +1,1519 @@
+Blueprint: BP_LightStudio (/Game/CoreGameFramework/EpicExampleContent/StarterContent/Blueprints/BP_LightStudio.BP_LightStudio)
+  Graph: EventGraph
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Set Default Brightness
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set World Location
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Disable Sun Disk
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewBrightness (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Calculate Sun Color
+Target is BP Light Studio.then
+      Pin: then (exec) Dir=Out
+        -> Set Light Color
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewIntensity (real) Dir=In
+        -> Get SunBrightness.SunBrightness
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Atmosphere Density
+Target is BP Light Studio.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: then_4 (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: then_5 (exec) Dir=Out
+        -> Recapture Sky
+Target is Sky Light Component.execute
+    Node: Get SunBrightness (K2Node_VariableGet)
+      Pin: SunBrightness (real) Dir=Out
+        -> float * float.A
+        -> Set Intensity
+Target is Light Component.NewIntensity
+      Pin: self (object) Dir=In
+    Node: Set Light Color
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Intensity
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Atmosphere Sun Light
+Target is Directional Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewLightColor (struct) Dir=In
+        -> Get LightColor.LightColor
+      Pin: bSRGB (bool) Dir=In
+    Node: Get SunDirectionalLight (K2Node_VariableGet)
+      Pin: SunDirectionalLight (object) Dir=Out
+        -> Set Intensity
+Target is Light Component.self
+        -> Set Light Color
+Target is Light Component.self
+        -> Set Dynamic Shadow Distance Movable Light
+Target is Directional Light Component.self
+        -> Set Atmosphere Sun Light
+Target is Directional Light Component.self
+        -> Set Dynamic Shadow Distance Stationary Light
+Target is Directional Light Component.self
+      Pin: self (object) Dir=In
+    Node: Get Skybox (K2Node_VariableGet)
+      Pin: Skybox (object) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: self (object) Dir=In
+        -> Get Skybox.Skybox
+      Pin: NewRotation (struct) Dir=In
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Skybox (EdGraphNode_Comment)
+    Node: Disable Sun Disk
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Default Brightness
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Disable Ground Scattering
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewSunDisk (bool) Dir=In
+        -> Get DisableSunDisk.DisableSunDisk
+    Node: Get DisableSunDisk (K2Node_VariableGet)
+      Pin: DisableSunDisk (bool) Dir=Out
+        -> Disable Sun Disk
+Target is Atmospheric Fog Component.NewSunDisk
+      Pin: self (object) Dir=In
+    Node: Set Sun Multiplier
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Ground Scattering
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Default Light Color
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewSunMultiplier (real) Dir=In
+        -> Get AtmosphereBrightness.AtmosphereBrightness
+    Node: Get AtmosphereBrightness (K2Node_VariableGet)
+      Pin: AtmosphereBrightness (real) Dir=Out
+        -> Set Sun Multiplier
+Target is Atmospheric Fog Component.NewSunMultiplier
+      Pin: self (object) Dir=In
+    Node: Get PrevisArrow (K2Node_VariableGet)
+      Pin: PrevisArrow (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+        -> Set PrevisArrowMaterial.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set PrevisArrowMaterial.PrevisArrowMaterial
+    Node: Set PrevisArrowMaterial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Material
+Target is Primitive Component.execute
+      Pin: PrevisArrowMaterial (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PrevisArrowMaterial (K2Node_VariableGet)
+      Pin: PrevisArrowMaterial (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Material
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PrevisArrowMaterial.PrevisArrowMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Get LightColor.LightColor
+    Node: Set Material
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set PrevisArrowMaterial.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get PrevisArrow.PrevisArrow
+      Pin: ElementIndex (int) Dir=In
+      Pin: Material (object) Dir=In
+        -> Get PrevisArrowMaterial.PrevisArrowMaterial
+    Node: Get PrevisArrowMaterial (K2Node_VariableGet)
+      Pin: PrevisArrowMaterial (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.Material
+      Pin: self (object) Dir=In
+    Node: Get LightColor (K2Node_VariableGet)
+      Pin: LightColor (struct) Dir=Out
+        -> Set Light Color
+Target is Light Component.NewLightColor
+      Pin: self (object) Dir=In
+    Node: Get LightColor (K2Node_VariableGet)
+      Pin: LightColor (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Sun Mobility
+Target is BP Light Studio (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Calculate Sun Color
+Target is BP Light Studio.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: Condition (bool) Dir=In
+        -> Get UseSunLight.UseSunLight
+      Pin: then (exec) Dir=Out
+        -> Sun Mobility
+Target is BP Light Studio.execute
+      Pin: else (exec) Dir=Out
+    Node: Get UseSunLight (K2Node_VariableGet)
+      Pin: UseSunLight (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Calculate Sun Color
+Target is BP Light Studio (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sun Mobility
+Target is BP Light Studio.then
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+    Node: Directional Light Properties (EdGraphNode_Comment)
+    Node: Atmosphere Properties - NOTE: AtmosphericFog is deprecated, some fonctionality are disabled (EdGraphNode_Comment)
+    Node: PrevisComponents (EdGraphNode_Comment)
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Atmosphere Density
+Target is BP Light Studio.then
+      Pin: then (exec) Dir=Out
+        -> Set World Location
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: bNewVisibility (bool) Dir=In
+        -> Get UseAtmosphere.UseAtmosphere
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get UseAtmosphere (K2Node_VariableGet)
+      Pin: UseAtmosphere (bool) Dir=Out
+        -> Set Visibility
+Target is Scene Component.bNewVisibility
+      Pin: self (object) Dir=In
+    Node: Set Default Light Color
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Sun Multiplier
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Distance Scale
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewLightColor (struct) Dir=In
+        -> Get AtmosphereTint.AtmosphereTint
+    Node: Get AtmosphereTint (K2Node_VariableGet)
+      Pin: AtmosphereTint (struct) Dir=Out
+        -> Set Default Light Color
+Target is Atmospheric Fog Component.NewLightColor
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get GlobalBrightness.GlobalBrightness
+      Pin: B (real) Dir=In
+        -> Get AtmosphereBrightness.AtmosphereBrightness
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Default Brightness
+Target is Atmospheric Fog Component.NewBrightness
+    Node: Get GlobalBrightness (K2Node_VariableGet)
+      Pin: GlobalBrightness (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Get AtmosphereBrightness (K2Node_VariableGet)
+      Pin: AtmosphereBrightness (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get SunBrightness.SunBrightness
+      Pin: B (real) Dir=In
+        -> Get GlobalBrightness.GlobalBrightness
+      Pin: ReturnValue (real) Dir=Out
+    Node: Get GlobalBrightness (K2Node_VariableGet)
+      Pin: GlobalBrightness (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: Set up Light (EdGraphNode_Comment)
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_4
+      Pin: then (exec) Dir=Out
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: bNewVisibility (bool) Dir=In
+        -> Get UseFog.UseFog
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get UseFog (K2Node_VariableGet)
+      Pin: UseFog (bool) Dir=Out
+        -> Set Visibility
+Target is Scene Component.bNewVisibility
+      Pin: self (object) Dir=In
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Fog Inscattering Color
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Fog Max Opacity
+Target is Exponential Height Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: Value (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+    Node: Get LightColor (K2Node_VariableGet)
+      Pin: LightColor (struct) Dir=Out
+        -> Lerp (LinearColor).A
+      Pin: self (object) Dir=In
+    Node: Get FogTint (K2Node_VariableGet)
+      Pin: FogTint (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+      Pin: self (object) Dir=In
+    Node: LinearColor * LinearColor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get FogTint.FogTint
+      Pin: B (struct) Dir=In
+        -> To LinearColor (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor * LinearColor.B
+    Node: LinearColor * LinearColor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Lerp (LinearColor).ReturnValue
+      Pin: B (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.Value
+    Node: Get GlobalBrightness (K2Node_VariableGet)
+      Pin: GlobalBrightness (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get GlobalBrightness.GlobalBrightness
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> To LinearColor (Float).InDouble
+    Node: Get FogBrightness (K2Node_VariableGet)
+      Pin: FogBrightness (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set Fog Max Opacity
+Target is Exponential Height Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Fog Max Opacity
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Fog Height Falloff
+Target is Exponential Height Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: Value (real) Dir=In
+        -> Get FogMaxOpacity.FogMaxOpacity
+    Node: Get FogMaxOpacity (K2Node_VariableGet)
+      Pin: FogMaxOpacity (real) Dir=Out
+        -> Set Fog Max Opacity
+Target is Exponential Height Fog Component.Value
+      Pin: self (object) Dir=In
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set Fog Height Falloff
+Target is Exponential Height Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Fog Height Falloff
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Fog Max Opacity
+Target is Exponential Height Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Fog Density
+Target is Exponential Height Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: Value (real) Dir=In
+        -> Get FogHeightFalloff.FogHeightFalloff
+    Node: Get FogHeightFalloff (K2Node_VariableGet)
+      Pin: FogHeightFalloff (real) Dir=Out
+        -> Set Fog Height Falloff
+Target is Exponential Height Fog Component.Value
+      Pin: self (object) Dir=In
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set Fog Density
+Target is Exponential Height Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Fog Density
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Fog Height Falloff
+Target is Exponential Height Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Start Distance
+Target is Exponential Height Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: Value (real) Dir=In
+        -> Get FogDensity.FogDensity
+    Node: Get FogDensity (K2Node_VariableGet)
+      Pin: FogDensity (real) Dir=Out
+        -> Set Fog Density
+Target is Exponential Height Fog Component.Value
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get FogBrightness.FogBrightness
+      Pin: B (real) Dir=In
+        -> Get Float Value
+Target is Curve Float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: Get FogBrightnessCurve (K2Node_VariableGet)
+      Pin: FogBrightnessCurve (object) Dir=Out
+        -> Get Float Value
+Target is Curve Float.self
+      Pin: self (object) Dir=In
+    Node: Get Float Value
+Target is Curve Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get FogBrightnessCurve.FogBrightnessCurve
+      Pin: InTime (real) Dir=In
+        -> Normalized Sun Angle.Angle
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: Normalized Sun Angle (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Angle (real) Dir=Out
+        -> Get Float Value
+Target is Curve Float.InTime
+    Node: To LinearColor (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor * LinearColor.B
+    Node: CalculateFogBrightness (EdGraphNode_Comment)
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set Start Distance
+Target is Exponential Height Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Start Distance
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Fog Density
+Target is Exponential Height Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set World Location
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: Value (real) Dir=In
+        -> Get FogStartDistance.FogStartDistance
+    Node: Get FogStartDistance (K2Node_VariableGet)
+      Pin: FogStartDistance (real) Dir=Out
+        -> Set Start Distance
+Target is Exponential Height Fog Component.Value
+      Pin: self (object) Dir=In
+    Node: Get ExponentialHeightFog1 (K2Node_VariableGet)
+      Pin: ExponentialHeightFog1 (object) Dir=Out
+        -> Set World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Start Distance
+Target is Exponential Height Fog Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog1.ExponentialHeightFog1
+      Pin: NewLocation (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Fog Colors (EdGraphNode_Comment)
+    Node: Fog Parameters (EdGraphNode_Comment)
+    Node: Get AtmosphereDistanceScale (K2Node_VariableGet)
+      Pin: AtmosphereDistanceScale (real) Dir=Out
+        -> Set Distance Scale
+Target is Atmospheric Fog Component.NewDistanceScale
+      Pin: self (object) Dir=In
+    Node: Set Distance Scale
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Default Light Color
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Density Multiplier
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewDistanceScale (real) Dir=In
+        -> Get AtmosphereDistanceScale.AtmosphereDistanceScale
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set World Rotation
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set SkyboxMaterial.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+        -> Select.ReturnValue
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set SkyboxMaterial.SkyboxMaterial
+    Node: Set SkyboxMaterial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: SkyboxMaterial (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Skybox (K2Node_VariableGet)
+      Pin: Skybox (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Material
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get Skybox.Skybox
+      Pin: ElementIndex (int) Dir=In
+      Pin: Material (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.Material
+      Pin: self (object) Dir=In
+    Node: Get Use_HDRI (K2Node_VariableGet)
+      Pin: Use_HDRI (bool) Dir=Out
+        -> Select.Index
+        -> Set Visibility
+Target is Scene Component.bNewVisibility
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Material
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get HDRI_Brightness (K2Node_VariableGet)
+      Pin: HDRI_Brightness (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> Get HDRI_Cubemap.HDRI_Cubemap
+    Node: Get HDRI_Cubemap (K2Node_VariableGet)
+      Pin: HDRI_Cubemap (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+    Node: Get HDRI_Rotation (K2Node_VariableGet)
+      Pin: HDRI_Rotation (real) Dir=Out
+        -> float + float.B
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Get HDRI_Tint.HDRI_Tint
+    Node: Get HDRI_Tint (K2Node_VariableGet)
+      Pin: HDRI_Tint (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get HDRI_Brightness.HDRI_Brightness
+      Pin: B (real) Dir=In
+        -> Get GlobalBrightness.GlobalBrightness
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Get GlobalBrightness (K2Node_VariableGet)
+      Pin: GlobalBrightness (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: Set World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Default Brightness
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewLocation (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+        -> Get AtmosphereAltitude.AtmosphereAltitude
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Location
+Target is Scene Component.NewLocation
+    Node: Get AtmosphereAltitude (K2Node_VariableGet)
+      Pin: AtmosphereAltitude (real) Dir=Out
+        -> Make Vector.Z
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get AtmosphereOpacityHorizon.AtmosphereOpacityHorizon
+    Node: Get AtmosphereOpacityHorizon (K2Node_VariableGet)
+      Pin: AtmosphereOpacityHorizon (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get AtmosphereOpacityZenith.AtmosphereOpacityZenith
+    Node: Get AtmosphereOpacityZenith (K2Node_VariableGet)
+      Pin: AtmosphereOpacityZenith (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Disable Ground Scattering
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Sun Disk
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Sun Multiplier
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewGroundScattering (bool) Dir=In
+        -> Get DisableGroundScattering.DisableGroundScattering
+    Node: Get DisableGroundScattering (K2Node_VariableGet)
+      Pin: DisableGroundScattering (bool) Dir=Out
+        -> Disable Ground Scattering
+Target is Atmospheric Fog Component.NewGroundScattering
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Default Brightness
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Disable Sun Disk
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Sun Multiplier
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Default Light Color
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Distance Scale
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Disable Ground Scattering
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Atmosphere Density
+Target is BP Light Studio (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: HDRI Parameters (EdGraphNode_Comment)
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+        -> Get FogAltitude.FogAltitude
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Location
+Target is Scene Component.NewLocation
+    Node: Get FogAltitude (K2Node_VariableGet)
+      Pin: FogAltitude (real) Dir=Out
+        -> Make Vector.Z
+      Pin: self (object) Dir=In
+    Node: Get SkyboxMaterial (K2Node_VariableGet)
+      Pin: SkyboxMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SkyboxMaterial.SkyboxMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get HDRI_Contrast.HDRI_Contrast
+    Node: Get HDRI_Contrast (K2Node_VariableGet)
+      Pin: HDRI_Contrast (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Get SkyLight1 (K2Node_VariableGet)
+      Pin: SkyLight1 (object) Dir=Out
+        -> Recapture Sky
+Target is Sky Light Component.self
+        -> Destroy Component
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Recapture Sky
+Target is Sky Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_5
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get SkyLight1.SkyLight1
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Recapture Sky
+Target is Sky Light Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get UseSkylight.UseSkylight
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Destroy Component
+Target is Actor Component.execute
+    Node: Destroy Component
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SkyLight1.SkyLight1
+      Pin: Object (object) Dir=In
+    Node: Get UseSkylight (K2Node_VariableGet)
+      Pin: UseSkylight (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set Dynamic Shadow Distance Movable Light
+Target is Directional Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Atmosphere Sun Light
+Target is Directional Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Dynamic Shadow Distance Stationary Light
+Target is Directional Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewValue (real) Dir=In
+        -> Get Shadowdistance.Shadowdistance
+    Node: Get Shadowdistance (K2Node_VariableGet)
+      Pin: Shadowdistance (real) Dir=Out
+        -> Set Dynamic Shadow Distance Movable Light
+Target is Directional Light Component.NewValue
+        -> Set Dynamic Shadow Distance Stationary Light
+Target is Directional Light Component.NewValue
+      Pin: self (object) Dir=In
+    Node: Get SunDirectionalLight (K2Node_VariableGet)
+      Pin: SunDirectionalLight (object) Dir=Out
+        -> Set Enable Light Shaft Bloom
+Target is Light Component.self
+        -> Set Enable Light Shaft Occlusion
+Target is Directional Light Component.self
+        -> Set Occlusion Mask Darkness
+Target is Directional Light Component.self
+        -> Set Bloom Scale
+Target is Light Component.self
+        -> Set Bloom Threshold
+Target is Light Component.self
+        -> Set Bloom Tint
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Enable Light Shaft Bloom
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Dynamic Shadow Distance Stationary Light
+Target is Directional Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Enable Light Shaft Occlusion
+Target is Directional Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: bNewValue (bool) Dir=In
+        -> Get LightShaftBloom.LightShaftBloom
+    Node: Set Enable Light Shaft Occlusion
+Target is Directional Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Enable Light Shaft Bloom
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Occlusion Mask Darkness
+Target is Directional Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: bNewValue (bool) Dir=In
+        -> Get LightShaftOcclusion.LightShaftOcclusion
+    Node: Get LightShaftBloom (K2Node_VariableGet)
+      Pin: LightShaftBloom (bool) Dir=Out
+        -> Set Enable Light Shaft Bloom
+Target is Light Component.bNewValue
+      Pin: self (object) Dir=In
+    Node: Get LightShaftOcclusion (K2Node_VariableGet)
+      Pin: LightShaftOcclusion (bool) Dir=Out
+        -> Set Enable Light Shaft Occlusion
+Target is Directional Light Component.bNewValue
+      Pin: self (object) Dir=In
+    Node: Set Occlusion Mask Darkness
+Target is Directional Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Enable Light Shaft Occlusion
+Target is Directional Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Bloom Scale
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewValue (real) Dir=In
+        -> Get OcclusionMaskDarkness.OcclusionMaskDarkness
+    Node: Get OcclusionMaskDarkness (K2Node_VariableGet)
+      Pin: OcclusionMaskDarkness (real) Dir=Out
+        -> Set Occlusion Mask Darkness
+Target is Directional Light Component.NewValue
+      Pin: self (object) Dir=In
+    Node: Set Bloom Scale
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Occlusion Mask Darkness
+Target is Directional Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Bloom Threshold
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewValue (real) Dir=In
+        -> Get BloomScale.BloomScale
+    Node: Set Bloom Threshold
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Bloom Scale
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Bloom Tint
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewValue (real) Dir=In
+        -> Get BloomThreshold.BloomThreshold
+    Node: Get BloomScale (K2Node_VariableGet)
+      Pin: BloomScale (real) Dir=Out
+        -> Set Bloom Scale
+Target is Light Component.NewValue
+      Pin: self (object) Dir=In
+    Node: Get BloomThreshold (K2Node_VariableGet)
+      Pin: BloomThreshold (real) Dir=Out
+        -> Set Bloom Threshold
+Target is Light Component.NewValue
+      Pin: self (object) Dir=In
+    Node: Set Bloom Tint
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Bloom Threshold
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Light Function Material
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewValue (struct) Dir=In
+        -> Get BloomTint.BloomTint
+    Node: Get BloomTint (K2Node_VariableGet)
+      Pin: BloomTint (struct) Dir=Out
+        -> Set Bloom Tint
+Target is Light Component.NewValue
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Density Multiplier
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Density Multiplier
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Distance Scale
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Fog Multiplier
+Target is Atmospheric Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewDensityMultiplier (real) Dir=In
+        -> Get AtmosphereDensityMultiplier.AtmosphereDensityMultiplier
+    Node: Get AtmosphereDensityMultiplier (K2Node_VariableGet)
+      Pin: AtmosphereDensityMultiplier (real) Dir=Out
+        -> Set Density Multiplier
+Target is Atmospheric Fog Component.NewDensityMultiplier
+      Pin: self (object) Dir=In
+    Node: Set Fog Multiplier
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Density Multiplier
+Target is Atmospheric Fog Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: NewFogMultiplier (real) Dir=In
+        -> Get AtmosphereFogMultiplier.AtmosphereFogMultiplier
+    Node: Get AtmosphereFogMultiplier (K2Node_VariableGet)
+      Pin: AtmosphereFogMultiplier (real) Dir=Out
+        -> Set Fog Multiplier
+Target is Atmospheric Fog Component.NewFogMultiplier
+      Pin: self (object) Dir=In
+    Node: Set Dynamic Shadow Distance Stationary Light
+Target is Directional Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Dynamic Shadow Distance Movable Light
+Target is Directional Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Enable Light Shaft Bloom
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewValue (real) Dir=In
+        -> Get Shadowdistance.Shadowdistance
+    Node: Break Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: Roll (real) Dir=Out
+      Pin: Pitch (real) Dir=Out
+      Pin: Yaw (real) Dir=Out
+        -> float / float.A
+    Node: Get PrevisArrow (K2Node_VariableGet)
+      Pin: PrevisArrow (object) Dir=Out
+        -> Get World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PrevisArrow.PrevisArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Rotator.InRot
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get HDRI_Rotation.HDRI_Rotation
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Add mesh rotation to custom HDRI rotation (EdGraphNode_Comment)
+    Node: LightShaft (EdGraphNode_Comment)
+    Node: Get SunDirectionalLight (K2Node_VariableGet)
+      Pin: SunDirectionalLight (object) Dir=Out
+        -> Set Light Function Material
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Light Function Material
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Bloom Tint
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: NewLightFunctionMaterial (object) Dir=In
+        -> Get LightFunctionMaterial.LightFunctionMaterial
+    Node: Get LightFunctionMaterial (K2Node_VariableGet)
+      Pin: LightFunctionMaterial (object) Dir=Out
+        -> Set Light Function Material
+Target is Light Component.NewLightFunctionMaterial
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get MIC_Black.MIC_Black
+      Pin: Option 1 (object) Dir=In
+        -> Get MIC_HDRI.MIC_HDRI
+      Pin: Index (bool) Dir=In
+        -> Get Use_HDRI.Use_HDRI
+      Pin: ReturnValue (object) Dir=Out
+        -> Create Dynamic Material Instance.Parent
+    Node: Get MIC_Black (K2Node_VariableGet)
+      Pin: MIC_Black (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Get MIC_HDRI (K2Node_VariableGet)
+      Pin: MIC_HDRI (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Lerp (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get LightColor.LightColor
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+    Node: Recapture Skylight (EdGraphNode_Comment)
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Fog Multiplier
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Choose skybox Material (EdGraphNode_Comment)
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Rotator.Yaw
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: Atmosphere - NOTE: AtmosphericFog is deprecated, some fonctionality are disabled (EdGraphNode_Comment)
+    Node: Set Atmosphere Sun Light
+Target is Directional Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Light Color
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Dynamic Shadow Distance Movable Light
+Target is Directional Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get SunDirectionalLight.SunDirectionalLight
+      Pin: bNewValue (bool) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set SkyboxMaterial.then
+      Pin: then (exec) Dir=Out
+        -> Set Material
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Skybox.Skybox
+      Pin: bNewVisibility (bool) Dir=In
+        -> Get Use_HDRI.Use_HDRI
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get Skybox (K2Node_VariableGet)
+      Pin: Skybox (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+  Graph: CalculateSunColor
+    Node: CalculateSunColor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set LightColor.execute
+    Node: Get SunColorCurve (K2Node_VariableGet)
+      Pin: SunColorCurve (object) Dir=Out
+        -> Get Linear Color Value
+Target is Curve Linear Color.self
+      Pin: self (object) Dir=In
+    Node: Get Linear Color Value
+Target is Curve Linear Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get SunColorCurve.SunColorCurve
+      Pin: InTime (real) Dir=In
+        -> Normalized Sun Angle.Angle
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Color.InColor
+    Node: Set LightColor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> CalculateSunColor.then
+      Pin: then (exec) Dir=Out
+      Pin: LightColor (struct) Dir=In
+        -> Select Color.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: LinearColor * LinearColor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Make Color.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get SunTint.SunTint
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select Color.B
+    Node: Get SunTint (K2Node_VariableGet)
+      Pin: SunTint (struct) Dir=Out
+        -> LinearColor * LinearColor.B
+      Pin: self (object) Dir=In
+    Node: Select Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get SunTint.SunTint
+      Pin: B (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get OverrideSunColor.OverrideSunColor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set LightColor.LightColor
+    Node: Get OverrideSunColor (K2Node_VariableGet)
+      Pin: OverrideSunColor (bool) Dir=Out
+        -> Select Color.bPickA
+      Pin: self (object) Dir=In
+    Node: Get SunTint (K2Node_VariableGet)
+      Pin: SunTint (struct) Dir=Out
+        -> Select Color.A
+      Pin: self (object) Dir=In
+    Node: Break Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InColor (struct) Dir=In
+        -> Get Linear Color Value
+Target is Curve Linear Color.ReturnValue
+      Pin: R (real) Dir=Out
+        -> Make Color.R
+      Pin: G (real) Dir=Out
+        -> Make Color.G
+      Pin: B (real) Dir=Out
+        -> Make Color.B
+      Pin: A (real) Dir=Out
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+        -> Break Color.R
+      Pin: G (real) Dir=In
+        -> Break Color.G
+      Pin: B (real) Dir=In
+        -> Break Color.B
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+    Node: Normalized Sun Angle (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Angle (real) Dir=Out
+        -> Get Linear Color Value
+Target is Curve Linear Color.InTime
+    Node: Use a curve to match sun color to atmosphere (EdGraphNode_Comment)
+  Graph: SunMobility
+    Node: SunMobility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Switch between stationary and moveable directional light (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SunMobility.then
+      Pin: Condition (bool) Dir=In
+        -> Get StationaryLightForSun.StationaryLightForSun
+      Pin: then (exec) Dir=Out
+        -> Add Directional Light Component
+.execute
+      Pin: else (exec) Dir=Out
+        -> Add Directional Light Component
+.execute
+    Node: Get StationaryLightForSun (K2Node_VariableGet)
+      Pin: StationaryLightForSun (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Add Directional Light Component
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set SunDirectionalLight.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set SunDirectionalLight.SunDirectionalLight
+    Node: Set SunDirectionalLight (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Directional Light Component
+.then
+      Pin: then (exec) Dir=Out
+      Pin: SunDirectionalLight (object) Dir=In
+        -> Add Directional Light Component
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Add Directional Light Component
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set SunDirectionalLight.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set SunDirectionalLight.SunDirectionalLight
+    Node: Set SunDirectionalLight (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Directional Light Component
+.then
+      Pin: then (exec) Dir=Out
+      Pin: SunDirectionalLight (object) Dir=In
+        -> Add Directional Light Component
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: NormalizedSunAngle
+    Node: NormalizedSunAngle (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Sun Angle in 0 to 1 range (EdGraphNode_Comment)
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Rotator.InRot
+    Node: Break Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: Roll (real) Dir=Out
+      Pin: Pitch (real) Dir=Out
+        -> float - float.A
+      Pin: Yaw (real) Dir=Out
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Absolute (Float).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Absolute (Float).A
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Rotator.Pitch
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Absolute (Float).A
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Absolute (Float).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Angle
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> NormalizedSunAngle.then
+      Pin: Angle (real) Dir=In
+        -> float + float.ReturnValue
+  Graph: AtmosphereDensity
+    Node: AtmosphereDensity (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Add Atmospheric Fog Component
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set AtmosphericFog.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set AtmosphericFog.AtmosphericFog
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> AtmosphereDensity.then
+      Pin: Condition (bool) Dir=In
+        -> Get HighDensityAtmosphere.HighDensityAtmosphere
+      Pin: then (exec) Dir=Out
+        -> Add Atmospheric Fog Component
+.execute
+      Pin: else (exec) Dir=Out
+        -> Add Atmospheric Fog Component
+.execute
+    Node: Add Atmospheric Fog Component
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set AtmosphericFog.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set AtmosphericFog.AtmosphericFog
+    Node: Get HighDensityAtmosphere (K2Node_VariableGet)
+      Pin: HighDensityAtmosphere (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set AtmosphericFog (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Atmospheric Fog Component
+.then
+      Pin: then (exec) Dir=Out
+      Pin: AtmosphericFog (object) Dir=In
+        -> Add Atmospheric Fog Component
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set AtmosphericFog (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Atmospheric Fog Component
+.then
+      Pin: then (exec) Dir=Out
+      Pin: AtmosphericFog (object) Dir=In
+        -> Add Atmospheric Fog Component
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AtmosphericFog (K2Node_VariableGet)
+      Pin: AtmosphericFog (object) Dir=Out
+        -> Set Precompute Params
+Target is Atmospheric Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Precompute Params
+Target is Atmospheric Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get AtmosphericFog.AtmosphericFog
+      Pin: DensityHeight (real) Dir=In
+        -> Get AtmosphereDensityHeight.AtmosphereDensityHeight
+      Pin: MaxScatteringOrder (int) Dir=In
+        -> Get AtmosphereMaxScatteringOrder.AtmosphereMaxScatteringOrder
+      Pin: InscatterAltitudeSampleNum (int) Dir=In
+        -> Get AtmosphereAltitudeSampleNumber.AtmosphereAltitudeSampleNumber
+    Node: Get AtmosphereDensityHeight (K2Node_VariableGet)
+      Pin: AtmosphereDensityHeight (real) Dir=Out
+        -> Set Precompute Params
+Target is Atmospheric Fog Component.DensityHeight
+      Pin: self (object) Dir=In
+    Node: Get AtmosphereMaxScatteringOrder (K2Node_VariableGet)
+      Pin: AtmosphereMaxScatteringOrder (int) Dir=Out
+        -> Set Precompute Params
+Target is Atmospheric Fog Component.MaxScatteringOrder
+      Pin: self (object) Dir=In
+    Node: Get AtmosphereAltitudeSampleNumber (K2Node_VariableGet)
+      Pin: AtmosphereAltitudeSampleNumber (int) Dir=Out
+        -> Set Precompute Params
+Target is Atmospheric Fog Component.InscatterAltitudeSampleNum
+      Pin: self (object) Dir=In
+    Node: Switch between high density atmosphere (EdGraphNode_Comment)

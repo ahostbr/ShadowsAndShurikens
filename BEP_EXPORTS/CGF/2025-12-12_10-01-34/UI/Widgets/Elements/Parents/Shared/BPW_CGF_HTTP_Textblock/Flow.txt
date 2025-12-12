@@ -1,0 +1,166 @@
+Blueprint: BPW_CGF_HTTP_Textblock (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_HTTP_Textblock.BPW_CGF_HTTP_Textblock)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get HTTP_TextBlock (K2Node_VariableGet)
+      Pin: HTTP_TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Http Get Request.On Success
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get HTTP_TextBlock.HTTP_TextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Http Get Request (K2Node_HttpRequest)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: On Success (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: On Error (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Url (string) Dir=In
+        -> Get URL.URL
+      Pin: Verb (byte) Dir=In
+      Pin: Header (struct) Dir=In
+        -> Make Request Header.Header
+      Pin: OutHeader (struct) Dir=Out
+      Pin: Result Body (string) Dir=Out
+        -> To Text (String).InString
+    Node: Make Request Header (K2Node_MakeRequestHeader)
+      Pin: Header (struct) Dir=Out
+        -> Http Get Request.Header
+      Pin: Preset (byte) Dir=In
+    Node: Get URL (K2Node_VariableGet)
+      Pin: URL (string) Dir=Out
+        -> Http Get Request.Url
+      Pin: self (object) Dir=In
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Http Get Request.Result Body
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get HTTP_TextBlock (K2Node_VariableGet)
+      Pin: HTTP_TextBlock (object) Dir=Out
+        -> Set Font
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ColorAndOpacity.execute
+      Pin: self (object) Dir=In
+        -> Get HTTP_TextBlock.HTTP_TextBlock
+      Pin: InFontInfo (struct) Dir=In
+        -> Get HTTP Textblock Font.HTTP Textblock Font
+    Node: Get HTTP Textblock Font (K2Node_VariableGet)
+      Pin: HTTP Textblock Font (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+      Pin: self (object) Dir=In
+    Node: Set ColorAndOpacity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Font
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: ColorAndOpacity (struct) Dir=In
+        -> Get HTTP Textblock Color.HTTP Textblock Color
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HTTP_TextBlock.HTTP_TextBlock
+    Node: Get HTTP Textblock Color (K2Node_VariableGet)
+      Pin: HTTP Textblock Color (struct) Dir=Out
+        -> Set ColorAndOpacity.ColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Get HTTP_TextBlock (K2Node_VariableGet)
+      Pin: HTTP_TextBlock (object) Dir=Out
+        -> Set ColorAndOpacity.self
+      Pin: self (object) Dir=In
+    Node: This Example Loads Text From a Pastebin https://pastebin.com/raw/Ja2JxZFZ (EdGraphNode_Comment)
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Http Get Request.On Error
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get NetworkFetchEnabled?.self
+    Node: Get NetworkFetchEnabled? (K2Node_VariableGet)
+      Pin: NetworkFetchEnabled? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+        -> Set URL.then
+      Pin: Condition (bool) Dir=In
+        -> Get NetworkFetchEnabled?.NetworkFetchEnabled?
+      Pin: then (exec) Dir=Out
+        -> Http Get Request.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Load New URL
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set URL.execute
+      Pin: Url (string) Dir=Out
+        -> Set URL.URL
+    Node: Set URL (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Load New URL
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: URL (string) Dir=In
+        -> Load New URL
+Custom Event.Url
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object

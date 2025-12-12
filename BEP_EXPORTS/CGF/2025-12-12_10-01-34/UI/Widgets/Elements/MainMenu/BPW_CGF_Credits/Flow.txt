@@ -1,0 +1,298 @@
+Blueprint: BPW_CGF_Credits (/Game/CoreGameFramework/UI/Widgets/Elements/MainMenu/BPW_CGF_Credits.BPW_CGF_Credits)
+  Graph: EventGraph
+    Node: Get BPW_CGF_Credits_AnimatedWidgetParent (K2Node_VariableGet)
+      Pin: BPW_CGF_Credits_AnimatedWidgetParent (object) Dir=Out
+        -> Roll Credits
+Target is BPW CGF Animated Widget Parent.self
+        -> Bind Event to On Fade Out Completed.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Roll Credits
+Target is BPW CGF Animated Widget Parent (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Fade Out Completed.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_Credits_AnimatedWidgetParent.BPW_CGF_Credits_AnimatedWidgetParent
+    Node: OnFadeOutCompleted_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Fade Out Completed.Delegate
+      Pin: then (exec) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+    Node: Bind Event to On Fade Out Completed (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Roll Credits
+Target is BPW CGF Animated Widget Parent.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_Credits_AnimatedWidgetParent.BPW_CGF_Credits_AnimatedWidgetParent
+      Pin: Delegate (delegate) Dir=In
+        -> OnFadeOutCompleted_Event
+Custom Event.OutputDelegate
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.self
+    Node: Pop Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> OnFadeOutCompleted_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Show Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: Widget (struct) Dir=In
+        -> Get GameplayTag.GameplayTag
+    Node: Show Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+    Node: Unbind all Events from On Fade Out Completed (K2Node_ClearDelegate)
+      Pin: execute (exec) Dir=In
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.then
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Reset Do Once
+Target is BPW CGF Credits.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_Credits_AnimatedWidgetParent.BPW_CGF_Credits_AnimatedWidgetParent
+    Node: Get GameplayTag (K2Node_VariableGet)
+      Pin: GameplayTag (struct) Dir=Out
+        -> Pop Via Gameplay Tag
+Target is BPI CGF User Interface.Widget
+      Pin: self (object) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Show Via Gameplay Tag
+Target is BPI CGF User Interface.self
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Unbind all Events from On Fade Out Completed.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Show Via Gameplay Tag
+Target is BPI CGF User Interface.then
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+      Pin: else (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Get BPW_CGF_Credits_AnimatedWidgetParent (K2Node_VariableGet)
+      Pin: BPW_CGF_Credits_AnimatedWidgetParent (object) Dir=Out
+        -> Unbind all Events from On Fade Out Completed.self
+      Pin: self (object) Dir=In
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Unbind all Events from On Fade Out Completed.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then_0 (exec) Dir=Out
+        -> Play Meta Sound
+Target is BP CGF Game Instance.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Roll Credits
+Target is BPW CGF Animated Widget Parent.execute
+    Node: Get ScrollUp (K2Node_VariableGet)
+      Pin: ScrollUp (object) Dir=Out
+        -> Get End Time
+Target is Widget Animation.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get End Time
+Target is Widget Animation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ScrollUp.ScrollUp
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On Fade Out Completed.then
+      Pin: then (exec) Dir=Out
+        -> Fade Out Currently Playing Music
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: LatentInfo (struct) Dir=In
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get End Time
+Target is Widget Animation.ReturnValue
+      Pin: B (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Delay.Duration
+    Node: Break F CGF Sound Cue Data (K2Node_BreakStruct)
+      Pin: F_CGF_SoundCueData (struct) Dir=In
+        -> Get Sound Cue Data.Sound Cue Data
+      Pin: FadeOutLength_35_009C12DC436021C8344A5FB1456C4732 (real) Dir=Out
+        -> float + float.A
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break F CGF Sound Cue Data.FadeOutLength_35_009C12DC436021C8344A5FB1456C4732
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: Reset (exec) Dir=In
+        -> ResetDoOnce
+Custom Event.then
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Sequence.execute
+    Node: ResetDoOnce
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Reset Do Once
+Target is BPW CGF Credits (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Unbind all Events from On Fade Out Completed.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Play Meta Sound
+Target is BP CGF Game Instance.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Sound Cue Data.self
+        -> Reroute Node.InputPin
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Fade Out Currently Playing Music
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: MetaSound? (bool) Dir=In
+      Pin: All? (bool) Dir=In
+    Node: Get Sound Cue Data (K2Node_VariableGet)
+      Pin: Sound Cue Data (struct) Dir=Out
+        -> Break F CGF Sound Cue Data.F_CGF_SoundCueData
+      Pin: self (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BPW_CGF_Credits_AnimatedWidgetParent.BPW_CGF_Credits_AnimatedWidgetParent
+      Pin: OutputPin (object) Dir=Out
+        -> Get ScrollUp.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Fade Out Currently Playing Music
+Target is BP CGF Game Instance.self
+    Node: Play Meta Sound
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: MetaSound_Data (struct) Dir=In
+        -> Make F CGF Meta Sound Data.F_CGF_MetaSound_Data
+    Node: Make F CGF Meta Sound Data (K2Node_MakeStruct)
+      Pin: F_CGF_MetaSound_Data (struct) Dir=Out
+        -> Play Meta Sound
+Target is BP CGF Game Instance.MetaSound_Data
+      Pin: SoundFile_42_0E0781BB4E51F2D16A8490BF21871534 (softobject) Dir=In
+      Pin: Name_In_DT_Row_41_41E1CA844289C29513DA0A99F0D2FF95 (name) Dir=In
+      Pin: IsMusic?_40_2400E3774C08F1A08B741FB441E17F40 (bool) Dir=In
+      Pin: IsUISound?_25_04F013FB458A0CF1589CE0ACD48624F3 (bool) Dir=In
+      Pin: SFXLocation_26_56FE00BF46AAAED1A69C01A1C6222ADA (struct) Dir=In
+      Pin: SFXRotation_27_C2DE5D164067D560F5A33CA46E159D1C (struct) Dir=In
+      Pin: SFXAttenuationSettings_28_0B60D77944AD35FD4DD01A942ADDE166 (struct) Dir=In
+      Pin: UseAttenuation?_29_84539F0345506990611127BB0532C6DD (bool) Dir=In
+      Pin: CanRestart_30_A1D849C34B691FA6263322A0ADE8A5FE (bool) Dir=In
+      Pin: PersistAcrossLevelTransition_31_20ECB7F7449603CE71FABE8766FBD5D0 (bool) Dir=In
+      Pin: AutoDestroy_32_4EA46D514B023CF4DC272D8B8322506D (bool) Dir=In
+      Pin: Fade_33_C0792A3245CD2302C444808108310E7F (bool) Dir=In
+      Pin: FadeIn?_37_34F70B10480731E037346E8764418F0A (bool) Dir=In
+      Pin: FadeInLength_36_366243304CB3763329AC40BFF48AC1F2 (real) Dir=In
+      Pin: FadeOutLength_35_009C12DC436021C8344A5FB1456C4732 (real) Dir=In

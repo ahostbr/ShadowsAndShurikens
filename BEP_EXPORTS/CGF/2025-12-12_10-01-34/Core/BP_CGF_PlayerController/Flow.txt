@@ -1,0 +1,1790 @@
+Blueprint: BP_CGF_PlayerController (/Game/CoreGameFramework/Core/BP_CGF_PlayerController.BP_CGF_PlayerController)
+  Graph: EventGraph
+    Node: Add Input Mapping (EdGraphNode_Comment)
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Possess
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InPawn (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set BP CGF Player.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Main Menu Closing And Pause (EdGraphNode_Comment)
+    Node: Set UsingGamepad? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set User Focus
+Target is Widget.then
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+      Pin: UsingGamepad? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch on EHardwareDevicePrimaryType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Set Primary Device Type.then
+      Pin: Selection (byte) Dir=In
+        -> Set Primary Device Type.Output_Get
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Unspecified (exec) Dir=Out
+      Pin: KeyboardAndMouse (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Get Is Selecting Input?
+Target is BPI CGF User Interface.execute
+      Pin: Touch (exec) Dir=Out
+      Pin: MotionTracking (exec) Dir=Out
+      Pin: RacingWheel (exec) Dir=Out
+      Pin: FlightStick (exec) Dir=Out
+      Pin: Camera (exec) Dir=Out
+      Pin: Instrument (exec) Dir=Out
+      Pin: CustomTypeA (exec) Dir=Out
+      Pin: CustomTypeB (exec) Dir=Out
+      Pin: CustomTypeC (exec) Dir=Out
+      Pin: CustomTypeD (exec) Dir=Out
+    Node: OnInputHardwareDeviceChanged_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Input Hardware Device Changed.Delegate
+      Pin: then (exec) Dir=Out
+        -> Set Primary Device Type.execute
+      Pin: UserId (struct) Dir=Out
+      Pin: DeviceId (struct) Dir=Out
+    Node: Input Device Subsystem (K2Node_GetEngineSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Input Device Hardware Identifier
+Target is Input Device Subsystem.self
+        -> Bind Event to On Input Hardware Device Changed.self
+    Node: Get Input Device Hardware Identifier
+Target is Input Device Subsystem (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Input Device Subsystem.ReturnValue
+      Pin: InputDevice (struct) Dir=In
+        -> Make Input Device Id.InputDeviceId
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Hardware Device Identifier.HardwareDeviceIdentifier
+    Node: Break Hardware Device Identifier (K2Node_BreakStruct)
+      Pin: HardwareDeviceIdentifier (struct) Dir=In
+        -> Get Input Device Hardware Identifier
+Target is Input Device Subsystem.ReturnValue
+      Pin: InputClassName (name) Dir=Out
+      Pin: HardwareDeviceIdentifier (name) Dir=Out
+      Pin: PrimaryDeviceType (byte) Dir=Out
+        -> Set Primary Device Type.Primary Device Type
+      Pin: SupportedFeaturesMask (int) Dir=Out
+    Node: Make Input Device Id (K2Node_MakeStruct)
+      Pin: InputDeviceId (struct) Dir=Out
+        -> Get Input Device Hardware Identifier
+Target is Input Device Subsystem.InputDevice
+    Node: Set Primary Device Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OnInputHardwareDeviceChanged_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Switch on EHardwareDevicePrimaryType.execute
+      Pin: Primary Device Type (byte) Dir=In
+        -> Break Hardware Device Identifier.PrimaryDeviceType
+      Pin: Output_Get (byte) Dir=Out
+        -> Switch on EHardwareDevicePrimaryType.Selection
+      Pin: self (object) Dir=In
+    Node: Set UsingGamepad? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: then (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+      Pin: UsingGamepad? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EHardwareDevicePrimaryType.KeyboardAndMouse
+      Pin: then (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: SetMouseVisibility On Device Change And Update The Game Instances UsingGamePad? Finally Call OnInputDeviceChanged Dispatcher so all bound widgets can update there UI etc. (EdGraphNode_Comment)
+    Node: Set Input Mode Game Only (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Focus to Game Viewport.then
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+      Pin: bFlushInput (bool) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Last Focused Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> CGF Do Once This Interval.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: LastFocused (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: Valid (bool) Dir=Out
+    Node: Set Focus to Game Viewport (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Input Mode Game Only.execute
+      Pin: self (object) Dir=In
+    Node: Set Mouse Cursor Visibility (EdGraphNode_Comment)
+    Node: Grab The Last Focused Widget From The HUD And Set Focus To It.  This Is Updated By The Focus Event Of The Widgets. (EdGraphNode_Comment)
+    Node: Update Vars on the PC and GI (EdGraphNode_Comment)
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> CGF Do Once This Interval.Completed
+      Pin: InputObject (object) Dir=In
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Input Mode Game Only.PlayerController
+    Node: Set Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Keyboard Focus
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set User Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set User Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Focus
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set User Focus
+Target is Widget.PlayerController
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Get Is Selecting Input?
+Target is BPI CGF User Interface.self
+    Node: Get Is Selecting Input?
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Switch on EHardwareDevicePrimaryType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Out (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Is Selecting Input?
+Target is BPI CGF User Interface.then
+      Pin: Condition (bool) Dir=In
+        -> Get Is Selecting Input?
+Target is BPI CGF User Interface.Out
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Register Mapping Contexts
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Input Hardware Device Changed.execute
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+    Node: MakeSureTheUserIsntSelectingAKeyBindCurrently (EdGraphNode_Comment)
+    Node: Register All IMCs (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Focus
+Target is Widget.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set User Focus
+Target is Widget.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Bind Event to On Input Hardware Device Changed (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Register Mapping Contexts
+Target is BP CGF Player Controller.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Input Device Subsystem.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> OnInputHardwareDeviceChanged_Event
+Custom Event.OutputDelegate
+    Node: Call On Input Device Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set UsingGamepad?.then
+        -> Set UsingGamepad?.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: UsingGamePad? (bool) Dir=In
+        -> Get UsingGamepad?.UsingGamepad?
+    Node: Let any listeners know the input device has changed (EdGraphNode_Comment)
+    Node: Get UsingGamepad? (K2Node_VariableGet)
+      Pin: UsingGamepad? (bool) Dir=Out
+        -> Call On Input Device Changed.UsingGamePad?
+      Pin: self (object) Dir=In
+    Node: Call On Main Menu Closing (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set MainMenuClosingCompleted?.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Vis (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Call On Main Menu Closing Completed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set MainMenuClosingCompleted?.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event DoMainMenuToggle
+From BPI CGF Level (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set MainMenuClosingCompleted?.execute
+      Pin: Vis (bool) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Event DoMainMenuToggleCompleted
+From BPI CGF Level (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Enable Input
+Target is Actor.execute
+    Node: Set MainMenuClosingCompleted? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Enable Input
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Call On Main Menu Closing Completed.execute
+      Pin: MainMenuClosingCompleted? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set MainMenuClosingCompleted? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event DoMainMenuToggle
+From BPI CGF Level.then
+      Pin: then (exec) Dir=Out
+        -> Call On Main Menu Closing.execute
+      Pin: MainMenuClosingCompleted? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Event DoMainMenuToggle
+From BPI CGF Level.Vis
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Call On Main Menu Closing.Vis
+    Node: If KBM Show Mouse (EdGraphNode_Comment)
+    Node: Used To Play The Level Sequence And Check Its Completed Status. (EdGraphNode_Comment)
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.self
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set BP CGF Player.BP CGF Player
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Error Handling.then
+        -> Set PlayerREF.then
+      Pin: then (exec) Dir=Out
+        -> Register Mapping Contexts
+Target is BP CGF Player Controller.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Actor
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set UsingGamepad?.self
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set UsingGamepad?.self
+      Pin: self (object) Dir=In
+    Node: Set UsingGamepad? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set UsingGamepad?.then
+      Pin: then (exec) Dir=Out
+        -> Call On Input Device Changed.execute
+      Pin: UsingGamepad? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+    Node: Set UsingGamepad? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set UsingGamepad?.then
+      Pin: then (exec) Dir=Out
+        -> Call On Input Device Changed.execute
+      Pin: UsingGamepad? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+    Node: DoPossesPlayer
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Enable Input
+Target is Actor.PlayerController
+    Node: Enable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event DoMainMenuToggleCompleted
+From BPI CGF Level.then
+      Pin: then (exec) Dir=Out
+        -> Set MainMenuClosingCompleted?.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+    Node: CGF Do Once This Interval (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.then
+      Pin: Interval (real) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Is Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Focus to Game Viewport.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Input Mode Game Only.then
+      Pin: then (exec) Dir=Out
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Mouse Cursor Visibility (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Mouse Cursor Visibility.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Get Last Focused Widget
+Target is BPI CGF User Interface.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Mouse Cursor Visibility.execute
+    Node: Do A Series Of Delays And Focus Switches To Make Sure The Mouse Goes Invisble. (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Call On Main Menu Closing.then
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Fade Out Currently Playing Music
+Target is BP CGF Game Instance.execute
+    Node: Fade Out Currently Playing Music
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: MetaSound? (bool) Dir=In
+      Pin: All? (bool) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Fade Out Currently Playing Music
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Event DoMainMenuToggle
+From BPI CGF Level.Vis
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set BP CGF Player (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_SOTS_Player.execute
+      Pin: BP CGF Player (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Player (K2Node_VariableGet)
+      Pin: BP CGF Player (object) Dir=Out
+        -> Cast To BP_SOTS_Player.Object
+      Pin: self (object) Dir=In
+    Node: Cast To BP_SOTS_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Player.then
+      Pin: then (exec) Dir=Out
+        -> Set PlayerREF.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get BP CGF Player.BP CGF Player
+      Pin: AsBP SOTS Player (object) Dir=Out
+        -> Set PlayerREF.PlayerREF
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set PlayerREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_SOTS_Player.then
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+      Pin: PlayerREF (object) Dir=In
+        -> Cast To BP_SOTS_Player.AsBP SOTS Player
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: CGF_Input_Handling
+    Node: IMC_UI_Controls
+Collapsed Graph (K2Node_Composite)
+    Node: IMC Default
+Collapsed Graph (K2Node_Composite)
+    Node: CGF Mappings
+Collapsed Graph (K2Node_Composite)
+    Node: INVSP
+Collapsed Graph (K2Node_Composite)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: FocusGame
+    Node: FocusGame (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Game Paused.execute
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Focus to Game Viewport.then
+      Pin: then (exec) Dir=Out
+        -> Set Input Mode Game Only.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Input Mode Game Only (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+      Pin: bFlushInput (bool) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Input Mode Game Only.PlayerController
+        -> Enable Input
+Target is Actor.PlayerController
+    Node: Set Focus to Game Viewport (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Game Paused.then
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: self (object) Dir=In
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FocusGame.then
+      Pin: then (exec) Dir=Out
+        -> Set Focus to Game Viewport.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enable Input
+Target is Actor.self
+        -> Is Valid.InputObject
+    Node: Enable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Game State
+Target is BP CGF Game State.execute
+      Pin: self (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Input Mode Game Only.then
+      Pin: InputObject (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Enable Input
+Target is Actor.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+      Pin: CGF Game State (object) Dir=Out
+        -> Set Game State
+Target is BP CGF Game State.self
+    Node: Set Game State
+Target is BP CGF Game State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Enable Input
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get GS.CGF Game State
+      Pin: CGFGameState (byte) Dir=In
+  Graph: FocusWidget
+    Node: FocusWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set WidgetSentToFocus.execute
+      Pin: WidgetToFocus (object) Dir=Out
+        -> Set WidgetSentToFocus.WidgetSentToFocus
+      Pin: PauseGame (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ShowMouseCursor (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: UIOnlyInput (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set WidgetSentToFocus.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Input Mode UI Only.PlayerController
+    Node: Set Input Mode UI Only (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EHardwareDevicePrimaryType.KeyboardAndMouse
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+      Pin: InWidgetToFocus (object) Dir=In
+        -> Get WidgetSentToFocus.WidgetSentToFocus
+      Pin: InMouseLockMode (byte) Dir=In
+      Pin: bFlushInput (bool) Dir=In
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Input
+Target is Actor.then
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Game Paused.then
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Switch on EHardwareDevicePrimaryType.execute
+      Pin: else (exec) Dir=Out
+        -> Switch on EHardwareDevicePrimaryType.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> FocusWidget.UIOnlyInput
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Input Mode Game And UI.PlayerController
+    Node: Set Input Mode Game And UI (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+      Pin: InWidgetToFocus (object) Dir=In
+        -> Get WidgetSentToFocus.WidgetSentToFocus
+      Pin: InMouseLockMode (byte) Dir=In
+      Pin: bHideCursorDuringCapture (bool) Dir=In
+      Pin: bFlushInput (bool) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WidgetSentToFocus.WidgetSentToFocus
+    Node: Input Device Subsystem (K2Node_GetEngineSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Input Device Hardware Identifier
+Target is Input Device Subsystem.self
+    Node: Get Input Device Hardware Identifier
+Target is Input Device Subsystem (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Input Device Subsystem.ReturnValue
+      Pin: InputDevice (struct) Dir=In
+        -> Make Input Device Id.InputDeviceId
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Hardware Device Identifier.HardwareDeviceIdentifier
+    Node: Break Hardware Device Identifier (K2Node_BreakStruct)
+      Pin: HardwareDeviceIdentifier (struct) Dir=In
+        -> Get Input Device Hardware Identifier
+Target is Input Device Subsystem.ReturnValue
+      Pin: PrimaryDeviceType (byte) Dir=Out
+        -> Switch on EHardwareDevicePrimaryType.Selection
+        -> Switch on EHardwareDevicePrimaryType.Selection
+    Node: Switch on EHardwareDevicePrimaryType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Selection (byte) Dir=In
+        -> Break Hardware Device Identifier.PrimaryDeviceType
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Unspecified (exec) Dir=Out
+      Pin: KeyboardAndMouse (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Gamepad (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: Touch (exec) Dir=Out
+      Pin: MotionTracking (exec) Dir=Out
+      Pin: RacingWheel (exec) Dir=Out
+      Pin: FlightStick (exec) Dir=Out
+      Pin: Camera (exec) Dir=Out
+      Pin: Instrument (exec) Dir=Out
+      Pin: CustomTypeA (exec) Dir=Out
+      Pin: CustomTypeB (exec) Dir=Out
+      Pin: CustomTypeC (exec) Dir=Out
+      Pin: CustomTypeD (exec) Dir=Out
+    Node: Switch on EHardwareDevicePrimaryType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Break Hardware Device Identifier.PrimaryDeviceType
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Unspecified (exec) Dir=Out
+      Pin: KeyboardAndMouse (exec) Dir=Out
+        -> Set Input Mode UI Only.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: Touch (exec) Dir=Out
+      Pin: MotionTracking (exec) Dir=Out
+      Pin: RacingWheel (exec) Dir=Out
+      Pin: FlightStick (exec) Dir=Out
+      Pin: Camera (exec) Dir=Out
+      Pin: Instrument (exec) Dir=Out
+      Pin: CustomTypeA (exec) Dir=Out
+      Pin: CustomTypeB (exec) Dir=Out
+      Pin: CustomTypeC (exec) Dir=Out
+      Pin: CustomTypeD (exec) Dir=Out
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EHardwareDevicePrimaryType.Gamepad
+        -> Switch on EHardwareDevicePrimaryType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set WidgetSentToFocus (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> FocusWidget.then
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: WidgetSentToFocus (object) Dir=In
+        -> FocusWidget.WidgetToFocus
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get WidgetSentToFocus (K2Node_VariableGet)
+      Pin: WidgetSentToFocus (object) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get WidgetSentToFocus (K2Node_VariableGet)
+      Pin: WidgetSentToFocus (object) Dir=Out
+        -> Set Input Mode Game And UI.InWidgetToFocus
+      Pin: self (object) Dir=In
+    Node: Get WidgetSentToFocus (K2Node_VariableGet)
+      Pin: WidgetSentToFocus (object) Dir=Out
+        -> Set Input Mode UI Only.InWidgetToFocus
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EHardwareDevicePrimaryType.KeyboardAndMouse
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Input Mode Game And UI.execute
+    Node: Make Input Device Id (K2Node_MakeStruct)
+      Pin: InputDeviceId (struct) Dir=Out
+        -> Get Input Device Hardware Identifier
+Target is Input Device Subsystem.InputDevice
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> FocusWidget.ShowMouseCursor
+      Pin: OutputPin (bool) Dir=Out
+        -> Set bShowMouseCursor.bShowMouseCursor
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> FocusWidget.PauseGame
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Set Game Paused.bPaused
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Disable Input
+Target is Actor.self
+    Node: Disable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Game Paused.execute
+      Pin: self (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: PlayerController (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Disable Input
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+        -> Set Game Paused.execute
+  Graph: InputEnabledWidgetsVisHasChanged
+    Node: InputEnabledWidgetsVisHasChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on ESlateVisibility.execute
+      Pin: Vis (byte) Dir=Out
+        -> Switch on ESlateVisibility.Selection
+      Pin: Widget (object) Dir=Out
+    Node: Switch on ESlateVisibility (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> InputEnabledWidgetsVisHasChanged.then
+      Pin: Selection (byte) Dir=In
+        -> InputEnabledWidgetsVisHasChanged.Vis
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Visible (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Collapsed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Hidden (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: HitTestInvisible (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelfHitTestInvisible (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+    Node: Remove Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: Options (struct) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: Priority (int) Dir=In
+      Pin: Options (struct) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Has Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: OutFoundPriority (int) Dir=Out
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+    Node: Has Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: OutFoundPriority (int) Dir=Out
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Is Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on ESlateVisibility.Visible
+        -> Switch on ESlateVisibility.HitTestInvisible
+        -> Switch on ESlateVisibility.SelfHitTestInvisible
+      Pin: OutputPin (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on ESlateVisibility.Collapsed
+        -> Switch on ESlateVisibility.Hidden
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+  Graph: PeekAt_InputEnabledWidgetsStack
+    Node: PeekAt_InputEnabledWidgetsStack (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Last Index.TargetArray
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: Dimension 1 (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Return Node.TopWidget
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> PeekAt_InputEnabledWidgetsStack.then
+      Pin: TopWidget (object) Dir=In
+        -> GET.Output
+  Graph: PushTo_InputEnabledWidgetStack
+    Node: PushTo_InputEnabledWidgetStack (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: Widget (object) Dir=Out
+        -> Add Unique.NewItem
+      Pin: DefaultFocusedWidget (object) Dir=Out
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> PushTo_InputEnabledWidgetStack.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: NewItem (object) Dir=In
+        -> PushTo_InputEnabledWidgetStack.Widget
+      Pin: ReturnValue (int) Dir=Out
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: Priority (int) Dir=In
+      Pin: Options (struct) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Add Unique.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Has Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: OutFoundPriority (int) Dir=Out
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+  Graph: PopFrom_InputEnabledWidgetStack
+    Node: PopFrom_InputEnabledWidgetStack (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Remove Item.execute
+      Pin: Widget (object) Dir=Out
+        -> Remove Item.Item
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Remove Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Remove Item (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> PopFrom_InputEnabledWidgetStack.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: Item (object) Dir=In
+        -> PopFrom_InputEnabledWidgetStack.Widget
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Remove Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: Options (struct) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Remove Item.then
+      Pin: InputObject (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Has Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: OutFoundPriority (int) Dir=Out
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Is Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Has Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Is Valid.InputObject
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+  Graph: ToggleSettingsMenu
+    Node: ToggleSettingsMenu (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Peek Via Gameplay Tag
+Target is BPI CGF User Interface.execute
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Peek Via Gameplay Tag
+Target is BPI CGF User Interface.self
+    Node: Get Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Peek Via Gameplay Tag
+Target is BPI CGF User Interface.FoundWIdget
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ESlateVisibility.Selection
+    Node: Switch on ESlateVisibility (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Get Visibility
+Target is Widget.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Visible (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Collapsed (exec) Dir=Out
+        -> Play Fade In
+Target is BPI CGF User Interface.execute
+      Pin: Hidden (exec) Dir=Out
+        -> Play Fade In
+Target is BPI CGF User Interface.execute
+      Pin: HitTestInvisible (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelfHitTestInvisible (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Show Top Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Play Fade In
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Set Focus to Default Focusable Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Show Top Widget
+Target is BPI CGF User Interface.self
+    Node: Focus Game
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+    Node: Peek Via Gameplay Tag
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> ToggleSettingsMenu.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+      Pin: Found? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: FoundWIdget (object) Dir=Out
+        -> Get Visibility
+Target is Widget.self
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Peek Via Gameplay Tag
+Target is BPI CGF User Interface.then
+      Pin: Condition (bool) Dir=In
+        -> Peek Via Gameplay Tag
+Target is BPI CGF User Interface.Found?
+      Pin: then (exec) Dir=Out
+        -> Switch on ESlateVisibility.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InVisibility (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Peek Via Gameplay Tag
+Target is BPI CGF User Interface.FoundWIdget
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on ESlateVisibility.Visible
+        -> Switch on ESlateVisibility.SelfHitTestInvisible
+        -> Switch on ESlateVisibility.HitTestInvisible
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Play Fade In
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Switch on ESlateVisibility.Hidden
+        -> Switch on ESlateVisibility.Collapsed
+      Pin: then (exec) Dir=Out
+        -> Show Top Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Play Fade In
+Target is BPI CGF User Interface.self
+        -> Reroute Node.InputPin
+    Node: Set Focus to Default Focusable Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Show Top Widget
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Focus to Default Focusable Widget
+Target is BPI CGF User Interface.self
+  Graph: Get InputEnabledStack List Names
+    Node: Get InputEnabledStack List Names (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Reverse for Each Loop.Exec
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Reverse for Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (string) Dir=In
+        -> Get StackNames.StackNames
+      Pin: NewItem (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get StackNames (K2Node_VariableGet)
+      Pin: StackNames (string) Dir=Out
+        -> Add.TargetArray
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reverse for Each Loop.Completed
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get StackNames (K2Node_VariableGet)
+      Pin: StackNames (string) Dir=Out
+        -> Join String Array.SourceArray
+    Node: Join String Array (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceArray (string) Dir=In
+        -> Get StackNames.StackNames
+      Pin: Separator (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Join String Array.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Reverse for Each Loop.ArrayElement
+      Pin: ReturnValue (string) Dir=Out
+        -> Add.NewItem
+    Node: Get InputEnabledWidgetStack (K2Node_VariableGet)
+      Pin: InputEnabledWidgetStack (object) Dir=Out
+        -> Reverse for Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Reverse for Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get InputEnabledStack List Names.then
+      Pin: Array (object) Dir=In
+        -> Get InputEnabledWidgetStack.InputEnabledWidgetStack
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: ArrayIndex (int) Dir=Out
+      Pin: ArrayElement (object) Dir=Out
+        -> Get Display Name.Object
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+  Graph: CheckCanMoveFurther
+    Node: CheckCanMoveFurther (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Direction (real) Dir=Out
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get AC_SOTS_Player_CoverSystem.self
+      Pin: self (object) Dir=In
+    Node: Get AC_SOTS_Player_CoverSystem (K2Node_VariableGet)
+      Pin: AC_SOTS_Player_CoverSystem (object) Dir=Out
+        -> Get IsInCover?.self
+        -> Check Cover State Container Has Tag
+Target is AC SOTS Player Cover System.self
+        -> Check Cover State Container Has Tag
+Target is AC SOTS Player Cover System.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get Direction (K2Node_VariableGet)
+      Pin: Direction (real) Dir=Out
+        -> Equal (Float).A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> CheckCanMoveFurther.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsInCover?.IsInCover?
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get IsInCover? (K2Node_VariableGet)
+      Pin: IsInCover? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (bool) Dir=In
+    Node: Get Direction (K2Node_VariableGet)
+      Pin: Direction (real) Dir=Out
+        -> Equal (Float).A
+    Node: Check Cover State Container Has Tag
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+      Pin: Tag (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Check Cover State Container Has Tag
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+      Pin: Tag (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Direction.Direction
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Direction.Direction
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Check Cover State Container Has Tag
+Target is AC SOTS Player Cover System.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+        -> Branch.Condition
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Check Cover State Container Has Tag
+Target is AC SOTS Player Cover System.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+        -> Branch.Condition
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (bool) Dir=In
+  Graph: SetMouseCursorVisibility
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Set WasGamePausedOnControllerSwap?.execute
+    Node: Outputs (K2Node_Tunnel)
+      Pin: then (exec) Dir=In
+        -> Set Game Paused.then
+    Node: Set Input Mode Game And UI (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+      Pin: InWidgetToFocus (object) Dir=In
+      Pin: InMouseLockMode (byte) Dir=In
+      Pin: bHideCursorDuringCapture (bool) Dir=In
+      Pin: bFlushInput (bool) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set Input Mode Game And UI.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Input Mode Game Only (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Game Paused.then
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Self-Reference.self
+      Pin: bFlushInput (bool) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Input Mode Game Only.PlayerController
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Input Mode Game Only.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Focus to Game Viewport (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set bShowMouseCursor.execute
+      Pin: self (object) Dir=In
+    Node: Set bShowMouseCursor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Focus to Game Viewport.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: bShowMouseCursor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Input Mode Game And UI.then
+      Pin: then (exec) Dir=Out
+        -> Set Focus to Game Viewport.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: then (exec) Dir=Out
+        -> Set Game Paused.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bShowMouseCursor.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Input Mode Game And UI.PlayerController
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Outputs.then
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+        -> Get WasGamePausedOnControllerSwap?.WasGamePausedOnControllerSwap?
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Is Game Paused (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set WasGamePausedOnControllerSwap?.WasGamePausedOnControllerSwap?
+    Node: Set WasGamePausedOnControllerSwap? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then (exec) Dir=Out
+        -> Set Game Paused.execute
+      Pin: WasGamePausedOnControllerSwap? (bool) Dir=In
+        -> Is Game Paused.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get WasGamePausedOnControllerSwap? (K2Node_VariableGet)
+      Pin: WasGamePausedOnControllerSwap? (bool) Dir=Out
+        -> Set Game Paused.bPaused
+      Pin: self (object) Dir=In
+    Node: Set Game Paused (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WasGamePausedOnControllerSwap?.then
+      Pin: then (exec) Dir=Out
+        -> Set Input Mode Game Only.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bPaused (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Do A Series Of Delays And Focus Switches To Make Sure The Mouse Goes Invisble. (EdGraphNode_Comment)
+    Node: All Other Methods Ive Tried Are Unreliable.  Even Removing One Of The Show Mouse Cursor Or Delays In This Sequence Will Keep The Mouse Visible. Test This Often... (EdGraphNode_Comment)
+  Graph: OnInputDeviceChanged
+    Node: OnInputDeviceChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: UsingGamePad? (bool) Dir=Out
+  Graph: OnMappingsChanged
+    Node: OnMappingsChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: CGF_Mappings (struct) Dir=Out
+  Graph: OnMainMenuClosing
+    Node: OnMainMenuClosing (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Vis (bool) Dir=Out
+  Graph: OnMainMenuClosingCompleted
+    Node: OnMainMenuClosingCompleted (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

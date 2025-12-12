@@ -1,0 +1,350 @@
+Blueprint: BTT_RandomWorkspace (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_RandomWorkspace.BTT_RandomWorkspace)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Set ControllerRef.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Set ControllerRef.ControllerRef
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Set BehaviorCompRef.BehaviorCompRef
+      Pin: self (object) Dir=In
+        -> Set ControllerRef.Output_Get
+    Node: Get AvailableWorkspaces (K2Node_VariableGet)
+      Pin: AvailableWorkspaces (object) Dir=Out
+        -> Set LocAvailableWorkspaces.LocAvailableWorkspaces
+      Pin: self (object) Dir=In
+        -> Get BehaviorCompRef.BehaviorCompRef
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Select.Option 1
+    Node: Has Available Slot
+Target is BP Workspace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TempWorkspace.TempWorkspace
+      Pin: Available (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+        -> Set TempWorkspace.then
+      Pin: Condition (bool) Dir=In
+        -> Has Available Slot
+Target is BP Workspace.Available
+      Pin: then (exec) Dir=Out
+        -> Set Current Workspace
+Target is BP Behavior Component.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Current Workspace
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Set TempIndex.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Get BehaviorCompRef.BehaviorCompRef
+      Pin: NewWorkspace (object) Dir=In
+        -> Get TempWorkspace.TempWorkspace
+    Node: Set TempWorkspace (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocAvailableWorkspaces.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: TempWorkspace (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get TempWorkspace (K2Node_VariableGet)
+      Pin: TempWorkspace (object) Dir=Out
+        -> Set Current Workspace
+Target is BP Behavior Component.NewWorkspace
+      Pin: self (object) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Workspace
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BehaviorCompRef.BehaviorCompRef
+      Pin: OutputPin (object) Dir=Out
+        -> Get Current Workspace
+Target is BP Behavior Component.self
+    Node: Get RandomWorkspace (K2Node_VariableGet)
+      Pin: RandomWorkspace (bool) Dir=Out
+        -> Select.Index
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: Option 1 (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Get RandomWorkspace.RandomWorkspace
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BehaviorCompRef.BehaviorCompRef
+      Pin: OutputPin (object) Dir=Out
+        -> Get RandomWorkspace.self
+    Node: Get Current Workspace
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: RetWorkspace (object) Dir=Out
+        -> Find Item.ItemToFind
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get LocAvailableWorkspaces.LocAvailableWorkspaces
+      Pin: ItemToFind (object) Dir=In
+        -> Get Current Workspace
+Target is BP Behavior Component.RetWorkspace
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set CurrentWorkspace.execute
+      Pin: else (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Get TempWorkspace (K2Node_VariableGet)
+      Pin: TempWorkspace (object) Dir=Out
+        -> Has Available Slot
+Target is BP Workspace.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set TempWorkspace.then
+      Pin: InputObject (object) Dir=In
+        -> Set TempWorkspace.Output_Get
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set TempWorkspace.execute
+    Node: int + int (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Select.Option 0
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get LocAvailableWorkspaces.LocAvailableWorkspaces
+      Pin: ReturnValue (int) Dir=Out
+        -> Random Integer in Range.Max
+    Node: Set TempWorkspace (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: TempWorkspace (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set LocAvailableWorkspaces (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set BehaviorCompRef.then
+      Pin: then (exec) Dir=Out
+        -> Set TempWorkspace.execute
+      Pin: LocAvailableWorkspaces (object) Dir=In
+        -> Get AvailableWorkspaces.AvailableWorkspaces
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get LocAvailableWorkspaces (K2Node_VariableGet)
+      Pin: LocAvailableWorkspaces (object) Dir=Out
+        -> Last Index.TargetArray
+        -> Find Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get LocAvailableWorkspaces (K2Node_VariableGet)
+      Pin: LocAvailableWorkspaces (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Get LocAvailableWorkspaces (K2Node_VariableGet)
+      Pin: LocAvailableWorkspaces (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Get TempWorkspace (K2Node_VariableGet)
+      Pin: TempWorkspace (object) Dir=Out
+        -> Set CurrentWorkspace.CurrentWorkspace
+      Pin: self (object) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentWorkspace.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Set new workspace but fail the execute so we can move to the next available workspace (EdGraphNode_Comment)
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set CurrentWorkspace (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: CurrentWorkspace (object) Dir=In
+        -> Get TempWorkspace.TempWorkspace
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BehaviorCompRef.BehaviorCompRef
+    Node: Set BehaviorCompRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ControllerRef.then
+      Pin: then (exec) Dir=Out
+        -> Set LocAvailableWorkspaces.execute
+      Pin: BehaviorCompRef (object) Dir=In
+        -> Get Personality.Personality
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BehaviorCompRef (K2Node_VariableGet)
+      Pin: BehaviorCompRef (object) Dir=Out
+        -> Get AvailableWorkspaces.self
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get BehaviorCompRef (K2Node_VariableGet)
+      Pin: BehaviorCompRef (object) Dir=Out
+        -> Set Current Workspace
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Get BehaviorCompRef (K2Node_VariableGet)
+      Pin: BehaviorCompRef (object) Dir=Out
+        -> Set CurrentWorkspace.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set TempIndex.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Get RandomWorkspace.RandomWorkspace
+      Pin: OutputPin (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Find Item.TargetArray
+      Pin: self (object) Dir=In
+        -> Get TempWorkspace.TempWorkspace
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorCompRef.BehaviorCompRef
+      Pin: RetCharacter (object) Dir=Out
+        -> Find Item.ItemToFind
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: ItemToFind (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: ReturnValue (int) Dir=Out
+        -> integer >= integer.A
+        -> Set TempIndex.TempIndex
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BehaviorCompRef (K2Node_VariableGet)
+      Pin: BehaviorCompRef (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Set TempIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Workspace
+Target is BP Behavior Component.execute
+      Pin: TempIndex (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get LocAvailableWorkspaces.LocAvailableWorkspaces
+      Pin: Dimension 1 (int) Dir=In
+        -> Select.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Set TempWorkspace.TempWorkspace
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get LocAvailableWorkspaces.LocAvailableWorkspaces
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set TempWorkspace.TempWorkspace
+    Node: Set ControllerRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Set BehaviorCompRef.execute
+      Pin: ControllerRef (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: Output_Get (object) Dir=Out
+        -> Get Personality.self
+      Pin: self (object) Dir=In
+    Node: Get TempWorkspace (K2Node_VariableGet)
+      Pin: TempWorkspace (object) Dir=Out
+        -> Get WorkersArray.self
+      Pin: self (object) Dir=In

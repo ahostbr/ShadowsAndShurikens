@@ -1,0 +1,349 @@
+Blueprint: BP_Pipe (/Game/InventorySystemPro/ExampleContent/Common/Equipment/Weapons/BP_Pipe.BP_Pipe)
+  Graph: EventGraph
+    Node: Equipment Weapon Events (EdGraphNode_Comment)
+    Node: Event OnBeginReload
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event OnEndAim
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event OnBeginAim
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event OnBeginPrimaryFire
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Begin Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: Event OnEndPrimaryFire
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On End Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: Event Destroyed (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Destroy
+Target is BP Melee Weapon Component.execute
+    Node: Event OnSetupEquipment
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ItemSlot.execute
+      Pin: Character (object) Dir=Out
+        -> On Attach Equipment to Character
+Target is BP Melee Weapon Component.Character
+      Pin: ItemSlot (struct) Dir=Out
+        -> Set ItemSlot.ItemSlot
+    Node: Setup (EdGraphNode_Comment)
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Attach Equipment to Character
+Target is BP Melee Weapon Component.self
+        -> Set ItemSlot.self
+        -> On Setup
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Attach Equipment to Character
+Target is BP Melee Weapon Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ItemSlot.then
+      Pin: then (exec) Dir=Out
+        -> On Setup
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).execute
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+      Pin: Character (object) Dir=In
+        -> Event OnSetupEquipment
+From BPI Equipment.Character
+      Pin: SocketName (name) Dir=In
+    Node: Event OnDestroyEquipment
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: Character (object) Dir=Out
+    Node: Destroy Actor (EdGraphNode_Comment)
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnDestroyEquipment
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Begin Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnBeginPrimaryFire
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Begin Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On End Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Destroy
+Target is BP Melee Weapon Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Destroyed.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Destroy
+Target is BP Melee Weapon Component.self
+      Pin: self (object) Dir=In
+    Node: Set ItemSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event OnSetupEquipment
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+        -> On Attach Equipment to Character
+Target is BP Melee Weapon Component.execute
+      Pin: ItemSlot (struct) Dir=In
+        -> Event OnSetupEquipment
+From BPI Equipment.ItemSlot
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: On Setup
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Attach Equipment to Character
+Target is BP Melee Weapon Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: On Component Begin Overlap (CapsuleCollision) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).execute
+      Pin: OverlappedComponent (object) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).OverlappedComponent
+      Pin: OtherActor (object) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).OtherActor
+      Pin: OtherComp (object) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).OtherComp
+      Pin: OtherBodyIndex (int) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).OtherBodyIndex
+      Pin: bFromSweep (bool) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).bFromSweep
+      Pin: SweepResult (struct) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).SweepResult
+    Node: Weapon Hit Detection & Anim Notify Events (EdGraphNode_Comment)
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Hit Detected Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+      Pin: OverlappedComponent (object) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).OverlappedComponent
+      Pin: OtherActor (object) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).OtherActor
+      Pin: OtherComp (object) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).OtherComp
+      Pin: OtherBodyIndex (int) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).OtherBodyIndex
+      Pin: bFromSweep (bool) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).bFromSweep
+      Pin: SweepResult (struct) Dir=In
+        -> On Component Begin Overlap (CapsuleCollision).SweepResult
+    Node: Event OnBeginHitDetection
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Enable Hit Detection Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: Event OnEndHitDetection
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Enable Hit Detection Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Enable Hit Detection Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Enable Hit Detection Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnBeginHitDetection
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+      Pin: bIsHitDetectionEnabled (bool) Dir=In
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Enable Hit Detection Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Enable Hit Detection Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndHitDetection
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+      Pin: bIsHitDetectionEnabled (bool) Dir=In
+    Node: Event OnResetCombo
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Reset Combo Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).execute
+    Node: Event OnResetAttack
+From BPI Equipment (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Reset Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Reset Combo Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> On Reset Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: On Reset Combo Client
+Target is BP Melee Weapon Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnResetCombo
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: On Reset Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnResetAttack
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: On End Attack Client
+Target is BP Melee Weapon Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndPrimaryFire
+From BPI Equipment.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set SkeletalMesh.execute
+      Pin: self (object) Dir=In
+    Node: Get SkeletalMesh (K2Node_VariableGet)
+      Pin: SkeletalMesh (object) Dir=Out
+        -> Set SkeletalMesh.SkeletalMesh
+      Pin: self (object) Dir=In
+    Node: Set Skeletal Mesh and Capsule Collision Reference in Weapon Component (EdGraphNode_Comment)
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> Set SkeletalMesh.self
+      Pin: self (object) Dir=In
+    Node: Set SkeletalMesh (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set CapsuleCollision.execute
+      Pin: SkeletalMesh (object) Dir=In
+        -> Get SkeletalMesh.SkeletalMesh
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: Get BP_MeleeWeaponComponent (K2Node_VariableGet)
+      Pin: BP_MeleeWeaponComponent (object) Dir=Out
+        -> Set CapsuleCollision.self
+      Pin: self (object) Dir=In
+    Node: Set CapsuleCollision (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SkeletalMesh.then
+      Pin: then (exec) Dir=Out
+      Pin: CapsuleCollision (object) Dir=In
+        -> Get CapsuleCollision.CapsuleCollision
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_MeleeWeaponComponent.BP_MeleeWeaponComponent
+    Node: Get CapsuleCollision (K2Node_VariableGet)
+      Pin: CapsuleCollision (object) Dir=Out
+        -> Set CapsuleCollision.CapsuleCollision
+      Pin: self (object) Dir=In

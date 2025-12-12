@@ -1,0 +1,427 @@
+Blueprint: BPW_CGF_Interaction (/Game/CoreGameFramework/UI/Widgets/Elements/Interaction/BPW_CGF_Interaction.BPW_CGF_Interaction)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Branch.Condition
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Set ProgressBar_MI_Index.then
+      Pin: then (exec) Dir=Out
+        -> Set ProgressBar_DynamicMaterialInstance.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+        -> Select.ReturnValue
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set ProgressBar_DynamicMaterialInstance.ProgressBar_DynamicMaterialInstance
+    Node: Set ProgressBar_DynamicMaterialInstance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: ProgressBar_DynamicMaterialInstance (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.Material
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get.ProgressBar_DynamicMaterialInstance
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get CurrentProgressBarPercent.CurrentProgressBarPercent
+    Node: Get CurrentProgressBarPercent (K2Node_VariableGet)
+      Pin: CurrentProgressBarPercent (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ProgressBar_DynamicMaterialInstance.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+        -> Get ProgressBarImage.ProgressBarImage
+      Pin: Material (object) Dir=In
+        -> Set ProgressBar_DynamicMaterialInstance.Output_Get
+    Node: Get ProgressBarImage (K2Node_VariableGet)
+      Pin: ProgressBarImage (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get ProgressBarMaterial.ProgressBarMaterial
+      Pin: Option 1 (object) Dir=In
+      Pin: Option 2 (object) Dir=In
+      Pin: Option 3 (object) Dir=In
+      Pin: Option 4 (object) Dir=In
+      Pin: Option 5 (object) Dir=In
+      Pin: Option 6 (object) Dir=In
+      Pin: Option 7 (object) Dir=In
+      Pin: Option 8 (object) Dir=In
+      Pin: Option 9 (object) Dir=In
+      Pin: Option 10 (object) Dir=In
+      Pin: Option 11 (object) Dir=In
+      Pin: Option 12 (object) Dir=In
+      Pin: Option 13 (object) Dir=In
+      Pin: Option 14 (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get ProgressBar_MI_Index.ProgressBar_MI_Index
+      Pin: ReturnValue (object) Dir=Out
+        -> Create Dynamic Material Instance.Parent
+    Node: Get ProgressBar_MI_Index (K2Node_VariableGet)
+      Pin: ProgressBar_MI_Index (int) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: UpdateMaterialInstance
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ProgressBar_MI_Index.execute
+      Pin: ProgressBar_MI_Index (int) Dir=Out
+        -> Set ProgressBar_MI_Index.ProgressBar_MI_Index
+    Node: Set ProgressBar_MI_Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateMaterialInstance
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: ProgressBar_MI_Index (int) Dir=In
+        -> UpdateMaterialInstance
+Custom Event.ProgressBar_MI_Index
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: SetProgressDisplayText
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CurrentProgressBarPercent.execute
+      Pin: Percent (real) Dir=Out
+        -> Set CurrentProgressBarPercent.CurrentProgressBarPercent
+      Pin: Time (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set Brush from Material
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: else (exec) Dir=Out
+      Pin: ProgressBar_DynamicMaterialInstance (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set CurrentProgressBarPercent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetProgressDisplayText
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Time.execute
+      Pin: CurrentProgressBarPercent (real) Dir=In
+        -> SetProgressDisplayText
+Custom Event.Percent
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: Condition (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: Condition (bool) Dir=In
+        -> Get UseProgressBar?.UseProgressBar?
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get UseProgressBar? (K2Node_VariableGet)
+      Pin: UseProgressBar? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set Time.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Get.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get UseProgressBar? (K2Node_VariableGet)
+      Pin: UseProgressBar? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get ProgressBarImage (K2Node_VariableGet)
+      Pin: ProgressBarImage (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ProgressBarImage.ProgressBarImage
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get UseProgressBar?.UseProgressBar?
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get ProgressTextBlock (K2Node_VariableGet)
+      Pin: ProgressTextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get ProgressTextBlock.ProgressTextBlock
+      Pin: InText (text) Dir=In
+        -> Select.ReturnValue
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: B (string) Dir=In
+        -> Get ProgressText AppendToEnd.ProgressText AppendToEnd
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Select.Option 1
+    Node: Get Show Progress Text Always? (K2Node_VariableGet)
+      Pin: Show Progress Text Always? (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: else (exec) Dir=Out
+    Node: Round (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get CurrentProgressBarPercent.CurrentProgressBarPercent
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Round.A
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Round.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Get ProgressText AppendToEnd (K2Node_VariableGet)
+      Pin: ProgressText AppendToEnd (string) Dir=Out
+        -> Append.B
+      Pin: self (object) Dir=In
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InFontInfo (struct) Dir=In
+        -> Get ProgressTextFontSettings.ProgressTextFontSettings
+    Node: Get ProgressTextFontSettings (K2Node_VariableGet)
+      Pin: ProgressTextFontSettings (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get ProgressTextBlock.ProgressTextBlock
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Font
+Target is Text.self
+    Node: Get ProgressBarMaterial (K2Node_VariableGet)
+      Pin: ProgressBarMaterial (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get ProgressTextBlock.ProgressTextBlock
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get ProgressTextBlock (K2Node_VariableGet)
+      Pin: ProgressTextBlock (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Progress Text Always?.Show Progress Text Always?
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get Show Progress Text Always? (K2Node_VariableGet)
+      Pin: Show Progress Text Always? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get Show Progress Text Always?.Show Progress Text Always?
+      Pin: B (bool) Dir=In
+        -> Get Show Progress Text While Interacting Only?.Show Progress Text While Interacting Only?
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Show Progress Text While Interacting Only? (K2Node_VariableGet)
+      Pin: Show Progress Text While Interacting Only? (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (text) Dir=In
+        -> To Text (Float).ReturnValue
+      Pin: Option 1 (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Equal Exactly (Text).A
+        -> Select.Option 0
+    Node: Set Time (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentProgressBarPercent.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Time (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Time (K2Node_VariableGet)
+      Pin: Time (real) Dir=Out
+        -> To Text (Float).Value
+      Pin: self (object) Dir=In
+    Node: To Text (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Time.Time
+      Pin: RoundingMode (byte) Dir=In
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: MinimumFractionalDigits (int) Dir=In
+      Pin: MaximumFractionalDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Select.Option 0
+    Node: Get Progress Text Type (K2Node_VariableGet)
+      Pin: Progress Text Type (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: self (object) Dir=In
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: A (byte) Dir=In
+        -> Get Progress Text Type.Progress Text Type
+      Pin: B (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SetProgressDisplayText
+Custom Event.Time
+      Pin: OutputPin (real) Dir=Out
+        -> Set Time.Time
+    Node: Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> Select.ReturnValue
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Equal Exactly (Text).B
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (text) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Equal Exactly (Text).ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Select.Option 1

@@ -1,0 +1,172 @@
+Blueprint: WBP_SurvivalInfo_Horror (/Game/InventorySystemPro/ExampleContent/Horror/UI/Widgets/WBP_SurvivalInfo_Horror.WBP_SurvivalInfo_Horror)
+  Graph: EventGraph
+    Node: Event OnUpdateHealth
+From BPI Survival Info (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Health Bar
+Target is WBP Survival Info Horror.execute
+      Pin: CurrentHealth (real) Dir=Out
+        -> Update Health Bar
+Target is WBP Survival Info Horror.Health
+      Pin: MaxHealth (real) Dir=Out
+      Pin: bSkipInterpolation (bool) Dir=Out
+    Node: Update Health Bar
+Target is WBP Survival Info Horror (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnUpdateHealth
+From BPI Survival Info.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Health (real) Dir=In
+        -> Event OnUpdateHealth
+From BPI Survival Info.CurrentHealth
+    Node: Survival Info Interface Events (EdGraphNode_Comment)
+    Node: Event OnSetupHealth (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: Health (real) Dir=Out
+    Node: Event OnDamageTaken
+From BPI Survival Info (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: Health (real) Dir=Out
+      Pin: Damage (real) Dir=Out
+    Node: Event OnSetupHydration (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: Hydration (real) Dir=Out
+    Node: Event OnSetupMana (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: Mana (real) Dir=Out
+    Node: Event OnSetupNutrition (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: Nutrition (real) Dir=Out
+    Node: Event OnUpdateHydration
+From BPI Survival Info (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: CurrentHydration (real) Dir=Out
+      Pin: MaxHydration (real) Dir=Out
+      Pin: bSkipInterpolation (bool) Dir=Out
+    Node: Event OnUpdateMana
+From BPI Survival Info (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: CurrentMana (real) Dir=Out
+      Pin: MaxMana (real) Dir=Out
+      Pin: bSkipInterpolation (bool) Dir=Out
+    Node: Event OnUpdateNutrition
+From BPI Survival Info (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: CurrentNutrition (real) Dir=Out
+      Pin: MaxNutrition (real) Dir=Out
+      Pin: bSkipInterpolation (bool) Dir=Out
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnDamageTaken
+From BPI Survival Info.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get PulseImpactImage.PulseImpactImage
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get PulseImpactImage (K2Node_VariableGet)
+      Pin: PulseImpactImage (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+  Graph: UpdateHealthBar
+    Node: UpdateHealthBar (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Health (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Update Healthbar (EdGraphNode_Comment)
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> UpdateHealthBar.Health
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float >= float.A
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> UpdateHealthBar.then
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Opacity
+Target is Image.execute
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get PulseHealthImage.PulseHealthImage
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Set Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Stop Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+        -> Get HealthImage.HealthImage
+      Pin: InOpacity (real) Dir=In
+    Node: Stop Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Opacity
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get PulseHealthImage.PulseHealthImage
+    Node: Get PulseHealthImage (K2Node_VariableGet)
+      Pin: PulseHealthImage (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Get HealthImage (K2Node_VariableGet)
+      Pin: HealthImage (object) Dir=Out
+        -> Set Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get PulseHealthImage (K2Node_VariableGet)
+      Pin: PulseHealthImage (object) Dir=Out
+        -> Stop Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In

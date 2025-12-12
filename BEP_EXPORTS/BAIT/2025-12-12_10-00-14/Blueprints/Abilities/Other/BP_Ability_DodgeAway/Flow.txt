@@ -1,0 +1,69 @@
+Blueprint: BP_Ability_DodgeAway (/Game/BossAIToolkit/Blueprints/Abilities/Other/BP_Ability_DodgeAway.BP_Ability_DodgeAway)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> On Play Dodge Anim
+Target is BPC Boss Behavior
+RELIABLE Replicated To All (if server).execute
+      Pin: self (object) Dir=In
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> On Play Dodge Anim
+Target is BPC Boss Behavior
+RELIABLE Replicated To All (if server).self
+        -> Get DodgeDuration.self
+      Pin: self (object) Dir=In
+    Node: On Play Dodge Anim
+Target is BPC Boss Behavior
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Play Dodge Anim
+Target is BPC Boss Behavior
+RELIABLE Replicated To All (if server).then
+      Pin: then (exec) Dir=Out
+        -> Activate Combo
+Target is BPC Boss Behavior.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get DodgeDuration.DodgeDuration
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get DodgeDuration (K2Node_VariableGet)
+      Pin: DodgeDuration (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Activate Combo
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Activate Combo
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

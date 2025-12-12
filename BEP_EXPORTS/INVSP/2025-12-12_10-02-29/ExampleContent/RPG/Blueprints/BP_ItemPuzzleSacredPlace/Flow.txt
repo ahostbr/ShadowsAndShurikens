@@ -1,0 +1,668 @@
+Blueprint: BP_ItemPuzzleSacredPlace (/Game/InventorySystemPro/ExampleContent/RPG/Blueprints/BP_ItemPuzzleSacredPlace.BP_ItemPuzzleSacredPlace)
+  Graph: EventGraph
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.execute
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Setup (EdGraphNode_Comment)
+    Node: Solve Puzzle - Color Water red and start blood particle system (EdGraphNode_Comment)
+    Node: Event OnInteract
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnInteract.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Parent: OnInteract.PlayerController
+    Node: Parent: OnInteract (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnInteract
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnInteract
+From BPI Interaction.PlayerController
+    Node: Overlap events (EdGraphNode_Comment)
+    Node: Open the inventory, so the player can pick the required item to solve the puzzle (EdGraphNode_Comment)
+    Node: Solve the puzzle if the right key item is used in the inventory (EdGraphNode_Comment)
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: ActorBeginOverlap.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Parent: ActorBeginOverlap.OtherActor
+    Node: Event ActorEndOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: ActorEndOverlap.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Parent: ActorEndOverlap.OtherActor
+    Node: Parent: ActorBeginOverlap (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+    Node: Parent: ActorEndOverlap (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorEndOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorEndOverlap.OtherActor
+    Node: Event OnPuzzleInteract (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnPuzzleInteract.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Parent: OnPuzzleInteract.PlayerController
+    Node: Parent: OnPuzzleInteract (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnPuzzleInteract.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnPuzzleInteract.PlayerController
+    Node: Event OnAttemptUseRequiredItem (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnAttemptUseRequiredItem.execute
+      Pin: InventoryComponent (object) Dir=Out
+        -> Parent: OnAttemptUseRequiredItem.InventoryComponent
+    Node: Parent: OnAttemptUseRequiredItem (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnAttemptUseRequiredItem.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InventoryComponent (object) Dir=In
+        -> Event OnAttemptUseRequiredItem.InventoryComponent
+    Node: Event OnEndChooseItem
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnEndChooseItem.execute
+      Pin: bItemMatches (bool) Dir=Out
+        -> Parent: OnEndChooseItem.bItemMatches
+      Pin: bAllItemsCompleted (bool) Dir=Out
+        -> Parent: OnEndChooseItem.bAllItemsCompleted
+      Pin: Items (struct) Dir=Out
+        -> Parent: OnEndChooseItem.Items
+    Node: Parent: OnEndChooseItem (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bItemMatches (bool) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.bItemMatches
+      Pin: bAllItemsCompleted (bool) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.bAllItemsCompleted
+      Pin: Items (struct) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.Items
+    Node: Event OnSolvePuzzle (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnSolvePuzzle.execute
+    Node: Parent: OnSolvePuzzle (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnSolvePuzzle.then
+      Pin: then (exec) Dir=Out
+        -> Set Actor Tick Enabled
+Target is Actor.execute
+      Pin: self (object) Dir=In
+    Node: Get Tail (K2Node_VariableGet)
+      Pin: Tail (object) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.execute
+      Pin: self (object) Dir=In
+        -> Get Tail.Tail
+      Pin: InVariableName (name) Dir=In
+      Pin: InValue (struct) Dir=In
+        -> Make Linear Color.LinearColor
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.InValue
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+    Node: Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.execute
+      Pin: self (object) Dir=In
+        -> Get Head.Head
+      Pin: InVariableName (name) Dir=In
+      Pin: InValue (struct) Dir=In
+        -> Make Linear Color.LinearColor
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.InValue
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+    Node: Get Head (K2Node_VariableGet)
+      Pin: Head (object) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.execute
+      Pin: self (object) Dir=In
+        -> Get Trails.Trails
+      Pin: InVariableName (name) Dir=In
+      Pin: InValue (struct) Dir=In
+        -> Make Linear Color.LinearColor
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.InValue
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+    Node: Get Floor (K2Node_VariableGet)
+      Pin: Floor (object) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Get Trails (K2Node_VariableGet)
+      Pin: Trails (object) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Light Color
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get Floor.Floor
+      Pin: InVariableName (name) Dir=In
+      Pin: InValue (struct) Dir=In
+        -> Make Linear Color.LinearColor
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.InValue
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+    Node: Get PointLight (K2Node_VariableGet)
+      Pin: PointLight (object) Dir=Out
+        -> Set Light Color
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Light Color
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PointLight.PointLight
+      Pin: NewLightColor (struct) Dir=In
+      Pin: bSRGB (bool) Dir=In
+    Node: Get Tail (K2Node_VariableGet)
+      Pin: Tail (object) Dir=Out
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set OldLocation.execute
+      Pin: self (object) Dir=In
+        -> Get Tail.Tail
+      Pin: InVariableName (name) Dir=In
+      Pin: InValue (struct) Dir=In
+        -> vector - vector.ReturnValue
+    Node: Set OldLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+      Pin: OldLocation (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Tail (K2Node_VariableGet)
+      Pin: Tail (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Tail.Tail
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set OldLocation.OldLocation
+    Node: Get Tail (K2Node_VariableGet)
+      Pin: Tail (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Tail.Tail
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get OldLocation.OldLocation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.InValue
+    Node: Get OldLocation (K2Node_VariableGet)
+      Pin: OldLocation (struct) Dir=Out
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: Timeline_1 (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Sequence.then_0
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: HeadLocation (struct) Dir=Out
+        -> Break Vector.InVec
+    Node: Get Head (K2Node_VariableGet)
+      Pin: Head (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_1.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Head.Head
+      Pin: NewLocation (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Vector.X
+      Pin: Y (real) Dir=In
+        -> Break Vector.Y
+      Pin: Z (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Timeline_1.HeadLocation
+      Pin: X (real) Dir=Out
+        -> Make Vector.X
+      Pin: Y (real) Dir=Out
+        -> Make Vector.Y
+      Pin: Z (real) Dir=Out
+        -> float + float.B
+    Node: Get HeadZLocation (K2Node_VariableGet)
+      Pin: HeadZLocation (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get HeadZLocation.HeadZLocation
+      Pin: B (real) Dir=In
+        -> Break Vector.Z
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.Z
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Actor Tick Enabled
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Actor Tick Enabled
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then_0 (exec) Dir=Out
+        -> Timeline_1.Play
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+    Node: Set Actor Tick Enabled
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: OnSolvePuzzle.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+    Node: Set Actor Tick Enabled
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+        -> Set Actor Tick Enabled
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Event OnEndChooseItem_Server (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnEndChooseItem_Server.execute
+      Pin: ItemMatches (bool) Dir=Out
+        -> Parent: OnEndChooseItem_Server.ItemMatches
+      Pin: AllItemsCompleted (bool) Dir=Out
+        -> Parent: OnEndChooseItem_Server.AllItemsCompleted
+      Pin: Items (struct) Dir=Out
+        -> Parent: OnEndChooseItem_Server.Items
+    Node: Parent: OnEndChooseItem_Server (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndChooseItem_Server.then
+      Pin: then (exec) Dir=Out
+        -> Update Puzzle State
+Target is BP Item Puzzle Sacred Place.execute
+      Pin: self (object) Dir=In
+      Pin: ItemMatches (bool) Dir=In
+        -> Event OnEndChooseItem_Server.ItemMatches
+      Pin: AllItemsCompleted (bool) Dir=In
+        -> Event OnEndChooseItem_Server.AllItemsCompleted
+      Pin: Items (struct) Dir=In
+        -> Event OnEndChooseItem_Server.Items
+    Node: Get CompletedItems (K2Node_VariableGet)
+      Pin: CompletedItems (struct) Dir=Out
+        -> GET.Array
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Break FItem with Bool.Bool_7_539F23B243319119FCB1D7999F8E9388
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Tick Enabled
+Target is Actor.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Niagara Variable (LinearColor)
+Target is Niagara Particle System Component.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Delay.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: Condition (bool) Dir=In
+        -> Break FItem with Bool.Bool_7_539F23B243319119FCB1D7999F8E9388
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get PlacedItem1 (K2Node_VariableGet)
+      Pin: PlacedItem1 (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get PlacedItem2 (K2Node_VariableGet)
+      Pin: PlacedItem2 (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PlacedItem1.PlacedItem1
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PlacedItem2.PlacedItem2
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break FItem with Bool.FItemWithBool
+    Node: Break FItem with Bool (K2Node_BreakStruct)
+      Pin: FItemWithBool (struct) Dir=In
+        -> GET.Output
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+      Pin: Bool_7_539F23B243319119FCB1D7999F8E9388 (bool) Dir=Out
+        -> Branch.Condition
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break FItem with Bool.FItemWithBool
+    Node: Break FItem with Bool (K2Node_BreakStruct)
+      Pin: FItemWithBool (struct) Dir=In
+        -> GET.Output
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+      Pin: Bool_7_539F23B243319119FCB1D7999F8E9388 (bool) Dir=Out
+        -> Branch.Condition
+    Node: Update Puzzle State
+Target is BP Item Puzzle Sacred Place (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: OnEndChooseItem_Server.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.execute
+    Node: Get Tail (K2Node_VariableGet)
+      Pin: Tail (object) Dir=Out
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Tail.Tail
+      Pin: InVariableName (name) Dir=In
+      Pin: InValue (struct) Dir=In
+        -> Make Vector Net Quantize.ReturnValue
+    Node: Make Vector Net Quantize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Niagara Variable (Vector3)
+Target is Niagara Particle System Component.InValue
+  Graph: UpdatePuzzleState
+    Node: UpdatePuzzleState (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: UpdatePuzzleState.execute
+    Node: Parent: UpdatePuzzleState (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdatePuzzleState.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+    Node: Get CompletedItems (K2Node_VariableGet)
+      Pin: CompletedItems (struct) Dir=Out
+        -> GET.Array
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Break FItem with Bool.Bool_7_539F23B243319119FCB1D7999F8E9388
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Parent: UpdatePuzzleState.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Break FItem with Bool.Bool_7_539F23B243319119FCB1D7999F8E9388
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get PlacedItem1 (K2Node_VariableGet)
+      Pin: PlacedItem1 (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get PlacedItem2 (K2Node_VariableGet)
+      Pin: PlacedItem2 (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PlacedItem1.PlacedItem1
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PlacedItem2.PlacedItem2
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break FItem with Bool.FItemWithBool
+    Node: Break FItem with Bool (K2Node_BreakStruct)
+      Pin: FItemWithBool (struct) Dir=In
+        -> GET.Output
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+      Pin: Bool_7_539F23B243319119FCB1D7999F8E9388 (bool) Dir=Out
+        -> Branch.Condition
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break FItem with Bool.FItemWithBool
+    Node: Break FItem with Bool (K2Node_BreakStruct)
+      Pin: FItemWithBool (struct) Dir=In
+        -> GET.Output
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+      Pin: Bool_7_539F23B243319119FCB1D7999F8E9388 (bool) Dir=Out
+        -> Branch.Condition
+    Node: Update Puzzle State (EdGraphNode_Comment)

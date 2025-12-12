@@ -1,0 +1,63 @@
+Blueprint: WBP_ContextButton_Horror (/Game/InventorySystemPro/ExampleContent/Horror/UI/Widgets/WBP_ContextButton_Horror.WBP_ContextButton_Horror)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set TextRef.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=Out
+        -> Parent: Tick.InDeltaTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> Event Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=In
+        -> Event Tick.InDeltaTime
+    Node: Set TextRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Setup Button
+Target is WBP Inventory Button Base.execute
+      Pin: TextRef (object) Dir=In
+        -> Get Text.Text
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (object) Dir=Out
+        -> Set TextRef.TextRef
+      Pin: self (object) Dir=In
+    Node: Setup Button
+Target is WBP Inventory Button Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TextRef.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

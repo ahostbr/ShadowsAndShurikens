@@ -1,0 +1,190 @@
+Blueprint: WBP_WeaponAmmoMagazine (/Game/InventorySystemPro/ExampleContent/Common/UI/WBP_WeaponAmmoMagazine.WBP_WeaponAmmoMagazine)
+  Graph: EventGraph
+    Node: Update Ammo Text
+Target is WBP Weapon Ammo Magazine (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event UpdateWeaponAmmo
+From BPI Weapon Ammo Info.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CurrentMagAmount (int) Dir=In
+        -> Event UpdateWeaponAmmo
+From BPI Weapon Ammo Info.AmmoInMagazine
+      Pin: TotalAmount (int) Dir=In
+        -> Event UpdateWeaponAmmo
+From BPI Weapon Ammo Info.TotalAmmo
+    Node: Event UpdateWeaponAmmo
+From BPI Weapon Ammo Info (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Ammo Text
+Target is WBP Weapon Ammo Magazine.execute
+      Pin: AmmoInMagazine (int) Dir=Out
+        -> Update Ammo Text
+Target is WBP Weapon Ammo Magazine.CurrentMagAmount
+      Pin: TotalAmmo (int) Dir=Out
+        -> Update Ammo Text
+Target is WBP Weapon Ammo Magazine.TotalAmount
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Ammo Text
+Target is WBP Weapon Ammo Magazine.execute
+    Node: Update Ammo Text
+Target is WBP Weapon Ammo Magazine (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CurrentMagAmount (int) Dir=In
+        -> Get CurrentMagAmount.CurrentMagAmount
+      Pin: TotalAmount (int) Dir=In
+        -> Get TotalAmount.TotalAmount
+    Node: Get CurrentMagAmount (K2Node_VariableGet)
+      Pin: CurrentMagAmount (int) Dir=Out
+        -> Update Ammo Text
+Target is WBP Weapon Ammo Magazine.CurrentMagAmount
+      Pin: self (object) Dir=In
+    Node: Get TotalAmount (K2Node_VariableGet)
+      Pin: TotalAmount (int) Dir=Out
+        -> Update Ammo Text
+Target is WBP Weapon Ammo Magazine.TotalAmount
+      Pin: self (object) Dir=In
+    Node: Initial State (EdGraphNode_Comment)
+    Node: Update (EdGraphNode_Comment)
+  Graph: UpdateAmmoText
+    Node: UpdateAmmoText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set CurrentMagAmount.execute
+      Pin: CurrentMagAmount (int) Dir=Out
+        -> Set CurrentMagAmount.CurrentMagAmount
+      Pin: TotalAmount (int) Dir=Out
+        -> Set TotalAmount.TotalAmount
+    Node: Get CurrentMagAmmoText (K2Node_VariableGet)
+      Pin: CurrentMagAmmoText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TotalAmount.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get CurrentMagAmmoText.CurrentMagAmmoText
+      Pin: InText (text) Dir=In
+        -> To Text (Integer).ReturnValue
+    Node: To Text (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Get CurrentMagAmount.CurrentMagAmount
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get TotalAmmoIninventoryText.TotalAmmoIninventoryText
+      Pin: InText (text) Dir=In
+        -> To Text (Integer).ReturnValue
+    Node: Get TotalAmmoIninventoryText (K2Node_VariableGet)
+      Pin: TotalAmmoIninventoryText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: To Text (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Get TotalAmount.TotalAmount
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Set CurrentMagAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateAmmoText.then
+      Pin: then (exec) Dir=Out
+        -> Set TotalAmount.execute
+      Pin: CurrentMagAmount (int) Dir=In
+        -> UpdateAmmoText.CurrentMagAmount
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CurrentMagAmount (K2Node_VariableGet)
+      Pin: CurrentMagAmount (int) Dir=Out
+        -> To Text (Integer).Value
+    Node: Get TotalAmount (K2Node_VariableGet)
+      Pin: TotalAmount (int) Dir=Out
+        -> To Text (Integer).Value
+      Pin: self (object) Dir=In
+    Node: Set TotalAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentMagAmount.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: TotalAmount (int) Dir=In
+        -> UpdateAmmoText.TotalAmount
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CurrentMagAmmoText (K2Node_VariableGet)
+      Pin: CurrentMagAmmoText (object) Dir=Out
+        -> Set Color and Opacity
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CurrentMagAmmoText.CurrentMagAmmoText
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: Option 1 (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: Index (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Text.InColorAndOpacity
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Select.Option 0
+      Pin: SpecifiedColor (struct) Dir=In
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Select.Option 1
+      Pin: SpecifiedColor (struct) Dir=In
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Get CurrentMagAmount (K2Node_VariableGet)
+      Pin: CurrentMagAmount (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get CurrentMagAmount.CurrentMagAmount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Color current mag amount red when magazine is empty (EdGraphNode_Comment)
+    Node: Update the displayed text from the values passed by the Weapon System (EdGraphNode_Comment)

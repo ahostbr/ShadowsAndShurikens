@@ -1,0 +1,513 @@
+Blueprint: WBP_ItemShortcutMenuBase (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_ItemShortcutMenuBase.WBP_ItemShortcutMenuBase)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=Out
+        -> Parent: Tick.InDeltaTime
+    Node:  (EdGraphNode_Comment)
+    Node: Clear every item slot in the shortcut menu (EdGraphNode_Comment)
+    Node: OnUpdateShortcutMenu
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Clear Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+    Node: OnClearShortcutMenu
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Clear & Update all item slots in this menu based on the shortcut assignments within Inventory (EdGraphNode_Comment)
+    Node: On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnInventoryUpdate
+Custom Event.then
+        -> OnShortcutMenuUpdate
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnInventoryUpdate
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+    Node: Trigger an update to the shortcut menu (EdGraphNode_Comment)
+    Node: OnSetupShortcutMenu
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Setup Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+    Node: Bind Event to On Inventory Update (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Setup Shortcut Menu
+Target is WBP Item Shortcut Menu Base.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Shortcut Menu Update.execute
+      Pin: self (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Inventory Update.Delegate
+    Node: On Inventory Update
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On Shortcut Menu Update.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup the shortcut menu (EdGraphNode_Comment)
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Bind Event to On Inventory Update.self
+        -> Bind Event to On Shortcut Menu Update.self
+      Pin: self (object) Dir=In
+    Node: Clear Item Reference
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> OnClearShortcutMenu
+Custom Event.then
+      Pin: Array (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: LoopBody (exec) Dir=Out
+        -> Clear Item Reference
+Target is WBP Item Base.execute
+      Pin: Array Element (object) Dir=Out
+        -> Clear Item Reference
+Target is WBP Item Base.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: On Clear Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateShortcutMenu
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> On Clear Shortcut Menu
+Target is WBP Item Shortcut Menu Base.then
+      Pin: Array (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: LoopBody (exec) Dir=Out
+        -> Assign Item Slot to Item Shortcut
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Assign Item Slot to Item Shortcut
+Target is WBP Item Shortcut Menu Base.ItemSlot
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+    Node: Get EquipmentItemSlots (K2Node_VariableGet)
+      Pin: EquipmentItemSlots (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Array (struct) Dir=In
+        -> Get EquipmentItemSlots.EquipmentItemSlots
+      Pin: LoopBody (exec) Dir=Out
+        -> Assign Item Slot to Item Shortcut
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FEquipment Item Slot.FEquipmentItemSlot
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Assign Item Slot to Item Shortcut
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (struct) Dir=In
+        -> For Each Loop.Array Element
+    Node: Assign Item Slot to Item Shortcut
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (struct) Dir=In
+        -> Break FEquipment Item Slot.ItemSlot_6_C4895A6F41DDADAE6180248E94F2555A
+    Node: Break FEquipment Item Slot (K2Node_BreakStruct)
+      Pin: FEquipmentItemSlot (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Type_9_A70871774595F6B38A34FCA4B99E4433 (struct) Dir=Out
+      Pin: ItemSlot_6_C4895A6F41DDADAE6180248E94F2555A (struct) Dir=Out
+        -> Assign Item Slot to Item Shortcut
+Target is WBP Item Shortcut Menu Base.ItemSlot
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Get ItemSlots.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Get EquipmentItemSlots.self
+      Pin: self (object) Dir=In
+    Node: Event Destruct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Destruct.execute
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Destruct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> Event Tick.MyGeometry
+      Pin: InDeltaTime (real) Dir=In
+        -> Event Tick.InDeltaTime
+    Node: Parent: Destruct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Destruct.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: self (object) Dir=In
+    Node: Setup Shortcut Menu
+Target is WBP Item Shortcut Menu Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnSetupShortcutMenu
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Inventory Update.execute
+      Pin: self (object) Dir=In
+    Node: OnShortcutMenuUpdate
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Update Shortcut Menu
+Target is WBP Item Shortcut Menu Base.execute
+    Node: Bind Event to On Shortcut Menu Update (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On Inventory Update.then
+      Pin: then (exec) Dir=Out
+        -> On Inventory Update
+Target is WBP Item Shortcut Menu Base.execute
+      Pin: self (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Shortcut Menu Update.Delegate
+  Graph: AssignItemSlotToItemShortcut
+    Node: AssignItemSlotToItemShortcut (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> AssignItemSlotToItemShortcut.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+        -> integer >= integer.A
+        -> GET.Dimension 1
+        -> Is Valid Index.IndexToTest
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Update Shortcut Image
+Target is WBP Item Base.execute
+      Pin: self (object) Dir=In
+        -> GET.Output
+      Pin: ItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: PlayerInventory (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> AssignItemSlotToItemShortcut.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Break FItem Slot.ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> GET.Array
+        -> Is Valid Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: Dimension 1 (int) Dir=In
+        -> Break FItem Slot.ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852
+      Pin: Output (object) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.self
+        -> Is Valid.InputObject
+        -> Update Shortcut Image
+Target is WBP Item Base.self
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.ItemSlot
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.PlayerInventory
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> GET.Output
+      Pin: Is Valid (exec) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Update Shortcut Image
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> GET.Output
+    Node: Is Valid Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: IndexToTest (int) Dir=In
+        -> Break FItem Slot.ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Index.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Assign Item Slot to Item Shortcut (EdGraphNode_Comment)
+  Graph: AssignItemSlotToItemShortcutByIndex
+    Node: AssignItemSlotToItemShortcutByIndex (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ItemSlot (struct) Dir=Out
+      Pin: ShortcutIndex (int) Dir=Out
+        -> integer >= integer.A
+        -> GET.Dimension 1
+        -> Is Valid Index.IndexToTest
+    Node: Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> GET.Output
+      Pin: ItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: PlayerInventory (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> AssignItemSlotToItemShortcutByIndex.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> AssignItemSlotToItemShortcutByIndex.ShortcutIndex
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> GET.Array
+        -> Is Valid Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: Dimension 1 (int) Dir=In
+        -> AssignItemSlotToItemShortcutByIndex.ShortcutIndex
+      Pin: Output (object) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.self
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.ItemSlot
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.PlayerInventory
+      Pin: self (object) Dir=In
+    Node: Is Valid Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: IndexToTest (int) Dir=In
+        -> AssignItemSlotToItemShortcutByIndex.ShortcutIndex
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Index.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Assign Item to Shortcut Slot Widget
+Target is WBP Shortcut Item Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Assign an item slot to a shortcut widget by index (EdGraphNode_Comment)
+  Graph: SetupShortcutMenu
+    Node: SetupShortcutMenu (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set InventoryMenu.execute
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set InventoryMenu.then
+      Pin: Array (object) Dir=In
+        -> Get ItemShortcuts.ItemShortcuts
+      Pin: LoopBody (exec) Dir=Out
+        -> Set InventoryMenu.execute
+      Pin: Array Element (object) Dir=Out
+        -> Set InventoryMenu.self
+        -> Set InventoryComponent.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Set InventoryMenu (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetupShortcutMenu.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: InventoryMenu (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (softobject) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Output (object) Dir=Out
+        -> Set InventoryMenu.InventoryMenu
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Get InventoryMenu.self
+      Pin: self (object) Dir=In
+    Node: Get ItemShortcuts (K2Node_VariableGet)
+      Pin: ItemShortcuts (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Setup Shortcut Menu (EdGraphNode_Comment)
+    Node: Set InventoryMenu (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Set InventoryComponent.execute
+      Pin: InventoryMenu (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (object) Dir=Out
+        -> Set InventoryMenu.InventoryMenu
+      Pin: self (object) Dir=In
+    Node: Set InventoryComponent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InventoryMenu.then
+      Pin: then (exec) Dir=Out
+      Pin: InventoryComponent (object) Dir=In
+        -> Get PlayerInventoryComponent.PlayerInventoryComponent
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get PlayerInventoryComponent (K2Node_VariableGet)
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Set InventoryComponent.InventoryComponent
+      Pin: self (object) Dir=In
+  Graph: FadeInFadeOut
+    Node: FadeInFadeOut (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+    Node: Fade In & Fade Animation implemented in children (EdGraphNode_Comment)
+  Graph: OnAssignItemToShortcut
+    Node: OnAssignItemToShortcut (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ShortcutIndex (int) Dir=Out

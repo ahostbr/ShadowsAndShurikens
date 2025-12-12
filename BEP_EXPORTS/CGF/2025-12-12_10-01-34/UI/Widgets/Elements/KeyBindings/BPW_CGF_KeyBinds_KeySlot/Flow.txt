@@ -1,0 +1,969 @@
+Blueprint: BPW_CGF_KeyBinds_KeySlot (/Game/CoreGameFramework/UI/Widgets/Elements/KeyBindings/BPW_CGF_KeyBinds_KeySlot.BPW_CGF_KeyBinds_KeySlot)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get KeyMap (K2Node_VariableGet)
+      Pin: KeyMap (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: self (object) Dir=In
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> Get KeyMap.KeyMap
+      Pin: MappingName (name) Dir=Out
+      Pin: DisplayName (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.Key
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Update Slot Data
+Target is BPW CGF Key Binds Key Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Create Input Selector Material
+Target is BPW CGF Key Binds Key Slot.execute
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Break Player Key Mapping.CurrentKey
+    Node: On Key Selected (InputKeySelector) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SelectedKey (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Key Selected (InputKeySelector).then
+      Pin: Condition (bool) Dir=In
+        -> Get IsSelectionChanged.IsSelectionChanged
+      Pin: then (exec) Dir=Out
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Get IsSelectionChanged (K2Node_VariableGet)
+      Pin: IsSelectionChanged (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set IsSelectionChanged (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Set NewKey.execute
+      Pin: IsSelectionChanged (bool) Dir=In
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.Out
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break Input Chord (K2Node_BreakStruct)
+      Pin: InputChord (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Key (struct) Dir=Out
+        -> Set NewKey.NewKey
+      Pin: bShift (bool) Dir=Out
+      Pin: bCtrl (bool) Dir=Out
+      Pin: bAlt (bool) Dir=Out
+      Pin: bCmd (bool) Dir=Out
+    Node: Set NewKey (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsSelectionChanged.then
+      Pin: then (exec) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.execute
+      Pin: NewKey (struct) Dir=In
+        -> Break Input Chord.Key
+      Pin: Output_Get (struct) Dir=Out
+        -> Check Against Blacklist.Key
+      Pin: self (object) Dir=In
+    Node: Get UserSettings (K2Node_VariableGet)
+      Pin: UserSettings (object) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Map Player Key
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> Set NewKey.then
+      Pin: then (exec) Dir=Out
+        -> Apply Settings
+Target is Enhanced Input User Settings.execute
+      Pin: self (object) Dir=In
+        -> Get UserSettings.UserSettings
+      Pin: InArgs (struct) Dir=In
+        -> Make Map Player Key Args.MapPlayerKeyArgs
+      Pin: FailureReason (struct) Dir=Out
+    Node: Make Map Player Key Args (K2Node_MakeStruct)
+      Pin: MapPlayerKeyArgs (struct) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.InArgs
+      Pin: MappingName (name) Dir=In
+        -> Break Player Key Mapping.MappingName
+      Pin: Slot (byte) Dir=In
+        -> Get InSlotToCheck.InSlotToCheck
+      Pin: NewKey (struct) Dir=In
+        -> Get NewKey.NewKey
+      Pin: HardwareDeviceId (name) Dir=In
+      Pin: ProfileIdString (string) Dir=In
+      Pin: bCreateMatchingSlotIfNeeded (bool) Dir=In
+      Pin: bDeferOnSettingsChangedBroadcast (bool) Dir=In
+    Node: Get KeyMap (K2Node_VariableGet)
+      Pin: KeyMap (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: self (object) Dir=In
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> Get KeyMap.KeyMap
+      Pin: MappingName (name) Dir=Out
+        -> Make Map Player Key Args.MappingName
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Apply Settings
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Map Player Key
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+        -> Save Settings
+Target is Enhanced Input User Settings.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Save Settings
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Settings
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Check Against Blacklist (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Set NewKey.Output_Get
+      Pin: OnBlackList? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+      Pin: Condition (bool) Dir=In
+        -> Check Against Blacklist.OnBlackList?
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.execute
+    Node: Get KeyMap (K2Node_VariableGet)
+      Pin: KeyMap (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: self (object) Dir=In
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> Get KeyMap.KeyMap
+      Pin: MappingName (name) Dir=Out
+        -> Make Map Player Key Args.MappingName
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+        -> Make Map Player Key Args.NewKey
+        -> Reroute Node.InputPin
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Make Map Player Key Args (K2Node_MakeStruct)
+      Pin: MapPlayerKeyArgs (struct) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.InArgs
+      Pin: MappingName (name) Dir=In
+        -> Break Player Key Mapping.MappingName
+      Pin: Slot (byte) Dir=In
+        -> Get InSlotToCheck.InSlotToCheck
+      Pin: NewKey (struct) Dir=In
+        -> Break Player Key Mapping.DefaultKey
+      Pin: HardwareDeviceId (name) Dir=In
+      Pin: ProfileIdString (string) Dir=In
+      Pin: bCreateMatchingSlotIfNeeded (bool) Dir=In
+      Pin: bDeferOnSettingsChangedBroadcast (bool) Dir=In
+    Node: Map Player Key
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Default Key.then
+      Pin: then (exec) Dir=Out
+        -> Apply Settings
+Target is Enhanced Input User Settings.execute
+      Pin: self (object) Dir=In
+        -> Get UserSettings.UserSettings
+      Pin: InArgs (struct) Dir=In
+        -> Make Map Player Key Args.MapPlayerKeyArgs
+      Pin: FailureReason (struct) Dir=Out
+    Node: Apply Settings
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Map Player Key
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+        -> Save Settings
+Target is Enhanced Input User Settings.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Save Settings
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Settings
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: On Clicked (Button) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Default Key.execute
+    Node: Get UserSettings (K2Node_VariableGet)
+      Pin: UserSettings (object) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get UserSettings.UserSettings
+      Pin: OutputPin (object) Dir=Out
+        -> Apply Settings
+Target is Enhanced Input User Settings.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Save Settings
+Target is Enhanced Input User Settings.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get UserSettings.UserSettings
+      Pin: OutputPin (object) Dir=Out
+        -> Apply Settings
+Target is Enhanced Input User Settings.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Save Settings
+Target is Enhanced Input User Settings.self
+    Node: Get NewKey (K2Node_VariableGet)
+      Pin: NewKey (struct) Dir=Out
+        -> Make Map Player Key Args.NewKey
+      Pin: self (object) Dir=In
+    Node: Update Slot Data
+Target is BPW CGF Key Binds Key Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Save Settings
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+        -> Call On Key Remapped.execute
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get Default Key.Default Key
+    Node: Set Default Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Button).then
+      Pin: then (exec) Dir=Out
+        -> Map Player Key
+Target is Enhanced Input User Settings.execute
+      Pin: Default Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Default Key (K2Node_VariableGet)
+      Pin: Default Key (struct) Dir=Out
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.Key
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Construct.then
+      Pin: InputObject (object) Dir=In
+        -> Break Player Key Mapping.AssociatedInputAction
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Associated Input Action.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Error Handling.execute
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Associated Input Action.then
+      Pin: then (exec) Dir=Out
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> Break Player Key Mapping.DisplayName
+    Node: Get KeyMap (K2Node_VariableGet)
+      Pin: KeyMap (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: self (object) Dir=In
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> Get KeyMap.KeyMap
+      Pin: MappingName (name) Dir=Out
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set Associated Input Action.Associated Input Action
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Set IsSelectionChanged (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Is Selecting Key Changed (InputKeySelector).then
+      Pin: then (exec) Dir=Out
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.execute
+      Pin: IsSelectionChanged (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.In
+      Pin: self (object) Dir=In
+    Node: Update Slot Data
+Target is BPW CGF Key Binds Key Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Save Settings
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+        -> Call On Key Remapped.execute
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get NewKey.NewKey
+    Node: Get NewKey (K2Node_VariableGet)
+      Pin: NewKey (struct) Dir=Out
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.Key
+      Pin: self (object) Dir=In
+    Node: Set Associated Input Action (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: Associated Input Action (object) Dir=In
+        -> Break Player Key Mapping.AssociatedInputAction
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get InSlotToCheck (K2Node_VariableGet)
+      Pin: InSlotToCheck (byte) Dir=Out
+        -> Make Map Player Key Args.Slot
+      Pin: self (object) Dir=In
+    Node: Set Is Selecting Input?
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set IsSelectionChanged.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: In (bool) Dir=In
+      Pin: Out (bool) Dir=Out
+        -> Set IsSelectionChanged.IsSelectionChanged
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.self
+        -> Set Is Selecting Input?
+Target is BPI CGF User Interface.self
+    Node: Set Is Selecting Input?
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set IsSelectionChanged.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: In (bool) Dir=In
+        -> Set IsSelectionChanged.Output_Get
+      Pin: Out (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break Player Key Mapping.DefaultKey
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Default Key.Default Key
+    Node: Enable Blacklist Use Off By Default (EdGraphNode_Comment)
+    Node: If Using The Mouse To Select A Input And Then Selecting The Input With The Gampad,  InputSwitching Would Override OnIsSelectingKeyChanged Without This (EdGraphNode_Comment)
+    Node: Setup The Slot Via The Data Sent When Created from BPW_CGF_Keybinds (EdGraphNode_Comment)
+    Node: Rebind Keybindings (EdGraphNode_Comment)
+    Node: Reset To Default (EdGraphNode_Comment)
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: On Is Selecting Key Changed (InputKeySelector) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set IsSelectionChanged.execute
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event On Added to Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Hovered?.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Get InSlotToCheck (K2Node_VariableGet)
+      Pin: InSlotToCheck (byte) Dir=Out
+        -> Make Map Player Key Args.Slot
+      Pin: self (object) Dir=In
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Hovered?.then
+      Pin: then (exec) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get HoverInputSelector.HoverInputSelector
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get HoverInputSelector (K2Node_VariableGet)
+      Pin: HoverInputSelector (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Create Input Selector Material
+Target is BPW CGF Key Binds Key Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event On Mouse Enter (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Get Hovered? (K2Node_VariableGet)
+      Pin: Hovered? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (text) Dir=In
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.DefaultInfoText
+      Pin: Option 1 (text) Dir=In
+        -> Break Player Key Mapping.DisplayCategory
+      Pin: Index (bool) Dir=In
+        -> Get Hovered?.Hovered?
+      Pin: ReturnValue (text) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface.InfoText
+    Node: Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Play Animation
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: DefaultInfoText (text) Dir=Out
+        -> Select.Option 0
+    Node: Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: InfoText (text) Dir=In
+        -> Select.ReturnValue
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface.self
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.self
+    Node: Set Hovered? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event On Added to Focus Path.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: Hovered? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get KeyMap (K2Node_VariableGet)
+      Pin: KeyMap (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: self (object) Dir=In
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> Get KeyMap.KeyMap
+      Pin: MappingName (name) Dir=Out
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+        -> Select.Option 1
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> On Key Selected (InputKeySelector).SelectedKey
+      Pin: OutputPin (struct) Dir=Out
+        -> Break Input Chord.InputChord
+    Node: Call On Key Remapped (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: KeySlot (object) Dir=In
+        -> Self-Reference.self
+      Pin: SlotsIndex (int) Dir=In
+        -> Get Child Index
+Target is Panel Widget.ReturnValue
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Key Remapped.KeySlot
+        -> Get Child Index
+Target is Panel Widget.Content
+    Node: Get Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Child Index
+Target is Panel Widget.self
+    Node: Get Child Index
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Parent
+Target is Widget.ReturnValue
+      Pin: Content (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (int) Dir=Out
+        -> Call On Key Remapped.SlotsIndex
+    Node: Call On Key Remapped (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Update Slot Data
+Target is BPW CGF Key Binds Key Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: KeySlot (object) Dir=In
+        -> Self-Reference.self
+      Pin: SlotsIndex (int) Dir=In
+        -> Get Child Index
+Target is Panel Widget.ReturnValue
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Key Remapped.KeySlot
+        -> Get Child Index
+Target is Panel Widget.Content
+    Node: Get Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Child Index
+Target is Panel Widget.self
+    Node: Get Child Index
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Parent
+Target is Widget.ReturnValue
+      Pin: Content (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (int) Dir=Out
+        -> Call On Key Remapped.SlotsIndex
+  Graph: UpdateSlotData
+    Node: UpdateSlotData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Key (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get InputKeySelector (K2Node_VariableGet)
+      Pin: InputKeySelector (object) Dir=Out
+        -> Set SelectedKey.self
+      Pin: self (object) Dir=In
+    Node: Set SelectedKey (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: SelectedKey (struct) Dir=In
+        -> Make Input Chord.InputChord
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InputKeySelector.InputKeySelector
+    Node: Make Input Chord (K2Node_MakeStruct)
+      Pin: InputChord (struct) Dir=Out
+        -> Set SelectedKey.SelectedKey
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bShift (bool) Dir=In
+      Pin: bCtrl (bool) Dir=In
+      Pin: bAlt (bool) Dir=In
+      Pin: bCmd (bool) Dir=In
+    Node: Get KeyMap (K2Node_VariableGet)
+      Pin: KeyMap (struct) Dir=Out
+        -> Set KeyMapToSearch.KeyMapToSearch
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_SlotBoundInputImage (K2Node_VariableGet)
+      Pin: BPW_CGF_SlotBoundInputImage (object) Dir=Out
+        -> Set KeyMapToSearch.self
+      Pin: self (object) Dir=In
+    Node: Set KeyMapToSearch (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: KeyMapToSearch (struct) Dir=In
+        -> Get KeyMap.KeyMap
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SlotBoundInputImage.BPW_CGF_SlotBoundInputImage
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> UpdateSlotData.then
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_3 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_4 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_5 (exec) Dir=Out
+    Node: Get BPW_CGF_SlotBoundInputImage (K2Node_VariableGet)
+      Pin: BPW_CGF_SlotBoundInputImage (object) Dir=Out
+        -> Set KeyToLoadImageFor.self
+      Pin: self (object) Dir=In
+    Node: Set KeyToLoadImageFor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: KeyToLoadImageFor (struct) Dir=In
+        -> Get Key.Key
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SlotBoundInputImage.BPW_CGF_SlotBoundInputImage
+    Node: Get Key (K2Node_VariableGet)
+      Pin: Key (struct) Dir=Out
+        -> Set KeyToLoadImageFor.KeyToLoadImageFor
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set KeyToLoadImageFor.execute
+    Node: Get InSlotToCheck (K2Node_VariableGet)
+      Pin: InSlotToCheck (byte) Dir=Out
+        -> Set In_SlotToCheck.In_SlotToCheck
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_SlotBoundInputImage (K2Node_VariableGet)
+      Pin: BPW_CGF_SlotBoundInputImage (object) Dir=Out
+        -> Set In_SlotToCheck.self
+      Pin: self (object) Dir=In
+    Node: Set In_SlotToCheck (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: In_SlotToCheck (byte) Dir=In
+        -> Get InSlotToCheck.InSlotToCheck
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SlotBoundInputImage.BPW_CGF_SlotBoundInputImage
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_3
+      Pin: OutputPin (exec) Dir=Out
+        -> Set In_SlotToCheck.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SelectedKey.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> UpdateSlotData.Key
+      Pin: OutputPin (struct) Dir=Out
+        -> Make Input Chord.Key
+    Node: Set Input Action To Check (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: Input Action To Check (object) Dir=In
+        -> Get Associated Input Action.Associated Input Action
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SlotBoundInputImage.BPW_CGF_SlotBoundInputImage
+    Node: Get Associated Input Action (K2Node_VariableGet)
+      Pin: Associated Input Action (object) Dir=Out
+        -> Set Input Action To Check.Input Action To Check
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_4
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Input Action To Check.execute
+    Node: Get BPW_CGF_SlotBoundInputImage (K2Node_VariableGet)
+      Pin: BPW_CGF_SlotBoundInputImage (object) Dir=Out
+        -> Set Input Action To Check.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Set KeyMapToSearch.execute
+  Graph: CheckAgainstBlacklist
+    Node: CheckAgainstBlacklist (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set KeyToCheck.execute
+      Pin: Key (struct) Dir=Out
+        -> Set KeyToCheck.KeyToCheck
+    Node: Get Data Table Row Names (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set KeyToCheck.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: Table (object) Dir=In
+        -> Get Data Table_BlackList.Data Table_BlackList
+      Pin: OutRowNames (name) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Data Table Row Names.then
+      Pin: Array (name) Dir=In
+        -> Get Data Table Row Names.OutRowNames
+      Pin: LoopBody (exec) Dir=Out
+        -> Get Data Table Row.execute
+      Pin: Array Element (name) Dir=Out
+        -> Get Data Table Row.RowName
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Data Table Row (K2Node_GetDataTableRow)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: RowNotFound (exec) Dir=Out
+        -> Return Node.execute
+      Pin: DataTable (object) Dir=In
+        -> Get Data Table_BlackList.Data Table_BlackList
+      Pin: RowName (name) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break F CGF Input Keys Blacklist.F_CGF_InputKeys_Blacklist
+    Node: Break F CGF Input Keys Blacklist (K2Node_BreakStruct)
+      Pin: F_CGF_InputKeys_Blacklist (struct) Dir=In
+        -> Get Data Table Row.ReturnValue
+      Pin: InputActionKeyMappingsArray_3_013CB4964732DC98C5D7E79C22B1E949 (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Data Table Row.then
+      Pin: Array (struct) Dir=In
+        -> Break F CGF Input Keys Blacklist.InputActionKeyMappingsArray_3_013CB4964732DC98C5D7E79C22B1E949
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Return.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Input Action Key Mapping.InputActionKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Data Table_BlackList (K2Node_VariableGet)
+      Pin: Data Table_BlackList (object) Dir=Out
+        -> Get Data Table Row.DataTable
+      Pin: self (object) Dir=In
+    Node: Get Data Table_BlackList (K2Node_VariableGet)
+      Pin: Data Table_BlackList (object) Dir=Out
+        -> Get Data Table Row Names.Table
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OnBlackList? (bool) Dir=In
+        -> Get Return.Return
+    Node: Set KeyToCheck (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> CheckAgainstBlacklist.then
+      Pin: then (exec) Dir=Out
+        -> Get Data Table Row Names.execute
+      Pin: KeyToCheck (struct) Dir=In
+        -> CheckAgainstBlacklist.Key
+      Pin: Output_Get (struct) Dir=Out
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Break Input Action Key Mapping.Key
+      Pin: B (struct) Dir=In
+        -> Get KeyToCheck.KeyToCheck
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Return.Return
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Break Input Action Key Mapping (K2Node_BreakStruct)
+      Pin: InputActionKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ActionName (name) Dir=Out
+      Pin: bShift (bool) Dir=Out
+      Pin: bCtrl (bool) Dir=Out
+      Pin: bAlt (bool) Dir=Out
+      Pin: bCmd (bool) Dir=Out
+      Pin: Key (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Get KeyToCheck (K2Node_VariableGet)
+      Pin: KeyToCheck (struct) Dir=Out
+        -> Equal (Key).B
+    Node: Get Return (K2Node_VariableGet)
+      Pin: Return (bool) Dir=Out
+        -> Return Node.OnBlackList?
+    Node: Set Return (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: Return (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Data Table Row.RowNotFound
+      Pin: OnBlackList? (bool) Dir=In
+        -> Get Return.Return
+    Node: Get Return (K2Node_VariableGet)
+      Pin: Return (bool) Dir=Out
+        -> Return Node.OnBlackList?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OnBlackList? (bool) Dir=In
+        -> Get Return.Return
+    Node: Get Return (K2Node_VariableGet)
+      Pin: Return (bool) Dir=Out
+        -> Return Node.OnBlackList?
+  Graph: CreateInputSelectorMaterial
+    Node: CreateInputSelectorMaterial (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+    Node: Get InputSelectorBackground (K2Node_VariableGet)
+      Pin: InputSelectorBackground (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set InputKeySelectorMaterial.execute
+      Pin: self (object) Dir=In
+        -> Get InputSelectorBackground.InputSelectorBackground
+      Pin: Material (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> CreateInputSelectorMaterial.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Set InputKeySelectorMaterial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Material
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: InputKeySelectorMaterial (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set InputKeySelectorMaterial.InputKeySelectorMaterial
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.Material
+  Graph: OnKeyRemapped
+    Node: OnKeyRemapped (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: KeySlot (object) Dir=Out
+      Pin: SlotsIndex (int) Dir=Out

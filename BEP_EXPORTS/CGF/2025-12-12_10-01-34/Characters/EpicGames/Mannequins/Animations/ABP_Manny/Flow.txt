@@ -1,0 +1,234 @@
+Blueprint: ABP_Manny (/Game/CoreGameFramework/Characters/EpicGames/Mannequins/Animations/ABP_Manny.ABP_Manny)
+  Graph: EventGraph
+    Node: Event Blueprint Update Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: DeltaTimeX (real) Dir=Out
+    Node: Event Blueprint Initialize Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Event Blueprint Update Animation.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+      Pin: Character (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Owning Actor
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Blueprint Initialize Animation.then
+      Pin: then (exec) Dir=Out
+        -> Set Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owning Actor
+Target is Anim Instance.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Set Character.Character
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set MovementComponent.MovementComponent
+      Pin: self (object) Dir=In
+        -> Set Character.Output_Get
+    Node: Set Character (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Set MovementComponent.execute
+      Pin: Character (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Output_Get (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+    Node: Set MovementComponent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Character.then
+      Pin: then (exec) Dir=Out
+      Pin: MovementComponent (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Velocity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set GroundSpeed.execute
+      Pin: Velocity (struct) Dir=In
+        -> Get Velocity.Velocity
+      Pin: Output_Get (struct) Dir=Out
+        -> Vector Length XY.A
+      Pin: self (object) Dir=In
+    Node: Get MovementComponent (K2Node_VariableGet)
+      Pin: MovementComponent (object) Dir=Out
+        -> Get Velocity.self
+      Pin: self (object) Dir=In
+    Node: Get Velocity (K2Node_VariableGet)
+      Pin: Velocity (struct) Dir=Out
+        -> Set Velocity.Velocity
+      Pin: self (object) Dir=In
+        -> Get MovementComponent.MovementComponent
+    Node: Vector Length XY (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Set Velocity.Output_Get
+      Pin: ReturnValue (real) Dir=Out
+        -> Set GroundSpeed.GroundSpeed
+    Node: Set GroundSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Velocity.then
+      Pin: then (exec) Dir=Out
+      Pin: GroundSpeed (real) Dir=In
+        -> Vector Length XY.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Velocity.execute
+    Node: Set ShouldMove (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: ShouldMove (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Set ShouldMove.execute
+    Node: Get GroundSpeed (K2Node_VariableGet)
+      Pin: GroundSpeed (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get GroundSpeed.GroundSpeed
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Not Equal (Vector).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set ShouldMove.ShouldMove
+    Node: Get MovementComponent (K2Node_VariableGet)
+      Pin: MovementComponent (object) Dir=Out
+        -> Get Current Acceleration
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Get Current Acceleration
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MovementComponent.MovementComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Not Equal (Vector).A
+    Node: Not Equal (Vector) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Current Acceleration
+Target is Character Movement Component.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (real) Dir=In
+    Node: Set IsFalling (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: IsFalling (bool) Dir=In
+        -> Is Falling
+Target is Nav Movement Component.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set IsFalling.execute
+    Node: Get MovementComponent (K2Node_VariableGet)
+      Pin: MovementComponent (object) Dir=Out
+        -> Is Falling
+Target is Nav Movement Component.self
+      Pin: self (object) Dir=In
+    Node: Is Falling
+Target is Nav Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MovementComponent.MovementComponent
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set IsFalling.IsFalling
+    Node: Set references to owning character when this blueprint initializes. (EdGraphNode_Comment)
+    Node: Only update values if the character is valid (character exists in the world and the reference is set). (EdGraphNode_Comment)
+    Node: Set velocity and ground speed from the movement components velocity. Ground speed is calculated from only the X and Y axis of the velocity, so moving up or down does not affect it. (EdGraphNode_Comment)
+    Node: Set Should Move to true only if ground speed is above a small threshold (to prevent incredibly small velocities from triggering animations) and if there is currently acceleration (input) applied. (EdGraphNode_Comment)
+    Node: Set Is Falling from the movement components falling state. (EdGraphNode_Comment)
+  Graph: AnimGraph
+    Node: Output Pose
+AnimGraph (AnimGraphNode_Root)
+      Pin: Result (struct) Dir=In
+        -> Control Rig.Pose
+    Node: Locomotion
+State Machine (AnimGraphNode_StateMachine)
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'Locomotion'.Pose
+    Node: Save cached pose 'Locomotion' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Locomotion
+State Machine.Pose
+    Node: Main States
+State Machine (AnimGraphNode_StateMachine)
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Source
+    Node: Slot 'DefaultSlot'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> Main States
+State Machine.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Control Rig.Source
+    Node: Control Rig (AnimGraphNode_ControlRig)
+      Pin: Source (struct) Dir=In
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Pose
+      Pin: Alpha (real) Dir=In
+      Pin: bAlphaBoolEnabled (bool) Dir=In
+      Pin: AlphaCurveName (name) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Output Pose
+AnimGraph.Result
+      Pin: ShouldDoIKTrace (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+    Node: Get IsFalling (K2Node_VariableGet)
+      Pin: IsFalling (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get IsFalling.IsFalling
+      Pin: ReturnValue (bool) Dir=Out
+        -> Control Rig.ShouldDoIKTrace

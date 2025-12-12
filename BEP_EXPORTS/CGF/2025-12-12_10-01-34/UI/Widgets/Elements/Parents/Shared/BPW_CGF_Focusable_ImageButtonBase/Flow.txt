@@ -1,0 +1,218 @@
+Blueprint: BPW_CGF_Focusable_ImageButtonBase (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_Focusable_ImageButtonBase.BPW_CGF_Focusable_ImageButtonBase)
+  Graph: EventGraph
+    Node: Event On Focus Lost (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Focus Lost Dispatcher.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Call On Focus Lost Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Focus Lost.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event On Added to Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Focused Dispatcher.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Call On Focused Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Added to Focus Path.then
+      Pin: then (exec) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+    Node: Event On Mouse Enter (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Mouse Enter Dispatcher.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Event On Mouse Leave (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Mouse Leave Dispatcher.execute
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Call On Mouse Enter Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Mouse Enter.then
+      Pin: then (exec) Dir=Out
+        -> Set Keyboard Focus
+Target is Widget.execute
+      Pin: self (object) Dir=In
+    Node: Call On Mouse Leave Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Mouse Leave.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Clicked (BTN) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Image Button Base Clicked Dispatcher.execute
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get HUD
+Target is Player Controller.self
+    Node: Get HUD
+Target is Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.self
+    Node: Set Last Focused Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Call On Focused Dispatcher.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD
+Target is Player Controller.ReturnValue
+      Pin: LastFocused (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+    Node: Event On Removed from Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Focus Lost Dispatcher.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Call On Focus Lost Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Removed from Focus Path.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call On Image Button Base Clicked Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (BTN).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Image (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.Image
+      Pin: Texture (object) Dir=In
+        -> Get.Texture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Texture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Set Keyboard Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Mouse Enter Dispatcher.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+        -> Error Handling.Object
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: IsDesignTime (bool) Dir=Out
+  Graph: OnFocusReceived
+    Node: On Focus Received (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Call On Focused Dispatcher.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Call On Focused Dispatcher.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Unhandled.ReturnValue
+    Node: Handled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Call On Focused Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Focus Received.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: Unhandled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: OnFocusedDispatcher
+    Node: OnFocusedDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnFocusLostDispatcher
+    Node: OnFocusLostDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnMouseEnterDispatcher
+    Node: OnMouseEnterDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnMouseLeaveDispatcher
+    Node: OnMouseLeaveDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnImageButtonBaseClickedDispatcher
+    Node: OnImageButtonBaseClickedDispatcher (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

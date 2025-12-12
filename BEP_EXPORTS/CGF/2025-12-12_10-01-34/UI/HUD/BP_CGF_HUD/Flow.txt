@@ -1,0 +1,1388 @@
+Blueprint: BP_CGF_HUD (/Game/CoreGameFramework/UI/HUD/BP_CGF_HUD.BP_CGF_HUD)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: The HUD UI Manager. 
+Acts as a central control tower that communicates to widgets (EdGraphNode_Comment)
+    Node: Create and Add the HUD Widget to the Viewport, Which Pushes the inital screens.
+Then Make Always Available Widgets,  (EdGraphNode_Comment)
+    Node: Event SetLastFocusedWidget
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set LastFocusedWidget.execute
+      Pin: LastFocused (object) Dir=Out
+        -> Set LastFocusedWidget.LastFocusedWidget
+    Node: Set LastFocusedWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event SetLastFocusedWidget
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: LastFocusedWidget (object) Dir=In
+        -> Event SetLastFocusedWidget
+From BPI CGF User Interface.LastFocused
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event GetSettingsMenuHoverSlotInformationText
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: InfoText (text) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Event GetSettingsMenuHoverSlotInformationText
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+      Pin: BPW_CGF_SettingsMenu_REF (object) Dir=Out
+        -> Get.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Update Text
+Target is BPW CGF Settings Menu Info.execute
+      Pin: else (exec) Dir=Out
+      Pin: BPW_CGF_SettingsMenu_Info (object) Dir=Out
+        -> Update Text
+Target is BPW CGF Settings Menu Info.self
+      Pin: self (object) Dir=In
+        -> Get.BPW_CGF_SettingsMenu_REF
+    Node: Update Text
+Target is BPW CGF Settings Menu Info (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.BPW_CGF_SettingsMenu_Info
+      Pin: TextToDisplayOnHoverAndFocus (text) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Event CollapseTopWidget
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Collapse Layers Top Widget
+Target is BP CGF HUD.execute
+      Pin: Laye (struct) Dir=Out
+        -> Collapse Layers Top Widget
+Target is BP CGF HUD.Layer
+    Node: Collapse Layers Top Widget
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event CollapseTopWidget
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+        -> Event CollapseTopWidget
+From BPI CGF User Interface.Laye
+    Node: Event ShowTopWidget
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Show Layers Top Widget
+Target is BP CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Show Layers Top Widget
+Target is BP CGF HUD.Layer
+    Node: Show Layers Top Widget
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ShowTopWidget
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+        -> Event ShowTopWidget
+From BPI CGF User Interface.Layer
+    Node: Clear Layer
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ClearStackLayer
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: LayerName (struct) Dir=In
+        -> Event ClearStackLayer
+From BPI CGF User Interface.Layer
+    Node: Event ClearStackLayer
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear Layer
+Target is BP CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Clear Layer
+Target is BP CGF HUD.LayerName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Event GetSettingsMenuHoverSlotInformationText
+From BPI CGF User Interface.InfoText
+      Pin: OutputPin (text) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (text) Dir=Out
+        -> Update Text
+Target is BPW CGF Settings Menu Info.TextToDisplayOnHoverAndFocus
+    Node: BPI_UserInterface Events
+These can be called from anywhere. Alternatively you can use the BPFL_UI. But BPFL_UI does not have direct access to the always available stack (EdGraphNode_Comment)
+    Node: MakeSettingsMenu
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Assign Widget Layers
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> PushInitalScreens
+Collapsed Graph.then
+    Node: Event PlaySaveGameAnimation
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.execute
+      Pin: PlayAnimation? (bool) Dir=Out
+    Node: Get BPW_CGF_HUD_REF (K2Node_VariableGet)
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Get AutoSaveIcon_AnimatedWidgetParent.self
+      Pin: self (object) Dir=In
+    Node: Get AutoSaveIcon_AnimatedWidgetParent (K2Node_VariableGet)
+      Pin: AutoSaveIcon_AnimatedWidgetParent (object) Dir=Out
+        -> Start Animation
+Target is BPW CGF Animated Widget Parent.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_HUD_REF.BPW_CGF_HUD_REF
+    Node: Start Animation
+Target is BPW CGF Animated Widget Parent (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event PlaySaveGameAnimation
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get AutoSaveIcon_AnimatedWidgetParent.AutoSaveIcon_AnimatedWidgetParent
+      Pin: DirectStart (bool) Dir=In
+    Node: Event ClearAllStackLayerExcept
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear All Layers Except
+Target is BP CGF HUD.execute
+      Pin: ExceptionLayer (struct) Dir=Out
+        -> Clear All Layers Except
+Target is BP CGF HUD.ExceptionLayerName
+    Node: Clear All Layers Except
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ClearAllStackLayerExcept
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ExceptionLayerName (struct) Dir=In
+        -> Event ClearAllStackLayerExcept
+From BPI CGF User Interface.ExceptionLayer
+    Node: Event ClearAllStackLayers
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear All Layers
+Target is BP CGF HUD.execute
+    Node: Clear All Layers
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ClearAllStackLayers
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event RollCredits
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.execute
+    Node: Assign Widget Layers
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> MakeSettingsMenu
+Collapsed Graph.then
+    Node: Event PushToStackLayer
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Layer (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: UserWidget (softclass) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: WidgetData (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Push Content to Layer
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To UserWidget.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: LayerName (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetClass (softclass) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetData (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AlreadyValidWidget (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Widget (object) Dir=Out
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+      Pin: Option 1 (object) Dir=In
+        -> Cast To UserWidget.AsUser Widget
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.AlreadyValidWidget
+    Node: Get AlwaysAvailable_WidgetStack (K2Node_VariableGet)
+      Pin: AlwaysAvailable_WidgetStack (object) Dir=Out
+        -> For Each Loop with Break.Array
+        -> Is Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (object) Dir=In
+        -> Get AlwaysAvailable_WidgetStack.AlwaysAvailable_WidgetStack
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.self
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Cast To UserWidget (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AsUser Widget (object) Dir=Out
+        -> Select.Option 1
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Push Content to Layer
+Target is BP CGF HUD.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.LayerName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event PushToStackLayer
+From BPI CGF User Interface.Layer
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (softclass) Dir=In
+        -> Event PushToStackLayer
+From BPI CGF User Interface.UserWidget
+      Pin: OutputPin (softclass) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (softclass) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (softclass) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.WidgetClass
+    Node: Is Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get AlwaysAvailable_WidgetStack.AlwaysAvailable_WidgetStack
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event PushToStackLayer
+From BPI CGF User Interface.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.execute
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event PushToStackLayer
+From BPI CGF User Interface.WidgetData
+      Pin: OutputPin (struct) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.WidgetData
+    Node: Has Gameplay Tag?
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Cast To UserWidget.execute
+      Pin: self (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: TagToMatch (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HasTag? (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event PushToStackLayer
+From BPI CGF User Interface.AlreadyValidWidgetGameplayTag
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.TagToMatch
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Cast To UserWidget.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.HasTag?
+      Pin: OutputPin (bool) Dir=Out
+        -> Select.Index
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Actor
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> PushInitalScreens
+Collapsed Graph.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: PushInitalScreens
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> MakeSettingsMenu
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+    Node: Event PopViaGameplayTag
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: Layer (struct) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.LayerName
+      Pin: Widget (struct) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.OptionalGameplayTag
+    Node: Pop Content from Layer
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.BPW_CGF_HUD_REF
+      Pin: LayerName (struct) Dir=In
+        -> Event PopViaGameplayTag
+From BPI CGF User Interface.Layer
+      Pin: OptionalGameplayTag (struct) Dir=In
+        -> Event PopViaGameplayTag
+From BPI CGF User Interface.Widget
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Event PopViaGameplayTag
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.execute
+      Pin: else (exec) Dir=Out
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.self
+      Pin: self (object) Dir=In
+    Node: Event PlayFadeIn
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Fade In
+Target is BPW CGF Base Input Enabled Widget.execute
+    Node: Get BPW_CGF_SettingsMenu_REF (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_REF (object) Dir=Out
+        -> Play Fade In
+Target is BPW CGF Base Input Enabled Widget.self
+      Pin: self (object) Dir=In
+    Node: Play Fade In
+Target is BPW CGF Base Input Enabled Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event PlayFadeIn
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_REF.BPW_CGF_SettingsMenu_REF
+    Node: Event SetActiveWidgetSwitcherIndex_ProfileManager
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.execute
+      Pin: Index (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Return Widget Via Gameplay Tag
+Target is BP CGF HUD.FoundWidgetViaTag
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Event SetActiveWidgetSwitcherIndex_ProfileManager
+From BPI CGF User Interface.Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Widget Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SetActiveWidgetSwitcherIndex_ProfileManager
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+      Pin: TagToMatch (struct) Dir=In
+      Pin: Found? (bool) Dir=Out
+      Pin: FoundWidgetViaTag (object) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface.self
+    Node: Keeps Track Of Whatever Button Has Focus, Set From
+BPW_CGF_Focusable_ButtonBase (EdGraphNode_Comment)
+    Node: Animations NOT Directly Handled By The Animated Widget Parent On Construct Are Called Here (EdGraphNode_Comment)
+    Node: Helpers To Forward Data. (EdGraphNode_Comment)
+    Node: BeginPlay (EdGraphNode_Comment)
+    Node: Push Content to Layer
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Pop Via Gameplay Tag
+Target is BP CGF HUD.then
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.then
+      Pin: then (exec) Dir=Out
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.execute
+      Pin: self (object) Dir=In
+      Pin: LayerName (struct) Dir=In
+      Pin: WidgetClass (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidget (object) Dir=In
+      Pin: Widget (object) Dir=Out
+    Node: Event ShowViaGameplayTag
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Show Widget Via Game Play Tag
+Target is BP CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Show Widget Via Game Play Tag
+Target is BP CGF HUD.Layer
+      Pin: GameplayTag (struct) Dir=Out
+        -> Show Widget Via Game Play Tag
+Target is BP CGF HUD.GameplayTag
+    Node: Show Widget Via Game Play Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ShowViaGameplayTag
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+        -> Event ShowViaGameplayTag
+From BPI CGF User Interface.Layer
+      Pin: GameplayTag (struct) Dir=In
+        -> Event ShowViaGameplayTag
+From BPI CGF User Interface.GameplayTag
+    Node: Event CollapseViaGameplayTag
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.Layer
+      Pin: GameplayTag (struct) Dir=Out
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.GameplayTag
+    Node: Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event CollapseViaGameplayTag
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+        -> Event CollapseViaGameplayTag
+From BPI CGF User Interface.Layer
+      Pin: GameplayTag (struct) Dir=In
+        -> Event CollapseViaGameplayTag
+From BPI CGF User Interface.GameplayTag
+    Node: Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Push Content to Layer
+Target is BP CGF HUD.then
+      Pin: then (exec) Dir=Out
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.execute
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+    Node: Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+    Node: Pop Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.execute
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+      Pin: Widget (struct) Dir=In
+    Node: Event SendMessageToDebugger
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Send Layer Dubuger Message
+Target is BPW CGF HUD.execute
+      Pin: IncomingDebugMessage (string) Dir=Out
+        -> Send Layer Dubuger Message
+Target is BPW CGF HUD.Incoming Debug Message
+    Node: Get BPW_CGF_HUD_REF (K2Node_VariableGet)
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Send Layer Dubuger Message
+Target is BPW CGF HUD.self
+      Pin: self (object) Dir=In
+    Node: Send Layer Dubuger Message
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SendMessageToDebugger
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_HUD_REF.BPW_CGF_HUD_REF
+      Pin: Incoming Debug Message (string) Dir=In
+        -> Event SendMessageToDebugger
+From BPI CGF User Interface.IncomingDebugMessage
+    Node: Collapse Widget Via Gameplay Tag
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event RollCredits
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+        -> Push Content to Layer
+Target is BP CGF HUD.execute
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+    Node: Event CGF_CreateNotification
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Create Notification Widget
+Target is BPW CGF HUD.execute
+      Pin: TextData (struct) Dir=Out
+        -> Create Notification Widget
+Target is BPW CGF HUD.TextData
+      Pin: DisplayType (byte) Dir=Out
+        -> Create Notification Widget
+Target is BPW CGF HUD.DisplayType
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=Out
+        -> Create Notification Widget
+Target is BPW CGF HUD.RemoveFromParentAfterDisplay?
+    Node: Get BPW_CGF_HUD_REF (K2Node_VariableGet)
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Create Notification Widget
+Target is BPW CGF HUD.self
+      Pin: self (object) Dir=In
+    Node: Create Notification Widget
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event CGF_CreateNotification
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_HUD_REF.BPW_CGF_HUD_REF
+      Pin: TextData (struct) Dir=In
+        -> Event CGF_CreateNotification
+From BPI CGF User Interface.TextData
+      Pin: DisplayType (byte) Dir=In
+        -> Event CGF_CreateNotification
+From BPI CGF User Interface.DisplayType
+      Pin: RemoveFromParentAfterDisplay? (bool) Dir=In
+        -> Event CGF_CreateNotification
+From BPI CGF User Interface.RemoveFromParentAfterDisplay?
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Get CGF_HUD
+    Node: Get CGF_HUD (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get CGF_HUD.then
+      Pin: BPW_CGF_HUD_REF (object) Dir=In
+        -> Get BPW_CGF_HUD_REF.BPW_CGF_HUD_REF
+    Node: Get BPW_CGF_HUD_REF (K2Node_VariableGet)
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Return Node.BPW_CGF_HUD_REF
+      Pin: self (object) Dir=In
+  Graph: RegisterLayer
+    Node: RegisterLayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Register Layer
+Target is BPW CGF HUD.execute
+      Pin: LayerName (struct) Dir=Out
+        -> Register Layer
+Target is BPW CGF HUD.LayerName
+      Pin: LayerWidget (object) Dir=Out
+        -> Register Layer
+Target is BPW CGF HUD.LayerWidget
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Register Layer
+Target is BPW CGF HUD.then
+      Pin: ReturnValue (bool) Dir=In
+        -> Register Layer
+Target is BPW CGF HUD.ReturnValue
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Register Layer
+Target is BPW CGF HUD.self
+    Node: Register Layer
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> RegisterLayer.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: LayerName (struct) Dir=In
+        -> RegisterLayer.LayerName
+      Pin: LayerWidget (object) Dir=In
+        -> RegisterLayer.LayerWidget
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: UnRegisterLayer
+    Node: UnRegisterLayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Un Register Layer
+Target is BPW CGF HUD.execute
+      Pin: LayerName (struct) Dir=Out
+        -> Un Register Layer
+Target is BPW CGF HUD.LayerName
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Un Register Layer
+Target is BPW CGF HUD.then
+      Pin: ReturnValue (bool) Dir=In
+        -> Un Register Layer
+Target is BPW CGF HUD.ReturnValue
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Un Register Layer
+Target is BPW CGF HUD.self
+    Node: Un Register Layer
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UnRegisterLayer.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: LayerName (struct) Dir=In
+        -> UnRegisterLayer.LayerName
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: PushContentToLayer
+    Node: PushContentToLayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: LayerName (struct) Dir=Out
+        -> Push Content to Layer
+Target is BPW CGF HUD.LayerName
+      Pin: WidgetClass (softclass) Dir=Out
+        -> Push Content to Layer
+Target is BPW CGF HUD.WidgetClass
+      Pin: WidgetData (struct) Dir=Out
+        -> Push Content to Layer
+Target is BPW CGF HUD.WidgetData
+      Pin: AlreadyValidWidget (object) Dir=Out
+        -> Push Content to Layer
+Target is BPW CGF HUD.AlreadyValidWidget
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Push Content to Layer
+Target is BPW CGF HUD.then
+      Pin: Widget (object) Dir=In
+        -> Push Content to Layer
+Target is BPW CGF HUD.PushedAlreadyValidWidget
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Push Content to Layer
+Target is BPW CGF HUD.self
+        -> Is Valid.InputObject
+    Node: Push Content to Layer
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: LayerName (struct) Dir=In
+        -> PushContentToLayer.LayerName
+      Pin: WidgetClass (softclass) Dir=In
+        -> PushContentToLayer.WidgetClass
+      Pin: AlreadyValidWidget (object) Dir=In
+        -> PushContentToLayer.AlreadyValidWidget
+      Pin: WidgetData (struct) Dir=In
+        -> PushContentToLayer.WidgetData
+      Pin: PushedAlreadyValidWidget (object) Dir=Out
+        -> Return Node.Widget
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> PushContentToLayer.then
+      Pin: InputObject (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: Is Valid (exec) Dir=Out
+        -> Push Content to Layer
+Target is BPW CGF HUD.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: PopContentFromLayer
+    Node: PopContentFromLayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.execute
+      Pin: LayerName (struct) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.LayerName
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Pop Content from Layer
+Target is BPW CGF HUD.then
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Pop Content from Layer
+Target is BPW CGF HUD.self
+    Node: Pop Content from Layer
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> PopContentFromLayer.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: LayerName (struct) Dir=In
+        -> PopContentFromLayer.LayerName
+      Pin: OptionalGameplayTag (struct) Dir=In
+  Graph: ClearAllLayers
+    Node: ClearAllLayers (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear All Layers
+Target is BPW CGF HUD.execute
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Clear All Layers
+Target is BPW CGF HUD.self
+    Node: Clear All Layers
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ClearAllLayers.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+  Graph: ClearAllLayersExcept
+    Node: ClearAllLayersExcept (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear All Layers Except
+Target is BPW CGF HUD.execute
+      Pin: ExceptionLayerName (struct) Dir=Out
+        -> Clear All Layers Except
+Target is BPW CGF HUD.ExceptionLayerName
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Clear All Layers Except
+Target is BPW CGF HUD.self
+    Node: Clear All Layers Except
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ClearAllLayersExcept.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: ExceptionLayerName (struct) Dir=In
+        -> ClearAllLayersExcept.ExceptionLayerName
+  Graph: ClearLayer
+    Node: ClearLayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear Layer
+Target is BPW CGF HUD.execute
+      Pin: LayerName (struct) Dir=Out
+        -> Clear Layer
+Target is BPW CGF HUD.LayerName
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Clear Layer
+Target is BPW CGF HUD.then
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Clear Layer
+Target is BPW CGF HUD.self
+    Node: Clear Layer
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ClearLayer.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: LayerName (struct) Dir=In
+        -> ClearLayer.LayerName
+  Graph: ShowLayersTopWidget
+    Node: ShowLayersTopWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.Layer
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.self
+    Node: Show Top Widget
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ShowLayersTopWidget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: Layer (struct) Dir=In
+        -> ShowLayersTopWidget.Layer
+      Pin: GameplayTag (struct) Dir=In
+  Graph: CollapseLayersTopWidget
+    Node: CollapseLayersTopWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Collapse Top Widget
+Target is BPW CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Collapse Top Widget
+Target is BPW CGF HUD.Layer
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Collapse Top Widget
+Target is BPW CGF HUD.self
+    Node: Collapse Top Widget
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CollapseLayersTopWidget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: Layer (struct) Dir=In
+        -> CollapseLayersTopWidget.Layer
+  Graph: CheckSplashEnabled?
+    Node: CheckSplashEnabled? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+        -> Get.BP CGF Game Instance
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Data.F_CGF_GameSettings_MenuData
+    Node: Break F CGF Game Settings Menu Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuData (struct) Dir=In
+        -> Break F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+      Pin: SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A (bool) Dir=Out
+        -> Set SpashOn?.SpashOn?
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> To String (Text).InText
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=Out
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: ReturnValue (string) Dir=Out
+        -> Contains.SearchIn
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SearchIn (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: Substring (string) Dir=In
+      Pin: bUseCase (bool) Dir=In
+      Pin: bSearchFromEnd (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get.then
+      Pin: Array (struct) Dir=In
+        -> Break F CGF Game Settings Menu Data.SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set SpashOn?.execute
+      Pin: else (exec) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> CheckSplashEnabled?.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get CGF_GameInstanceCopy_GameSettings.self
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: SettingOn? (bool) Dir=In
+        -> Get SpashOn?.SpashOn?
+    Node: Set SpashOn? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SpashOn? (bool) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get SpashOn? (K2Node_VariableGet)
+      Pin: SpashOn? (bool) Dir=Out
+        -> Return Node.SettingOn?
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set SpashOn?.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: ReturnWidgetViaGameplayTag
+    Node: ReturnWidgetViaGameplayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Layers Stack
+Target is BP CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Get Layers Stack
+Target is BP CGF HUD.Layer
+      Pin: TagToMatch (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Layers Stack
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ReturnWidgetViaGameplayTag.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+        -> ReturnWidgetViaGameplayTag.Layer
+      Pin: Stack (object) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Layers Stack
+Target is BP CGF HUD.then
+      Pin: Array (object) Dir=In
+        -> Get Layers Stack
+Target is BP CGF HUD.Stack
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Has Gameplay Tag?
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: TagToMatch (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HasTag? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.then
+      Pin: Condition (bool) Dir=In
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.HasTag?
+      Pin: then (exec) Dir=Out
+        -> Set LocalWidget.execute
+      Pin: else (exec) Dir=Out
+    Node: Set LocalWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalFoundAnyWidget?.execute
+      Pin: LocalWidget (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Found? (bool) Dir=In
+        -> Get LocalFoundAnyWidget?.LocalFoundAnyWidget?
+      Pin: FoundWidgetViaTag (object) Dir=In
+        -> Get LocalWidget.LocalWidget
+    Node: Get LocalWidget (K2Node_VariableGet)
+      Pin: LocalWidget (object) Dir=Out
+        -> Return Node.FoundWidgetViaTag
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set LocalFoundAnyWidget?.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.TagToMatch
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> ReturnWidgetViaGameplayTag.TagToMatch
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set LocalWidget.LocalWidget
+    Node: Set LocalFoundAnyWidget? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalWidget.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: LocalFoundAnyWidget? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get LocalFoundAnyWidget? (K2Node_VariableGet)
+      Pin: LocalFoundAnyWidget? (bool) Dir=Out
+        -> Return Node.Found?
+  Graph: ShowWidgetViaGamePlayTag
+    Node: ShowWidgetViaGamePlayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.Layer
+      Pin: GameplayTag (struct) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.GameplayTag
+    Node: Get CGF HUD
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BPW_CGF_HUD_REF (object) Dir=Out
+        -> Show Top Widget
+Target is BPW CGF HUD.self
+    Node: Show Top Widget
+Target is BPW CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ShowWidgetViaGamePlayTag.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CGF HUD
+Target is BP CGF HUD.BPW_CGF_HUD_REF
+      Pin: Layer (struct) Dir=In
+        -> ShowWidgetViaGamePlayTag.Layer
+      Pin: GameplayTag (struct) Dir=In
+        -> ShowWidgetViaGamePlayTag.GameplayTag
+  Graph: CollapseWidgetViaGameplayTag
+    Node: CollapseWidgetViaGameplayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Layers Stack
+Target is BP CGF HUD.execute
+      Pin: Layer (struct) Dir=Out
+        -> Get Layers Stack
+Target is BP CGF HUD.Layer
+      Pin: GameplayTag (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Layers Stack
+Target is BP CGF HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CollapseWidgetViaGameplayTag.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: Layer (struct) Dir=In
+        -> CollapseWidgetViaGameplayTag.Layer
+      Pin: Stack (object) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Layers Stack
+Target is BP CGF HUD.then
+      Pin: Array (object) Dir=In
+        -> Get Layers Stack
+Target is BP CGF HUD.Stack
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.execute
+      Pin: Array Element (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Has Gameplay Tag?
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: TagToMatch (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HasTag? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> CollapseWidgetViaGameplayTag.GameplayTag
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.TagToMatch
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.then
+      Pin: Condition (bool) Dir=In
+        -> Has Gameplay Tag?
+Target is BPI CGF User Interface.HasTag?
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InVisibility (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: OnModalHasResponded
+    Node: OnModalHasResponded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Yes? (bool) Dir=Out

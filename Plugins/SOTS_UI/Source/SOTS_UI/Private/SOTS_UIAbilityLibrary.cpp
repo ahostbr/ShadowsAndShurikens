@@ -1,7 +1,8 @@
 #include "SOTS_UIAbilityLibrary.h"
 
-#include "SOTS_HUDSubsystem.h"
-#include "SOTS_NotificationSubsystem.h"
+#include "SOTS_UIRouterSubsystem.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UIAbilityLibrary, Log, All);
 
 namespace SOTSUIAbilityInternal
 {
@@ -25,13 +26,12 @@ void USOTS_UIAbilityLibrary::NotifyAbilityEvent(const UObject* WorldContextObjec
 {
 	const FString Message = SOTSUIAbilityInternal::BuildAbilityMessage(AbilityTag, bSuccess, DetailText);
 
-	if (USOTS_NotificationSubsystem* Notification = USOTS_NotificationSubsystem::Get(WorldContextObject))
+	if (USOTS_UIRouterSubsystem* Router = USOTS_UIRouterSubsystem::Get(WorldContextObject))
 	{
-		Notification->PushNotification(Message, 4.f, AbilityTag);
+		Router->ShowNotification(Message, 4.f, AbilityTag);
+		Router->SetObjectiveText(Message);
+		return;
 	}
 
-	if (USOTS_HUDSubsystem* HUD = USOTS_HUDSubsystem::Get(WorldContextObject))
-	{
-		HUD->SetObjectiveText(Message);
-	}
+	UE_LOG(LogSOTS_UIAbilityLibrary, Error, TEXT("NotifyAbilityEvent: Router missing. UI Hub Law violated if callers rely on fallback routing. Message=%s"), *Message);
 }

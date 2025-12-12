@@ -1,0 +1,1040 @@
+Blueprint: BP_Boss_Base (/Game/BossAIToolkit/Blueprints/BP_Boss_Base.BP_Boss_Base)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Delta (Rotator).A
+    Node: Get Control Rotation
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Delta (Rotator).B
+    Node: Delta (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Control Rotation
+Target is Pawn.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Absolute (Float).A
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Delta (Rotator).ReturnValue_Yaw
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Movement Speed
+Target is BPC Boss Behavior.NewSpeed
+    Node: Get Boss Behavior (K2Node_VariableGet)
+      Pin: Boss Behavior (object) Dir=Out
+        -> Get RotateBeforeMoving.self
+      Pin: self (object) Dir=In
+    Node: Get RotateBeforeMoving (K2Node_VariableGet)
+      Pin: RotateBeforeMoving (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get RotateBeforeMoving.RotateBeforeMoving
+      Pin: then (exec) Dir=Out
+        -> Set Movement Speed
+Target is BPC Boss Behavior.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Boss Behavior (K2Node_VariableGet)
+      Pin: Boss Behavior (object) Dir=Out
+        -> Get Real Move Speed
+Target is BPC Boss Behavior.self
+        -> Get Has Ability
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+        -> Get Real Move Speed
+Target is BPC Boss Behavior.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Get Has Ability
+Target is BPC Boss Behavior.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 1
+    Node: Get Real Move Speed
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 1
+    Node: Get Boss Behavior (K2Node_VariableGet)
+      Pin: Boss Behavior (object) Dir=Out
+        -> Set Movement Speed
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Set Movement Speed
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+      Pin: NewSpeed (real) Dir=In
+        -> Select.ReturnValue
+    Node: If AI wants to rotate before moving, slow down move speed until current rotation is close enough to the target rotation (EdGraphNode_Comment)
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (object) Dir=Out
+        -> Set ControllerRef.ControllerRef
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get AIController.ControlledActor
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Absolute (Float).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Get TargetLockOn (K2Node_VariableGet)
+      Pin: TargetLockOn (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ControllerRef.then
+      Pin: then (exec) Dir=Out
+        -> Set GamePlayTagsManagerREF.execute
+      Pin: self (object) Dir=In
+        -> Get TargetLockOn.TargetLockOn
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get Has Ability
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Set ControllerRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: ControllerRef (object) Dir=In
+        -> Get AIController.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set ControllerRef.execute
+      Pin: self (object) Dir=In
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get ViewingPlayer?.self
+      Pin: self (object) Dir=In
+    Node: Get ViewingPlayer? (K2Node_VariableGet)
+      Pin: ViewingPlayer? (bool) Dir=Out
+        -> Branch.Condition
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+      Pin: Condition (bool) Dir=In
+        -> Get ViewingPlayer?.ViewingPlayer?
+      Pin: then (exec) Dir=Out
+        -> Set Threat_Amount.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Threat_Amount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Threat_Amount (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> To String (Float).InDouble
+      Pin: self (object) Dir=In
+    Node: Get Threat_Amount (K2Node_VariableGet)
+      Pin: Threat_Amount (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Threat_Amount.Threat_Amount
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Threat_Amount.then
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Send Direct Message.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Threat_Amount (K2Node_VariableGet)
+      Pin: Threat_Amount (real) Dir=Out
+        -> float >= float.A
+        -> To String (Float).InDouble
+      Pin: self (object) Dir=In
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Threat_Amount.Threat_Amount
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Send Direct Message (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ReceivingAI (object) Dir=In
+        -> Self-Reference.self
+      Pin: MessageToSend (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Send Direct Message.ReceivingAI
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Float).ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Set Threat_Amount.Output_Get
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+    Node: Set Threat_Amount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Threat_Amount (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> To String (Float).InDouble
+      Pin: self (object) Dir=In
+    Node: Get Threat_Amount (K2Node_VariableGet)
+      Pin: Threat_Amount (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Threat_Amount.Threat_Amount
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Float).ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: CurrentAIState
+Collapsed Graph (K2Node_Composite)
+      Pin: CurrentAIState (string) Dir=Out
+        -> Equal Exactly (String).A
+        -> Print String.InString
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> CurrentAIState
+Collapsed Graph.CurrentAIState
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Threat_Amount.execute
+      Pin: else (exec) Dir=Out
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get ViewingPlayer?.ViewingPlayer?
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Threat_Amount.Threat_Amount
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Threat_Amount.Threat_Amount
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Set Threat_Amount.Output_Get
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> CurrentAIState
+Collapsed Graph.CurrentAIState
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Float).ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Get Threat_Amount.Threat_Amount
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Parent: Tick.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+    Node: StartThreat (EdGraphNode_Comment)
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Ragdoll
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set IsDead.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Collision Profile Name
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Simulate Physics
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: InCollisionProfileName (name) Dir=In
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Set Simulate Physics
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Profile Name
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: bSimulate (bool) Dir=In
+    Node: Set IsDead (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set IsAttacking.execute
+      Pin: IsDead (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsAttacking (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsDead.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: IsAttacking (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Tags (K2Node_VariableGet)
+      Pin: Tags (name) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set IsAttacking.then
+      Pin: then (exec) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Get Tags.Tags
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.self
+        -> Set Collision Profile Name
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Ragdoll
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+    Node: Event Hit (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MyComp (object) Dir=Out
+      Pin: Other (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+      Pin: bSelfMoved (bool) Dir=Out
+      Pin: HitLocation (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: HitNormal (struct) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Take Damage Boss
+Target is BP Boss Base.self
+    Node: Take Damage Boss
+Target is BP Boss Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: Damage (real) Dir=In
+      Pin: DamageType (object) Dir=In
+      Pin: HitFrom (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HitBone (name) Dir=In
+      Pin: Blocked (bool) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get Player Character.ReturnValue
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Equal (Object).B
+        -> Take Damage Boss
+Target is BP Boss Base.DamageCauser
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: B (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Hit.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Take Damage Boss
+Target is BP Boss Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event Hit.HitLocation
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Take Damage Boss
+Target is BP Boss Base.HitFrom
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event Hit.OtherComp
+      Pin: ReturnValue (object) Dir=Out
+        -> Equal (Object).A
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Take Damage Boss
+Target is BP Boss Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Set GamePlayTagsManagerREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Global Tag Container Changed.execute
+      Pin: GamePlayTagsManagerREF (object) Dir=In
+        -> Get Blueprint Subsystem Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Bind Event to On Global Tag Container Changed.self
+      Pin: self (object) Dir=In
+    Node: Bind Event to On Global Tag Container Changed (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set GamePlayTagsManagerREF.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set GamePlayTagsManagerREF.Output_Get
+      Pin: Delegate (delegate) Dir=In
+        -> TagHasChanged
+Custom Event.OutputDelegate
+    Node: TagHasChanged
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Global Tag Container Changed.Delegate
+      Pin: then (exec) Dir=Out
+        -> Switch on Gameplay Tag.execute
+      Pin: FullGlobalGameplayTagContainer (struct) Dir=Out
+      Pin: SingleTagChanged (struct) Dir=Out
+        -> Switch on Gameplay Tag.Selection
+      Pin: Add/Remove? (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Switch on Gameplay Tag (GameplayTagsK2Node_SwitchGameplayTag)
+      Pin: execute (exec) Dir=In
+        -> TagHasChanged
+Custom Event.then
+      Pin: Selection (struct) Dir=In
+        -> TagHasChanged
+Custom Event.SingleTagChanged
+      Pin: NotEqual_TagTag (object) Dir=In
+      Pin: SAS.Player.States.Aiming (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Player.States.Aiming
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> End Being Aimed at by Player
+Target is BP Boss Base.execute
+    Node: Get Blueprint Subsystem Of Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TargetClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set GamePlayTagsManagerREF.GamePlayTagsManagerREF
+    Node: End Being Aimed at by Player
+Target is BP Boss Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> TagHasChanged
+Custom Event.Add/Remove?
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: BossAIToolkit
+Collapsed Graph (K2Node_Composite)
+    Node: DismembermentSystem
+Collapsed Graph (K2Node_Composite)
+    Node: TICK (EdGraphNode_Comment)
+    Node: Player_interactions
+Collapsed Graph (K2Node_Composite)
+    Node: Event SendTryExecuteToAI
+From BPI Player to AI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SendTryExecuteToAI
+From BPI Player to AI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: TakeDamageBoss
+    Node: TakeDamageBoss (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Decrease Health
+Target is BPC Boss Behavior.execute
+      Pin: Damage (real) Dir=Out
+        -> Decrease Health
+Target is BPC Boss Behavior.Amount
+      Pin: DamageType (object) Dir=Out
+      Pin: HitFrom (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: HitBone (name) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Blocked (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DamageCauser (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Play Hit React
+Target is BPC Boss Behavior.self
+    Node: Decrease Health
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> TakeDamageBoss.then
+      Pin: then (exec) Dir=Out
+        -> Check for Health Triggers
+Target is BP Behavior Component.execute
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+      Pin: Amount (real) Dir=In
+        -> TakeDamageBoss.Damage
+      Pin: NewHealth (real) Dir=Out
+        -> float > float.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Check for Health Triggers
+Target is BP Behavior Component.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Get Stagger Info
+Target is BI Ability.execute
+      Pin: else (exec) Dir=Out
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Decrease Health
+Target is BPC Boss Behavior.NewHealth
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Boss Behavior (K2Node_VariableGet)
+      Pin: Boss Behavior (object) Dir=Out
+        -> Check Dodge
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Check Dodge
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Hit React
+Target is BPC Boss Behavior.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+      Pin: Condition (byte) Dir=In
+      Pin: Dodge (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Decrease Posture
+Target is BPC Boss Behavior.self
+    Node: Decrease Posture
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set LocHitType.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Amount (real) Dir=In
+        -> Select.ReturnValue
+      Pin: NewPosture (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Decrease Posture
+Target is BPC Boss Behavior.NewPosture
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Decrease Posture
+Target is BPC Boss Behavior.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Boss Behavior (K2Node_VariableGet)
+      Pin: Boss Behavior (object) Dir=Out
+        -> Decrease Health
+Target is BPC Boss Behavior.self
+        -> Reroute Node.InputPin
+        -> Get Health.self
+        -> Get MaxHealth.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Play Hit React
+Target is BPC Boss Behavior.HitLocation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> TakeDamageBoss.HitFrom
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (name) Dir=Out
+        -> Play Hit React
+Target is BPC Boss Behavior.HitBone
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> TakeDamageBoss.HitBone
+      Pin: OutputPin (name) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get DamageType.DamageType
+      Pin: ReturnValue (class) Dir=Out
+        -> Not Equal (Class).A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> TakeDamageBoss.Blocked
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Play Hit React
+Target is BPC Boss Behavior.Blocking
+    Node: Play Hit React
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Check Dodge
+Target is BPC Boss Behavior.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HitLocation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HitBone (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HitType (byte) Dir=In
+        -> Get LocHitType.LocHitType
+      Pin: Blocking (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get DamageType (K2Node_VariableGet)
+      Pin: DamageType (object) Dir=Out
+        -> Get Class.Object
+    Node: Not Equal (Class) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (class) Dir=In
+        -> Get Class.ReturnValue
+      Pin: B (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Class).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Play Hit React
+Target is BPC Boss Behavior.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Stagger Info
+Target is BI Ability (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set LocHitType.execute
+      Pin: self (object) Dir=In
+        -> Get DamageCauser.DamageCauser
+      Pin: PostureDamage (real) Dir=Out
+        -> Select.Option 0
+      Pin: HitType (byte) Dir=Out
+        -> Set LocHitType.LocHitType
+    Node: Get DamageCauser (K2Node_VariableGet)
+      Pin: DamageCauser (object) Dir=Out
+        -> Get Stagger Info
+Target is BI Ability.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> Get Stagger Info
+Target is BI Ability.PostureDamage
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Decrease Posture
+Target is BPC Boss Behavior.Amount
+    Node: Set LocHitType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Stagger Info
+Target is BI Ability.then
+      Pin: then (exec) Dir=Out
+        -> Decrease Posture
+Target is BPC Boss Behavior.execute
+      Pin: LocHitType (byte) Dir=In
+        -> Get Stagger Info
+Target is BI Ability.HitType
+      Pin: Output_Get (byte) Dir=Out
+    Node: Get LocHitType (K2Node_VariableGet)
+      Pin: LocHitType (byte) Dir=Out
+        -> Play Hit React
+Target is BPC Boss Behavior.HitType
+    Node: Decrease health by damage amount (EdGraphNode_Comment)
+    Node: Decrease posture to stagger/stun the boss (EdGraphNode_Comment)
+    Node: Play hit react if possible and check for dodge condition on hit (EdGraphNode_Comment)
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Check for Health Triggers
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Check for Health Triggers
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Decrease Health
+Target is BPC Boss Behavior.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: Percentage (real) Dir=In
+        -> float / float.ReturnValue
+    Node: Get Health (K2Node_VariableGet)
+      Pin: Health (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Health.Health
+      Pin: B (real) Dir=In
+        -> Get MaxHealth.MaxHealth
+      Pin: ReturnValue (real) Dir=Out
+        -> Check for Health Triggers
+Target is BP Behavior Component.Percentage
+    Node: Get MaxHealth (K2Node_VariableGet)
+      Pin: MaxHealth (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+  Graph: StopBrain
+    Node: StopBrain (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get BrainComponent (K2Node_VariableGet)
+      Pin: BrainComponent (object) Dir=Out
+        -> Stop Logic
+Target is Brain Component.self
+      Pin: self (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+    Node: Stop Logic
+Target is Brain Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Stop Ability
+Target is BPC Boss Behavior.execute
+      Pin: self (object) Dir=In
+        -> Get BrainComponent.BrainComponent
+      Pin: Reason (string) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> StopBrain.then
+      Pin: InputObject (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Stop Logic
+Target is Brain Component.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Boss Behavior (K2Node_VariableGet)
+      Pin: Boss Behavior (object) Dir=Out
+        -> Stop Ability
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Stop Ability
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Stop Logic
+Target is Brain Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Boss Behavior.Boss Behavior
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Stop Ability
+Target is BPC Boss Behavior.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Get ControllerRef (K2Node_VariableGet)
+      Pin: ControllerRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get BrainComponent.self
+      Pin: self (object) Dir=In
+  Graph: RestartBrain
+    Node: RestartBrain (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get BrainComponent (K2Node_VariableGet)
+      Pin: BrainComponent (object) Dir=Out
+        -> Restart Logic
+Target is Brain Component.self
+      Pin: self (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> RestartBrain.then
+      Pin: InputObject (object) Dir=In
+        -> Get ControllerRef.ControllerRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Restart Logic
+Target is Brain Component.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Restart Logic
+Target is Brain Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get BrainComponent.BrainComponent
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Restart Logic
+Target is Brain Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Get ControllerRef (K2Node_VariableGet)
+      Pin: ControllerRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get BrainComponent.self
+      Pin: self (object) Dir=In
+  Graph: Assassination_1
+    Node: Assassination_1 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Ragdoll
+Target is BP Boss Base.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Ragdoll
+Target is BP Boss Base.then
+      Pin: RefLocation (struct) Dir=In
+      Pin: RefRotation (struct) Dir=In
+    Node: Ragdoll
+Target is BP Boss Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Assassination_1.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In

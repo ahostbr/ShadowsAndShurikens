@@ -1,0 +1,201 @@
+Blueprint: FirstPersonCharacter (/Game/BossAIToolkit/Blueprints/Misc/FirstPersonCharacter.FirstPersonCharacter)
+  Graph: EventGraph
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Rotation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor BP Projectile Gun.SpawnTransform
+    Node: Rotate Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get GunOffset.GunOffset
+      Pin: B (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Spawn projectile (EdGraphNode_Comment)
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Rotate Vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Transform.Location
+    Node: Get GunOffset (K2Node_VariableGet)
+      Pin: GunOffset (struct) Dir=Out
+        -> Rotate Vector.A
+      Pin: self (object) Dir=In
+    Node: SpawnActor BP Projectile Gun (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Montage Play
+Target is Anim Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Damage (real) Dir=In
+        -> Get GunDamage.GunDamage
+      Pin: DamageType (class) Dir=In
+      Pin: DestroyOnHit (bool) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Mesh2P.Mesh2P
+      Pin: ReturnValue (object) Dir=Out
+        -> Montage Play
+Target is Anim Instance.self
+    Node: Get Mesh2P (K2Node_VariableGet)
+      Pin: Mesh2P (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In
+    Node: Montage Play
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> InputAction Attack.Pressed
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP Projectile Gun.execute
+      Pin: self (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: MontageToPlay (object) Dir=In
+      Pin: InPlayRate (real) Dir=In
+      Pin: ReturnValueType (byte) Dir=In
+      Pin: InTimeToStartMontageAt (real) Dir=In
+      Pin: bStopAllMontages (bool) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Get Sphere (K2Node_VariableGet)
+      Pin: Sphere (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Sphere.Sphere
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get FollowCamera.FollowCamera
+      Pin: ReturnValue (struct) Dir=Out
+        -> Rotate Vector.B
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Make Transform.Rotation
+    Node: InputAction Attack (K2Node_InputAction)
+      Pin: Pressed (exec) Dir=Out
+        -> Montage Play
+Target is Anim Instance.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Get GunDamage (K2Node_VariableGet)
+      Pin: GunDamage (real) Dir=Out
+        -> SpawnActor BP Projectile Gun.Damage
+      Pin: self (object) Dir=In
+    Node: Get FollowCamera (K2Node_VariableGet)
+      Pin: FollowCamera (object) Dir=Out
+        -> Get World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Event OnHitReact (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: Blocking (bool) Dir=Out
+    Node: Override hit react event so it doesn't play and interrupt the player (EdGraphNode_Comment)
+    Node: Event OnDeath (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: On Death.execute
+    Node: Parent: On Death (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnDeath.then
+      Pin: then (exec) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+    Node: Get Mesh2P (K2Node_VariableGet)
+      Pin: Mesh2P (object) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set Simulate Physics
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: On Death.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Profile Name
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Mesh2P.Mesh2P
+      Pin: bSimulate (bool) Dir=In
+    Node: Set Collision Profile Name
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Simulate Physics
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InCollisionProfileName (name) Dir=In
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Mesh2P.Mesh2P
+      Pin: OutputPin (object) Dir=Out
+        -> Set Collision Profile Name
+Target is Primitive Component.self
+    Node: Override death event (EdGraphNode_Comment)
+    Node: InputAction Block (K2Node_InputAction)
+      Pin: Pressed (exec) Dir=Out
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Override block event for shooter (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: ConstructionScript (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+    Node: Get Mesh2P (K2Node_VariableGet)
+      Pin: Mesh2P (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+      Pin: self (object) Dir=In
+    Node: Get FP_Gun (K2Node_VariableGet)
+      Pin: FP_Gun (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ConstructionScript.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get FP_Gun.FP_Gun
+      Pin: Parent (object) Dir=In
+        -> Get Mesh2P.Mesh2P
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out

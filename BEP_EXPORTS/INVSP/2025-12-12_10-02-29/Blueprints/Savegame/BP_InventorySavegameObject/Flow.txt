@@ -1,0 +1,1092 @@
+Blueprint: BP_InventorySavegameObject (/Game/InventorySystemPro/Blueprints/Savegame/BP_InventorySavegameObject.BP_InventorySavegameObject)
+  Graph: EventGraph
+  Graph: SetSavedData
+    Node: SetSavedData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: SaveActors (object) Dir=Out
+      Pin: SaveGameObject (object) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Pawn.AsPawn
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get ItemSlots.self
+        -> Is Valid.InputObject
+        -> Get ShortcutSlots.self
+        -> Get EquipmentItemSlots.self
+        -> Get InventorySizeExpansion.self
+        -> Get UniqueID.self
+        -> Get CurrencyAmount.self
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> Make FInventory Save Data.ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Add.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get PlayerInventoryData.PlayerInventoryData
+      Pin: NewItem (struct) Dir=In
+        -> Make FInventory Save Data.FInventorySaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FInventory Save Data (K2Node_MakeStruct)
+      Pin: FInventorySaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_26_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: InventoryExpansionSize_24_DCE075134140C74965B390AEF098266B (struct) Dir=In
+        -> Get InventorySizeExpansion.InventorySizeExpansion
+      Pin: ShortcutSlots_23_42B4DA43474F23DBCA9892ABA5DD2DE0 (struct) Dir=In
+        -> Get ShortcutSlots.ShortcutSlots
+      Pin: EquipmentSlots_22_4B43EB764A91ADC7670A0598AE2746F2 (struct) Dir=In
+        -> Get EquipmentItemSlots.EquipmentItemSlots
+      Pin: Currency_29_053DD5C24C633EAF911D77A15779F4D0 (int) Dir=In
+        -> Get CurrencyAmount.CurrencyAmount
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Pawn.AsPawn
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> SetSavedData.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get PlayerInventoryData.PlayerInventoryData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get ItemContainerData.ItemContainerData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get ItemPickupData.ItemPickupData
+    Node: Get player inventories & how they assigned their shortcut slots (EdGraphNode_Comment)
+    Node: Cleanup existing save data (EdGraphNode_Comment)
+    Node: Get bIsPickedUp (K2Node_VariableGet)
+      Pin: bIsPickedUp (bool) Dir=Out
+        -> Make FItem Pickup Save Data.bIsPickedUp_11_697AE44A43AD5215DD0DD88913AA57F1
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPickup.AsBP Item Pickup
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FItem Pickup Save Data.ItemPickupGUID_14_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPickup.AsBP Item Pickup
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemPickup.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get ItemPickupData.ItemPickupData
+      Pin: NewItem (struct) Dir=In
+        -> Make FItem Pickup Save Data.FItemPickupSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FItem Pickup Save Data (K2Node_MakeStruct)
+      Pin: FItemPickupSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: ItemPickupGUID_14_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: bIsPickedUp_11_697AE44A43AD5215DD0DD88913AA57F1 (bool) Dir=In
+        -> Get bIsPickedUp.bIsPickedUp
+    Node: Get Item Pickups (EdGraphNode_Comment)
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemContainer.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get ItemContainerData.ItemContainerData
+      Pin: NewItem (struct) Dir=In
+        -> Make FActor Save Data.FActorSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FActor Save Data (K2Node_MakeStruct)
+      Pin: FActorSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D (struct) Dir=In
+        -> Get InventorySizeExpansion.InventorySizeExpansion
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get ItemSlots.self
+        -> Get InventorySizeExpansion.self
+        -> Get UniqueID.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemContainer.AsBP Item Container
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> Make FActor Save Data.ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get Item Containers (EdGraphNode_Comment)
+    Node: Get ShortcutSlots (K2Node_VariableGet)
+      Pin: ShortcutSlots (struct) Dir=Out
+        -> Make FInventory Save Data.ShortcutSlots_23_42B4DA43474F23DBCA9892ABA5DD2DE0
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Get EquipmentItemSlots (K2Node_VariableGet)
+      Pin: EquipmentItemSlots (struct) Dir=Out
+        -> Make FInventory Save Data.EquipmentSlots_22_4B43EB764A91ADC7670A0598AE2746F2
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Get InventorySizeExpansion (K2Node_VariableGet)
+      Pin: InventorySizeExpansion (struct) Dir=Out
+        -> Make FInventory Save Data.InventoryExpansionSize_24_DCE075134140C74965B390AEF098266B
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Get InventorySizeExpansion (K2Node_VariableGet)
+      Pin: InventorySizeExpansion (struct) Dir=Out
+        -> Make FActor Save Data.InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FInventory Save Data.UniqueID_26_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Cast To BPI_InventorySaveActor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentActor.then
+      Pin: then (exec) Dir=Out
+        -> Get Inventory Save Type
+Target is BPI Inventory Save Actor.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: AsBPI Inventory Save Actor (interface) Dir=Out
+        -> Get Inventory Save Type
+Target is BPI Inventory Save Actor.self
+        -> Get Save Actor
+Target is BPI Inventory Save Actor.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear.then
+      Pin: Array (object) Dir=In
+        -> Get SaveActors.SaveActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Set CurrentActor.execute
+      Pin: Array Element (object) Dir=Out
+        -> Cast To BPI_InventorySaveActor.Object
+        -> Cast To Pawn.Object
+        -> Set CurrentActor.CurrentActor
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Inventory Save Type
+Target is BPI Inventory Save Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPI_InventorySaveActor.then
+      Pin: then (exec) Dir=Out
+        -> Get Save Actor
+Target is BPI Inventory Save Actor.execute
+      Pin: self (interface) Dir=In
+        -> Cast To BPI_InventorySaveActor.AsBPI Inventory Save Actor
+      Pin: InventorySaveType (byte) Dir=Out
+        -> Switch on EInventorySaveType.Selection
+    Node: Switch on EInventorySaveType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Get Inventory Save Type
+Target is BPI Inventory Save Actor.InventorySaveType
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Cast To Pawn.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator10 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator3 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator4 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator5 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator6 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator7 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator8 (exec) Dir=Out
+      Pin: NewEnumerator9 (exec) Dir=Out
+      Pin: NewEnumerator11 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Cast To Pawn (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: AsPawn (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Get Controller
+Target is Pawn.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To BP_ItemPickup (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Item Pickup (object) Dir=Out
+        -> Get UniqueID.self
+        -> Get bIsPickedUp.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To BP_ItemContainer (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Item Container (object) Dir=Out
+        -> Get BP_InventoryComponent.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Iterate over every Actor that has the save interface and execute different save logic based on type (EdGraphNode_Comment)
+    Node: Get Vendor (EdGraphNode_Comment)
+    Node: Get Workbench (EdGraphNode_Comment)
+    Node: Cast To BP_ShopVendor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Shop Vendor (object) Dir=Out
+        -> Get BP_InventoryComponent.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To BP_Workbench (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Workbench (object) Dir=Out
+        -> Get BP_InventoryComponent.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Campfire (EdGraphNode_Comment)
+    Node: Get Smelter (EdGraphNode_Comment)
+    Node: Cast To BP_Campfire (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Campfire (object) Dir=Out
+        -> Get bIsFireOn.self
+        -> Get BP_InventoryComponent.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To BP_Smelter (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Smelter (object) Dir=Out
+        -> Get bIsFireOn.self
+        -> Get BP_InventoryComponent.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Item Puzzle (EdGraphNode_Comment)
+    Node: Cast To BP_ItemPuzzle (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Item Puzzle (object) Dir=Out
+        -> Get bIsPuzzleSolved.self
+        -> Get UniqueID.self
+        -> Get CompletedItems.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set CurrentActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Cast To BPI_InventorySaveActor.execute
+      Pin: CurrentActor (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Output_Get (object) Dir=Out
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_ItemPickup.Object
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_ItemContainer.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_ItemContainer.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_ItemPickup.execute
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_ShopVendor.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator3
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_ShopVendor.execute
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_ItemPuzzle.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator7
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_ItemPuzzle.execute
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_Smelter.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator6
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_Smelter.execute
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_Campfire.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator5
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_Campfire.execute
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_Workbench.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator4
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_Workbench.execute
+    Node: Get bIsFireOn (K2Node_VariableGet)
+      Pin: bIsFireOn (bool) Dir=Out
+        -> Make FCampfire Save Data.bFireIsOn_19_13D1AF264F05D6D7DB30D5AB08E769A8
+      Pin: self (object) Dir=In
+        -> Cast To BP_Campfire.AsBP Campfire
+    Node: Get bIsFireOn (K2Node_VariableGet)
+      Pin: bIsFireOn (bool) Dir=Out
+        -> Make FSmelter Save Data.bFireIsOn_19_03A980E7412F867665EA27A4563D7229
+      Pin: self (object) Dir=In
+        -> Cast To BP_Smelter.AsBP Smelter
+    Node: Get bIsPuzzleSolved (K2Node_VariableGet)
+      Pin: bIsPuzzleSolved (bool) Dir=Out
+        -> Make FPuzzle Save Data.bPuzzleSolved_19_CF38FAC346AE950049AC968293C6E7BA
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPuzzle.AsBP Item Puzzle
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get ItemSlots.self
+        -> Get InventorySizeExpansion.self
+        -> Get UniqueID.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_ShopVendor.AsBP Shop Vendor
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> Make FActor Save Data.ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get InventorySizeExpansion (K2Node_VariableGet)
+      Pin: InventorySizeExpansion (struct) Dir=Out
+        -> Make FActor Save Data.InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FActor Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> Make FActor Save Data.ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get InventorySizeExpansion (K2Node_VariableGet)
+      Pin: InventorySizeExpansion (struct) Dir=Out
+        -> Make FActor Save Data.InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FActor Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get UniqueID.self
+        -> Get ItemSlots.self
+        -> Get InventorySizeExpansion.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_Workbench.AsBP Workbench
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> Make FCampfire Save Data.ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get InventorySizeExpansion (K2Node_VariableGet)
+      Pin: InventorySizeExpansion (struct) Dir=Out
+        -> Make FCampfire Save Data.InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FCampfire Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get UniqueID.self
+        -> Get ItemSlots.self
+        -> Get InventorySizeExpansion.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_Campfire.AsBP Campfire
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> Make FSmelter Save Data.ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get InventorySizeExpansion (K2Node_VariableGet)
+      Pin: InventorySizeExpansion (struct) Dir=Out
+        -> Make FSmelter Save Data.InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FSmelter Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Get Save Actor
+Target is BPI Inventory Save Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Inventory Save Type
+Target is BPI Inventory Save Actor.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (interface) Dir=In
+        -> Cast To BPI_InventorySaveActor.AsBPI Inventory Save Actor
+      Pin: bSaveActor (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Save Actor
+Target is BPI Inventory Save Actor.then
+      Pin: Condition (bool) Dir=In
+        -> Get Save Actor
+Target is BPI Inventory Save Actor.bSaveActor
+      Pin: then (exec) Dir=Out
+        -> Switch on EInventorySaveType.execute
+      Pin: else (exec) Dir=Out
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FActor Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ShopVendor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get VendorData.VendorData
+      Pin: NewItem (struct) Dir=In
+        -> Make FActor Save Data.FActorSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FActor Save Data (K2Node_MakeStruct)
+      Pin: FActorSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D (struct) Dir=In
+        -> Get InventorySizeExpansion.InventorySizeExpansion
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_Workbench.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get WorkbenchData.WorkbenchData
+      Pin: NewItem (struct) Dir=In
+        -> Make FActor Save Data.FActorSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FActor Save Data (K2Node_MakeStruct)
+      Pin: FActorSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D (struct) Dir=In
+        -> Get InventorySizeExpansion.InventorySizeExpansion
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_Campfire.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CampfireData.CampfireData
+      Pin: NewItem (struct) Dir=In
+        -> Make FCampfire Save Data.FCampfireSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_Smelter.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SmelterData.SmelterData
+      Pin: NewItem (struct) Dir=In
+        -> Make FSmelter Save Data.FSmelterSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemPuzzle.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get PuzzleData.PuzzleData
+      Pin: NewItem (struct) Dir=In
+        -> Make FPuzzle Save Data.FPuzzleSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get UniqueID.self
+        -> Get ItemSlots.self
+        -> Get InventorySizeExpansion.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_Smelter.AsBP Smelter
+    Node: Make FCampfire Save Data (K2Node_MakeStruct)
+      Pin: FCampfireSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D (struct) Dir=In
+        -> Get InventorySizeExpansion.InventorySizeExpansion
+      Pin: bFireIsOn_19_13D1AF264F05D6D7DB30D5AB08E769A8 (bool) Dir=In
+        -> Get bIsFireOn.bIsFireOn
+    Node: Make FSmelter Save Data (K2Node_MakeStruct)
+      Pin: FSmelterSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_6_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: InventoryExpansionSize_15_A2A3A85A4BC9D5ECFE91519BD59C6E2D (struct) Dir=In
+        -> Get InventorySizeExpansion.InventorySizeExpansion
+      Pin: bFireIsOn_19_03A980E7412F867665EA27A4563D7229 (bool) Dir=In
+        -> Get bIsFireOn.bIsFireOn
+    Node: Make FPuzzle Save Data (K2Node_MakeStruct)
+      Pin: FPuzzleSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: ItemSlots_20_63D1A74E4B2CA1D744A6B194E127BD52 (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: bPuzzleSolved_19_CF38FAC346AE950049AC968293C6E7BA (bool) Dir=In
+        -> Get bIsPuzzleSolved.bIsPuzzleSolved
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FPuzzle Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPuzzle.AsBP Item Puzzle
+    Node: Get CompletedItems (K2Node_VariableGet)
+      Pin: CompletedItems (struct) Dir=Out
+        -> Make FPuzzle Save Data.ItemSlots_20_63D1A74E4B2CA1D744A6B194E127BD52
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPuzzle.AsBP Item Puzzle
+    Node: Get Door (EdGraphNode_Comment)
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_InventoryDoor.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator11
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_InventoryDoor.execute
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_InventoryDoor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get DoorData.DoorData
+      Pin: NewItem (struct) Dir=In
+        -> Make FDoor Save Data.FDoorSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemPickupChest.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get ItemPickupData.ItemPickupData
+      Pin: NewItem (struct) Dir=In
+        -> Make FItem Pickup Save Data.FItemPickupSaveData
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FItem Pickup Save Data (K2Node_MakeStruct)
+      Pin: FItemPickupSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: ItemPickupGUID_14_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: bIsPickedUp_11_697AE44A43AD5215DD0DD88913AA57F1 (bool) Dir=In
+        -> Get bIsPickedUp.bIsPickedUp
+    Node: Get Item Pickup Chest (EdGraphNode_Comment)
+    Node: Get CurrentActor (K2Node_VariableGet)
+      Pin: CurrentActor (object) Dir=Out
+        -> Cast To BP_ItemPickupChest.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EInventorySaveType.NewEnumerator10
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_ItemPickupChest.execute
+    Node: Cast To BP_ItemPickupChest (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Item Pickup Chest (object) Dir=Out
+        -> Get UniqueID.self
+        -> Get bIsPickedUp.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FItem Pickup Save Data.ItemPickupGUID_14_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPickupChest.AsBP Item Pickup Chest
+    Node: Get bIsPickedUp (K2Node_VariableGet)
+      Pin: bIsPickedUp (bool) Dir=Out
+        -> Make FItem Pickup Save Data.bIsPickedUp_11_697AE44A43AD5215DD0DD88913AA57F1
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemPickupChest.AsBP Item Pickup Chest
+    Node: Cast To BP_InventoryDoor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get CurrentActor.CurrentActor
+      Pin: AsBP Inventory Door (object) Dir=Out
+        -> Get UniqueID.self
+        -> Get bIsLocked.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Make FDoor Save Data (K2Node_MakeStruct)
+      Pin: FDoorSaveData (struct) Dir=Out
+        -> Add.NewItem
+      Pin: UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62 (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: bIsLocked_21_13D1AF264F05D6D7DB30D5AB08E769A8 (bool) Dir=In
+        -> Get bIsLocked.bIsLocked
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Make FDoor Save Data.UniqueID_17_C185A4D24D3B6EFDFDB0358EE453BA62
+      Pin: self (object) Dir=In
+        -> Cast To BP_InventoryDoor.AsBP Inventory Door
+    Node: Get bIsLocked (K2Node_VariableGet)
+      Pin: bIsLocked (bool) Dir=Out
+        -> Make FDoor Save Data.bIsLocked_21_13D1AF264F05D6D7DB30D5AB08E769A8
+      Pin: self (object) Dir=In
+        -> Cast To BP_InventoryDoor.AsBP Inventory Door
+    Node: Get PlayerInventoryData (K2Node_VariableGet)
+      Pin: PlayerInventoryData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get ItemContainerData (K2Node_VariableGet)
+      Pin: ItemContainerData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get ItemPickupData (K2Node_VariableGet)
+      Pin: ItemPickupData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get DoorData.DoorData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get VendorData.VendorData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get WorkbenchData.WorkbenchData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CampfireData.CampfireData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CampfireData.CampfireData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SmelterData.SmelterData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get PuzzleData.PuzzleData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get FighterAIData.FighterAIData
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get GathererAIData.GathererAIData
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get PlayerInventoryData.self
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get ItemContainerData.self
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get ItemPickupData.self
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get DoorData.self
+    Node: Get DoorData (K2Node_VariableGet)
+      Pin: DoorData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get VendorData.self
+    Node: Get VendorData (K2Node_VariableGet)
+      Pin: VendorData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get WorkbenchData.self
+    Node: Get WorkbenchData (K2Node_VariableGet)
+      Pin: WorkbenchData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get CampfireData.self
+    Node: Get CampfireData (K2Node_VariableGet)
+      Pin: CampfireData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get CampfireData.self
+    Node: Get CampfireData (K2Node_VariableGet)
+      Pin: CampfireData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get SmelterData.self
+    Node: Get SmelterData (K2Node_VariableGet)
+      Pin: SmelterData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get PuzzleData.self
+    Node: Get PuzzleData (K2Node_VariableGet)
+      Pin: PuzzleData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get FighterAIData.self
+    Node: Get FighterAIData (K2Node_VariableGet)
+      Pin: FighterAIData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get GathererAIData.self
+    Node: Get GathererAIData (K2Node_VariableGet)
+      Pin: GathererAIData (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveActors (K2Node_VariableGet)
+      Pin: SaveActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get PlayerInventoryData.self
+    Node: Get PlayerInventoryData (K2Node_VariableGet)
+      Pin: PlayerInventoryData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get ItemPickupData.self
+    Node: Get ItemPickupData (K2Node_VariableGet)
+      Pin: ItemPickupData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get ItemPickupData.self
+    Node: Get ItemPickupData (K2Node_VariableGet)
+      Pin: ItemPickupData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get ItemContainerData.self
+    Node: Get ItemContainerData (K2Node_VariableGet)
+      Pin: ItemContainerData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get DoorData.self
+    Node: Get DoorData (K2Node_VariableGet)
+      Pin: DoorData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get VendorData.self
+    Node: Get VendorData (K2Node_VariableGet)
+      Pin: VendorData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get WorkbenchData.self
+    Node: Get WorkbenchData (K2Node_VariableGet)
+      Pin: WorkbenchData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get CampfireData.self
+    Node: Get CampfireData (K2Node_VariableGet)
+      Pin: CampfireData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get SmelterData.self
+    Node: Get SmelterData (K2Node_VariableGet)
+      Pin: SmelterData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get SaveGameObject (K2Node_VariableGet)
+      Pin: SaveGameObject (object) Dir=Out
+        -> Get PuzzleData.self
+    Node: Get PuzzleData (K2Node_VariableGet)
+      Pin: PuzzleData (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+        -> Get SaveGameObject.SaveGameObject
+    Node: Get CurrencyAmount (K2Node_VariableGet)
+      Pin: CurrencyAmount (int) Dir=Out
+        -> Make FInventory Save Data.Currency_29_053DD5C24C633EAF911D77A15779F4D0
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+  Graph: GetSavedData
+    Node: GetSavedData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetSavedData.then
+      Pin: PawnInventoryData (struct) Dir=In
+        -> Get PlayerInventoryData.PlayerInventoryData
+      Pin: ItemPickupData (struct) Dir=In
+        -> Get ItemPickupData.ItemPickupData
+      Pin: ItemContainerData (struct) Dir=In
+        -> Get ItemContainerData.ItemContainerData
+      Pin: Door (struct) Dir=In
+        -> Get DoorData.DoorData
+      Pin: VendorData (struct) Dir=In
+        -> Get VendorData.VendorData
+      Pin: WorkbenchData (struct) Dir=In
+        -> Get WorkbenchData.WorkbenchData
+      Pin: CampfireData (struct) Dir=In
+        -> Get CampfireData.CampfireData
+      Pin: SmelterData (struct) Dir=In
+        -> Get SmelterData.SmelterData
+      Pin: PuzzleData (struct) Dir=In
+        -> Get PuzzleData.PuzzleData
+      Pin: FighterAIData (struct) Dir=In
+        -> Get FighterAIData.FighterAIData
+      Pin: GathererAIData (struct) Dir=In
+        -> Get GathererAIData.GathererAIData
+    Node:  (EdGraphNode_Comment)
+    Node: Get PlayerInventoryData (K2Node_VariableGet)
+      Pin: PlayerInventoryData (struct) Dir=Out
+        -> Return Node.PawnInventoryData
+      Pin: self (object) Dir=In
+    Node: Get ItemContainerData (K2Node_VariableGet)
+      Pin: ItemContainerData (struct) Dir=Out
+        -> Return Node.ItemContainerData
+      Pin: self (object) Dir=In
+    Node: Get ItemPickupData (K2Node_VariableGet)
+      Pin: ItemPickupData (struct) Dir=Out
+        -> Return Node.ItemPickupData
+      Pin: self (object) Dir=In
+    Node: Get VendorData (K2Node_VariableGet)
+      Pin: VendorData (struct) Dir=Out
+        -> Return Node.VendorData
+      Pin: self (object) Dir=In
+    Node: Get WorkbenchData (K2Node_VariableGet)
+      Pin: WorkbenchData (struct) Dir=Out
+        -> Return Node.WorkbenchData
+      Pin: self (object) Dir=In
+    Node: Get CampfireData (K2Node_VariableGet)
+      Pin: CampfireData (struct) Dir=Out
+        -> Return Node.CampfireData
+      Pin: self (object) Dir=In
+    Node: Get SmelterData (K2Node_VariableGet)
+      Pin: SmelterData (struct) Dir=Out
+        -> Return Node.SmelterData
+      Pin: self (object) Dir=In
+    Node: Get PuzzleData (K2Node_VariableGet)
+      Pin: PuzzleData (struct) Dir=Out
+        -> Return Node.PuzzleData
+      Pin: self (object) Dir=In
+    Node: Get FighterAIData (K2Node_VariableGet)
+      Pin: FighterAIData (struct) Dir=Out
+        -> Return Node.FighterAIData
+      Pin: self (object) Dir=In
+    Node: Get GathererAIData (K2Node_VariableGet)
+      Pin: GathererAIData (struct) Dir=Out
+        -> Return Node.GathererAIData
+      Pin: self (object) Dir=In
+    Node: Get DoorData (K2Node_VariableGet)
+      Pin: DoorData (struct) Dir=Out
+        -> Return Node.Door
+      Pin: self (object) Dir=In

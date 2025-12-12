@@ -1,0 +1,272 @@
+Blueprint: EQS_GetDestinationContext (/Game/AIBehaviorToolkit/Blueprints/EQS/EQS_GetDestinationContext.EQS_GetDestinationContext)
+  Graph: EventGraph
+  Graph: ProvideSingleLocation
+    Node: Provide Single Location (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: QuerierObject (object) Dir=Out
+      Pin: QuerierActor (object) Dir=Out
+        -> Get AIController.ControlledActor
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: ResultingLocation (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Provide Single Location.QuerierActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Provide Single Location.then
+      Pin: then (exec) Dir=Out
+        -> Set PawnLoc.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Object (object) Dir=In
+        -> Get AIController.ReturnValue
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> Get Blackboard.Target
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: ResultingLocation (struct) Dir=In
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Get Blackboard (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Target (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.self
+        -> Get Value as Vector
+Target is Blackboard Component.self
+        -> Get Value as Object
+Target is Blackboard Component.self
+    Node: Set TargetLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+      Pin: TargetLoc (struct) Dir=In
+        -> Get Value as Vector
+Target is Blackboard Component.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get PawnLoc (K2Node_VariableGet)
+      Pin: PawnLoc (struct) Dir=Out
+        -> Set ContextActorLoc.ContextActorLoc
+    Node: Set ContextActorLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: ContextActorLoc (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set ContextActorLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: ContextActorLoc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get PawnLoc (K2Node_VariableGet)
+      Pin: PawnLoc (struct) Dir=Out
+        -> Set TargetActorLoc.TargetActorLoc
+    Node: Set PawnLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: PawnLoc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set TargetActorLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: TargetActorLoc (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Actor.AsActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set TargetActorLoc.TargetActorLoc
+    Node: Set TargetActorLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: TargetActorLoc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set PawnLoc.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To Actor.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Cast To Actor.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Set TargetLoc.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set PawnLoc.PawnLoc
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.KeyName
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Actor.AsActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ContextActorLoc.ContextActorLoc
+    Node: Cast To Actor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set ContextActorLoc.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Set ContextActorLoc.execute
+      Pin: Object (object) Dir=In
+        -> Get Value as Object
+Target is Blackboard Component.ReturnValue
+      Pin: AsActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Value as Object
+Target is Blackboard Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard.ReturnValue
+      Pin: KeyName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Actor.Object
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Get Value as Vector
+Target is Blackboard Component.KeyName
+    Node: Get Value as Vector
+Target is Blackboard Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard.ReturnValue
+      Pin: KeyName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set TargetLoc.TargetLoc
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.KeyName
+    Node: Cast To Actor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set TargetActorLoc.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Set TargetActorLoc.execute
+      Pin: Object (object) Dir=In
+        -> Get Value as Object
+Target is Blackboard Component.ReturnValue
+      Pin: AsActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Value as Object
+Target is Blackboard Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard.ReturnValue
+      Pin: KeyName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Actor.Object
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: NewEnumerator1 (struct) Dir=In
+        -> Get ContextActorLoc.ContextActorLoc
+      Pin: NewEnumerator2 (struct) Dir=In
+        -> Get TargetLoc.TargetLoc
+      Pin: NewEnumerator3 (struct) Dir=In
+        -> Get TargetLoc.TargetLoc
+      Pin: NewEnumerator5 (struct) Dir=In
+        -> Get TargetActorLoc.TargetActorLoc
+      Pin: NewEnumerator4 (struct) Dir=In
+        -> Get TargetActorLoc.TargetActorLoc
+      Pin: NewEnumerator9 (struct) Dir=In
+        -> Get TargetActorLoc.TargetActorLoc
+      Pin: NewEnumerator6 (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: NewEnumerator10 (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: NewEnumerator11 (struct) Dir=In
+        -> Get TargetActorLoc.TargetActorLoc
+      Pin: NewEnumerator12 (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: NewEnumerator13 (struct) Dir=In
+        -> Get PawnLoc.PawnLoc
+      Pin: Index (byte) Dir=In
+        -> Get Current Behavior Type
+Target is BP Behavior Component.CurrentBehaviorType
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ResultingLocation
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Get Current Behavior Type
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Get Current Behavior Type
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: CurrentBehaviorType (byte) Dir=Out
+        -> Select.Index
+    Node: Get ContextActorLoc (K2Node_VariableGet)
+      Pin: ContextActorLoc (struct) Dir=Out
+        -> Select.NewEnumerator1
+    Node: Get TargetActorLoc (K2Node_VariableGet)
+      Pin: TargetActorLoc (struct) Dir=Out
+        -> Select.NewEnumerator5
+        -> Select.NewEnumerator4
+        -> Select.NewEnumerator9
+        -> Select.NewEnumerator11
+    Node: Get PawnLoc (K2Node_VariableGet)
+      Pin: PawnLoc (struct) Dir=Out
+        -> Select.NewEnumerator12
+        -> Select.NewEnumerator10
+        -> Select.NewEnumerator6
+        -> Select.NewEnumerator0
+        -> Select.NewEnumerator13
+    Node: Get TargetLoc (K2Node_VariableGet)
+      Pin: TargetLoc (struct) Dir=Out
+        -> Select.NewEnumerator2
+        -> Select.NewEnumerator3

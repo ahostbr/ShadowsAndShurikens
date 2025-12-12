@@ -1,0 +1,101 @@
+Blueprint: FirstPerson_AnimBP (/Game/BossAIToolkit/Demo/Mannequin/Animations/FirstPerson_AnimBP.FirstPerson_AnimBP)
+  Graph: EventGraph
+    Node: Event Blueprint Update Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: DeltaTimeX (real) Dir=Out
+    Node: Setting 'IsInAir' (EdGraphNode_Comment)
+    Node: See if Pawn Owner is valid (will not be in Persona) (EdGraphNode_Comment)
+    Node: Try Get Pawn Owner
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Movement Component
+Target is Pawn.self
+        -> Is Valid.InputObject
+        -> Get Velocity
+Target is Actor.self
+    Node: Set bIsInAir (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set IsMoving.execute
+      Pin: bIsInAir (bool) Dir=In
+        -> Is Falling
+Target is Nav Movement Component.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsMoving (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bIsInAir.then
+      Pin: then (exec) Dir=Out
+      Pin: IsMoving (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set IsMoving.IsMoving
+    Node: Get Movement Component
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Falling
+Target is Nav Movement Component.self
+    Node: Is Falling
+Target is Nav Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Movement Component
+Target is Pawn.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set bIsInAir.bIsInAir
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Blueprint Update Animation.then
+      Pin: InputObject (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set bIsInAir.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Set 'IsMoving' (EdGraphNode_Comment)
+  Graph: AnimGraph
+    Node: Output Pose
+AnimGraph (AnimGraphNode_Root)
+      Pin: Result (struct) Dir=In
+        -> Slot 'Arms'
+Group 'DefaultGroup'.Pose
+    Node: New State Machine
+State Machine (AnimGraphNode_StateMachine)
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'Arms'
+Group 'DefaultGroup'.Source
+    Node: Slot 'Arms'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> New State Machine
+State Machine.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Output Pose
+AnimGraph.Result

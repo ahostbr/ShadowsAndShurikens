@@ -1,0 +1,65 @@
+Blueprint: BP_CGF_SaveFile (/Game/CoreGameFramework/Core/SaveSystem/SaveGames/BP_CGF_SaveFile.BP_CGF_SaveFile)
+  Graph: EventGraph
+  Graph: SaveAllData
+    Node: SaveAllData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: SaveableObjectsArray (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> SaveAllData.then
+      Pin: Array (object) Dir=In
+        -> SaveAllData.SaveableObjectsArray
+      Pin: LoopBody (exec) Dir=Out
+        -> Save Actor Data
+Target is BPI CGF Saveable.execute
+      Pin: Array Element (object) Dir=Out
+        -> Save Actor Data
+Target is BPI CGF Saveable.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Save Actor Data
+Target is BPI CGF Saveable (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: SaveGameREF (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Save Actor Data
+Target is BPI CGF Saveable.SaveGameREF
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+  Graph: LoadingRequested
+    Node: LoadingRequested (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Load Actor Data
+Target is BPI CGF Saveable.execute
+      Pin: Requester (object) Dir=Out
+        -> Load Actor Data
+Target is BPI CGF Saveable.self
+    Node: Load Actor Data
+Target is BPI CGF Saveable (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> LoadingRequested.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> LoadingRequested.Requester
+      Pin: SaveGameREF (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Load Actor Data
+Target is BPI CGF Saveable.SaveGameREF
+    Node: Add Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+      Pin: Tag (struct) Dir=In

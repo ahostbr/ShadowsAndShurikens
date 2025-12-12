@@ -1,0 +1,94 @@
+Blueprint: BPW_CGF_SettingsMenu_Info (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/SettingsMenu/BPW_CGF_SettingsMenu_Info.BPW_CGF_SettingsMenu_Info)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: Get BodyTextblock (K2Node_VariableGet)
+      Pin: BodyTextblock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BodyTextblock.BodyTextblock
+      Pin: InText (text) Dir=In
+        -> Get DefaultText.DefaultText
+    Node: Get DefaultText (K2Node_VariableGet)
+      Pin: DefaultText (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+      Pin: self (object) Dir=In
+    Node: UpdateText
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set TextToDisplayOnHoverAndFocus.execute
+      Pin: TextToDisplayOnHoverAndFocus (text) Dir=Out
+        -> Set TextToDisplayOnHoverAndFocus.TextToDisplayOnHoverAndFocus
+    Node: Set TextToDisplayOnHoverAndFocus (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateText
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: TextToDisplayOnHoverAndFocus (text) Dir=In
+        -> UpdateText
+Custom Event.TextToDisplayOnHoverAndFocus
+      Pin: Output_Get (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+      Pin: self (object) Dir=In
+    Node: Get BodyTextblock (K2Node_VariableGet)
+      Pin: BodyTextblock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TextToDisplayOnHoverAndFocus.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+        -> Get BodyTextblock.BodyTextblock
+      Pin: InText (text) Dir=In
+        -> Set TextToDisplayOnHoverAndFocus.Output_Get
+    Node: Get FlashSmoke (K2Node_VariableGet)
+      Pin: FlashSmoke (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get FlashSmoke.FlashSmoke
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get DefaultText (K2Node_VariableGet)
+      Pin: DefaultText (text) Dir=Out
+      Pin: self (object) Dir=In
+    Node: This Will Only Be Shown If Something Wasnt Focused Right Away  (EdGraphNode_Comment)

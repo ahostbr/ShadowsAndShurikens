@@ -1,0 +1,62 @@
+Blueprint: BTT_Stunned (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_Stunned.BTT_Stunned)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Get StunDuration.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get StunDuration.StunDuration
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get StunDuration (K2Node_VariableGet)
+      Pin: StunDuration (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+    Node: Do whatever you want here. By default, the AI does nothing for a duration (EdGraphNode_Comment)

@@ -1,0 +1,523 @@
+Blueprint: BP_PathCorner (/Game/AIBehaviorToolkit/Blueprints/BP_PathCorner.BP_PathCorner)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: On Component Begin Overlap (CollisionComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: OtherComp (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Get Components By Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Length.TargetArray
+        -> Reroute Node.InputPin
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Components By Class
+Target is Actor.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> integer > integer.A
+    Node: integer > integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Check if overlapping Actor is an AI (EdGraphNode_Comment)
+    Node: Get OwningPatrolRoute (K2Node_VariableGet)
+      Pin: OwningPatrolRoute (object) Dir=Out
+        -> Is Valid.Object
+        -> Equal (Object).A
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get OwningPatrolRoute.OwningPatrolRoute
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get PatrolRoute (K2Node_VariableGet)
+      Pin: PatrolRoute (object) Dir=Out
+        -> Equal (Object).B
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+    Node: Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> Get OwningPatrolRoute.OwningPatrolRoute
+      Pin: B (object) Dir=In
+        -> Get PatrolRoute.PatrolRoute
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Components By Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> GET.Array
+    Node: If owning PatrolRoute is valid, only trigger this if same with AI's Route (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set ResumedBehavior.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_3 (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ChangeBehavior (K2Node_VariableGet)
+      Pin: ChangeBehavior (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get ChangeBehavior.ChangeBehavior
+      Pin: then (exec) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Set BehaviorComponentRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ResumedBehavior.execute
+      Pin: BehaviorComponentRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+        -> Get Current Behavior Type
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Get BehaviorComponentRef (K2Node_VariableGet)
+      Pin: BehaviorComponentRef (object) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Change Behavior
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponentRef.BehaviorComponentRef
+      Pin: NewBehaviorType (byte) Dir=In
+        -> Get BehaviorTo.BehaviorTo
+      Pin: StopAnimations (bool) Dir=In
+    Node: Get BehaviorTo (K2Node_VariableGet)
+      Pin: BehaviorTo (byte) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.NewBehaviorType
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Play Anim Montage
+Target is Character.execute
+      Pin: else (exec) Dir=Out
+    Node: Get AnimationToPlay (K2Node_VariableGet)
+      Pin: AnimationToPlay (object) Dir=Out
+        -> Is Valid.Object
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get AnimationToPlay.AnimationToPlay
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BehaviorComponentRef (K2Node_VariableGet)
+      Pin: BehaviorComponentRef (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponentRef.BehaviorComponentRef
+      Pin: RetCharacter (object) Dir=Out
+        -> Play Anim Montage
+Target is Character.self
+    Node: Get AnimationToPlay (K2Node_VariableGet)
+      Pin: AnimationToPlay (object) Dir=Out
+        -> Play Anim Montage
+Target is Character.AnimMontage
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: Condition (bool) Dir=In
+        -> Get CustomEvent.CustomEvent
+      Pin: then (exec) Dir=Out
+        -> Your Custom Event
+Target is BP Path Corner.execute
+      Pin: else (exec) Dir=Out
+    Node: Get CustomEvent (K2Node_VariableGet)
+      Pin: CustomEvent (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: YourCustomEvent
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Put your custom script here (EdGraphNode_Comment)
+    Node: Your Custom Event
+Target is BP Path Corner (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ResumeOnAnimEnd (K2Node_VariableGet)
+      Pin: ResumeOnAnimEnd (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: Condition (bool) Dir=In
+        -> Get ResumeOnAnimEnd.ResumeOnAnimEnd
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get AnimationToPlay (K2Node_VariableGet)
+      Pin: AnimationToPlay (object) Dir=Out
+        -> Get Play Length
+Target is Animation Asset.self
+      Pin: self (object) Dir=In
+    Node: Get Play Length
+Target is Animation Asset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get AnimationToPlay.AnimationToPlay
+      Pin: ReturnValue (real) Dir=Out
+        -> Delay.Duration
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get Play Length
+Target is Animation Asset.ReturnValue
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get BehaviorComponentRef (K2Node_VariableGet)
+      Pin: BehaviorComponentRef (object) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Change Behavior
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponentRef.BehaviorComponentRef
+      Pin: NewBehaviorType (byte) Dir=In
+        -> Get ResumedBehavior.ResumedBehavior
+      Pin: StopAnimations (bool) Dir=In
+    Node: Get ResumedBehavior (K2Node_VariableGet)
+      Pin: ResumedBehavior (byte) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.NewBehaviorType
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get ResumeOnDelay.ResumeOnDelay
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ResumeOnDelay (K2Node_VariableGet)
+      Pin: ResumeOnDelay (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Delay (K2Node_VariableGet)
+      Pin: Delay (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Get RandomDeviation.RandomDeviation
+      Pin: OutputPin (real) Dir=Out
+        -> float + float.B
+        -> float - float.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Get Delay.Delay
+      Pin: OutputPin (real) Dir=Out
+        -> float + float.A
+        -> float - float.A
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Delay.Duration
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Max
+        -> Random Float in Range.Max
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Max (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Float in Range.Min
+    Node: Get RandomDeviation (K2Node_VariableGet)
+      Pin: RandomDeviation (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get BehaviorComponentRef (K2Node_VariableGet)
+      Pin: BehaviorComponentRef (object) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Change Behavior
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set BehaviorComponentRef.execute
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponentRef.BehaviorComponentRef
+      Pin: NewBehaviorType (byte) Dir=In
+        -> Get ResumedBehavior.ResumedBehavior
+      Pin: StopAnimations (bool) Dir=In
+    Node: Get ResumedBehavior (K2Node_VariableGet)
+      Pin: ResumedBehavior (byte) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.NewBehaviorType
+      Pin: self (object) Dir=In
+    Node: Set ResumedBehavior (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set BehaviorComponentRef.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: ResumedBehavior (byte) Dir=In
+        -> Get Current Behavior Type
+Target is BP Behavior Component.CurrentBehaviorType
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Current Behavior Type
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Set BehaviorComponentRef.Output_Get
+      Pin: CurrentBehaviorType (byte) Dir=Out
+        -> Set ResumedBehavior.ResumedBehavior
+    Node: Change behavior of AI (EdGraphNode_Comment)
+    Node: Play animation if it is valid (EdGraphNode_Comment)
+    Node: Call your own custom event (EdGraphNode_Comment)
+    Node: Go back to previous behavior after animation finished playing (EdGraphNode_Comment)
+    Node: Go back to previous behavior after a set delay in seconds (EdGraphNode_Comment)
+    Node: Play Anim Montage
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: AnimMontage (object) Dir=In
+        -> Get AnimationToPlay.AnimationToPlay
+      Pin: InPlayRate (real) Dir=In
+      Pin: StartSectionName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GET.Output
+      Pin: OutputPin (object) Dir=Out
+        -> Get PatrolRoute.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set BehaviorComponentRef.BehaviorComponentRef
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Not Equal (Object).B
+    Node: Not Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> Get BehaviorComponentRef.BehaviorComponentRef
+      Pin: B (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BehaviorComponentRef (K2Node_VariableGet)
+      Pin: BehaviorComponentRef (object) Dir=Out
+        -> Not Equal (Object).A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set BehaviorComponentRef.execute
+      Pin: else (exec) Dir=Out
+    Node: Set BehaviorComponentRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Change Behavior
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+      Pin: BehaviorComponentRef (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (CollisionComponent).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (CollisionComponent).OtherActor
+      Pin: AsCharacter (object) Dir=Out
+        -> Get CapsuleComponent.self
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Equal (Object).A
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+    Node: Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: B (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> On Component Begin Overlap (CollisionComponent).OtherComp
+      Pin: OutputPin (object) Dir=Out
+        -> Equal (Object).B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: OutputPin (object) Dir=Out
+        -> Get Components By Class
+Target is Actor.self
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

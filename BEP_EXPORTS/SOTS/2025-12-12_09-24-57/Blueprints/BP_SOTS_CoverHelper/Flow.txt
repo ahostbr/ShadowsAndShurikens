@@ -1,0 +1,66 @@
+Blueprint: BP_SOTS_CoverHelper (/Game/SOTS/Blueprints/BP_SOTS_CoverHelper.BP_SOTS_CoverHelper)
+  Graph: EventGraph
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Box Extent
+Target is Box Collision.execute
+    Node: Get Box (K2Node_VariableGet)
+      Pin: Box (object) Dir=Out
+        -> Set Box Extent
+Target is Box Collision.self
+      Pin: self (object) Dir=In
+    Node: Set Box Extent
+Target is Box Collision (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Box.Box
+      Pin: InBoxExtent (struct) Dir=In
+        -> Get Box Extent.Box Extent
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Get Box Extent (K2Node_VariableGet)
+      Pin: Box Extent (struct) Dir=Out
+        -> Set Box Extent
+Target is Box Collision.InBoxExtent
+      Pin: self (object) Dir=In
+  Graph: GetCoverLocation
+    Node: GetCoverLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CoverLocationIndex (int) Dir=Out
+        -> Select.Index
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.WorldCoverLocation
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetCoverLocation.then
+      Pin: WorldCoverLocation (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get CoverLocation_1.CoverLocation_1
+      Pin: Option 1 (object) Dir=In
+        -> Get CoverLocation_1.CoverLocation_1
+      Pin: Option 2 (object) Dir=In
+        -> Get CoverLocation_2.CoverLocation_2
+      Pin: Index (int) Dir=In
+        -> GetCoverLocation.CoverLocationIndex
+      Pin: ReturnValue (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Get CoverLocation_1 (K2Node_VariableGet)
+      Pin: CoverLocation_1 (object) Dir=Out
+        -> Select.Option 0
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Get CoverLocation_2 (K2Node_VariableGet)
+      Pin: CoverLocation_2 (object) Dir=Out
+        -> Select.Option 2
+      Pin: self (object) Dir=In

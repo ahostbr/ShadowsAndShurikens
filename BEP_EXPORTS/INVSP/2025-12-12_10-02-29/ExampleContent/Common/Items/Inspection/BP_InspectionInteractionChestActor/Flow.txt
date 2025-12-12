@@ -1,0 +1,348 @@
+Blueprint: BP_InspectionInteractionChestActor (/Game/InventorySystemPro/ExampleContent/Common/Items/Inspection/BP_InspectionInteractionChestActor.BP_InspectionInteractionChestActor)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+    Node: This is triggered by WBP_InventoryMenu -> BP_InspectionViewer -> OnInteractionKeyPressed (EdGraphNode_Comment)
+    Node: Cast To BP_InspectionViewerBase (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Unbind all Events from On First Time Pickup Closed.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is Skeletal Mesh Component.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get InspectionViewerActor.InspectionViewerActor
+      Pin: AsBP Inspection Viewer Base (object) Dir=Out
+        -> Get ItemSkeletalMeshRef.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ItemSkeletalMeshRef (K2Node_VariableGet)
+      Pin: ItemSkeletalMeshRef (object) Dir=Out
+        -> Play Animation
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_InspectionViewerBase.AsBP Inspection Viewer Base
+    Node: Play Animation
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_InspectionViewerBase.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get ItemSkeletalMeshRef.ItemSkeletalMeshRef
+      Pin: NewAnimToPlay (object) Dir=In
+        -> Get AnimMontage.AnimMontage
+      Pin: bLooping (bool) Dir=In
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InspectionViewerActor.InspectionViewerActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Unbind all Events from On First Time Pickup Closed.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Unbind all Events from On First Time Pickup Closed.self
+        -> Is Item Known
+Target is BP Inventory Component.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Add Item
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.then
+      Pin: then (exec) Dir=Out
+        -> On First Time Pickup
+Target is BP Inventory Component
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ItemToAdd (object) Dir=In
+        -> Get Item.Item
+      Pin: AddAmount (int) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+      Pin: Durability (int) Dir=In
+      Pin: GenericCounter (int) Dir=In
+      Pin: CreationTimestamp (struct) Dir=In
+      Pin: bIsRotated (bool) Dir=In
+      Pin: bTryToStack (bool) Dir=In
+      Pin: bUseFixedPosition (bool) Dir=In
+      Pin: FixedInventoryPosition (struct) Dir=In
+      Pin: bHidePickupNotification (bool) Dir=In
+      Pin: ItemSlotGUID (struct) Dir=In
+      Pin: RemaingAmount (int) Dir=Out
+      Pin: StackIsFullAndCannotStackTrue (bool) Dir=Out
+    Node: Get Item (K2Node_VariableGet)
+      Pin: Item (object) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.ItemToAdd
+        -> On First Time Pickup
+Target is BP Inventory Component
+RELIABLE Replicated To Owning Client (if server).Item
+      Pin: self (object) Dir=In
+    Node: On First Time Pickup
+Target is BP Inventory Component
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Item
+Target is BP Inventory Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Item (object) Dir=In
+        -> Get Item.Item
+    Node: Get AnimMontage (K2Node_VariableGet)
+      Pin: AnimMontage (object) Dir=Out
+        -> Play Animation
+Target is Skeletal Mesh Component.NewAnimToPlay
+        -> Get SequenceLength.self
+      Pin: self (object) Dir=In
+    Node: Get InspectionViewerActor (K2Node_VariableGet)
+      Pin: InspectionViewerActor (object) Dir=Out
+        -> Cast To BP_InspectionViewerBase.Object
+      Pin: self (object) Dir=In
+    Node: Get SequenceLength (K2Node_VariableGet)
+      Pin: SequenceLength (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+        -> Get AnimMontage.AnimMontage
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Animation
+Target is Skeletal Mesh Component.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get SequenceLength.SequenceLength
+      Pin: LatentInfo (struct) Dir=In
+    Node: Bind Event to On First Time Pickup Closed (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On First Time Pickup Closed.Delegate
+    Node: OnFirstTimePickupClosed
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InspectionViewerActor.InspectionViewerActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Get InspectionViewerActor (K2Node_VariableGet)
+      Pin: InspectionViewerActor (object) Dir=Out
+        -> Get Owner
+Target is Actor.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get InventoryMenu.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: First Time Pickup Closed -> Close Inspection (EdGraphNode_Comment)
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (softobject) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Output (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Switch to State
+Target is WBP Inventory Menu.self
+        -> Refresh Inventory Menu
+Target is WBP Inventory Menu.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: InputObject (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: Is Valid (exec) Dir=Out
+        -> Refresh Inventory Menu
+Target is WBP Inventory Menu.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Switch to State
+Target is WBP Inventory Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Refresh Inventory Menu
+Target is WBP Inventory Menu.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: NewState (byte) Dir=In
+    Node: Get InspectionViewerActor (K2Node_VariableGet)
+      Pin: InspectionViewerActor (object) Dir=Out
+        -> Get Owner
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Bind Event to On First Time Pickup Closed.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.self
+        -> On First Time Pickup
+Target is BP Inventory Component
+RELIABLE Replicated To Owning Client (if server).self
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.self
+    Node: Unbind all Events from On First Time Pickup Closed (K2Node_ClearDelegate)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_InspectionViewerBase.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> OnFirstTimePickupClosed
+Custom Event.then
+      Pin: InputObject (object) Dir=In
+        -> Get InspectionViewerActor.InspectionViewerActor
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Item Known
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Item (object) Dir=In
+        -> Get Item.Item
+      Pin: Known (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Item (K2Node_VariableGet)
+      Pin: Item (object) Dir=Out
+        -> Is Item Known
+Target is BP Inventory Component.Item
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: Condition (bool) Dir=In
+        -> Is Item Known
+Target is BP Inventory Component.Known
+      Pin: then (exec) Dir=Out
+        -> On First Time Pickup Closed
+Target is BP Inspection Interaction Chest Actor.execute
+      Pin: else (exec) Dir=Out
+        -> Bind Event to On First Time Pickup Closed.execute
+    Node: On First Time Pickup Closed
+Target is BP Inspection Interaction Chest Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.execute
+      Pin: self (object) Dir=In
+    Node: Remove Item by Data Asset
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On First Time Pickup Closed.then
+        -> On First Time Pickup Closed
+Target is BP Inspection Interaction Chest Actor.then
+      Pin: then (exec) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ItemDataAsset (object) Dir=In
+      Pin: AmountToRemove (int) Dir=In
+      Pin: bSuccess (bool) Dir=Out
+    Node: Refresh Inventory Menu
+Target is WBP Inventory Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Switch to State
+Target is WBP Inventory Menu.execute
+      Pin: self (object) Dir=In
+        -> Resolve Soft Reference.Output
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

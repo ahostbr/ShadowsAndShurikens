@@ -1,0 +1,49 @@
+Blueprint: AC_SOTS_PlayerStats (/Game/SOTS/Player/Systems/Components/AC_SOTS_PlayerStats.AC_SOTS_PlayerStats)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+  Graph: ModifyStat
+    Node: ModifyStat (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set PlayerStats.execute
+      Pin: PlayerStatStructRef (struct) Dir=Out
+        -> Set PlayerStats.PlayerStats
+    Node: Set PlayerStats (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ModifyStat.then
+      Pin: then (exec) Dir=Out
+        -> Call On Stat Modified.execute
+      Pin: PlayerStats (struct) Dir=In
+        -> ModifyStat.PlayerStatStructRef
+      Pin: Output_Get (struct) Dir=Out
+        -> Call On Stat Modified.ModifiedPlayerStatsStruct
+      Pin: self (object) Dir=In
+    Node: Call On Stat Modified (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set PlayerStats.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ModifiedPlayerStatsStruct (struct) Dir=In
+        -> Set PlayerStats.Output_Get
+  Graph: GetCurrentStats
+    Node: GetCurrentStats (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get PlayerStats (K2Node_VariableGet)
+      Pin: PlayerStats (struct) Dir=Out
+        -> Return Node.PlayerStats
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetCurrentStats.then
+      Pin: PlayerStats (struct) Dir=In
+        -> Get PlayerStats.PlayerStats
+  Graph: OnStatModified
+    Node: OnStatModified (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ModifiedPlayerStatsStruct (struct) Dir=Out

@@ -1,0 +1,127 @@
+Blueprint: BP_Boss_Controller (/Game/BossAIToolkit/Blueprints/BP_Boss_Controller.BP_Boss_Controller)
+  Graph: EventGraph
+    Node: Break AIStimulus (K2Node_BreakStruct)
+      Pin: AIStimulus (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Age (real) Dir=Out
+      Pin: ExpirationAge (real) Dir=Out
+      Pin: Strength (real) Dir=Out
+      Pin: StimulusLocation (struct) Dir=Out
+      Pin: ReceiverLocation (struct) Dir=Out
+      Pin: Tag (name) Dir=Out
+        -> On Hearing Updated
+Target is BPC Boss Behavior.Tag
+      Pin: bSuccessfullySensed (bool) Dir=Out
+    Node: Get Sense Class for Stimulus (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Stimulus (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (class) Dir=Out
+        -> Equal (Class).A
+        -> Equal (Class).A
+    Node: Equal (Class) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (class) Dir=In
+        -> Get Sense Class for Stimulus.ReturnValue
+      Pin: B (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Sense Class for Stimulus.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Class).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Sight Updated
+Target is BPC Boss Behavior.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Equal (Class).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Hearing Updated
+Target is BPC Boss Behavior.execute
+      Pin: else (exec) Dir=Out
+    Node: Equal (Class) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (class) Dir=In
+        -> Get Sense Class for Stimulus.ReturnValue
+      Pin: B (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> On Sight Updated
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> On Hearing Updated
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: On Sight Updated
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: SensedActor (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: On Hearing Updated
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: Tag (name) Dir=In
+        -> Break AIStimulus.Tag
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> On Target Perception Updated (AIPerception).Stimulus
+      Pin: OutputPin (struct) Dir=Out
+        -> Break AIStimulus.AIStimulus
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> On Target Perception Updated (AIPerception).Actor
+      Pin: OutputPin (object) Dir=Out
+        -> On Sight Updated
+Target is BPC Boss Behavior.SensedActor
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> On Target Perception Updated (AIPerception).then
+      Pin: InputObject (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Get Sense Class for Stimulus.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: On Target Perception Updated (AIPerception) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Actor (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Stimulus (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> On Target Perception Updated (AIPerception).Stimulus
+      Pin: OutputPin (struct) Dir=Out
+        -> Get Sense Class for Stimulus.Stimulus
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

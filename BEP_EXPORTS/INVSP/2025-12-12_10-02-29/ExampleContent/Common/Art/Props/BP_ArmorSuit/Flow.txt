@@ -1,0 +1,137 @@
+Blueprint: BP_ArmorSuit (/Game/InventorySystemPro/ExampleContent/Common/Art/Props/BP_ArmorSuit.BP_ArmorSuit)
+  Graph: EventGraph
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Equal (Object).A
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Reset (exec) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Sequence.execute
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+      Pin: B (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Equal (Object).B
+    Node: Timeline (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Progress (real) Dir=Out
+        -> Lerp (Rotator).Alpha
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SM_ArmorSuit.SM_ArmorSuit
+      Pin: NewRotation (struct) Dir=In
+        -> Lerp (Rotator).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Lerp (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get RelativeRotation.RelativeRotation
+      Pin: B (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: Alpha (real) Dir=In
+        -> Timeline.Progress
+      Pin: bShortestPath (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+    Node: Get RelativeRotation (K2Node_VariableGet)
+      Pin: RelativeRotation (struct) Dir=Out
+        -> Lerp (Rotator).A
+      Pin: self (object) Dir=In
+        -> Get SM_ArmorSuit.SM_ArmorSuit
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Lerp (Rotator).B
+    Node: Get SM_ArmorSuit (K2Node_VariableGet)
+      Pin: SM_ArmorSuit (object) Dir=Out
+        -> Get RelativeRotation.self
+        -> Set Relative Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then_0 (exec) Dir=Out
+        -> Timeline.PlayFromStart
+      Pin: then_1 (exec) Dir=Out
+        -> Delay.execute
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

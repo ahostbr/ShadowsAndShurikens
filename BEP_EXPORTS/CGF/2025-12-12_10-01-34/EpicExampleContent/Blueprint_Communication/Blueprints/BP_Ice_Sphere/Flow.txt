@@ -1,0 +1,525 @@
+Blueprint: BP_Ice_Sphere (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Ice_Sphere.BP_Ice_Sphere)
+  Graph: EventGraph
+    Node: Event Elemental damage
+From BPI CGF Elemental Projectiles (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Heat (real) Dir=Out
+        -> float > float.A
+        -> float * float.A
+      Pin: Water (real) Dir=Out
+        -> float + float.B
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Delta seconds.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Set Delta seconds.Delta seconds
+    Node: Set Heat (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Spawn Emitter at Location.then
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Wetness.execute
+      Pin: Heat (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Heat (K2Node_VariableGet)
+      Pin: Heat (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Heat.Heat
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Set Wetness (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Heat.then
+      Pin: then (exec) Dir=Out
+      Pin: Wetness (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Wetness.Wetness
+      Pin: B (real) Dir=In
+        -> Event Elemental damage
+From BPI CGF Elemental Projectiles.Water
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Melted.Melted
+      Pin: Target (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: DeltaTime (real) Dir=In
+        -> Get Delta seconds.Delta seconds
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get Heat (K2Node_VariableGet)
+      Pin: Heat (real) Dir=Out
+        -> float + float.B
+      Pin: self (object) Dir=In
+    Node: Set Melted (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Heat.then
+      Pin: then (exec) Dir=Out
+        -> Set Icicles.execute
+      Pin: Melted (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Melted (K2Node_VariableGet)
+      Pin: Melted (real) Dir=Out
+        -> FInterp To.Current
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Melted.Melted
+      Pin: B (real) Dir=In
+        -> Get Heat.Heat
+      Pin: ReturnValue (real) Dir=Out
+        -> FInterp To.Target
+      Pin: C (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Set Delta seconds (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set Heat.execute
+      Pin: Delta seconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Delta seconds (K2Node_VariableGet)
+      Pin: Delta seconds (real) Dir=Out
+        -> FInterp To.DeltaTime
+      Pin: self (object) Dir=In
+    Node: Set Heat (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Delta seconds.then
+      Pin: then (exec) Dir=Out
+        -> Set Melted.execute
+      Pin: Heat (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Heat.Heat
+      Pin: Target (real) Dir=In
+      Pin: DeltaTime (real) Dir=In
+        -> Get Delta seconds.Delta seconds
+      Pin: InterpSpeed (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Heat.Heat
+    Node: Get Delta seconds (K2Node_VariableGet)
+      Pin: Delta seconds (real) Dir=Out
+        -> FInterp To.DeltaTime
+      Pin: self (object) Dir=In
+    Node: Get Heat (K2Node_VariableGet)
+      Pin: Heat (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Heat.Heat
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Wetness.Wetness
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+    Node: Get Delta seconds (K2Node_VariableGet)
+      Pin: Delta seconds (real) Dir=Out
+        -> FInterp To.DeltaTime
+      Pin: self (object) Dir=In
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Wetness.Wetness
+      Pin: Target (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: DeltaTime (real) Dir=In
+        -> Get Delta seconds.Delta seconds
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Set Wetness (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Icicles.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Wetness (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Ice material (K2Node_VariableGet)
+      Pin: Ice material (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Wetness.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get Ice material.Ice material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Icicles.Icicles
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get Ice material.Ice material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Wetness.Wetness
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Melted.Melted
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Wetness.Wetness
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Active
+Target is Actor Component.bNewActive
+    Node: Set Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Actor Relative Scale 3D
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get Drips.Drips
+      Pin: bNewActive (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: bReset (bool) Dir=In
+    Node: Get Drips (K2Node_VariableGet)
+      Pin: Drips (object) Dir=Out
+        -> Set Active
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Spawn Emitter at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Heat.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: EmitterTemplate (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bAutoActivateSystem (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Elemental damage
+From BPI CGF Elemental Projectiles.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Spawn Emitter at Location.execute
+      Pin: else (exec) Dir=Out
+        -> Set Heat.execute
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Event Elemental damage
+From BPI CGF Elemental Projectiles.Heat
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Wetness.Wetness
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> FInterp To.InterpSpeed
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Spawn Emitter at Location.Location
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Get Icicles (K2Node_VariableGet)
+      Pin: Icicles (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Active
+Target is Actor Component.execute
+      Pin: self (object) Dir=In
+        -> Get Ice material.Ice material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Melted.Melted
+    Node: Get Melted (K2Node_VariableGet)
+      Pin: Melted (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Get Melted (K2Node_VariableGet)
+      Pin: Melted (real) Dir=Out
+        -> float >= float.A
+      Pin: self (object) Dir=In
+    Node: float >= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Melted.Melted
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Relative Scale 3D
+Target is Actor.then
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Icicles (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Melted.then
+      Pin: then (exec) Dir=Out
+        -> Set Wetness.execute
+      Pin: Icicles (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Wetness (K2Node_VariableGet)
+      Pin: Wetness (real) Dir=Out
+        -> float + float.B
+      Pin: self (object) Dir=In
+    Node: Get Icicles (K2Node_VariableGet)
+      Pin: Icicles (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Icicles.Icicles
+      Pin: Target (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: DeltaTime (real) Dir=In
+        -> Get Delta seconds.Delta seconds
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Icicles.Icicles
+    Node: Get Icicles (K2Node_VariableGet)
+      Pin: Icicles (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Icicles.Icicles
+      Pin: B (real) Dir=In
+        -> Get Wetness.Wetness
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Get Heat (K2Node_VariableGet)
+      Pin: Heat (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Heat.Heat
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get Delta seconds (K2Node_VariableGet)
+      Pin: Delta seconds (real) Dir=Out
+        -> FInterp To.DeltaTime
+      Pin: self (object) Dir=In
+    Node: Get Heat (K2Node_VariableGet)
+      Pin: Heat (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> FInterp To.Target
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Wetness.Wetness
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.C
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Heat.Heat
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> FInterp To.Target
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Wetness.Wetness
+    Node: Set Actor Relative Scale 3D
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Active
+Target is Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: NewRelativeScale (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get Melted.Melted
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Relative Scale 3D
+Target is Actor.NewRelativeScale
+    Node: Get Melted (K2Node_VariableGet)
+      Pin: Melted (real) Dir=Out
+        -> Lerp (Vector).Alpha
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Event Elemental damage
+From BPI CGF Elemental Projectiles.Heat
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Sequence for being hit with projectiles (EdGraphNode_Comment)
+    Node: Sequence for updating material parameters (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.execute
+    Node: Get Ice sphere (K2Node_VariableGet)
+      Pin: Ice sphere (object) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Ice material.execute
+      Pin: self (object) Dir=In
+        -> Get Ice sphere.Ice sphere
+      Pin: ElementIndex (int) Dir=In
+      Pin: SourceMaterial (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Ice material.Ice material
+    Node: Set Ice material (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: Ice material (object) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Create and set Dynamic Material Instance to Mesh (EdGraphNode_Comment)

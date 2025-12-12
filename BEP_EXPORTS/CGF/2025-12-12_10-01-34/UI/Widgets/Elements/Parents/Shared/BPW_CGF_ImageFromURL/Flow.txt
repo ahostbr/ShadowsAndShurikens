@@ -1,0 +1,264 @@
+Blueprint: BPW_CGF_ImageFromURL (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_ImageFromURL.BPW_CGF_ImageFromURL)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set MatInstance.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set MatInstance.MatInstance
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get DownloadedImage.DownloadedImage
+      Pin: Material (object) Dir=In
+        -> Get MatInstance.MatInstance
+    Node: Download Image (K2Node_AsyncAction)
+      Pin: execute (exec) Dir=In
+        -> Set MatInstance.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: OnSuccess (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: OnFail (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Texture (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: URL (string) Dir=In
+        -> Get URL.URL
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Download Image.OnSuccess
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get MatInstance.MatInstance
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> Download Image.Texture
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CircularThrobber.CircularThrobber
+      Pin: InVisibility (byte) Dir=In
+    Node: Get DownloadedImage (K2Node_VariableGet)
+      Pin: DownloadedImage (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get CircularThrobber (K2Node_VariableGet)
+      Pin: CircularThrobber (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CircularThrobber.CircularThrobber
+      Pin: InVisibility (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Download Image.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Material
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InVisibility (byte) Dir=In
+    Node: Get URL (K2Node_VariableGet)
+      Pin: URL (string) Dir=Out
+        -> Download Image.URL
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get ShowThrobber?.ShowThrobber?
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ShowThrobber? (K2Node_VariableGet)
+      Pin: ShowThrobber? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set MatInstance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Download Image.execute
+      Pin: MatInstance (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get MatInstance (K2Node_VariableGet)
+      Pin: MatInstance (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.Material
+      Pin: self (object) Dir=In
+    Node: Get MatInstance (K2Node_VariableGet)
+      Pin: MatInstance (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get DownloadedImage.DownloadedImage
+      Pin: OutputPin (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+    Node: To Download From Your Google Drive Make Sure To Replace YOUR_ID "https://drive.google.com/uc?export=view&id=YOUR_ID" (EdGraphNode_Comment)
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get NetworkFetchEnabled?.self
+    Node: Get NetworkFetchEnabled? (K2Node_VariableGet)
+      Pin: NetworkFetchEnabled? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: Condition (bool) Dir=In
+        -> Get NetworkFetchEnabled?.NetworkFetchEnabled?
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: else (exec) Dir=Out
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Get DownloadedImage (K2Node_VariableGet)
+      Pin: DownloadedImage (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get DownloadedImage.DownloadedImage
+      Pin: InVisibility (byte) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Download Image.OnFail
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: The Texture Must be set via a dynamic material instance (EdGraphNode_Comment)
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get ManualDelayBeforeLoadingImage.ManualDelayBeforeLoadingImage
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get CircularThrobber (K2Node_VariableGet)
+      Pin: CircularThrobber (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get CircularThrobber.CircularThrobber
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get ShowThrobber?.ShowThrobber?
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get ShowThrobber? (K2Node_VariableGet)
+      Pin: ShowThrobber? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get ManualDelayBeforeLoadingImage (K2Node_VariableGet)
+      Pin: ManualDelayBeforeLoadingImage (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get ShowThrobber?.ShowThrobber?
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get ShowThrobber? (K2Node_VariableGet)
+      Pin: ShowThrobber? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object

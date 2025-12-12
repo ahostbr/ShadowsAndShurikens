@@ -1,0 +1,242 @@
+Blueprint: BP_Dummy (/Game/BossAIToolkit/Blueprints/Misc/BP_Dummy.BP_Dummy)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+    Node: Boss Add Actor to List
+Target is BI AIStorage (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: ActorRef (object) Dir=In
+        -> Self-Reference.self
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Boss Add Actor to List
+Target is BI AIStorage.self
+        -> Is Valid.InputObject
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Boss Add Actor to List
+Target is BI AIStorage.ActorRef
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Boss Add Actor to List
+Target is BI AIStorage.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Delay.execute
+    Node: Event PointDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.execute
+      Pin: Damage (real) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.Damage
+      Pin: DamageType (object) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.self
+      Pin: HitLocation (struct) Dir=Out
+      Pin: HitNormal (struct) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: ShotFromDirection (struct) Dir=Out
+      Pin: InstigatedBy (object) Dir=Out
+      Pin: DamageCauser (object) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.DamageCauser
+      Pin: HitInfo (struct) Dir=Out
+    Node: Event RadialDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.execute
+      Pin: DamageReceived (real) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.Damage
+      Pin: DamageType (object) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.self
+      Pin: Origin (struct) Dir=Out
+      Pin: HitInfo (struct) Dir=Out
+      Pin: InstigatedBy (object) Dir=Out
+      Pin: DamageCauser (object) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.DamageCauser
+    Node: Process Damage
+Target is BI Damage Type (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Event PointDamage.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Event PointDamage.DamageType
+      Pin: DamagedActor (object) Dir=In
+        -> Self-Reference.self
+      Pin: Damage (real) Dir=In
+        -> Event PointDamage.Damage
+      Pin: Blocked (bool) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Event PointDamage.DamageCauser
+      Pin: NewDamage (real) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.DamagedActor
+    Node: Process Damage
+Target is BI Damage Type (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Event RadialDamage.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Event RadialDamage.DamageType
+      Pin: DamagedActor (object) Dir=In
+        -> Self-Reference.self
+      Pin: Damage (real) Dir=In
+        -> Event RadialDamage.DamageReceived
+      Pin: Blocked (bool) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Event RadialDamage.DamageCauser
+      Pin: NewDamage (real) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Process Damage
+Target is BI Damage Type.DamagedActor
+    Node: Event ReceiveDebuff
+From BI Crowd Control (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Apply Debuff
+Target is BPC Status Effects.execute
+      Pin: Type (byte) Dir=Out
+        -> Apply Debuff
+Target is BPC Status Effects.Type
+      Pin: Duration (real) Dir=Out
+        -> Apply Debuff
+Target is BPC Status Effects.Duration
+      Pin: Damage (real) Dir=Out
+        -> Apply Debuff
+Target is BPC Status Effects.Damage
+    Node: Get BPC_StatusEffects (K2Node_VariableGet)
+      Pin: BPC_StatusEffects (object) Dir=Out
+        -> Apply Debuff
+Target is BPC Status Effects.self
+      Pin: self (object) Dir=In
+    Node: Apply Debuff
+Target is BPC Status Effects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ReceiveDebuff
+From BI Crowd Control.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BPC_StatusEffects.BPC_StatusEffects
+      Pin: Type (byte) Dir=In
+        -> Event ReceiveDebuff
+From BI Crowd Control.Type
+      Pin: Duration (real) Dir=In
+        -> Event ReceiveDebuff
+From BI Crowd Control.Duration
+      Pin: Damage (real) Dir=In
+        -> Event ReceiveDebuff
+From BI Crowd Control.Damage
+      Pin: Success (bool) Dir=Out
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Process Damage
+Target is BI Damage Type.then
+        -> Process Damage
+Target is BI Damage Type.then
+      Pin: then (exec) Dir=Out
+        -> Retriggerable Delay.execute
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Retriggerable Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Retriggerable Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

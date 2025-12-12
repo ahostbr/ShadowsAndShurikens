@@ -1,0 +1,1035 @@
+Blueprint: BP_Ability_Charge (/Game/BossAIToolkit/Blueprints/Abilities/Damage/BP_Ability_Charge.BP_Ability_Charge)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Distance.execute
+      Pin: self (object) Dir=In
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> Force Rotate AI
+Target is BP Boss Ability Base.LookAtLocation
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Charge_Timeline.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: NewLocation (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Set Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (object) Dir=Out
+        -> SetFocus
+Target is AIController.self
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get AIController.ControlledActor
+      Pin: self (object) Dir=In
+    Node: SetFocus
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set FinalLocation.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Remove Telegraph
+Target is BP Boss Ability Base.execute
+      Pin: self (object) Dir=In
+        -> Get AIController.ReturnValue
+      Pin: NewFocus (object) Dir=In
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Force Rotate AI
+Target is BP Boss Ability Base.LookAtActor
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set InitialLocation.InitialLocation
+        -> Calculate Final Location.StartLoc
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Calculate Final Location.TargetLoc
+    Node: Set FinalLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InitialLocation.then
+      Pin: then (exec) Dir=Out
+        -> Set HitboxSize.execute
+      Pin: FinalLocation (struct) Dir=In
+        -> Calculate Final Location.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set InitialLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Force Rotate AI
+Target is BP Boss Ability Base.then
+      Pin: then (exec) Dir=Out
+        -> Set FinalLocation.execute
+      Pin: InitialLocation (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Charge_Timeline (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Set Play Rate
+Target is Timeline Component.then
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Alpha (real) Dir=Out
+        -> Lerp (Vector).Alpha
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get InitialLocation.InitialLocation
+      Pin: B (struct) Dir=In
+        -> Get FinalLocation.FinalLocation
+      Pin: Alpha (real) Dir=In
+        -> Charge_Timeline.Alpha
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation
+    Node: Get InitialLocation (K2Node_VariableGet)
+      Pin: InitialLocation (struct) Dir=Out
+        -> Lerp (Vector).A
+      Pin: self (object) Dir=In
+    Node: Get FinalLocation (K2Node_VariableGet)
+      Pin: FinalLocation (struct) Dir=Out
+        -> Lerp (Vector).B
+      Pin: self (object) Dir=In
+    Node: Get Distance (K2Node_VariableGet)
+      Pin: Distance (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: Event OnBeginDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CanDealDamage.execute
+      Pin: Duration (real) Dir=Out
+    Node: Set CanDealDamage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event OnBeginDamage.then
+      Pin: then (exec) Dir=Out
+      Pin: CanDealDamage (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event OnEndDamage (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CanDealDamage.execute
+    Node: Set CanDealDamage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndDamage.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: CanDealDamage (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get DamagedActors (K2Node_VariableGet)
+      Pin: DamagedActors (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CanDealDamage.then
+      Pin: then (exec) Dir=Out
+        -> Reset Rotation
+Target is BP Boss Ability Base.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get DamagedActors.DamagedActors
+    Node: Event OnExecute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Duration (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get CanDealDamage.CanDealDamage
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get CanDealDamage (K2Node_VariableGet)
+      Pin: CanDealDamage (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Multi Box Trace For Objects.then
+      Pin: Array (struct) Dir=In
+        -> Multi Box Trace For Objects.OutHits
+      Pin: LoopBody (exec) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Force Rotate AI
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Distance.then
+      Pin: then (exec) Dir=Out
+        -> Set InitialLocation.execute
+      Pin: self (object) Dir=In
+      Pin: LookAtLocation (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: LookAtActor (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: UseActor (bool) Dir=In
+        -> Get RotateUntilCharge.RotateUntilCharge
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Multi Box Trace For Objects.Start
+        -> vector + vector.A
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Multi Box Trace For Objects.ActorsToIgnore
+      Pin: [0] (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get Actor Rotation
+Target is Actor.self
+        -> Get Actor Location
+Target is Actor.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Multi Box Trace For Objects.Orientation
+    Node: Multi Box Trace For Objects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: HalfSize (struct) Dir=In
+        -> Get HitboxSize.HitboxSize
+      Pin: Orientation (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ObjectTypes (byte) Dir=In
+        -> Make Array.Array
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get Debug Type.Debug Type
+      Pin: OutHits (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (byte) Dir=Out
+        -> Multi Box Trace For Objects.ObjectTypes
+      Pin: [0] (byte) Dir=In
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.DamagedActor
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Multi Box Trace For Objects.End
+    Node: Set Distance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Force Rotate AI
+Target is BP Boss Ability Base.execute
+      Pin: Distance (real) Dir=In
+        -> Break F Boss Ability Targeting.MaxDistance_10_DB850DAD4E3F0E316EDA76876616FD4B
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AbilityInfo (K2Node_VariableGet)
+      Pin: AbilityInfo (struct) Dir=Out
+        -> Break F Boss Ability.F_BossAbility
+      Pin: self (object) Dir=In
+    Node: Break F Boss Ability (K2Node_BreakStruct)
+      Pin: F_BossAbility (struct) Dir=In
+        -> Get AbilityInfo.AbilityInfo
+      Pin: AbilityName_2_7BDF787B47DAA120ADD0FC99DDFBCE98 (name) Dir=Out
+      Pin: AbilityClass_78_20197BE848F023D46363D988148E8812 (class) Dir=Out
+      Pin: ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA (name) Dir=Out
+      Pin: Damage_79_045879CF4A32CEC479823994B9FB52C2 (struct) Dir=Out
+      Pin: Targeting_80_C3E0562A42DA13AB69A88191173DAD2E (struct) Dir=Out
+        -> Break F Boss Ability Targeting.F_BossAbilityTargeting
+      Pin: Modifier_68_9F6259774C70A5FB7DE538BB3C951747 (struct) Dir=Out
+      Pin: Visuals_81_5964BD6B4A908F26C2F56A918B7FB6A2 (struct) Dir=Out
+      Pin: Duration_34_815036DA4DADC4EB735F1FBEEAD1C940 (real) Dir=Out
+      Pin: Cooldown_23_7AB88B49472E7334AB17849F234AE205 (real) Dir=Out
+      Pin: Combos_82_44865D1A41DAFD226ABD2283F99764C6 (struct) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: HitboxSize (struct) Dir=Out
+      Pin: HitboxSize_X (real) Dir=Out
+        -> float + float.B
+      Pin: HitboxSize_Y (real) Dir=Out
+        -> float * float.A
+      Pin: HitboxSize_Z (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Distance.Distance
+      Pin: B (real) Dir=In
+        -> Get.HitboxSize_X
+      Pin: ReturnValue (real) Dir=Out
+        -> Telegraph Beam
+Target is BP Boss Ability Base.TelegraphLength
+    Node: Get HitboxSize (K2Node_VariableGet)
+      Pin: HitboxSize (struct) Dir=Out
+        -> Multi Box Trace For Objects.HalfSize
+      Pin: self (object) Dir=In
+    Node: Set HitboxSize (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FinalLocation.then
+      Pin: then (exec) Dir=Out
+        -> Telegraph Beam
+Target is BP Boss Ability Base.execute
+      Pin: HitboxSize (struct) Dir=In
+        -> Break F Boss Ability.Modifier_68_9F6259774C70A5FB7DE538BB3C951747
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AbilityInfo (K2Node_VariableGet)
+      Pin: AbilityInfo (struct) Dir=Out
+        -> Break F Boss Ability.F_BossAbility
+      Pin: self (object) Dir=In
+    Node: Break F Boss Ability (K2Node_BreakStruct)
+      Pin: F_BossAbility (struct) Dir=In
+        -> Get AbilityInfo.AbilityInfo
+      Pin: AbilityName_2_7BDF787B47DAA120ADD0FC99DDFBCE98 (name) Dir=Out
+      Pin: AbilityClass_78_20197BE848F023D46363D988148E8812 (class) Dir=Out
+      Pin: ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA (name) Dir=Out
+      Pin: Damage_79_045879CF4A32CEC479823994B9FB52C2 (struct) Dir=Out
+      Pin: Targeting_80_C3E0562A42DA13AB69A88191173DAD2E (struct) Dir=Out
+      Pin: Modifier_68_9F6259774C70A5FB7DE538BB3C951747 (struct) Dir=Out
+        -> Set HitboxSize.HitboxSize
+      Pin: Visuals_81_5964BD6B4A908F26C2F56A918B7FB6A2 (struct) Dir=Out
+      Pin: Duration_34_815036DA4DADC4EB735F1FBEEAD1C940 (real) Dir=Out
+      Pin: Cooldown_23_7AB88B49472E7334AB17849F234AE205 (real) Dir=Out
+      Pin: Combos_82_44865D1A41DAFD226ABD2283F99764C6 (struct) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: OutputPin (object) Dir=Out
+        -> Make Array.[0]
+    Node: Get Charge_Timeline (K2Node_VariableGet)
+      Pin: Charge_Timeline (object) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.self
+      Pin: self (object) Dir=In
+    Node: Set Play Rate
+Target is Timeline Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove Telegraph
+Target is BP Boss Ability Base.then
+      Pin: then (exec) Dir=Out
+        -> Charge_Timeline.PlayFromStart
+      Pin: self (object) Dir=In
+        -> Get Charge_Timeline.Charge_Timeline
+      Pin: NewRate (real) Dir=In
+        -> float / float.ReturnValue
+    Node: Reset Rotation
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.NewRate
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Event OnExecute.Duration
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> float / float.B
+    Node: Remove Telegraph
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetFocus
+Target is AIController.then
+      Pin: then (exec) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.execute
+      Pin: self (object) Dir=In
+    Node: Apply Ability Damage
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Break Hit Result.HitActor
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Radial (bool) Dir=In
+      Pin: Radius (real) Dir=In
+      Pin: AddToDamagedActors (bool) Dir=In
+    Node: Get Debug Type (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Debug Type (byte) Dir=Out
+        -> Multi Box Trace For Objects.DrawDebugType
+    Node: Break F Boss Ability Targeting (K2Node_BreakStruct)
+      Pin: F_BossAbilityTargeting (struct) Dir=In
+        -> Break F Boss Ability.Targeting_80_C3E0562A42DA13AB69A88191173DAD2E
+      Pin: TargetType_16_04AE2B1D4742EF8254D46E8C3AEA2DD6 (byte) Dir=Out
+      Pin: MinDistance_8_DAE771AB4DFCEB9E0A67F6B38122A2F7 (real) Dir=Out
+      Pin: MaxDistance_10_DB850DAD4E3F0E316EDA76876616FD4B (real) Dir=Out
+        -> Set Distance.Distance
+      Pin: DirectionCondition_17_33469FD442F27F57C4A0BB9876A5FDA1 (byte) Dir=Out
+    Node: Get Hitboxes (K2Node_VariableGet)
+      Pin: Hitboxes (object) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Hitboxes.Hitboxes
+      Pin: ReturnValue (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Multi Box Trace For Objects.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Trace Hitbox
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Trace Hitbox
+Target is BP Boss Ability Base.execute
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Trace Hitbox
+Target is BP Boss Ability Base.then
+      Pin: Array (object) Dir=In
+        -> Trace Hitbox
+Target is BP Boss Ability Base.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.execute
+      Pin: Array Element (object) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.DamagedActor
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Apply Ability Damage
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Radial (bool) Dir=In
+      Pin: Radius (real) Dir=In
+      Pin: AddToDamagedActors (bool) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.Origin
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Ability Damage
+Target is BP Boss Ability Base.Origin
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Telegraph Beam
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set HitboxSize.then
+      Pin: then (exec) Dir=Out
+        -> Set TelegraphRef.execute
+      Pin: self (object) Dir=In
+      Pin: TelegraphLength (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: TelegraphWidth (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: TelegraphHeight (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StartLocation (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: TargetLocation (struct) Dir=In
+        -> Get FinalLocation.FinalLocation
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get.HitboxSize_Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Telegraph Beam
+Target is BP Boss Ability Base.TelegraphWidth
+    Node: Get InitialLocation (K2Node_VariableGet)
+      Pin: InitialLocation (struct) Dir=Out
+        -> vector - vector.A
+      Pin: self (object) Dir=In
+    Node: Get FinalLocation (K2Node_VariableGet)
+      Pin: FinalLocation (struct) Dir=Out
+        -> Telegraph Beam
+Target is BP Boss Ability Base.TargetLocation
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get InitialLocation.InitialLocation
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Telegraph Beam
+Target is BP Boss Ability Base.StartLocation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Get.HitboxSize_Z
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Telegraph Beam
+Target is BP Boss Ability Base.TelegraphHeight
+    Node: Get RotateUntilCharge (K2Node_VariableGet)
+      Pin: RotateUntilCharge (bool) Dir=Out
+        -> Force Rotate AI
+Target is BP Boss Ability Base.UseActor
+      Pin: self (object) Dir=In
+    Node: Calculate Final Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: StartLoc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: TargetLoc (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set FinalLocation.FinalLocation
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Set FinalLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> SetFocus
+Target is AIController.execute
+      Pin: FinalLocation (struct) Dir=In
+        -> Calculate Final Location.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Calculate Final Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: StartLoc (struct) Dir=In
+        -> Get InitialLocation.InitialLocation
+      Pin: TargetLoc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set FinalLocation.FinalLocation
+    Node: Get RotateUntilCharge (K2Node_VariableGet)
+      Pin: RotateUntilCharge (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event OnExecute.then
+      Pin: Condition (bool) Dir=In
+        -> Get RotateUntilCharge.RotateUntilCharge
+      Pin: then (exec) Dir=Out
+        -> Set FinalLocation.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> SetFocus
+Target is AIController.execute
+    Node: Get InitialLocation (K2Node_VariableGet)
+      Pin: InitialLocation (struct) Dir=Out
+        -> Calculate Final Location.StartLoc
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Calculate Final Location.TargetLoc
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Get RotateUntilCharge (K2Node_VariableGet)
+      Pin: RotateUntilCharge (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Get Telegraphs.self
+      Pin: self (object) Dir=In
+    Node: Get Telegraphs (K2Node_VariableGet)
+      Pin: Telegraphs (object) Dir=Out
+        -> GET.Array
+        -> Last Index.TargetArray
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Telegraphs.Telegraphs
+      Pin: Dimension 1 (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Set TelegraphRef.TelegraphRef
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Telegraphs.Telegraphs
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Set TelegraphRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Telegraph Beam
+Target is BP Boss Ability Base.then
+      Pin: then (exec) Dir=Out
+      Pin: TelegraphRef (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get TelegraphRef (K2Node_VariableGet)
+      Pin: TelegraphRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get TelegraphRef.TelegraphRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set World Location
+Target is Scene Component.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get RotateUntilCharge.RotateUntilCharge
+      Pin: B (bool) Dir=In
+        -> Get ShowTelegraphs.ShowTelegraphs
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Get ShowTelegraphs.self
+      Pin: self (object) Dir=In
+    Node: Get ShowTelegraphs (K2Node_VariableGet)
+      Pin: ShowTelegraphs (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Set World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set World Location
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewRotation (struct) Dir=In
+      Pin: NewRotation_Roll (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewRotation_Pitch (real) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue_Pitch
+      Pin: NewRotation_Yaw (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.NewRotation_Pitch
+      Pin: ReturnValue_Yaw (real) Dir=Out
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get InitialLocation.InitialLocation
+      Pin: Target (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Forward Vector.InRot_Yaw
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Find Look at Rotation.ReturnValue_Yaw
+      Pin: OutputPin (real) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.NewRotation_Roll
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Find Look at Rotation.ReturnValue_Roll
+      Pin: OutputPin (real) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.NewRotation_Yaw
+    Node: Get InitialLocation (K2Node_VariableGet)
+      Pin: InitialLocation (struct) Dir=Out
+        -> Find Look at Rotation.Start
+      Pin: self (object) Dir=In
+    Node: Set World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewLocation (struct) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> vector + vector.ReturnValue_X
+      Pin: NewLocation_Y (real) Dir=In
+        -> vector + vector.ReturnValue_Y
+      Pin: NewLocation_Z (real) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue_Z
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get TelegraphRef.TelegraphRef
+      Pin: OutputPin (object) Dir=Out
+        -> Set World Location
+Target is Scene Component.self
+        -> Reroute Node.InputPin
+        -> Get World Location
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get World Rotation
+Target is Scene Component.self
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+      Pin: InRot_Roll (real) Dir=In
+      Pin: InRot_Pitch (real) Dir=In
+      Pin: InRot_Yaw (real) Dir=In
+        -> Find Look at Rotation.ReturnValue_Yaw
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector * float.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get InitialLocation.InitialLocation
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> Set World Location
+Target is Scene Component.NewLocation_X
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> Set World Location
+Target is Scene Component.NewLocation_Y
+      Pin: ReturnValue_Z (real) Dir=Out
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get InitialLocation (K2Node_VariableGet)
+      Pin: InitialLocation (struct) Dir=Out
+        -> vector + vector.A
+      Pin: self (object) Dir=In
+    Node: Get Distance (K2Node_VariableGet)
+      Pin: Distance (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Distance.Distance
+      Pin: B (real) Dir=In
+        -> Get.HitboxSize_X
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: Get (K2Node_VariableGet)
+      Pin: HitboxSize (struct) Dir=Out
+      Pin: HitboxSize_X (real) Dir=Out
+        -> float + float.B
+      Pin: HitboxSize_Y (real) Dir=Out
+      Pin: HitboxSize_Z (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+      Pin: ReturnValue_Y (real) Dir=Out
+      Pin: ReturnValue_Z (real) Dir=Out
+        -> Set World Location
+Target is Scene Component.NewLocation_Z
+    Node: If RotateUntilCharge is true, update telegraph's location and rotation based on the target actor (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: CalculateFinalLocation
+    Node: CalculateFinalLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StartLoc (struct) Dir=Out
+        -> Find Look at Rotation.Start
+        -> vector + vector.A
+      Pin: TargetLoc (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> CalculateFinalLocation.then
+      Pin: ReturnValue (struct) Dir=In
+        -> vector + vector.ReturnValue
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> CalculateFinalLocation.StartLoc
+      Pin: Target (struct) Dir=In
+        -> CalculateFinalLocation.TargetLoc
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Distance.Distance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get Distance (K2Node_VariableGet)
+      Pin: Distance (real) Dir=Out
+        -> vector * float.B
+      Pin: self (object) Dir=In
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> CalculateFinalLocation.StartLoc
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> Find Look at Rotation.ReturnValue_Yaw
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Forward Vector.InRot

@@ -1,0 +1,37 @@
+Blueprint: BP_PatrolRoute (/Game/AIBehaviorToolkit/Blueprints/BP_PatrolRoute.BP_PatrolRoute)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: GetSplinePointNum
+    Node: GetSplinePointNum (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Spline (K2Node_VariableGet)
+      Pin: Spline (object) Dir=Out
+        -> Get Number Of Spline Points
+Target is Spline Component.self
+      Pin: self (object) Dir=In
+    Node: Get Number Of Spline Points
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Spline.Spline
+      Pin: ReturnValue (int) Dir=Out
+        -> Return Node.Num
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetSplinePointNum.then
+      Pin: Num (int) Dir=In
+        -> Get Number Of Spline Points
+Target is Spline Component.ReturnValue

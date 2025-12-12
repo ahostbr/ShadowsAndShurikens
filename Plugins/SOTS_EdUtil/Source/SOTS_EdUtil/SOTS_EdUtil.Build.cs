@@ -1,3 +1,4 @@
+using System.IO;
 using UnrealBuildTool;
 
 public class SOTS_EdUtil : ModuleRules
@@ -12,7 +13,24 @@ public class SOTS_EdUtil : ModuleRules
             "CoreUObject",
             "Engine",
             "Json",
-            "JsonUtilities"
+            "JsonUtilities",
+            "Slate",
+            "SlateCore",
+            "PropertyEditor",
+            "AssetRegistry",
+            "DesktopPlatform",
+            "UnrealEd"
+        });
+
+        PrivateDependencyModuleNames.AddRange(new string[]
+        {
+            "ToolMenus"
+        });
+
+        PrivateIncludePaths.AddRange(new string[]
+        {
+            Path.Combine(EngineDirectory, "Source", "Runtime", "Slate", "Public"),
+            Path.Combine(EngineDirectory, "Source", "Runtime", "SlateCore", "Public")
         });
     }
 }

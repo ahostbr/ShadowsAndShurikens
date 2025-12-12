@@ -1,0 +1,252 @@
+Blueprint: BP_Grenade (/Game/AIBehaviorToolkit/Examples/BP_Grenade.BP_Grenade)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Event.execute
+    Node: Set Timer by Event (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Deactivate
+Target is Actor Component.execute
+      Pin: self (object) Dir=In
+      Pin: Delegate (delegate) Dir=In
+        -> Event OnDetonate
+From BPI Weapon.OutputDelegate
+      Pin: Time (real) Dir=In
+        -> Get ExplosionDelay.ExplosionDelay
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get ExplosionDelay (K2Node_VariableGet)
+      Pin: ExplosionDelay (real) Dir=Out
+        -> Set Timer by Event.Time
+      Pin: self (object) Dir=In
+    Node: Event OnThrow
+From BPI Weapon (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Activate
+Target is Actor Component.execute
+      Pin: ThrowVelocity (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Event OnDetonate
+From BPI Weapon (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Set Timer by Event.Delegate
+      Pin: then (exec) Dir=Out
+        -> Detonate Multiplayer
+Target is BP Grenade
+RELIABLE Replicated To All (if server).execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event OnThrow
+From BPI Weapon.ThrowVelocity
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Velocity.Velocity
+    Node: DetonateMultiplayerRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn Emitter at Location.execute
+    Node: Spawn Emitter at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DetonateMultiplayerRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: EmitterTemplate (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bAutoActivateSystem (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Spawn Emitter at Location.Location
+        -> Reroute Node.InputPin
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn Emitter at Location.then
+      Pin: then (exec) Dir=Out
+        -> Apply Radial Damage.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get RadialForce (K2Node_VariableGet)
+      Pin: RadialForce (object) Dir=Out
+        -> Fire Impulse
+Target is Radial Force Component.self
+      Pin: self (object) Dir=In
+    Node: Fire Impulse
+Target is Radial Force Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Radial Damage.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get RadialForce.RadialForce
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Detonate Multiplayer
+Target is BP Grenade
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnDetonate
+From BPI Weapon.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Fire Impulse
+Target is Radial Force Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Apply Radial Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: then (exec) Dir=Out
+        -> Fire Impulse
+Target is Radial Force Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: BaseDamage (real) Dir=In
+        -> Get BaseDamage.BaseDamage
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: DamageRadius (real) Dir=In
+        -> Get DamageRadius.DamageRadius
+      Pin: DamageTypeClass (class) Dir=In
+      Pin: IgnoreActors (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: InstigatedByController (object) Dir=In
+      Pin: bDoFullDamage (bool) Dir=In
+      Pin: DamagePreventionChannel (byte) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Apply Radial Damage.DamageCauser
+    Node: Get BaseDamage (K2Node_VariableGet)
+      Pin: BaseDamage (real) Dir=Out
+        -> Apply Radial Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get DamageRadius (K2Node_VariableGet)
+      Pin: DamageRadius (real) Dir=Out
+        -> Apply Radial Damage.DamageRadius
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Radial Damage.Origin
+    Node: Get ProjectileMovement (K2Node_VariableGet)
+      Pin: ProjectileMovement (object) Dir=Out
+        -> Activate
+Target is Actor Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set Velocity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Activate
+Target is Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: Velocity (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Activate
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnThrow
+From BPI Weapon.then
+      Pin: then (exec) Dir=Out
+        -> Set Velocity.execute
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+      Pin: bReset (bool) Dir=In
+    Node: Get ProjectileMovement (K2Node_VariableGet)
+      Pin: ProjectileMovement (object) Dir=Out
+        -> Deactivate
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Deactivate
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+    Node: Get Grenade (K2Node_VariableGet)
+      Pin: Grenade (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Deactivate
+Target is Actor Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Grenade.Grenade
+      Pin: NewType (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Set Velocity.self
+    Node: Get Grenade (K2Node_VariableGet)
+      Pin: Grenade (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Velocity.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Grenade.Grenade
+      Pin: NewType (byte) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

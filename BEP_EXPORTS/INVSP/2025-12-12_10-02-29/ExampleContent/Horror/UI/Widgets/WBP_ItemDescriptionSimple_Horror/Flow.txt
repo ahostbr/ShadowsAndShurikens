@@ -1,0 +1,119 @@
+Blueprint: WBP_ItemDescriptionSimple_Horror (/Game/InventorySystemPro/ExampleContent/Horror/UI/Widgets/WBP_ItemDescriptionSimple_Horror.WBP_ItemDescriptionSimple_Horror)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemNameTextRef.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Get ItemDescriptionText (K2Node_VariableGet)
+      Pin: ItemDescriptionText (object) Dir=Out
+        -> Set ItemDescriptionTextRef.ItemDescriptionTextRef
+      Pin: self (object) Dir=In
+    Node: Get ItemNameText (K2Node_VariableGet)
+      Pin: ItemNameText (object) Dir=Out
+        -> Set ItemNameTextRef.ItemNameTextRef
+      Pin: self (object) Dir=In
+    Node: Set ItemNameTextRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemDescriptionTextRef.execute
+      Pin: ItemNameTextRef (object) Dir=In
+        -> Get ItemNameText.ItemNameText
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemDescriptionTextRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ItemNameTextRef.then
+      Pin: then (exec) Dir=Out
+      Pin: ItemDescriptionTextRef (object) Dir=In
+        -> Get ItemDescriptionText.ItemDescriptionText
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Get_SeparatorImage_Visibility
+    Node: Get_SeparatorImage_Visibility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (byte) Dir=In
+    Node: Get ItemNameText (K2Node_VariableGet)
+      Pin: ItemNameText (object) Dir=Out
+        -> GetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: GetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemNameText.ItemNameText
+      Pin: ReturnValue (text) Dir=Out
+        -> Not Equal Exactly (Text).A
+    Node: Not Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> GetText (Text)
+Target is Text.ReturnValue
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Not Equal Exactly (Text).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get_SeparatorImage_Visibility.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal Exactly (Text).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (byte) Dir=In
+    Node: Get Visibility of Seperator Image Binding function (EdGraphNode_Comment)
+  Graph: Get_ImageSizeBox_Visibility
+    Node: Get_ImageSizeBox_Visibility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get_ImageSizeBox_Visibility.then
+      Pin: ReturnValue (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get bIsImageVisible (K2Node_VariableGet)
+      Pin: bIsImageVisible (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get bIsImageVisible.bIsImageVisible
+      Pin: ReturnValue (byte) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Visibility of Image Size Box Binding function (EdGraphNode_Comment)

@@ -1,0 +1,160 @@
+Blueprint: BP_ShootingRangeTarget (/Game/InventorySystemPro/ExampleContent/Common/Art/Blueprints/BP_ShootingRangeTarget.BP_ShootingRangeTarget)
+  Graph: EventGraph
+    Node: Get GeometryCollectionComponent (K2Node_VariableGet)
+      Pin: GeometryCollectionComponent (object) Dir=Out
+        -> Bind Event to On Chaos Break Event.self
+        -> Bind Event to On Chaos Removal Event.self
+      Pin: self (object) Dir=In
+    Node: Bind Event to On Chaos Break Event (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Chaos Removal Event.execute
+      Pin: self (object) Dir=In
+        -> Get GeometryCollectionComponent.GeometryCollectionComponent
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Chaos Break Event.execute
+    Node: OnBreak
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Destruction
+Target is BP Shooting Range Target.execute
+      Pin: BreakEvent (struct) Dir=Out
+        -> On Destruction
+Target is BP Shooting Range Target.BreakEvent
+    Node: Bind Event to On Chaos Removal Event (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to On Chaos Break Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get GeometryCollectionComponent.GeometryCollectionComponent
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: OnRemove
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: RemovalEvent (struct) Dir=Out
+    Node: Chaos Events (EdGraphNode_Comment)
+    Node: OnDestruction
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: BreakEvent (struct) Dir=Out
+        -> Break Chaos Break Event.ChaosBreakEvent
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Chaos Break Event.Delegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Chaos Removal Event.Delegate
+    Node: Bind Chaos Events (EdGraphNode_Comment)
+    Node: Respawn actor if certain destruction threshold has been reached (EdGraphNode_Comment)
+    Node: On Destruction
+Target is BP Shooting Range Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnBreak
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: BreakEvent (struct) Dir=In
+        -> OnBreak
+Custom Event.BreakEvent
+    Node: Get bParticlesInProgress (K2Node_VariableGet)
+      Pin: bParticlesInProgress (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnDestruction
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get bParticlesInProgress.bParticlesInProgress
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Set bParticlesInProgress.execute
+    Node: Set bParticlesInProgress (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Spawn System at Location.execute
+      Pin: bParticlesInProgress (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Spawn System at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bParticlesInProgress.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: SystemTemplate (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Break Chaos Break Event.Location
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: bAutoActivate (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bPreCullCheck (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: then (exec) Dir=Out
+        -> Set bParticlesInProgress.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set bParticlesInProgress (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: bParticlesInProgress (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break Chaos Break Event (K2Node_BreakStruct)
+      Pin: ChaosBreakEvent (struct) Dir=In
+        -> OnDestruction
+Custom Event.BreakEvent
+      Pin: Component (object) Dir=Out
+      Pin: Location (struct) Dir=Out
+        -> Spawn System at Location.Location
+        -> Play Sound at Location.Location
+      Pin: Orientation (struct) Dir=Out
+      Pin: Velocity (struct) Dir=Out
+      Pin: AngularVelocity (struct) Dir=Out
+      Pin: Extents (struct) Dir=Out
+      Pin: Mass (real) Dir=Out
+      Pin: Index (int) Dir=Out
+      Pin: bFromCrumble (bool) Dir=Out
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn System at Location.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Break Chaos Break Event.Location
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,2109 @@
+Blueprint: BP_Workbench (/Game/InventorySystemPro/Blueprints/Actors/Workbench/BP_Workbench.BP_Workbench)
+  Graph: EventGraph
+    Node: OnCreateContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Create Contained Items Server
+Target is BP Workbench.execute
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Event OnCloseInventory
+From BPI Inventory (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Close Inventory Client
+Target is BP Workbench.execute
+    Node: Interaction, this should only be called by an Actor with inventory & interaction component (EdGraphNode_Comment)
+    Node: Setup (EdGraphNode_Comment)
+    Node: Inventory logic (EdGraphNode_Comment)
+    Node: Fills the item crate inventory from the raw data in ContainedItems (EdGraphNode_Comment)
+    Node: OnCloseInventory_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Close Inventory Server
+Target is BP Workbench.execute
+    Node: Event OnInteract
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Interact Client
+Target is BP Workbench.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Interact Client
+Target is BP Workbench.PlayerController
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.OtherActor
+    Node: Event ActorEndOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.execute
+      Pin: OtherActor (object) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.OtherActor
+    Node: Overlap events (EdGraphNode_Comment)
+    Node: Begin Overlap
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: End Overlap
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorEndOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorEndOverlap.OtherActor
+    Node: OnAddItemToCraftingQueue_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+    Node: OnIncrementCraftingAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: OnDecrementCraftingAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Current Item Server
+Target is BP Workbench.execute
+      Pin: ItemSlot (struct) Dir=Out
+        -> On Update Current Item Server
+Target is BP Workbench
+Replicated To Server (if owning client).ItemSlot
+        -> Update Current Item Server
+Target is BP Workbench.ItemSlot
+      Pin: CurrentCraftingRecipe (struct) Dir=Out
+        -> On Update Current Item Server
+Target is BP Workbench
+Replicated To Server (if owning client).CurrentCraftingRecipe
+        -> Update Current Item Server
+Target is BP Workbench.CurrentCraftingRecipe
+    Node: Update Current Item Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCurrentItem_ServerReplicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (struct) Dir=In
+        -> OnUpdateCurrentItem_ServerReplicated From Client
+Executes On Server
+Custom Event.ItemSlot
+      Pin: CurrentCraftingRecipe (struct) Dir=In
+        -> OnUpdateCurrentItem_ServerReplicated From Client
+Executes On Server
+Custom Event.CurrentCraftingRecipe
+    Node: Update Crafting Amount (EdGraphNode_Comment)
+    Node: Craft Item (EdGraphNode_Comment)
+    Node: Update current workbench item to craft (EdGraphNode_Comment)
+    Node: Setup Actor
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Setup Actor
+Target is BP Workbench.execute
+      Pin: self (object) Dir=In
+    Node: Interact Client
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnInteract
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnInteract
+From BPI Interaction.PlayerController
+    Node: Create Contained Items Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCreateContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory Client
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnCloseInventory
+From BPI Inventory.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCloseInventory_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnCraftItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Craft Item Server
+Target is BP Workbench.execute
+      Pin: CraftingQueueItem (struct) Dir=Out
+        -> Craft Item Server
+Target is BP Workbench.CraftingQueueItem
+    Node: Craft Item Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCraftItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: CraftingQueueItem (struct) Dir=In
+        -> OnCraftItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.CraftingQueueItem
+    Node: OnUpdateCurrentItem_ServerReplicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Current Item Server
+Target is BP Workbench.execute
+      Pin: ItemSlot (struct) Dir=Out
+        -> Update Current Item Server
+Target is BP Workbench.ItemSlot
+      Pin: CurrentCraftingRecipe (struct) Dir=Out
+        -> Update Current Item Server
+Target is BP Workbench.CurrentCraftingRecipe
+    Node: On Update Current Item Server
+Target is BP Workbench
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.ItemSlot
+      Pin: CurrentCraftingRecipe (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.CurrentCraftingRecipe
+    Node: OnWorkbenchUpdateUI_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Workbench UI Client
+Target is BP Workbench.execute
+    Node: Update Workbench UI Client
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnWorkbenchUpdateUI_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Current Item Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.ItemSlot
+      Pin: CurrentCraftingRecipe (struct) Dir=In
+        -> OnUpdateCurrentItem_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.CurrentCraftingRecipe
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> OnAddItemToCraftingQueue_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> On Add Item to Crafting Queue Server
+Target is BP Workbench
+Replicated To Server (if owning client).execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Add Item to Crafting Queue Server
+Target is BP Workbench
+Replicated To Server (if owning client).PlayerInventoryComponent
+    Node: OnOpenWorkbench_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Open Workbench Server
+Target is BP Workbench.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Open Workbench Server
+Target is BP Workbench.PlayerController
+    Node: Open Workbench Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnOpenWorkbench_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> OnOpenWorkbench_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.PlayerController
+    Node: On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Craft Item Server
+Target is BP Workbench.then
+      Pin: then (exec) Dir=Out
+        -> On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: DeltaSeconds (real) Dir=Out
+        -> On Update Crafting Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).DeltaTime
+    Node: OnAddItemToCraftingQueue_ServerReplicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add Item to Crafting Queue Server
+Target is BP Workbench.execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Add Item to Crafting Queue Server
+Target is BP Workbench.PlayerInventoryComponent
+    Node: On Add Item to Crafting Queue Server
+Target is BP Workbench
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: self (object) Dir=In
+      Pin: PlayerInventoryComponent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: OnRemoveFirstItemFromQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Remove Index.execute
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> Remove Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: Remove Index (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRemoveFirstItemFromQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: IndexToRemove (int) Dir=In
+    Node: OnUpdateCraftingQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Crafting Queue Server
+Target is BP Workbench.execute
+      Pin: DeltaTime (real) Dir=Out
+        -> Update Crafting Queue Server
+Target is BP Workbench.DeltaTime
+    Node: On Update Crafting Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaTime (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Add Item to Crafting Queue Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnAddItemToCraftingQueue_ServerReplicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerInventoryComponent (object) Dir=In
+        -> OnAddItemToCraftingQueue_ServerReplicated From Client
+Executes On Server
+Custom Event.PlayerInventoryComponent
+    Node: Update Crafting Queue Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnUpdateCraftingQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaTime (real) Dir=In
+        -> OnUpdateCraftingQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.DeltaTime
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Tick.then
+      Pin: InputObject (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> On Update Crafting Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Update Current Item Server
+Target is BP Workbench.then
+      Pin: InputObject (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> On Update Current Item Server
+Target is BP Workbench
+Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: OnCraftItem_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCraftItem_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get FinishedCraftingSound.FinishedCraftingSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get FinishedCraftingSound.self
+    Node: Get FinishedCraftingSound (K2Node_VariableGet)
+      Pin: FinishedCraftingSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Add Item to Crafting Queue Server
+Target is BP Workbench
+Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get StartedCraftingSound.StartedCraftingSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get StartedCraftingSound.self
+    Node: Get StartedCraftingSound (K2Node_VariableGet)
+      Pin: StartedCraftingSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: OnDecrementCraftingAmount_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Decrement Crafting Amount Server
+Target is BP Workbench.execute
+    Node: OnIncrementCraftingAmount_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Increment Crafting Amount Server
+Target is BP Workbench.execute
+    Node: Increment Crafting Amount Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnIncrementCraftingAmount_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Decrement Crafting Amount Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnDecrementCraftingAmount_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Decrement Crafting Amount Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: On Increment Crafting Amount Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Clear Queue (EdGraphNode_Comment)
+    Node: OnRemoveQueueItem_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Remove Queue Item Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: QueueItemSlot (struct) Dir=Out
+        -> On Remove Queue Item Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).QueueItemSlot
+    Node: OnClearQueue_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Clear Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+    Node: OnClearQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear Item Queue Server
+Target is BP Workbench.execute
+    Node: OnRemoveQueueItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Remove Queue Item Server
+Target is BP Workbench.execute
+      Pin: QueueItemSlot (struct) Dir=Out
+        -> Remove Queue Item Server
+Target is BP Workbench.QueueItemSlot
+    Node: On Clear Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnClearQueue_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Remove Queue Item Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRemoveQueueItem_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: QueueItemSlot (struct) Dir=In
+        -> OnRemoveQueueItem_ClientRELIABLE Replicated From Server
+Executes on Owning Client
+Custom Event.QueueItemSlot
+    Node: Remove Queue Item Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRemoveQueueItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: QueueItemSlot (struct) Dir=In
+        -> OnRemoveQueueItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.QueueItemSlot
+    Node: Clear Item Queue Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnClearQueue_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> OnDecrementCraftingAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: InputObject (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> On Decrement Crafting Amount Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> OnIncrementCraftingAmount_ClientReplicated From Server
+Executes on Owning Client
+Custom Event.then
+      Pin: InputObject (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> On Increment Crafting Amount Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Server (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Decrement Crafting Amount Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).then
+      Pin: Condition (bool) Dir=In
+        -> Is Server.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Decrement Crafting Amount Server
+Target is BP Workbench.execute
+    Node: Decrement Crafting Amount Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Server (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Increment Crafting Amount Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).then
+      Pin: Condition (bool) Dir=In
+        -> Is Server.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Increment Crafting Amount Server
+Target is BP Workbench.execute
+    Node: Increment Crafting Amount Server
+Target is BP Workbench (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: New Guid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set UniqueID.UniqueID
+    Node: Equal (Guid) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Equal (Guid).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set UniqueID.execute
+      Pin: else (exec) Dir=Out
+    Node: Generate a unique GUID that is only set once (EdGraphNode_Comment)
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get UniqueID.self
+        -> Set UniqueID.self
+      Pin: self (object) Dir=In
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Equal (Guid).A
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Set UniqueID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: UniqueID (struct) Dir=In
+        -> New Guid.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+  Graph: OpenWorkbench_Server
+    Node: OpenWorkbench_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bPlayerIsUsingActor.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.PlayerController
+        -> Reroute Node.InputPin
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Set bPlayerIsUsingActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OpenWorkbench_Server.then
+      Pin: then (exec) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.execute
+      Pin: bPlayerIsUsingActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+      Pin: InitialInventoryState (byte) Dir=In
+      Pin: OtherInventoryComponent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: PlayerController (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).OtherInventoryComponent
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).self
+      Pin: self (object) Dir=In
+    Node: Open Workbench (EdGraphNode_Comment)
+    Node: Set References
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bPlayerIsUsingActor.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: PlayerController (object) Dir=In
+        -> OpenWorkbench_Server.PlayerController
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> OpenWorkbench_Server.PlayerController
+      Pin: OutputPin (object) Dir=Out
+        -> Cast To PlayerController.Object
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set References
+Target is BP Inventory Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> On Open Inventory Menu Client
+Target is BP Inventory Component
+Replicated To Owning Client (if server).PlayerController
+      Pin: bSuccess (bool) Dir=Out
+  Graph: CreateContainedItems_Server
+    Node: CreateContainedItems_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Bulk Add Items
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+      Pin: Items (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: Amount (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: NewItem (object) Dir=In
+        -> Break FCrafting Recipe.ResultItem_19_66F471CF491C49E81CC2F1BABA13B9AB
+      Pin: ReturnValue (int) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (object) Dir=In
+        -> Get CraftingRecipes.CraftingRecipes
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get CraftingRecipe.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: NewItem (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> CreateContainedItems_Server.then
+      Pin: InputObject (object) Dir=In
+        -> Get CraftingRecipeCollection.CraftingRecipeCollection
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get CraftingRecipes.CraftingRecipes
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.Items
+      Pin: self (object) Dir=In
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.Amount
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.execute
+    Node: Get CraftingRecipes (K2Node_VariableGet)
+      Pin: CraftingRecipes (object) Dir=Out
+        -> Is Not Empty.TargetArray
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get CraftingRecipeCollection.CraftingRecipeCollection
+    Node: Get CraftingRecipe (K2Node_VariableGet)
+      Pin: CraftingRecipe (struct) Dir=Out
+        -> Break FCrafting Recipe.FCraftingRecipe
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Break FCrafting Recipe (K2Node_BreakStruct)
+      Pin: FCraftingRecipe (struct) Dir=In
+        -> Get CraftingRecipe.CraftingRecipe
+      Pin: ResultItem_19_66F471CF491C49E81CC2F1BABA13B9AB (object) Dir=Out
+        -> Add.NewItem
+      Pin: ResultAmount_26_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: CraftingTime_29_21D73E0A4697FD547962FD90D1A933CF (real) Dir=Out
+      Pin: RequiredItems_31_85BD6FDA4CC499628E679A93ED77F425 (struct) Dir=Out
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Bulk Add Items
+Target is BP Inventory Component.self
+      Pin: self (object) Dir=In
+    Node: Get CraftingRecipeCollection (K2Node_VariableGet)
+      Pin: CraftingRecipeCollection (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get CraftingRecipes.self
+      Pin: self (object) Dir=In
+    Node: Create contained items (EdGraphNode_Comment)
+  Graph: UpdateCurrentItem_Server
+    Node: UpdateCurrentItem_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set with Notify CraftingAmount.execute
+      Pin: ItemSlot (struct) Dir=Out
+      Pin: CurrentCraftingRecipe (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Update current item  (EdGraphNode_Comment)
+    Node: Set CurrentCraftingRecipe (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set with Notify CraftingAmount.then
+      Pin: then (exec) Dir=Out
+        -> On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: CurrentCraftingRecipe (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> UpdateCurrentItem_Server.CurrentCraftingRecipe
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set CurrentCraftingRecipe.CurrentCraftingRecipe
+    Node: On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentCraftingRecipe.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set with Notify CraftingAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateCurrentItem_Server.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentCraftingRecipe.execute
+      Pin: CraftingAmount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: CraftItem_Server
+    Node: CraftItem_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CraftingQueueItem (struct) Dir=Out
+        -> Break FCrafting Queue Item.FCraftingQueueItem
+        -> Has Required Items.CraftingQueueItem
+    Node: Add Item
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ItemToAdd (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AddAmount (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ShortcutIndex (int) Dir=In
+      Pin: Durability (int) Dir=In
+      Pin: GenericCounter (int) Dir=In
+      Pin: CreationTimestamp (struct) Dir=In
+      Pin: bIsRotated (bool) Dir=In
+      Pin: bTryToStack (bool) Dir=In
+      Pin: bUseFixedPosition (bool) Dir=In
+      Pin: FixedInventoryPosition (struct) Dir=In
+      Pin: bHidePickupNotification (bool) Dir=In
+      Pin: ItemSlotGUID (struct) Dir=In
+      Pin: RemaingAmount (int) Dir=Out
+      Pin: StackIsFullAndCannotStackTrue (bool) Dir=Out
+    Node: Break FCrafting Recipe (K2Node_BreakStruct)
+      Pin: FCraftingRecipe (struct) Dir=In
+        -> Break FCrafting Queue Item.CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB
+      Pin: ResultItem_19_66F471CF491C49E81CC2F1BABA13B9AB (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ResultAmount_26_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+        -> int * int.B
+      Pin: CraftingTime_29_21D73E0A4697FD547962FD90D1A933CF (real) Dir=Out
+      Pin: RequiredItems_31_85BD6FDA4CC499628E679A93ED77F425 (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: int * int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+        -> Break FCrafting Recipe.ResultAmount_26_2F6E9A7640BB0AFBA7663B9F00B45DE2
+      Pin: ReturnValue (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Add Item
+Target is BP Inventory Component.then
+      Pin: Array (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FItem with Amount.FItemWithAmount
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> On Craft Item Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: Remove Item by Data Asset
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ItemDataAsset (object) Dir=In
+        -> Break FItem with Amount.Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9
+      Pin: AmountToRemove (int) Dir=In
+        -> int * int.ReturnValue
+      Pin: bSuccess (bool) Dir=Out
+    Node: int * int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break FItem with Amount.Amount_5_539F23B243319119FCB1D7999F8E9388
+      Pin: B (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.AmountToRemove
+    Node: Craft Item (EdGraphNode_Comment)
+    Node: On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Craft Item Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break FItem with Amount (K2Node_BreakStruct)
+      Pin: FItemWithAmount (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.ItemDataAsset
+      Pin: Amount_5_539F23B243319119FCB1D7999F8E9388 (int) Dir=Out
+        -> int * int.A
+    Node: Break FCrafting Queue Item (K2Node_BreakStruct)
+      Pin: FCraftingQueueItem (struct) Dir=In
+        -> CraftItem_Server.CraftingQueueItem
+      Pin: GUID_47_7A1683604D5142870E2F0F902A8B2087 (struct) Dir=Out
+      Pin: CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB (struct) Dir=Out
+        -> Break FCrafting Recipe.FCraftingRecipe
+      Pin: CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=Out
+      Pin: TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+        -> On Show Notification
+Target is BP Inventory Component
+Replicated To Owning Client (if server).self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> CraftItem_Server.then
+      Pin: Condition (bool) Dir=In
+        -> Has Required Items.bHasRequiredItems
+      Pin: then (exec) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.execute
+      Pin: else (exec) Dir=Out
+        -> On Show Notification
+Target is BP Inventory Component
+Replicated To Owning Client (if server).execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break FCrafting Recipe.RequiredItems_31_85BD6FDA4CC499628E679A93ED77F425
+      Pin: OutputPin (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> int * int.ReturnValue
+      Pin: OutputPin (int) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.AddAmount
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break FCrafting Queue Item.CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> int * int.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Break FCrafting Queue Item.TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break FCrafting Queue Item.CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2
+      Pin: OutputPin (int) Dir=Out
+        -> int * int.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Remove Item by Data Asset
+Target is BP Inventory Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Break FCrafting Queue Item.TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Has Required Items (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CraftingQueueItem (struct) Dir=In
+        -> CraftItem_Server.CraftingQueueItem
+      Pin: bHasRequiredItems (bool) Dir=Out
+        -> Branch.Condition
+    Node: On Craft Item Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+        -> On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).execute
+      Pin: self (object) Dir=In
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Show Notification
+Target is BP Inventory Component
+Replicated To Owning Client (if server).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get CombineFailedSound.CombineFailedSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get Global Inventory Config (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InventorySystemConfig (object) Dir=Out
+        -> Get CombineFailedSound.self
+    Node: Get CombineFailedSound (K2Node_VariableGet)
+      Pin: CombineFailedSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+        -> Get Global Inventory Config.InventorySystemConfig
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Break FCrafting Recipe.ResultItem_19_66F471CF491C49E81CC2F1BABA13B9AB
+      Pin: OutputPin (object) Dir=Out
+        -> Add Item
+Target is BP Inventory Component.ItemToAdd
+    Node: On Show Notification
+Target is BP Inventory Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: self (object) Dir=In
+        -> Break FCrafting Queue Item.TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A
+      Pin: ItemSlot (struct) Dir=In
+      Pin: NotificationType (byte) Dir=In
+      Pin: Message (text) Dir=In
+  Graph: DecrementCraftingAmount_Server
+    Node: DecrementCraftingAmount_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get CraftingAmount (K2Node_VariableGet)
+      Pin: CraftingAmount (int) Dir=Out
+        -> integer > integer.A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> DecrementCraftingAmount_Server.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set with Notify CraftingAmount.execute
+      Pin: else (exec) Dir=Out
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get CraftingAmount.CraftingAmount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Reduces the crafting amount (EdGraphNode_Comment)
+    Node: Get CraftingAmount (K2Node_VariableGet)
+      Pin: CraftingAmount (int) Dir=Out
+        -> int - int.A
+      Pin: self (object) Dir=In
+    Node: Set with Notify CraftingAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: CraftingAmount (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get CraftingAmount.CraftingAmount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Set with Notify CraftingAmount.CraftingAmount
+  Graph: IncrementCraftingAmount_Server
+    Node: IncrementCraftingAmount_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set with Notify CraftingAmount.execute
+    Node: Get CraftingAmount (K2Node_VariableGet)
+      Pin: CraftingAmount (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+    Node: Increase the crafting amount (EdGraphNode_Comment)
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get CraftingAmount.CraftingAmount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Set with Notify CraftingAmount.CraftingAmount
+    Node: Set with Notify CraftingAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> IncrementCraftingAmount_Server.then
+      Pin: then (exec) Dir=Out
+      Pin: CraftingAmount (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: SetupActor
+    Node: SetupActor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: On Create Contained Items Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Authority (exec) Dir=Out
+        -> On Create Contained Items Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: Remote (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> SetupActor.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set InteractionArea.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Switch Has Authority.Execute
+    Node: Get InteractionArea (K2Node_VariableGet)
+      Pin: InteractionArea (object) Dir=Out
+        -> Set InteractionArea.InteractionArea
+      Pin: self (object) Dir=In
+    Node: Get InteractionCollision (K2Node_VariableGet)
+      Pin: InteractionCollision (object) Dir=Out
+        -> Set InteractionCollision.InteractionCollision
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionArea.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionCollision.self
+      Pin: self (object) Dir=In
+    Node: Set InteractionArea (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set InteractionCollision.execute
+      Pin: InteractionArea (object) Dir=In
+        -> Get InteractionArea.InteractionArea
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Set InteractionCollision (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionArea.then
+      Pin: then (exec) Dir=Out
+        -> Set InteractionPopupAnchor.execute
+      Pin: InteractionCollision (object) Dir=In
+        -> Get InteractionCollision.InteractionCollision
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Set InteractionPopupAnchor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionCollision.then
+      Pin: then (exec) Dir=Out
+      Pin: InteractionPopupAnchor (object) Dir=In
+        -> Get InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Get InteractionPopupAnchor (K2Node_VariableGet)
+      Pin: InteractionPopupAnchor (object) Dir=Out
+        -> Set InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionPopupAnchor.self
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+  Graph: Interact_Client
+    Node: Interact_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PlayerController (object) Dir=Out
+        -> On Open Workbench Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).PlayerController
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Interact_Client.then
+      Pin: Condition (bool) Dir=In
+        -> Get bPlayerIsUsingActor.bPlayerIsUsingActor
+      Pin: then (exec) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).execute
+      Pin: else (exec) Dir=Out
+        -> On Open Workbench Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Get bPlayerIsUsingActor (K2Node_VariableGet)
+      Pin: bPlayerIsUsingActor (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Interaction (EdGraphNode_Comment)
+    Node: On Open Workbench Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Interact_Client.PlayerController
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Interact_Client.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).self
+    Node: On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+  Graph: UpdateWorkbenchUI_Client
+    Node: UpdateWorkbenchUI_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Output (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Update Menu from Actor
+Target is WBP Inventory Menu.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> UpdateWorkbenchUI_Client.then
+      Pin: InputObject (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: Is Valid (exec) Dir=Out
+        -> Update Menu from Actor
+Target is WBP Inventory Menu.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (softobject) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryComponent.BP_InventoryComponent
+    Node: Trigger a UI update from this actor (EdGraphNode_Comment)
+    Node: Get BP_InventoryComponent (K2Node_VariableGet)
+      Pin: BP_InventoryComponent (object) Dir=Out
+        -> Get InventoryMenu.self
+      Pin: self (object) Dir=In
+    Node: Update Menu from Actor
+Target is WBP Inventory Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Resolve Soft Reference.Output
+  Graph: CloseInventory_Client
+    Node: CloseInventory_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> On Close Inventory Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> On Close Inventory
+Target is BPI Inventory.self
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Close Inventory Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+        -> On Close Inventory
+Target is BPI Inventory.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Close Inventory
+Target is BPI Inventory (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+    Node: On Close Inventory Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CloseInventory_Client.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+    Node: Close Inventory (EdGraphNode_Comment)
+  Graph: CloseInventory_Server
+    Node: CloseInventory_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bPlayerIsUsingActor.execute
+    Node: Set bPlayerIsUsingActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> CloseInventory_Server.then
+      Pin: then (exec) Dir=Out
+      Pin: bPlayerIsUsingActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory (EdGraphNode_Comment)
+  Graph: AddItemToCraftingQueue_Server
+    Node: AddItemToCraftingQueue_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PlayerInventoryComponent (object) Dir=Out
+        -> Make FCrafting Queue Item.TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: NewItem (struct) Dir=In
+        -> Make FCrafting Queue Item.FCraftingQueueItem
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get CurrentCraftingRecipe (K2Node_VariableGet)
+      Pin: CurrentCraftingRecipe (struct) Dir=Out
+        -> Break FCrafting Recipe.FCraftingRecipe
+        -> Make FCrafting Queue Item.CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB
+      Pin: self (object) Dir=In
+    Node: Break FCrafting Recipe (K2Node_BreakStruct)
+      Pin: FCraftingRecipe (struct) Dir=In
+        -> Get CurrentCraftingRecipe.CurrentCraftingRecipe
+      Pin: ResultItem_19_66F471CF491C49E81CC2F1BABA13B9AB (object) Dir=Out
+      Pin: ResultAmount_26_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: CraftingTime_29_21D73E0A4697FD547962FD90D1A933CF (real) Dir=Out
+        -> float * float.A
+      Pin: RequiredItems_31_85BD6FDA4CC499628E679A93ED77F425 (struct) Dir=Out
+    Node: Make FCrafting Queue Item (K2Node_MakeStruct)
+      Pin: FCraftingQueueItem (struct) Dir=Out
+        -> Add.NewItem
+        -> Has Required Items.CraftingQueueItem
+      Pin: GUID_47_7A1683604D5142870E2F0F902A8B2087 (struct) Dir=In
+        -> New Guid.ReturnValue
+      Pin: CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB (struct) Dir=In
+        -> Get CurrentCraftingRecipe.CurrentCraftingRecipe
+      Pin: CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=In
+        -> Get CraftingAmount.CraftingAmount
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A (object) Dir=In
+        -> AddItemToCraftingQueue_Server.PlayerInventoryComponent
+    Node: New Guid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make FCrafting Queue Item.GUID_47_7A1683604D5142870E2F0F902A8B2087
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> integer <= integer.A
+    Node: integer <= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: B (int) Dir=In
+        -> Get MaxCraftingQueueLength.MaxCraftingQueueLength
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> AddItemToCraftingQueue_Server.then
+      Pin: Condition (bool) Dir=In
+        -> integer <= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get CraftingAmount (K2Node_VariableGet)
+      Pin: CraftingAmount (int) Dir=Out
+        -> Make FCrafting Queue Item.CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: Get MaxCraftingQueueLength (K2Node_VariableGet)
+      Pin: MaxCraftingQueueLength (int) Dir=Out
+        -> integer <= integer.B
+      Pin: self (object) Dir=In
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Item to Crafting Queue (EdGraphNode_Comment)
+    Node: Has Required Items (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CraftingQueueItem (struct) Dir=In
+        -> Make FCrafting Queue Item.FCraftingQueueItem
+      Pin: bHasRequiredItems (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Has Required Items.bHasRequiredItems
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break FCrafting Recipe.CraftingTime_29_21D73E0A4697FD547962FD90D1A933CF
+      Pin: B (int) Dir=In
+        -> Get CraftingAmount.CraftingAmount
+      Pin: ReturnValue (real) Dir=Out
+        -> Make FCrafting Queue Item.SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4
+  Graph: UpdateCraftingQueue_Server
+    Node: UpdateCraftingQueue_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DeltaTime (real) Dir=Out
+        -> float - float.B
+    Node: Break FCrafting Queue Item (K2Node_BreakStruct)
+      Pin: FCraftingQueueItem (struct) Dir=In
+        -> GET.Output
+      Pin: GUID_47_7A1683604D5142870E2F0F902A8B2087 (struct) Dir=Out
+      Pin: CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB (struct) Dir=Out
+      Pin: CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=Out
+        -> float - float.A
+      Pin: TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A (object) Dir=Out
+    Node: Set members in FCrafting Queue Item (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: StructRef (struct) Dir=In
+        -> GET.Output
+      Pin: StructOut (struct) Dir=Out
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=In
+        -> float - float.ReturnValue
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break FCrafting Queue Item.SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4
+      Pin: B (real) Dir=In
+        -> UpdateCraftingQueue_Server.DeltaTime
+      Pin: ReturnValue (real) Dir=Out
+        -> Set members in FCrafting Queue Item.SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set members in FCrafting Queue Item.execute
+      Pin: else (exec) Dir=Out
+        -> Set TempCraftingQueueItem.execute
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break FCrafting Queue Item.FCraftingQueueItem
+        -> Set members in FCrafting Queue Item.StructRef
+        -> Set TempCraftingQueueItem.TempCraftingQueueItem
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> UpdateCraftingQueue_Server.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: On Remove First Item from Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempCraftingQueueItem.then
+      Pin: then (exec) Dir=Out
+        -> On Craft Item Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: self (object) Dir=In
+    Node: On Craft Item Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Remove First Item from Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CraftingQueueItem (struct) Dir=In
+        -> Set TempCraftingQueueItem.Output_Get
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> Is Not Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Update Crafting Queue (EdGraphNode_Comment)
+    Node: Set TempCraftingQueueItem (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> On Remove First Item from Queue Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: TempCraftingQueueItem (struct) Dir=In
+        -> GET.Output
+      Pin: Output_Get (struct) Dir=Out
+        -> On Craft Item Server
+Target is BP Workbench
+RELIABLE Replicated To Server (if owning client).CraftingQueueItem
+  Graph: HasRequiredItems
+    Node: HasRequiredItems (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: CraftingQueueItem (struct) Dir=Out
+        -> Break FCrafting Queue Item.FCraftingQueueItem
+    Node: Get Items by Data Asset
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempRequiredAmount.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Break FCrafting Queue Item.TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A
+      Pin: Item (object) Dir=In
+        -> Break FItem with Amount.Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9
+      Pin: ItemSlots (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: bFoundAny (bool) Dir=Out
+        -> Branch.Condition
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (struct) Dir=In
+        -> Get Items by Data Asset
+Target is BP Inventory Component.ItemSlots
+      Pin: LoopBody (exec) Dir=Out
+        -> Set TempRequiredAmount.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> HasRequiredItems.then
+      Pin: Array (struct) Dir=In
+        -> Break FCrafting Recipe.RequiredItems_31_85BD6FDA4CC499628E679A93ED77F425
+      Pin: LoopBody (exec) Dir=Out
+        -> Set TempRequiredAmount.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FItem with Amount.FItemWithAmount
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break FItem with Amount (K2Node_BreakStruct)
+      Pin: FItemWithAmount (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+        -> Get Items by Data Asset
+Target is BP Inventory Component.Item
+      Pin: Amount_5_539F23B243319119FCB1D7999F8E9388 (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+        -> int + int.A
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Set TempRequiredAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: TempRequiredAmount (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+    Node: Set TempRequiredAmount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Get Items by Data Asset
+Target is BP Inventory Component.execute
+      Pin: TempRequiredAmount (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break FItem Slot.Amount_5_93873189485FCC0525EAD39BD80340CF
+      Pin: B (int) Dir=In
+        -> Get TempRequiredAmount.TempRequiredAmount
+      Pin: ReturnValue (int) Dir=Out
+        -> Set TempRequiredAmount.TempRequiredAmount
+    Node: Get TempRequiredAmount (K2Node_VariableGet)
+      Pin: TempRequiredAmount (int) Dir=Out
+        -> int + int.B
+    Node: Break FCrafting Queue Item (K2Node_BreakStruct)
+      Pin: FCraftingQueueItem (struct) Dir=In
+        -> HasRequiredItems.CraftingQueueItem
+      Pin: GUID_47_7A1683604D5142870E2F0F902A8B2087 (struct) Dir=Out
+      Pin: CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB (struct) Dir=Out
+        -> Break FCrafting Recipe.FCraftingRecipe
+      Pin: CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=Out
+      Pin: TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A (object) Dir=Out
+        -> Get Items by Data Asset
+Target is BP Inventory Component.self
+    Node: Break FCrafting Recipe (K2Node_BreakStruct)
+      Pin: FCraftingRecipe (struct) Dir=In
+        -> Break FCrafting Queue Item.CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB
+      Pin: ResultItem_19_66F471CF491C49E81CC2F1BABA13B9AB (object) Dir=Out
+      Pin: ResultAmount_26_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: CraftingTime_29_21D73E0A4697FD547962FD90D1A933CF (real) Dir=Out
+      Pin: RequiredItems_31_85BD6FDA4CC499628E679A93ED77F425 (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: bHasRequiredItems (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Items by Data Asset
+Target is BP Inventory Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get Items by Data Asset
+Target is BP Inventory Component.bFoundAny
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bHasRequiredItems (bool) Dir=In
+    Node: Get TempRequiredAmount (K2Node_VariableGet)
+      Pin: TempRequiredAmount (int) Dir=Out
+        -> integer >= integer.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Has enough of the required item in their inventory? (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Accumulate Total amount of the required item (EdGraphNode_Comment)
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get TempRequiredAmount.TempRequiredAmount
+      Pin: B (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: bHasRequiredItems (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break FItem with Amount.Amount_5_539F23B243319119FCB1D7999F8E9388
+      Pin: OutputPin (int) Dir=Out
+        -> integer >= integer.B
+    Node: Iterate over all required items (EdGraphNode_Comment)
+    Node: The player has enough amount of all required items (EdGraphNode_Comment)
+    Node: Comment (EdGraphNode_Comment)
+  Graph: ClearItemQueue_Server
+    Node: ClearItemQueue_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> ClearItemQueue_Server.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear Item Queue (EdGraphNode_Comment)
+  Graph: RemoveQueueItem_Server
+    Node: RemoveQueueItem_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: QueueItemSlot (struct) Dir=Out
+        -> Break FCrafting Queue Item.FCraftingQueueItem
+    Node: Clear Item Queue (EdGraphNode_Comment)
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> RemoveQueueItem_Server.then
+      Pin: Array (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FCrafting Queue Item.FCraftingQueueItem
+        -> Remove Item.Item
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break FCrafting Queue Item (K2Node_BreakStruct)
+      Pin: FCraftingQueueItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: GUID_47_7A1683604D5142870E2F0F902A8B2087 (struct) Dir=Out
+        -> Equal (Guid).A
+      Pin: CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB (struct) Dir=Out
+      Pin: CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=Out
+      Pin: TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A (object) Dir=Out
+    Node: Break FCrafting Queue Item (K2Node_BreakStruct)
+      Pin: FCraftingQueueItem (struct) Dir=In
+        -> RemoveQueueItem_Server.QueueItemSlot
+      Pin: GUID_47_7A1683604D5142870E2F0F902A8B2087 (struct) Dir=Out
+        -> Equal (Guid).B
+      Pin: CraftingRecipe_39_66F471CF491C49E81CC2F1BABA13B9AB (struct) Dir=Out
+      Pin: CraftingAmount_34_2F6E9A7640BB0AFBA7663B9F00B45DE2 (int) Dir=Out
+      Pin: SecondsLeftToComplete_38_1EA05CB34767212CD04FA1A23E912AE4 (real) Dir=Out
+      Pin: TriggerdByInventoryComponent_42_B9E380694C6859E75F6EE4A573D9164A (object) Dir=Out
+    Node: Equal (Guid) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Break FCrafting Queue Item.GUID_47_7A1683604D5142870E2F0F902A8B2087
+      Pin: B (struct) Dir=In
+        -> Break FCrafting Queue Item.GUID_47_7A1683604D5142870E2F0F902A8B2087
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove Item.execute
+      Pin: else (exec) Dir=Out
+    Node: Get CraftingQueue (K2Node_VariableGet)
+      Pin: CraftingQueue (struct) Dir=Out
+        -> For Each Loop.Array
+        -> Remove Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Remove Item (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CraftingQueue.CraftingQueue
+      Pin: Item (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Remove Item.then
+  Graph: OnRep_CraftingQueue
+    Node: OnRep_CraftingQueue (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRep_CraftingQueue.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Crafting Queue was changed - Replicate to clients (EdGraphNode_Comment)
+  Graph: OnRep_CraftingAmount
+    Node: OnRep_CraftingAmount (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server).execute
+    Node: On Workbench Update UI Client
+Target is BP Workbench
+RELIABLE Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRep_CraftingAmount.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Crafting Amount was changed - Replicate to Clients (EdGraphNode_Comment)

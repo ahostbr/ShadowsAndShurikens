@@ -1,0 +1,1954 @@
+Blueprint: WBP_InventorySlotBase (/Game/InventorySystemPro/Blueprints/UI/InventoryWidgets/WBP_InventorySlotBase.WBP_InventorySlotBase)
+  Graph: EventGraph
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Reset Slot
+Target is WBP Inventory Slot Base.execute
+      Pin: self (object) Dir=In
+    Node: Reset Slot
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Make highlight effect same for mouse/keyboard/gamepad (EdGraphNode_Comment)
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event On Unhovered.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+    Node: OnItemDragAndDrop
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Item Drag and Drop
+Target is WBP Inventory Slot Base.execute
+      Pin: ItemWidget (object) Dir=Out
+        -> Item Drag and Drop
+Target is WBP Inventory Slot Base.ItemWidget
+      Pin: DragOperation (object) Dir=Out
+        -> Item Drag and Drop
+Target is WBP Inventory Slot Base.ItemDragAndDropOperation
+      Pin: DragSource (byte) Dir=Out
+        -> Item Drag and Drop
+Target is WBP Inventory Slot Base.DragSource
+    Node: Called when the drag operation leaves this item slot (EdGraphNode_Comment)
+    Node: Event On Drag Cancelled (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.execute
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.Object
+    Node: Call inventory component drag and drop logic (EdGraphNode_Comment)
+    Node: Focus Item or Slot
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To BP_ItemDragDropOperation (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event On Drag Cancelled.then
+      Pin: then (exec) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event On Drag Cancelled.Operation
+      Pin: AsBP Item Drag Drop Operation (object) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Remove Drag Widget
+Target is BP Item Drag Drop Operation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemDragDropOperation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+    Node: OnPressedKeyRotateItem
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pressed Rotate Item Key
+Target is WBP Inventory Slot Base.execute
+    Node: Event On Hovered (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event On Hovered.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+        -> Focus Item or Slot
+Target is WBP Inventory Slot Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Event On Unhovered (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Event On Clicked (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Item Slot Pressed.execute
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Item Slot Pressed.ItemSlot
+    Node: Event On Selected (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Item Slot Pressed.execute
+    Node: Call On Item Slot Pressed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Clicked.then
+        -> Event On Selected.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (object) Dir=In
+        -> Self-Reference.self
+    Node: Item Drag and Drop
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnItemDragAndDrop
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemDragAndDropOperation (object) Dir=In
+        -> OnItemDragAndDrop
+Custom Event.DragOperation
+      Pin: ItemWidget (object) Dir=In
+        -> OnItemDragAndDrop
+Custom Event.ItemWidget
+      Pin: DragSource (byte) Dir=In
+        -> OnItemDragAndDrop
+Custom Event.DragSource
+    Node: Item Slot selected (EdGraphNode_Comment)
+    Node: Pressed Rotate Item Key
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnPressedKeyRotateItem
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Pressed Rotate Item Key (EdGraphNode_Comment)
+  Graph: ResetSlot
+    Node: ResetSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bIsEmpty.execute
+    Node: Set bIsEmpty (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ResetSlot.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemWidget.execute
+      Pin: bIsEmpty (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bIsEmpty.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: ItemWidget (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ItemWidget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: InVisibility (byte) Dir=In
+    Node: Restore this item slot to its initial state (e.g. when the item on top of it is moved away) (EdGraphNode_Comment)
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+  Graph: SetItemSlotReadOnly
+    Node: SetItemSlotReadOnly (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bIsReadOnly.execute
+      Pin: bReadOnly (bool) Dir=Out
+        -> Set bIsReadOnly.bIsReadOnly
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Is Enabled
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: InVisibility (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set bIsReadOnly.then
+      Pin: Condition (bool) Dir=In
+        -> Set bIsReadOnly.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Is Enabled
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: InVisibility (byte) Dir=In
+    Node: Set bIsReadOnly (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetItemSlotReadOnly.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bIsReadOnly (bool) Dir=In
+        -> SetItemSlotReadOnly.bReadOnly
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+    Node: Default, interactable state (EdGraphNode_Comment)
+    Node: Read-Only state, interactions disabled (EdGraphNode_Comment)
+    Node: Sets an item slot widget to read-only (EdGraphNode_Comment)
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Set Is Enabled
+Target is Widget.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Set Is Enabled
+Target is Widget.self
+    Node: Set Is Enabled
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: bInIsEnabled (bool) Dir=In
+    Node: Set Is Enabled
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: bInIsEnabled (bool) Dir=In
+  Graph: SetInventoryItemReference
+    Node: SetInventoryItemReference (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: ItemWidget (object) Dir=Out
+        -> Set ItemWidget.ItemWidget
+    Node: Set ItemWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: ItemWidget (object) Dir=In
+        -> SetInventoryItemReference.ItemWidget
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> SetInventoryItemReference.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemWidget.ItemWidget
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set ItemWidget.execute
+    Node: Get ItemWidget (K2Node_VariableGet)
+      Pin: ItemWidget (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Sets the item reference on this item slot widget (EdGraphNode_Comment)
+  Graph: OnDrop
+    Node: On Drop (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.Object
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: On Item Drag and Drop
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on DragAndDropSourceGroup.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.execute
+      Pin: self (object) Dir=In
+      Pin: ItemWidget (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DragOperation (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+      Pin: DragSource (byte) Dir=In
+    Node: Cast To BP_ItemDragDropOperation (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Drop.then
+      Pin: then (exec) Dir=Out
+        -> Set DragDropOperation.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Drop.Operation
+      Pin: AsBP Item Drag Drop Operation (object) Dir=Out
+        -> Set DragDropOperation.DragDropOperation
+      Pin: bSuccess (bool) Dir=Out
+    Node: Remove Drag Widget
+Target is BP Item Drag Drop Operation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.then
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+    Node: Get Payload (K2Node_VariableGet)
+      Pin: Payload (object) Dir=Out
+        -> Cast To WBP_ItemBase.Object
+      Pin: self (object) Dir=In
+        -> Set DragDropOperation.Output_Get
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Cast To BP_InventoryCharacterComponent.Object
+      Pin: self (object) Dir=In
+    Node: Cast To BP_InventoryCharacterComponent (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: AsBP Inventory Character Component (object) Dir=Out
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).self
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_InventoryCharacterComponent.then
+      Pin: then (exec) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_InventoryCharacterComponent.AsBP Inventory Character Component
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Is this Drag&Drop an item? (EdGraphNode_Comment)
+    Node: Is the Drag & Drop Payload an Item? (EdGraphNode_Comment)
+    Node: Set DragDropOperation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemDragDropOperation.then
+      Pin: then (exec) Dir=Out
+        -> Cast To WBP_ItemBase.execute
+      Pin: DragDropOperation (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+      Pin: Output_Get (object) Dir=Out
+        -> Get Payload.self
+    Node: Remove the Drag & Drop Widget (EdGraphNode_Comment)
+    Node: Drag Source: Main Item Grid Slot, Item Container Slot (EdGraphNode_Comment)
+    Node: Drag Source: Shortcut Slot (EdGraphNode_Comment)
+    Node: Determine Drag Source (EdGraphNode_Comment)
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.DragOperation
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.self
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> Get DragSourceGroup.self
+    Node: Get DragSourceGroup (K2Node_VariableGet)
+      Pin: DragSourceGroup (byte) Dir=Out
+        -> Switch on DragAndDropSourceGroup.Selection
+      Pin: self (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+    Node: Switch on DragAndDropSourceGroup (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Cast To WBP_ItemBase.then
+      Pin: Selection (byte) Dir=In
+        -> Get DragSourceGroup.DragSourceGroup
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Drag Source: Equipment Slot (EdGraphNode_Comment)
+    Node: On Item Drag and Drop
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: ItemWidget (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DragOperation (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+      Pin: DragSource (byte) Dir=In
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.DragOperation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on DragAndDropSourceGroup.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_InventoryCharacterComponent.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on DragAndDropSourceGroup.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To WBP_ItemBase.AsWBP Item Base
+      Pin: OutputPin (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.ItemWidget
+        -> Reroute Node.InputPin
+        -> Get ItemSlot.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.ItemWidget
+    Node: Cast To WBP_ItemBase (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set DragDropOperation.then
+      Pin: then (exec) Dir=Out
+        -> Switch on DragAndDropSourceGroup.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Payload.Payload
+      Pin: AsWBP Item Base (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get ItemSlot.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Cast To WBP_ItemBase.AsWBP Item Base
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.execute
+  Graph: OnDragOver
+    Node: On Drag Over (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.DragAndDropOperation
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.then
+      Pin: ReturnValue (bool) Dir=In
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.Success
+    Node: Create and Update Drag Widget
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: DragAndDropOperation (object) Dir=In
+        -> On Drag Over.Operation
+      Pin: Success (bool) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Drag & Drop on top of this item slot detected (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Drag Over.then
+      Pin: Condition (bool) Dir=In
+        -> Get bItemDragSnapsToSlot.bItemDragSnapsToSlot
+      Pin: then (exec) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Get InventoryConfig.self
+      Pin: self (object) Dir=In
+    Node: Get InventoryConfig (K2Node_VariableGet)
+      Pin: InventoryConfig (object) Dir=Out
+        -> Get bItemDragSnapsToSlot.self
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+    Node: Get bItemDragSnapsToSlot (K2Node_VariableGet)
+      Pin: bItemDragSnapsToSlot (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get InventoryConfig.InventoryConfig
+  Graph: GetSlotPosition
+    Node: GetSlotPosition (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Slot as Grid Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Column.self
+        -> Get Row.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Slot as Grid Slot.Widget
+    Node: Get Column (K2Node_VariableGet)
+      Pin: Column (int) Dir=Out
+        -> To Float (Integer).InInt
+      Pin: self (object) Dir=In
+        -> Slot as Grid Slot.ReturnValue
+    Node: Get Row (K2Node_VariableGet)
+      Pin: Row (int) Dir=Out
+        -> To Float (Integer).InInt
+      Pin: self (object) Dir=In
+        -> Slot as Grid Slot.ReturnValue
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Column.Column
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Row.Row
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Y (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetSlotPosition.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Returns the slot position within the item grid as Vector2 (EdGraphNode_Comment)
+  Graph: IsDragItemIsWithinBounds
+    Node: IsDragItemIsWithinBounds (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: FItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Is Item Size Within Bounds
+Target is BP Inventory Component.self
+      Pin: self (object) Dir=In
+    Node: Is Item Size Within Bounds
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: InventoryPositionX (int) Dir=In
+        -> Truncate.ReturnValue
+      Pin: InventoryPositionY (int) Dir=In
+        -> Truncate.ReturnValue
+      Pin: ItemSize (struct) Dir=In
+        -> Break FItem Slot.SlotSize_42_1F35824846B91FAC2386BAB7772FE683
+      Pin: bIsWithinBounds (bool) Dir=Out
+        -> Return Node.bIsWithinBounds
+    Node: Get Slot Position (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> Truncate.A
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> Truncate.A
+    Node: Truncate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Slot Position.ReturnValue_X
+      Pin: ReturnValue (int) Dir=Out
+        -> Is Item Size Within Bounds
+Target is BP Inventory Component.InventoryPositionX
+    Node: Truncate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Slot Position.ReturnValue_Y
+      Pin: ReturnValue (int) Dir=Out
+        -> Is Item Size Within Bounds
+Target is BP Inventory Component.InventoryPositionY
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> IsDragItemIsWithinBounds.FItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+        -> Is Item Size Within Bounds
+Target is BP Inventory Component.ItemSize
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> IsDragItemIsWithinBounds.then
+      Pin: bIsWithinBounds (bool) Dir=In
+        -> Is Item Size Within Bounds
+Target is BP Inventory Component.bIsWithinBounds
+    Node: Is the Drag & Drop Item within bounds? (EdGraphNode_Comment)
+  Graph: CreateAndUpdateDragWidget
+    Node: CreateAndUpdateDragWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.execute
+      Pin: DragAndDropOperation (object) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.Object
+    Node: Create WBP Drag Item Horror Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set DragItemWidget.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set DragItemWidget.DragItemWidget
+        -> Reroute Node.InputPin
+      Pin: OwningPlayer (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ItemImageTexture (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: Height (real) Dir=In
+        -> Calculate Drag Item Size.Height
+      Pin: Width (real) Dir=In
+        -> Calculate Drag Item Size.Width
+      Pin: bIsRotated (bool) Dir=In
+        -> Break FItem Slot.bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909
+      Pin: DragAndDropOperation (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Get ItemImageTexture (K2Node_VariableGet)
+      Pin: ItemImageTexture (object) Dir=Out
+        -> Create WBP Drag Item Horror Widget.ItemImageTexture
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Create WBP Drag Item Horror Widget.OwningPlayer
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set SlotOffset.then
+        -> Set CurrentSlot.then
+      Pin: InputObject (object) Dir=In
+        -> Get DragItemWidget.DragItemWidget
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Position in Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set DragItemWidget.then
+      Pin: then (exec) Dir=Out
+        -> Add to Viewport
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Position (struct) Dir=In
+        -> Get DragItemPosition.DragItemPosition
+      Pin: bRemoveDPIScale (bool) Dir=In
+    Node: Add to Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Position in Viewport
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ZOrder (int) Dir=In
+    Node: Set DragItemWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create WBP Drag Item Horror Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.execute
+      Pin: DragItemWidget (object) Dir=In
+        -> Create WBP Drag Item Horror Widget.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Get DragItemWidget (K2Node_VariableGet)
+      Pin: DragItemWidget (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set Position in Viewport
+Target is User Widget.self
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Set Position in Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Update Size
+Target is WBP Drag Item Base.execute
+      Pin: self (object) Dir=In
+        -> Get DragItemWidget.DragItemWidget
+      Pin: Position (struct) Dir=In
+        -> Get DragItemPosition.DragItemPosition
+      Pin: bRemoveDPIScale (bool) Dir=In
+    Node: Create Drag Widget and set position screen (EdGraphNode_Comment)
+    Node: Update existing Drag Widget scale and screen position (EdGraphNode_Comment)
+    Node: Is Drag Item Is Within Bounds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+      Pin: bIsWithinBounds (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Payload (K2Node_VariableGet)
+      Pin: Payload (object) Dir=Out
+        -> Cast To WBP_ItemBase.Object
+      Pin: self (object) Dir=In
+        -> Set ItemDragOperation.Output_Get
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set 2D.then
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Is Drag Item Is Within Bounds.bIsWithinBounds
+      Pin: then (exec) Dir=Out
+        -> Set DragItemPosition.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Check if item can be dragged on this slot (EdGraphNode_Comment)
+    Node: Set CurrentSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DragItemPosition.then
+      Pin: then (exec) Dir=Out
+        -> Set SlotOffset.execute
+      Pin: CurrentSlot (object) Dir=In
+        -> Self-Reference.self
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set CurrentSlot.CurrentSlot
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Get ItemImageTexture.self
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Set DragItemWidget.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Cached Geometry
+Target is Widget.self
+    Node: Get Cached Geometry
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (struct) Dir=Out
+        -> Local to Viewport.Geometry
+    Node: Local to Viewport (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> Get Cached Geometry
+Target is Widget.ReturnValue
+      Pin: LocalCoordinate (struct) Dir=In
+      Pin: PixelPosition (struct) Dir=Out
+      Pin: ViewportPosition (struct) Dir=Out
+        -> Set DragItemPosition.DragItemPosition
+    Node: Set DragItemPosition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentSlot.execute
+      Pin: DragItemPosition (struct) Dir=In
+        -> Local to Viewport.ViewportPosition
+      Pin: Output_Get (struct) Dir=Out
+    Node: Determine Drag Item Widget Position and Slot (EdGraphNode_Comment)
+    Node: Set DragItemPosition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SlotOffset.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentSlot.execute
+      Pin: DragItemPosition (struct) Dir=In
+        -> GetOffsettedHoverItemScreenPosition
+Collapsed Graph.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Cast To BP_ItemDragDropOperation (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> CreateAndUpdateDragWidget.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemDragOperation.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> CreateAndUpdateDragWidget.DragAndDropOperation
+      Pin: AsBP Item Drag Drop Operation (object) Dir=Out
+        -> Set ItemDragOperation.ItemDragOperation
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set ItemDragOperation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemDragDropOperation.then
+      Pin: then (exec) Dir=Out
+        -> Cast To WBP_ItemBase.execute
+      Pin: ItemDragOperation (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+      Pin: Output_Get (object) Dir=Out
+        -> Get Payload.self
+    Node: Set CurrentSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DragItemPosition.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CurrentSlot (object) Dir=In
+        -> Self-Reference.self
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Get DragItemWidget.self
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Set CurrentSlot.self
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Set CurrentSlot.self
+    Node: Get DragItemPosition (K2Node_VariableGet)
+      Pin: DragItemPosition (struct) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.Position
+    Node: Set SlotOffset (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentSlot.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: SlotOffset (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SlotOffset (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set DragItemPosition.execute
+      Pin: SlotOffset (struct) Dir=In
+        -> GetSlotOffsetBasedOnSize
+Collapsed Graph.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> GetOffsettedHoverItemScreenPosition
+Collapsed Graph.SlotOffset
+      Pin: self (object) Dir=In
+    Node: GetSlotOffsetBasedOnSize
+Collapsed Graph (K2Node_Composite)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set SlotOffset.SlotOffset
+      Pin: ItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+    Node: GetOffsettedHoverItemScreenPosition
+Collapsed Graph (K2Node_Composite)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set DragItemPosition.DragItemPosition
+      Pin: ItemDragOperation (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+      Pin: SlotOffset (struct) Dir=In
+        -> Set SlotOffset.Output_Get
+      Pin: ItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> GetOffsettedHoverItemScreenPosition
+Collapsed Graph.ItemDragOperation
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set CurrentSlot.CurrentSlot
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Update Size
+Target is WBP Drag Item Base.then
+      Pin: Success (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Add to Viewport
+Target is User Widget.then
+      Pin: Success (bool) Dir=In
+    Node: Get DragItemPosition (K2Node_VariableGet)
+      Pin: DragItemPosition (struct) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.Position
+    Node: Set DragItemSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To WBP_ItemBase.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DragItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get Item Slot (EdGraphNode_Comment)
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> GetSlotOffsetBasedOnSize
+Collapsed Graph.ItemSlot
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> GetOffsettedHoverItemScreenPosition
+Collapsed Graph.ItemSlot
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set DragItemSlot.then
+      Pin: Condition (bool) Dir=In
+        -> Get bRotatedDrag.bRotatedDrag
+      Pin: then (exec) Dir=Out
+        -> Set 2D.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Get bRotatedDrag.self
+    Node: Get bRotatedDrag (K2Node_VariableGet)
+      Pin: bRotatedDrag (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+        -> Set 2D.A
+        -> Break Vector 2D.InVec
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Set 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break FItem Slot.SlotSize_42_1F35824846B91FAC2386BAB7772FE683
+      Pin: X (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Y (real) Dir=In
+        -> Break Vector 2D.X
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Break FItem Slot.SlotSize_42_1F35824846B91FAC2386BAB7772FE683
+      Pin: X (real) Dir=Out
+        -> Set 2D.Y
+      Pin: Y (real) Dir=Out
+        -> Set 2D.X
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> Is Drag Item Is Within Bounds.FItemSlot
+    Node: Flip item size XY if rotated during drag (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+        -> Create WBP Drag Item Horror Widget.bIsRotated
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Create WBP Drag Item Horror Widget.DragAndDropOperation
+    Node: Calculate Drag Item Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: DragItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+      Pin: Height (real) Dir=Out
+        -> Create WBP Drag Item Horror Widget.Height
+      Pin: Width (real) Dir=Out
+        -> Create WBP Drag Item Horror Widget.Width
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> Calculate Drag Item Size.DragItemSlot
+    Node: Calculate Drag Item Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: DragItemSlot (struct) Dir=In
+        -> Get DragItemSlot.DragItemSlot
+      Pin: Height (real) Dir=Out
+        -> Update Size
+Target is WBP Drag Item Base.Height
+      Pin: Width (real) Dir=Out
+        -> Update Size
+Target is WBP Drag Item Base.Width
+    Node: Get DragItemSlot (K2Node_VariableGet)
+      Pin: DragItemSlot (struct) Dir=Out
+        -> Calculate Drag Item Size.DragItemSlot
+    Node: Get DragItemWidget (K2Node_VariableGet)
+      Pin: DragItemWidget (object) Dir=Out
+        -> Update Size
+Target is WBP Drag Item Base.self
+      Pin: self (object) Dir=In
+        -> Get ItemDragOperation.ItemDragOperation
+    Node: Get ItemDragOperation (K2Node_VariableGet)
+      Pin: ItemDragOperation (object) Dir=Out
+        -> Get DragItemWidget.self
+    Node: Update Size
+Target is WBP Drag Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Position in Viewport
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get DragItemWidget.DragItemWidget
+      Pin: Height (real) Dir=In
+        -> Calculate Drag Item Size.Height
+      Pin: Width (real) Dir=In
+        -> Calculate Drag Item Size.Width
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Set DragItemSlot.DragItemSlot
+      Pin: self (object) Dir=In
+        -> Cast To WBP_ItemBase.AsWBP Item Base
+    Node: Update existing widget? (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Create WBP Drag Item Horror Widget.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Create WBP Drag Item Horror Widget.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Position in Viewport
+Target is User Widget.self
+        -> Add to Viewport
+Target is User Widget.self
+    Node: Cast To WBP_ItemBase (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set ItemDragOperation.then
+      Pin: then (exec) Dir=Out
+        -> Set DragItemSlot.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Payload.Payload
+      Pin: AsWBP Item Base (object) Dir=Out
+        -> Get ItemSlot.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SlotOffset.execute
+  Graph: GamepadCreateDragWidget
+    Node: GamepadCreateDragWidget (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: DragOperation (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get bIsGamepadDrag.self
+        -> Set DragAndDropOperation.DragAndDropOperation
+    Node: Create and Update Drag Widget
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set DragAndDropOperation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DragAndDropOperation (object) Dir=In
+        -> Set DragAndDropOperation.Output_Get
+      Pin: Success (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> GamepadCreateDragWidget.then
+      Pin: InputObject (object) Dir=In
+        -> GamepadCreateDragWidget.DragOperation
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Get bIsGamepadDrag.bIsGamepadDrag
+      Pin: then (exec) Dir=Out
+        -> Set DragAndDropOperation.execute
+      Pin: else (exec) Dir=Out
+    Node: Get bIsGamepadDrag (K2Node_VariableGet)
+      Pin: bIsGamepadDrag (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> GamepadCreateDragWidget.DragOperation
+    Node: Set DragAndDropOperation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.execute
+      Pin: DragAndDropOperation (object) Dir=In
+        -> GamepadCreateDragWidget.DragOperation
+      Pin: Output_Get (object) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.DragAndDropOperation
+      Pin: self (object) Dir=In
+    Node: Create a Gamepad Drag & Drop Widget (EdGraphNode_Comment)
+  Graph: FocusItemOrSlot
+    Node: FocusItemOrSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set DragAndDropOperation.execute
+    Node: Get ItemWidget (K2Node_VariableGet)
+      Pin: ItemWidget (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemWidget.ItemWidget
+      Pin: Is Valid (exec) Dir=Out
+        -> Set User Focus
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Call On Item Slot Focus.execute
+    Node: Get ItemWidget (K2Node_VariableGet)
+      Pin: ItemWidget (object) Dir=Out
+        -> Set User Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set User Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemWidget.ItemWidget
+      Pin: PlayerController (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set User Focus
+Target is Widget.PlayerController
+    Node: Set DragAndDropOperation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> FocusItemOrSlot.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: DragAndDropOperation (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (object) Dir=Out
+        -> Get InventoryState.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get InventoryState (K2Node_VariableGet)
+      Pin: InventoryState (byte) Dir=Out
+        -> Not Equal (Enum).A
+      Pin: self (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+    Node: Not Equal (Enum) (K2Node_EnumInequality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get InventoryState.InventoryState
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+        -> Call On Item Slot Focus.execute
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set DragAndDropOperation.then
+      Pin: InputObject (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Workaround for Shortcut item slots (EdGraphNode_Comment)
+    Node: Change focus from item slot to the item widget (EdGraphNode_Comment)
+    Node: Clear Drag & Drop operation (EdGraphNode_Comment)
+    Node: Is the inventory UI open? (EdGraphNode_Comment)
+    Node: Always focus slot while dragging (EdGraphNode_Comment)
+    Node: Does item exist on this item slot? (EdGraphNode_Comment)
+    Node: Call On Item Slot Focus (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (object) Dir=In
+        -> Self-Reference.self
+      Pin: ItemWidget (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Item Slot Focus.ItemSlot
+        -> Call On Item Slot Focus.ItemSlot
+    Node: Focus Item or slot (EdGraphNode_Comment)
+    Node: todo: this is unused (EdGraphNode_Comment)
+    Node: Get ItemWidget (K2Node_VariableGet)
+      Pin: ItemWidget (object) Dir=Out
+        -> Call On Item Slot Focus.ItemWidget
+      Pin: self (object) Dir=In
+    Node: Call On Item Slot Focus (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemSlot (object) Dir=In
+        -> Self-Reference.self
+      Pin: ItemWidget (object) Dir=In
+        -> Get ItemWidget.ItemWidget
+  Graph: GamepadDropItem
+    Node: GamepadDropItem (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set DragDropOperation.execute
+      Pin: ItemWidget (object) Dir=Out
+        -> Get DragOperaton.self
+        -> Reroute Node.InputPin
+    Node: On Item Drag and Drop
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> End Item Drag
+Target is WBP Item Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemWidget (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DragOperation (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+      Pin: DragSource (byte) Dir=In
+        -> Get DragSourceGroup.DragSourceGroup
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Set DragDropOperation.DragDropOperation
+      Pin: self (object) Dir=In
+        -> GamepadDropItem.ItemWidget
+    Node: Get bIsGamepadDrag (K2Node_VariableGet)
+      Pin: bIsGamepadDrag (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Set DragDropOperation.Output_Get
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set DragDropOperation.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsGamepadDrag.bIsGamepadDrag
+      Pin: then (exec) Dir=Out
+        -> End Item Drag
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Set DragDropOperation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> GamepadDropItem.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DragDropOperation (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+      Pin: Output_Get (object) Dir=Out
+        -> Get bIsGamepadDrag.self
+        -> Get DragSourceGroup.self
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.DragOperation
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> End Item Drag
+Target is WBP Item Base.DragDropOperation
+    Node: Drag & Drop started by a gamepad dropped an item on this slot (EdGraphNode_Comment)
+    Node: End Item Drag
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DragDropOperation (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GamepadDropItem.ItemWidget
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> End Item Drag
+Target is WBP Item Base.self
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.ItemWidget
+    Node: Get DragSourceGroup (K2Node_VariableGet)
+      Pin: DragSourceGroup (byte) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.DragSource
+      Pin: self (object) Dir=In
+        -> Set DragDropOperation.Output_Get
+  Graph: CalculateDragItemSize
+    Node: CalculateDragItemSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: DragItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> CalculateDragItemSize.then
+      Pin: Height (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Width (real) Dir=In
+        -> Break Vector 2D.X
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> CalculateDragItemSize.DragItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+        -> vector2d * vector2d.B
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> vector2d * vector2d.ReturnValue
+      Pin: X (real) Dir=Out
+        -> Return Node.Width
+      Pin: Y (real) Dir=Out
+        -> Return Node.Height
+    Node: Calculates drag item widget size in context of a inventory widget it was dragged onto (EdGraphNode_Comment)
+    Node: Get Desired Size
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d * vector2d.A
+    Node: vector2d * vector2d (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Desired Size
+Target is Widget.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Break FItem Slot.SlotSize_42_1F35824846B91FAC2386BAB7772FE683
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+  Graph: ItemDragAndDrop
+    Node: ItemDragAndDrop (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: ItemDragAndDropOperation (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ItemWidget (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DragSource (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Drag Ended
+Target is WBP Item Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: FromItemGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+      Pin: ToPosition (struct) Dir=In
+        -> Get ToPosition.ToPosition
+      Pin: OperationsInProgress (struct) Dir=In
+        -> Make Array.Array
+      Pin: SourceInventory (object) Dir=In
+        -> Get SourceInventory.SourceInventory
+      Pin: DragSource (byte) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> ItemDragAndDrop.then
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: Get SlotOffset (K2Node_VariableGet)
+      Pin: SlotOffset (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: self (object) Dir=In
+    Node: Get Slot Position (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Slot Position.ReturnValue
+      Pin: X (real) Dir=Out
+        -> float + float.A
+      Pin: Y (real) Dir=Out
+        -> float + float.A
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get SlotOffset.SlotOffset
+      Pin: X (real) Dir=Out
+        -> float + float.B
+      Pin: Y (real) Dir=Out
+        -> float + float.B
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Y (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ToPosition.ToPosition
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).FromItemGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get bRotatedDrag (K2Node_VariableGet)
+      Pin: bRotatedDrag (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set ToPosition.then
+      Pin: Condition (bool) Dir=In
+        -> Get bRotatedDrag.bRotatedDrag
+      Pin: then (exec) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.execute
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Drag Ended
+Target is WBP Item Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+      Pin: ToPosition (struct) Dir=In
+        -> Get ToPosition.ToPosition
+      Pin: SourceInventory (object) Dir=In
+        -> Get SourceInventory.SourceInventory
+      Pin: DragSource (byte) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Set ToPosition.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (struct) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).OperationsInProgress
+    Node: Get SourceInventory (K2Node_VariableGet)
+      Pin: SourceInventory (object) Dir=Out
+        -> On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).SourceInventory
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get SourceInventory (K2Node_VariableGet)
+      Pin: SourceInventory (object) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).SourceInventory
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: On Drag Ended
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SourceInventoryComponent (object) Dir=In
+        -> Get SourceInventory.SourceInventory
+      Pin: TargetInventoryComponent (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ToPosition (struct) Dir=In
+        -> Get ToPosition.ToPosition
+      Pin: DragSource (byte) Dir=In
+        -> Reroute Node.OutputPin
+    Node: On Drag Ended
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SourceInventoryComponent (object) Dir=In
+        -> Get SourceInventory.SourceInventory
+      Pin: TargetInventoryComponent (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ToPosition (struct) Dir=In
+        -> Get ToPosition.ToPosition
+      Pin: DragSource (byte) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> ItemDragAndDrop.ItemDragAndDropOperation
+      Pin: OutputPin (object) Dir=Out
+        -> Get SourceInventory.self
+        -> Get bRotatedDrag.self
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> ItemDragAndDrop.ItemWidget
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get ItemSlot.self
+        -> On Drag Ended
+Target is WBP Item Base.self
+        -> On Drag Ended
+Target is WBP Item Base.self
+        -> Get ItemSlot.self
+    Node: Call inventory component drag and drop logic (EdGraphNode_Comment)
+    Node: Set ToPosition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ToPosition (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get ToPosition (K2Node_VariableGet)
+      Pin: ToPosition (struct) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ToPosition
+    Node: Get ToPosition (K2Node_VariableGet)
+      Pin: ToPosition (struct) Dir=Out
+        -> On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ToPosition
+    Node: Get ToPosition (K2Node_VariableGet)
+      Pin: ToPosition (struct) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.ToPosition
+    Node: Get ToPosition (K2Node_VariableGet)
+      Pin: ToPosition (struct) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.ToPosition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get SourceInventory.self
+        -> Get SourceInventory.self
+    Node: Get SourceInventory (K2Node_VariableGet)
+      Pin: SourceInventory (object) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.SourceInventoryComponent
+        -> On Drag Ended
+Target is WBP Item Base.SourceInventoryComponent
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.TargetInventoryComponent
+      Pin: self (object) Dir=In
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.TargetInventoryComponent
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.DragSource
+        -> On Drag Ended
+Target is WBP Item Base.DragSource
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> ItemDragAndDrop.DragSource
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> On Item Drag and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).DragSource
+        -> On Item Rotate and Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).DragSource
+  Graph: PressedRotateItemKey
+    Node: PressedRotateItemKey (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Pressed Rotate Item
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To WBP_ItemBase.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To WBP_ItemBase.AsWBP Item Base
+    Node: Get DragAndDropOperation (K2Node_VariableGet)
+      Pin: DragAndDropOperation (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> PressedRotateItemKey.then
+      Pin: InputObject (object) Dir=In
+        -> Get DragAndDropOperation.DragAndDropOperation
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To WBP_ItemBase.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get DragAndDropOperation (K2Node_VariableGet)
+      Pin: DragAndDropOperation (object) Dir=Out
+        -> Get Payload.self
+      Pin: self (object) Dir=In
+    Node: Get Payload (K2Node_VariableGet)
+      Pin: Payload (object) Dir=Out
+        -> Cast To WBP_ItemBase.Object
+      Pin: self (object) Dir=In
+        -> Get DragAndDropOperation.DragAndDropOperation
+    Node: Cast To WBP_ItemBase (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Pressed Rotate Item
+Target is WBP Item Base.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Payload.Payload
+      Pin: AsWBP Item Base (object) Dir=Out
+        -> Pressed Rotate Item
+Target is WBP Item Base.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Does a Drag & Drop operation exist? (EdGraphNode_Comment)
+    Node: Is the Drag & Drop Payload an item? (EdGraphNode_Comment)
+    Node: Execute Rotate Key Pressed (EdGraphNode_Comment)
+  Graph: OnMouseButtonUp
+    Node: On Mouse Button Up (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: On Mouse Button Up.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: On Mouse Button Up.MyGeometry
+      Pin: MouseEvent (struct) Dir=Out
+        -> Parent: On Mouse Button Up.MouseEvent
+        -> Get Effecting Button.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+        -> Parent: On Mouse Button Up.ReturnValue
+    Node: Parent: On Mouse Button Up (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> On Mouse Button Up.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> On Mouse Button Up.MyGeometry
+      Pin: MouseEvent (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+        -> Return Node.ReturnValue
+    Node: Get Effecting Button (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Equal (Key) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Effecting Button.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: On Mouse Button Up.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Back Key Pressed
+Target is WBP Inventory Menu.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Back Key Pressed
+Target is WBP Inventory Menu.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Parent: On Mouse Button Up.ReturnValue
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (object) Dir=Out
+        -> On Back Key Pressed
+Target is WBP Inventory Menu.self
+      Pin: self (object) Dir=In
+    Node: On Back Key Pressed
+Target is WBP Inventory Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+    Node: Mouse Button Up (EdGraphNode_Comment)
+  Graph: OnItemSlotPressed
+    Node: OnItemSlotPressed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ItemSlot (object) Dir=Out
+  Graph: OnItemSlotFocus
+    Node: OnItemSlotFocus (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ItemSlot (object) Dir=Out
+      Pin: ItemWidget (object) Dir=Out
+  Graph: OnItemSlotUnfocus
+    Node: OnItemSlotUnfocus (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ItemSlot (object) Dir=Out

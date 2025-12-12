@@ -1,0 +1,70 @@
+Blueprint: WBP_RecipeRequirementItemBase (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_RecipeRequirementItemBase.WBP_RecipeRequirementItemBase)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+  Graph: OnMouseButtonUp
+    Node: On Mouse Button Up (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: On Mouse Button Up.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Parent: On Mouse Button Up.MyGeometry
+      Pin: MouseEvent (struct) Dir=Out
+        -> Parent: On Mouse Button Up.MouseEvent
+        -> Get Effecting Button.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Call On Back Pressed.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Parent: On Mouse Button Up.ReturnValue
+    Node: Parent: On Mouse Button Up (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> On Mouse Button Up.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: MyGeometry (struct) Dir=In
+        -> On Mouse Button Up.MyGeometry
+      Pin: MouseEvent (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Effecting Button (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Effecting Button.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: On Mouse Button Up.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Call On Back Pressed.execute
+      Pin: else (exec) Dir=Out
+    Node: Call On Back Pressed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+  Graph: OnBackPressed
+    Node: OnBackPressed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,98 @@
+Blueprint: BP_ParkourIK_Notify (/Game/SOTS/Notifies/BP_ParkourIK_Notify.BP_ParkourIK_Notify)
+  Graph: Set Parkour IK
+    Node: Set Parkour IK (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_SOTS_Player.execute
+      Pin: ParkourIK_Enabled (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_SOTS_Player.Object
+    Node: Cast To BP_SOTS_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set Parkour IK.then
+      Pin: then (exec) Dir=Out
+        -> Cast To ABP_SandboxCharacterParkour.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: AsBP SOTS Player (object) Dir=Out
+        -> Get Mesh.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To ABP_SandboxCharacterParkour.Object
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_SOTS_Player.AsBP SOTS Player
+    Node: Cast To ABP_SandboxCharacterParkour (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_SOTS_Player.then
+      Pin: then (exec) Dir=Out
+        -> Set ParkourIK_Enabled.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: AsABP Sandbox Character Parkour (object) Dir=Out
+        -> Set ParkourIK_Enabled.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set ParkourIK_Enabled (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To ABP_SandboxCharacterParkour.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: ParkourIK_Enabled (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To ABP_SandboxCharacterParkour.AsABP Sandbox Character Parkour
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set ParkourIK_Enabled.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Set ParkourIK_Enabled.ParkourIK_Enabled
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Set Parkour IK.ParkourIK_Enabled
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: Received_Notify
+    Node: Received Notify (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Parkour IK
+Target is BP Parkour IK Notify.execute
+      Pin: MeshComp (object) Dir=Out
+      Pin: Animation (object) Dir=Out
+      Pin: EventReference (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Parkour IK
+Target is BP Parkour IK Notify.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Set Parkour IK
+Target is BP Parkour IK Notify (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Received Notify.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: ParkourIK_Enabled (bool) Dir=In
+        -> Get Parkour IK Enabled.Parkour IK Enabled
+    Node: Get Parkour IK Enabled (K2Node_VariableGet)
+      Pin: Parkour IK Enabled (bool) Dir=Out
+        -> Set Parkour IK
+Target is BP Parkour IK Notify.ParkourIK_Enabled
+      Pin: self (object) Dir=In

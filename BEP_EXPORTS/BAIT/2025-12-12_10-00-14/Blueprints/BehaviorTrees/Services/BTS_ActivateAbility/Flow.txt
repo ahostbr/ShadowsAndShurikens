@@ -1,0 +1,140 @@
+Blueprint: BTS_ActivateAbility (/Game/BossAIToolkit/Blueprints/BehaviorTrees/Services/BTS_ActivateAbility.BTS_ActivateAbility)
+  Graph: EventGraph
+    Node: Event Receive Activation AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ControllerRef.execute
+      Pin: OwnerController (object) Dir=Out
+        -> Set ControllerRef.ControllerRef
+      Pin: ControlledPawn (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Event Receive Tick AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OwnerController (object) Dir=Out
+      Pin: ControlledPawn (object) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Set ControllerRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Activation AI.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: ControllerRef (object) Dir=In
+        -> Event Receive Activation AI.OwnerController
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event Receive Activation AI.ControlledPawn
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set ControllerRef.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set BehaviorRef.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set BehaviorRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: BehaviorRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set BehaviorRef.BehaviorRef
+    Node: Get BehaviorRef (K2Node_VariableGet)
+      Pin: BehaviorRef (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Has Ability
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Activate Ability
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Success (bool) Dir=Out
+        -> Branch.Condition
+      Pin: AbilityLength (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Activate Ability
+Target is BPC Boss Behavior.then
+      Pin: Condition (bool) Dir=In
+        -> Activate Ability
+Target is BPC Boss Behavior.Success
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: else (exec) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Playing Ability
+Target is BPC Boss Behavior.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Activate Ability
+Target is BPC Boss Behavior.AbilityLength
+      Pin: OutputPin (real) Dir=Out
+        -> Delay.Duration
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Playing Ability
+Target is BPC Boss Behavior.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Tick AI.then
+      Pin: Condition (bool) Dir=In
+        -> Get Has Ability
+Target is BPC Boss Behavior.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Activate Ability
+Target is BPC Boss Behavior.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Activate Ability
+Target is BPC Boss Behavior.self
+    Node: Set Playing Ability
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewPlayingAbility (bool) Dir=In
+    Node: Get Has Ability
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition

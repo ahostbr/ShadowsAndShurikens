@@ -1,0 +1,59 @@
+Blueprint: BP_CGF_GameSettings (/Game/CoreGameFramework/Core/SaveSystem/SaveGames/BP_CGF_GameSettings.BP_CGF_GameSettings)
+  Graph: EventGraph
+  Graph: SaveAllData
+    Node: SaveAllData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: SaveableObjectsArray (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> SaveAllData.then
+      Pin: Array (object) Dir=In
+        -> SaveAllData.SaveableObjectsArray
+      Pin: LoopBody (exec) Dir=Out
+        -> Save Game Settings Data
+Target is BPI CGF Saveable.execute
+      Pin: Array Element (object) Dir=Out
+        -> Save Game Settings Data
+Target is BPI CGF Saveable.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Save Game Settings Data
+Target is BPI CGF Saveable.GameSettingsREF
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+    Node: Save Game Settings Data
+Target is BPI CGF Saveable (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: GameSettingsREF (object) Dir=In
+        -> Self-Reference.self
+  Graph: LoadingRequested
+    Node: LoadingRequested (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Load Game Settings Data
+Target is BPI CGF Saveable.execute
+      Pin: Requester (object) Dir=Out
+        -> Load Game Settings Data
+Target is BPI CGF Saveable.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Load Game Settings Data
+Target is BPI CGF Saveable.GameSettingsREF
+    Node: Load Game Settings Data
+Target is BPI CGF Saveable (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> LoadingRequested.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> LoadingRequested.Requester
+      Pin: GameSettingsREF (object) Dir=In
+        -> Self-Reference.self

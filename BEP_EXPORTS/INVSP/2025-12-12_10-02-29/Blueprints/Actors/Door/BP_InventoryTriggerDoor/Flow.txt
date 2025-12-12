@@ -1,0 +1,515 @@
+Blueprint: BP_InventoryTriggerDoor (/Game/InventorySystemPro/Blueprints/Actors/Door/BP_InventoryTriggerDoor.BP_InventoryTriggerDoor)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Get DoorMesh (K2Node_VariableGet)
+      Pin: DoorMesh (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: DoorTimeline (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).then
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).then
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: DoorRotationZ (real) Dir=Out
+        -> Lerp (Vector).Alpha
+    Node: OnOpenDoor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Switch door between open & close (EdGraphNode_Comment)
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Event ActorEndOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Overlap events (EdGraphNode_Comment)
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DoorTimeline.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get DoorMesh.DoorMesh
+      Pin: NewLocation (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: On Open Door Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnCloseDoor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+      Pin: AsCharacter (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Get Controller
+Target is Pawn.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Items by Data Asset
+Target is BP Inventory Component.self
+        -> Is Valid.InputObject
+    Node: Get Items by Data Asset
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Owner
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Item (object) Dir=In
+        -> Get KeyItem.KeyItem
+      Pin: ItemSlots (struct) Dir=Out
+      Pin: bFoundAny (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Items by Data Asset
+Target is BP Inventory Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get Items by Data Asset
+Target is BP Inventory Component.bFoundAny
+      Pin: then (exec) Dir=Out
+        -> On Open Door Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: else (exec) Dir=Out
+        -> On Door Unlock Failed
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Close Door Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Owner
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get KeyItem (K2Node_VariableGet)
+      Pin: KeyItem (object) Dir=Out
+        -> Get Items by Data Asset
+Target is BP Inventory Component.Item
+      Pin: self (object) Dir=In
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event ActorEndOverlap.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event ActorEndOverlap.OtherActor
+      Pin: AsCharacter (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Get Controller
+Target is Pawn.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To Character.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnOpenDoor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> DoorTimeline.Play
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get OpenDoorSound.OpenDoorSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Delay (real) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).Location
+    Node: Get OpenDoorSound (K2Node_VariableGet)
+      Pin: OpenDoorSound (object) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).Sound
+      Pin: self (object) Dir=In
+    Node: Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCloseDoor_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> DoorTimeline.Reverse
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get CloseDoorSound.CloseDoorSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Delay (real) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).Location
+    Node: Get CloseDoorSound (K2Node_VariableGet)
+      Pin: CloseDoorSound (object) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).Sound
+      Pin: self (object) Dir=In
+    Node: SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: Sound (object) Dir=Out
+        -> Sound Play Multicast
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To All (if server).Sound
+      Pin: Location (struct) Dir=Out
+        -> Sound Play Multicast
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To All (if server).Location
+      Pin: Delay (real) Dir=Out
+        -> Delay.Duration
+    Node: Play Sound on all Clients (EdGraphNode_Comment)
+    Node: SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: Sound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: Location (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.Sound
+      Pin: Location (struct) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.Location
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Sound Play Multicast
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Sound
+      Pin: Location (struct) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Location
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Sound Play Multicast
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To All (if server).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Delay
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Owner
+Target is Actor.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Set Owner
+Target is Actor.NewOwner
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> On Close Door Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: self (object) Dir=In
+      Pin: NewOwner (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Owner
+Target is Actor.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Set Owner
+Target is Actor.NewOwner
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Get Items by Data Asset
+Target is BP Inventory Component.execute
+      Pin: self (object) Dir=In
+      Pin: NewOwner (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get StartLocation.StartLocation
+      Pin: B (struct) Dir=In
+        -> Get EndLocation.EndLocation
+      Pin: Alpha (real) Dir=In
+        -> DoorTimeline.DoorRotationZ
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+    Node: Get StartLocation (K2Node_VariableGet)
+      Pin: StartLocation (struct) Dir=Out
+        -> Lerp (Vector).A
+      Pin: self (object) Dir=In
+    Node: Get EndLocation (K2Node_VariableGet)
+      Pin: EndLocation (struct) Dir=Out
+        -> Lerp (Vector).B
+      Pin: self (object) Dir=In
+    Node: OnDoorUnlockFailedRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Door Unlock Failed
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnDoorUnlockFailedRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get LockedDoorSound.LockedDoorSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Delay (real) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).Location
+    Node: Get LockedDoorSound (K2Node_VariableGet)
+      Pin: LockedDoorSound (object) Dir=Out
+        -> Sound Play Server
+Target is BP Inventory Trigger Door
+RELIABLE Replicated To Server (if owning client).Sound
+      Pin: self (object) Dir=In
+    Node: Door Unlock Failed (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: New Guid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set UniqueID.UniqueID
+    Node: Equal (Guid) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Equal (Guid).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set UniqueID.execute
+      Pin: else (exec) Dir=Out
+    Node: Generate a unique GUID that is only set once (EdGraphNode_Comment)
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Equal (Guid).A
+      Pin: self (object) Dir=In
+    Node: Set UniqueID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: UniqueID (struct) Dir=In
+        -> New Guid.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In

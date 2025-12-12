@@ -1,0 +1,69 @@
+Blueprint: BP_ConsumeManaAction (/Game/InventorySystemPro/Blueprints/Items/ActionClasses/BP_ConsumeManaAction.BP_ConsumeManaAction)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event OnUse (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: UsingActor (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: ItemSlot (struct) Dir=Out
+    Node: Event OnStopUse (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: UsingActor (object) Dir=Out
+      Pin: ItemSlot (struct) Dir=Out
+    Node: Item Action: Equip item (EdGraphNode_Comment)
+    Node: Item Action: Unequip item (EdGraphNode_Comment)
+    Node: Setup (EdGraphNode_Comment)
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ManaAmount (K2Node_VariableGet)
+      Pin: ManaAmount (real) Dir=Out
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).ManaAmount
+      Pin: self (object) Dir=In
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event OnUse.UsingActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client).self
+    Node: On Mana Consumed Server
+Target is BP Inventory Survival Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnUse.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: ManaAmount (real) Dir=In
+        -> Get ManaAmount.ManaAmount
+      Pin: bPlaySound (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

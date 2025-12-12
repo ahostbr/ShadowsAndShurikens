@@ -1,0 +1,79 @@
+Blueprint: EQS_GetTargetActorsSameClassContext (/Game/AIBehaviorToolkit/Blueprints/EQS/EQS_GetTargetActorsSameClassContext.EQS_GetTargetActorsSameClassContext)
+  Graph: EventGraph
+  Graph: ProvideActorsSet
+    Node: Provide Actors Set (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To Actor.execute
+      Pin: QuerierObject (object) Dir=Out
+      Pin: QuerierActor (object) Dir=Out
+        -> Get AIController.ControlledActor
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: ResultingActorsSet (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+        -> Get Class.ReturnValue
+      Pin: OutActors (object) Dir=Out
+        -> Return Node.ResultingActorsSet
+    Node: Get Blackboard (K2Node_VariableGet)
+      Pin: Blackboard (object) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.self
+      Pin: self (object) Dir=In
+        -> Get AIController.ReturnValue
+    Node: Get Value as Object
+Target is Blackboard Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard.Blackboard
+      Pin: KeyName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Actor.Object
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.KeyName
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Provide Actors Set.QuerierActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Blackboard.self
+    Node: Cast To Actor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Provide Actors Set.then
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Object (object) Dir=In
+        -> Get Value as Object
+Target is Blackboard Component.ReturnValue
+      Pin: AsActor (object) Dir=Out
+        -> Get Class.Object
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Cast To Actor.AsActor
+      Pin: ReturnValue (class) Dir=Out
+        -> Get All Actors Of Class.ActorClass
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.CastFailed
+      Pin: ResultingActorsSet (object) Dir=In
+        -> Make Array.Array
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Return Node.ResultingActorsSet
+      Pin: [0] (object) Dir=In

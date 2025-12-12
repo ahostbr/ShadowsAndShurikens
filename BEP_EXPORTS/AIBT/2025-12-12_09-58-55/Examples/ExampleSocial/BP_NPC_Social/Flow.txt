@@ -1,0 +1,84 @@
+Blueprint: BP_NPC_Social (/Game/AIBehaviorToolkit/Examples/ExampleSocial/BP_NPC_Social.BP_NPC_Social)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: self (object) Dir=In
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Set with Notify IdleType.self
+      Pin: self (object) Dir=In
+    Node: Set with Notify IdleType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: IdleType (byte) Dir=In
+        -> Byte to Enum Enum_IdleType.ReturnValue
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> To Byte (Integer).InInt
+    Node: To Byte (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Byte to Enum Enum_IdleType.Byte
+    Node: Byte to Enum Enum_IdleType (K2Node_CastByteToEnum)
+      Pin: Byte (byte) Dir=In
+        -> To Byte (Integer).ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set with Notify IdleType.IdleType
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Set AvailableWorkspaces.self
+      Pin: self (object) Dir=In
+    Node: Set AvailableWorkspaces (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: AvailableWorkspaces (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set AvailableWorkspaces.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> Set AvailableWorkspaces.AvailableWorkspaces
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AvailableWorkspaces.then
+      Pin: then (exec) Dir=Out
+        -> Set with Notify IdleType.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

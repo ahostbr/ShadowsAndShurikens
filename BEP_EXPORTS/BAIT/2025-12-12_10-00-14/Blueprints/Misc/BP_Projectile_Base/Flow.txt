@@ -1,0 +1,289 @@
+Blueprint: BP_Projectile_Base (/Game/BossAIToolkit/Blueprints/Misc/BP_Projectile_Base.BP_Projectile_Base)
+  Graph: EventGraph
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Component Hit (Sphere) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: HitComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Not Equal (Object).A
+      Pin: OtherComp (object) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+    Node: On Component Begin Overlap (Sphere) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Get bCanBeDamaged.self
+        -> Reroute Node.InputPin
+        -> Not Equal (Object).A
+        -> Contains Item.ItemToFind
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+        -> Apply Point Damage.HitInfo
+    Node: Get bCanBeDamaged (K2Node_VariableGet)
+      Pin: bCanBeDamaged (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+        -> On Component Begin Overlap (Sphere).OtherActor
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Sphere).then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Apply Point Damage.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> On Component Begin Overlap (Sphere).OtherActor
+      Pin: OutputPin (object) Dir=Out
+        -> Apply Point Damage.DamagedActor
+        -> Reroute Node.InputPin
+    Node: Apply Point Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: DamagedActor (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: BaseDamage (real) Dir=In
+        -> Get Damage.Damage
+      Pin: HitFromDirection (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: HitInfo (struct) Dir=In
+        -> On Component Begin Overlap (Sphere).SweepResult
+      Pin: EventInstigator (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: DamageTypeClass (class) Dir=In
+        -> Get DamageType.DamageType
+      Pin: ReturnValue (real) Dir=Out
+    Node: Get Damage (K2Node_VariableGet)
+      Pin: Damage (real) Dir=Out
+        -> Apply Point Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Point Damage.HitFromDirection
+    Node: Get DamageType (K2Node_VariableGet)
+      Pin: DamageType (class) Dir=Out
+        -> Apply Point Damage.DamageTypeClass
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bCanBeDamaged.bCanBeDamaged
+      Pin: B (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: C (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+    Node: Not Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> On Component Begin Overlap (Sphere).OtherActor
+      Pin: B (object) Dir=In
+        -> Get Instigator
+Target is Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Not Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> On Component Hit (Sphere).OtherActor
+      Pin: B (object) Dir=In
+        -> Get Instigator
+Target is Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Component Hit (Sphere).then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_BossAbility_Base.execute
+    Node: Get Instigator
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Not Equal (Object).B
+    Node: Get Instigator
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Not Equal (Object).B
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_BossAbility_Base.Object
+    Node: Set Damage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_BossAbility_Base.then
+      Pin: then (exec) Dir=Out
+        -> Set DamageType.execute
+      Pin: Damage (real) Dir=In
+        -> Get Final Damage
+Target is BP Boss Ability Base.FinalDamage
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To BP_BossAbility_Base (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Damage.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsBP Boss Ability Base (object) Dir=Out
+        -> Get Final Damage
+Target is BP Boss Ability Base.self
+        -> Get AbilityInfo.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Final Damage
+Target is BP Boss Ability Base (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To BP_BossAbility_Base.AsBP Boss Ability Base
+      Pin: FinalDamage (real) Dir=Out
+        -> Set Damage.Damage
+    Node: Set DamageType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Damage.then
+      Pin: then (exec) Dir=Out
+      Pin: DamageType (class) Dir=In
+        -> Break F Boss Ability Damage.DamageType_27_2991CA1940C51C4165097BBE2A0774C1
+      Pin: Output_Get (class) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AbilityInfo (K2Node_VariableGet)
+      Pin: AbilityInfo (struct) Dir=Out
+        -> Break F Boss Ability.F_BossAbility
+      Pin: self (object) Dir=In
+        -> Cast To BP_BossAbility_Base.AsBP Boss Ability Base
+    Node: Break F Boss Ability (K2Node_BreakStruct)
+      Pin: F_BossAbility (struct) Dir=In
+        -> Get AbilityInfo.AbilityInfo
+      Pin: AbilityName_2_7BDF787B47DAA120ADD0FC99DDFBCE98 (name) Dir=Out
+      Pin: AbilityClass_78_20197BE848F023D46363D988148E8812 (class) Dir=Out
+      Pin: ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA (name) Dir=Out
+      Pin: Damage_79_045879CF4A32CEC479823994B9FB52C2 (struct) Dir=Out
+        -> Break F Boss Ability Damage.F_BossAbilityDamage
+      Pin: Targeting_80_C3E0562A42DA13AB69A88191173DAD2E (struct) Dir=Out
+      Pin: Modifier_68_9F6259774C70A5FB7DE538BB3C951747 (struct) Dir=Out
+      Pin: Visuals_81_5964BD6B4A908F26C2F56A918B7FB6A2 (struct) Dir=Out
+      Pin: Duration_34_815036DA4DADC4EB735F1FBEEAD1C940 (real) Dir=Out
+      Pin: Cooldown_23_7AB88B49472E7334AB17849F234AE205 (real) Dir=Out
+      Pin: Combos_82_44865D1A41DAFD226ABD2283F99764C6 (struct) Dir=Out
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Apply Point Damage.DamageCauser
+    Node: Get DestroyOnHit (K2Node_VariableGet)
+      Pin: DestroyOnHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Add Unique.then
+      Pin: Condition (bool) Dir=In
+        -> Get DestroyOnHit.DestroyOnHit
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+    Node: Get DestroyOnHit (K2Node_VariableGet)
+      Pin: DestroyOnHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get DestroyOnHit.DestroyOnHit
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+    Node: Get DamagedActors (K2Node_VariableGet)
+      Pin: DamagedActors (object) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Point Damage.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get DamagedActors.DamagedActors
+      Pin: NewItem (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Unique.NewItem
+    Node: Get DamagedActors (K2Node_VariableGet)
+      Pin: DamagedActors (object) Dir=Out
+        -> Contains Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Contains Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get DamagedActors.DamagedActors
+      Pin: ItemToFind (object) Dir=In
+        -> On Component Begin Overlap (Sphere).OtherActor
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Contains Item.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.C
+    Node: Break F Boss Ability Damage (K2Node_BreakStruct)
+      Pin: F_BossAbilityDamage (struct) Dir=In
+        -> Break F Boss Ability.Damage_79_045879CF4A32CEC479823994B9FB52C2
+      Pin: DamageMultiplier_21_2BE0669940D6E9EE92E4A78F5FC7C18D (real) Dir=Out
+      Pin: DamageType_27_2991CA1940C51C4165097BBE2A0774C1 (class) Dir=Out
+        -> Set DamageType.DamageType
+      Pin: Duration_14_10F135F44AE9DC4C2CE6EB805CD14C33 (real) Dir=Out
+      Pin: PerTickMultiplier_24_6B8BDA624ADFB643C3A4F39F8BDF71C9 (real) Dir=Out
+      Pin: CrowdControl_28_47F1358B4B021C59FF4B68B37A58234B (byte) Dir=Out
+      Pin: CC_Duration_17_CC8B04D1487B6CEE7FCC3C99DC150045 (real) Dir=Out
+      Pin: LaunchStrength_31_CBB84A8F4999CD8CE36D3A84BB6B7528 (real) Dir=Out
+      Pin: HitType_34_50C865354B7B19A57B87129FB9E80E9F (byte) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

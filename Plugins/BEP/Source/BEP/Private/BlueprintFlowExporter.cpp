@@ -15,6 +15,7 @@
 #include "EnhancedInput/Public/InputMappingContext.h"
 #include "JsonObjectConverter.h"
 #include "Misc/FileHelper.h"
+#include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -207,6 +208,125 @@
 			}
 		}
 	}
+
+	FString NormalizePathForMatch(const FString& InPath)
+	{
+		FString Path = InPath;
+		Path.TrimStartAndEndInline();
+		if (Path.IsEmpty())
+		{
+			return FString();
+		}
+		Path.ReplaceInline(TEXT("\\"), TEXT("/"));
+		Path = Path.ToLower();
+		if (!Path.StartsWith(TEXT("/")))
+		{
+			Path = TEXT("/") + Path;
+		}
+		if (!Path.EndsWith(TEXT("/")))
+		{
+			Path += TEXT("/");
+		}
+		return Path;
+	}
+
+	void NormalizeFragments(const TArray<FString>& InFragments, TArray<FString>& OutNormalized)
+	{
+		OutNormalized.Reset();
+		for (const FString& Fragment : InFragments)
+		{
+			FString Normalized = NormalizePathForMatch(Fragment);
+			if (!Normalized.IsEmpty())
+			{
+				OutNormalized.Add(Normalized);
+			}
+		}
+	}
+
+	bool PackagePathMatchesExclude(const FString& PackagePath, const TArray<FString>& NormalizedFragments)
+	{
+		const FString NormalizedPackage = NormalizePathForMatch(PackagePath);
+		for (const FString& Fragment : NormalizedFragments)
+		{
+			if (!Fragment.IsEmpty() && NormalizedPackage.Contains(Fragment))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	FString NormalizeContentPath(const FString& InPath)
+	{
+		FString Path = InPath;
+		Path.ReplaceInline(TEXT("\\"), TEXT("/"));
+		Path.TrimStartAndEndInline();
+		if (!Path.StartsWith(TEXT("/")))
+		{
+			Path = TEXT("/") + Path;
+		}
+		Path.RemoveFromEnd(TEXT("/"));
+		return Path;
+	}
+
+	void SanitizePathSegments(const FString& InPath, TArray<FString>& OutSegments)
+	{
+		OutSegments.Reset();
+		TArray<FString> Tokens;
+		InPath.ParseIntoArray(Tokens, TEXT("/"), true);
+		for (FString& Token : Tokens)
+		{
+			FString CleanSegment = FPaths::MakeValidFileName(Token);
+			if (!CleanSegment.IsEmpty())
+			{
+				OutSegments.Add(CleanSegment);
+			}
+		}
+	}
+
+	FString MakeRelativeContentPath(const FString& PackagePath, const FString& RootContentPath)
+	{
+		const FString NormalizedRoot = NormalizeContentPath(RootContentPath);
+		FString NormalizedPackage = NormalizeContentPath(PackagePath);
+
+		FString Relative;
+		if (!NormalizedRoot.IsEmpty() && NormalizedPackage.StartsWith(NormalizedRoot, ESearchCase::IgnoreCase))
+		{
+			Relative = NormalizedPackage.Mid(NormalizedRoot.Len());
+		}
+		else
+		{
+			Relative = NormalizedPackage;
+			const FString GamePrefix = TEXT("/Game");
+			if (Relative.StartsWith(GamePrefix, ESearchCase::IgnoreCase))
+			{
+				Relative = Relative.Mid(GamePrefix.Len());
+			}
+		}
+
+		Relative.RemoveFromStart(TEXT("/"));
+		TArray<FString> Segments;
+		SanitizePathSegments(Relative, Segments);
+
+		if (Segments.Num() == 0)
+		{
+			Segments.Add(TEXT("Root"));
+		}
+
+		FString Combined = Segments[0];
+		for (int32 Index = 1; Index < Segments.Num(); ++Index)
+		{
+			Combined = FPaths::Combine(Combined, Segments[Index]);
+		}
+
+		return Combined;
+	}
+
+	FString BuildTimestampFolderName()
+	{
+		return FDateTime::Now().ToString(TEXT("%Y-%m-%d_%H-%M-%S"));
+	}
+
 }
 
 static FString ToCsvSafe(const FString& In)
@@ -216,7 +336,7 @@ static FString ToCsvSafe(const FString& In)
 	return FString::Printf(TEXT("\"%s\""), *Result);
 }
 
-void FBlueprintFlowExporter::ExportGraphSnippet(UBlueprint* Blueprint, UEdGraph* Graph, const FString& SnippetOutputDirectory)
+void FBlueprintFlowExporter::ExportGraphSnippet(UBlueprint* Blueprint, UEdGraph* Graph, const FString& SnippetOutputDirectory, bool bUseLegacyFlatLayout)
 {
 	if (!Blueprint || !Graph)
 	{
@@ -244,8 +364,22 @@ void FBlueprintFlowExporter::ExportGraphSnippet(UBlueprint* Blueprint, UEdGraph*
 		return;
 	}
 
-	FString FileName = FString::Printf(TEXT("%s_%s_Snippet.txt"), *Blueprint->GetName(), *Graph->GetName());
-	FPaths::MakeValidFileName(FileName);
+	FString FileName;
+	if (bUseLegacyFlatLayout)
+	{
+		FileName = FString::Printf(TEXT("%s_%s_Snippet.txt"), *Blueprint->GetName(), *Graph->GetName());
+		FPaths::MakeValidFileName(FileName);
+	}
+	else
+	{
+		const FString GraphName = Graph->GetName();
+		FileName = FPaths::MakeValidFileName(GraphName);
+		if (FileName.IsEmpty())
+		{
+			FileName = TEXT("Graph");
+		}
+		FileName += TEXT(".snippet.txt");
+	}
 
 	const FString OutputPath = FPaths::Combine(SnippetOutputDirectory, FileName);
 	IFileManager::Get().MakeDirectory(*SnippetOutputDirectory, true);
@@ -482,7 +616,15 @@ bool FBlueprintFlowExporter::ShouldSkipAsset(const FAssetData& AssetData, const 
 	return false;
 }
 
-void FBlueprintFlowExporter::ExportAllForFormat(const FString& OutputRoot, const FString& RootPath, EBEPExportOutputFormat OutputFormat, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun)
+void FBlueprintFlowExporter::ExportAllForFormat(
+	const FString& OutputRoot,
+	const FString& RootPath,
+	EBEPExportOutputFormat OutputFormat,
+	const TArray<FString>& ExcludedClassPatterns,
+	int32 MaxAssetsPerRun,
+	bool bOrganizeBlueprintFlowsByPackagePath,
+	bool bUseTimestampRunFolder,
+	bool bUseLegacyFlatBlueprintFlowsLayout)
 {
 	// ExcludedClassPatterns combine defaults and user-provided strings; used by ShouldSkipAsset before loading assets.
 	if (ExcludedClassPatterns.Num() > 0)
@@ -490,9 +632,22 @@ void FBlueprintFlowExporter::ExportAllForFormat(const FString& OutputRoot, const
 		UE_LOG(LogBEP, Log, TEXT("[BEP] Excluding class patterns: %s"), *FString::Join(ExcludedClassPatterns, TEXT(", ")));
 	}
 
+	const bool bUseTimestampDir = bUseTimestampRunFolder && !bUseLegacyFlatBlueprintFlowsLayout;
+	const FString FlowTimestampFolder = bUseTimestampDir ? BuildTimestampFolderName() : FString();
+	const FString RunRoot = OutputRoot;
+
 	auto RunExport = [&](EBEPExportFormat Format)
 	{
-		ExportAll(OutputRoot, RootPath, Format, ExcludedClassPatterns, MaxAssetsPerRun);
+		ExportAll(
+			RunRoot,
+			RootPath,
+			Format,
+			ExcludedClassPatterns,
+			MaxAssetsPerRun,
+			bOrganizeBlueprintFlowsByPackagePath,
+			bUseTimestampRunFolder,
+			bUseLegacyFlatBlueprintFlowsLayout,
+			FlowTimestampFolder);
 	};
 
 	switch (OutputFormat)
@@ -524,22 +679,36 @@ void FBlueprintFlowExporter::ExportWithSettings(const FBEPExportSettings& Settin
 		return;
 	}
 
-	if (Settings.OutputRootPath.IsEmpty())
-	{
-		UE_LOG(LogBEP, Warning, TEXT("[BEP] ExportWithSettings: OutputRootPath is empty."));
-		return;
-	}
-
 	TArray<FString> ExcludedPatterns;
 	ParseExcludedPatterns(Settings.ExcludedClassPatterns, ExcludedPatterns);
 
-	IFileManager::Get().MakeDirectory(*Settings.OutputRootPath, true);
+	const FString ResolvedOutputRoot = Settings.OutputRootPath.IsEmpty()
+		? GetDefaultBEPExportRoot()
+		: Settings.OutputRootPath;
+
+	IFileManager::Get().MakeDirectory(*ResolvedOutputRoot, true);
 
 	const int32 MaxAssets = Settings.MaxAssetsPerRun > 0 ? Settings.MaxAssetsPerRun : 500;
-	ExportAllForFormat(Settings.OutputRootPath, Settings.RootPath, Settings.OutputFormat, ExcludedPatterns, MaxAssets);
+	ExportAllForFormat(
+		ResolvedOutputRoot,
+		Settings.RootPath,
+		Settings.OutputFormat,
+		ExcludedPatterns,
+		MaxAssets,
+		Settings.bOrganizeBlueprintFlowsByPackagePath,
+		Settings.bUseTimestampRunFolder,
+		Settings.bUseLegacyFlatBlueprintFlowsLayout);
 }
 
-void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirectory, const FString& RootPath, EBEPExportFormat Format, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun)
+void FBlueprintFlowExporter::ExportAllBlueprintFlows(
+	const FString& OutputDirectory,
+	const FString& RootPath,
+	EBEPExportFormat Format,
+	const TArray<FString>& ExcludedClassPatterns,
+	int32 MaxAssetsPerRun,
+	bool bOrganizeBlueprintFlowsByPackagePath,
+	bool bUseTimestampRunFolder,
+	bool bUseLegacyFlatBlueprintFlowsLayout)
 {
 	IAssetRegistry& AssetRegistry = GetAssetRegistry();
 
@@ -554,24 +723,57 @@ void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirect
 	TArray<FAssetData> BlueprintAssets;
 	AssetRegistry.GetAssets(Filter, BlueprintAssets);
 
+	TArray<FString> NormalizedExcludeFragments;
+	NormalizeFragments(ExcludedClassPatterns, NormalizedExcludeFragments);
+
 	const int32 TotalAssets = BlueprintAssets.Num();
 	const int32 Limit = (MaxAssetsPerRun > 0) ? FMath::Min(MaxAssetsPerRun, TotalAssets) : TotalAssets;
 	const int32 GCInterval = 50;
 
 	const FString OutDir = OutputDirectory.IsEmpty()
-		                        ? (FPaths::ProjectSavedDir() / TEXT("BEPExport/BlueprintFlows"))
-		                        : OutputDirectory;
-	EnsureDirectory(OutDir);
-	const FString SnippetDir = OutDir / TEXT("Snippets");
+		                         ? GetDefaultBEPExportRoot()
+		                         : OutputDirectory;
+	const bool bUseLegacyLayout = bUseLegacyFlatBlueprintFlowsLayout;
+	const bool bOrganizeByPackage = bOrganizeBlueprintFlowsByPackagePath && !bUseLegacyLayout;
+	const bool bUseTimestampDir = bUseTimestampRunFolder && !bUseLegacyLayout;
 
-	UE_LOG(LogBEP, Log, TEXT("[BEP] ExportAllBlueprintFlows: RootPath=%s AssetsFound=%d Limit=%d OutputDir=%s Format=%d"),
-		*RootPath, BlueprintAssets.Num(), Limit, *OutDir, static_cast<int32>(Format));
+	EnsureDirectory(OutDir);
+
+	UE_LOG(LogBEP, Log, TEXT("[BEP] ExportAllBlueprintFlows: RootPath=%s AssetsFound=%d Limit=%d OutputDir=%s Format=%d OrganizeByPackage=%s UseTimestampRun=%s LegacyFlat=%s"),
+		*RootPath,
+		BlueprintAssets.Num(),
+		Limit,
+		*OutDir,
+		static_cast<int32>(Format),
+		bOrganizeByPackage ? TEXT("true") : TEXT("false"),
+		bUseTimestampDir ? TEXT("true") : TEXT("false"),
+		bUseLegacyLayout ? TEXT("true") : TEXT("false"));
 
 	int32 ExportedCount = 0;
 
 	for (int32 Index = 0; Index < Limit; ++Index)
 	{
 		const FAssetData& Asset = BlueprintAssets[Index];
+
+		FString PackagePath = Asset.PackagePath.ToString();
+		if (PackagePath.IsEmpty())
+		{
+			const FString PackageName = Asset.PackageName.ToString();
+			if (!PackageName.IsEmpty())
+			{
+				PackagePath = FPackageName::GetLongPackagePath(PackageName);
+			}
+		}
+
+		if (PackagePath.IsEmpty())
+		{
+			PackagePath = FPackageName::GetLongPackagePath(Asset.GetObjectPathString());
+		}
+
+		if (PackagePathMatchesExclude(PackagePath, NormalizedExcludeFragments))
+		{
+			continue;
+		}
 		if (ShouldSkipAsset(Asset, ExcludedClassPatterns))
 		{
 			continue;
@@ -584,6 +786,33 @@ void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirect
 		}
 
 		const FString SafeName = Asset.AssetName.ToString().Replace(TEXT("/"), TEXT("_"));
+		FString BlueprintFolderName = FPaths::MakeValidFileName(Blueprint->GetName());
+		if (BlueprintFolderName.IsEmpty())
+		{
+			BlueprintFolderName = TEXT("Blueprint");
+		}
+
+		FString BlueprintOutDir = OutDir;
+		if (!bUseLegacyLayout)
+		{
+			if (bOrganizeByPackage)
+			{
+				const FString RelativePath = MakeRelativeContentPath(PackagePath, RootPath);
+				BlueprintOutDir = FPaths::Combine(BlueprintOutDir, RelativePath);
+			}
+
+			BlueprintOutDir = FPaths::Combine(BlueprintOutDir, BlueprintFolderName);
+		}
+
+		const FString BlueprintSnippetDir = bUseLegacyLayout
+			? (OutDir / TEXT("Snippets"))
+			: FPaths::Combine(BlueprintOutDir, TEXT("Snippets"));
+
+		if (!bUseLegacyLayout)
+		{
+			EnsureDirectory(BlueprintOutDir);
+			EnsureDirectory(BlueprintSnippetDir);
+		}
 
 		TArray<UEdGraph*> Graphs;
 		GetAllGraphsForBlueprint(Blueprint, Graphs);
@@ -619,10 +848,12 @@ void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirect
 			for (UEdGraph* Graph : Graphs)
 			{
 				DumpGraphText(Blueprint, Graph, Dump);
-				ExportGraphSnippet(Blueprint, Graph, SnippetDir);
+				ExportGraphSnippet(Blueprint, Graph, BlueprintSnippetDir, bUseLegacyLayout);
 			}
 
-			const FString FilePath = OutDir / (SafeName + TEXT("_Flow.txt"));
+			const FString FilePath = bUseLegacyLayout
+				? OutDir / (SafeName + TEXT("_Flow.txt"))
+				: FPaths::Combine(BlueprintOutDir, TEXT("Flow.txt"));
 			if (!FFileHelper::SaveStringToFile(Dump, *FilePath))
 			{
 				LogFileWriteFailure(FilePath, TEXT("Blueprint flow text"));
@@ -701,10 +932,12 @@ void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirect
 			for (UEdGraph* Graph : Graphs)
 			{
 				ProcessGraphCsv(Graph);
-				ExportGraphSnippet(Blueprint, Graph, SnippetDir);
+				ExportGraphSnippet(Blueprint, Graph, BlueprintSnippetDir, bUseLegacyLayout);
 			}
 
-			const FString FilePath = OutDir / (SafeName + TEXT("_Flow.csv"));
+			const FString FilePath = bUseLegacyLayout
+				? OutDir / (SafeName + TEXT("_Flow.csv"))
+				: FPaths::Combine(BlueprintOutDir, TEXT("Flow.csv"));
 			const FString Csv = FString::Join(Lines, TEXT("\n"));
 
 			if (!FFileHelper::SaveStringToFile(Csv, *FilePath))
@@ -810,7 +1043,7 @@ void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirect
 			for (UEdGraph* Graph : Graphs)
 			{
 				ProcessGraphJson(Graph, GetGraphTypeString(Graph));
-				ExportGraphSnippet(Blueprint, Graph, SnippetDir);
+				ExportGraphSnippet(Blueprint, Graph, BlueprintSnippetDir, bUseLegacyLayout);
 			}
 
 			RootObj->SetStringField(TEXT("asset_type"), TEXT("Blueprint"));
@@ -818,7 +1051,9 @@ void FBlueprintFlowExporter::ExportAllBlueprintFlows(const FString& OutputDirect
 			RootObj->SetStringField(TEXT("asset_path"), Blueprint->GetPathName());
 			RootObj->SetArrayField(TEXT("graphs"), GraphArray);
 
-			const FString FilePath = OutDir / (SafeName + TEXT("_Flow.json"));
+			const FString FilePath = bUseLegacyLayout
+				? OutDir / (SafeName + TEXT("_Flow.json"))
+				: FPaths::Combine(BlueprintOutDir, TEXT("Flow.json"));
 
 			FString JsonString;
 			TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
@@ -1163,23 +1398,38 @@ void FBlueprintFlowExporter::ExportAllStructSchemas(const FString& OutputFilePat
 	}
 }
 
-void FBlueprintFlowExporter::ExportAll(const FString& OutputRoot, const FString& RootPath, EBEPExportFormat Format, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun)
+void FBlueprintFlowExporter::ExportAll(
+	const FString& OutputRoot,
+	const FString& RootPath,
+	EBEPExportFormat Format,
+	const TArray<FString>& ExcludedClassPatterns,
+	int32 MaxAssetsPerRun,
+	bool bOrganizeBlueprintFlowsByPackagePath,
+	bool bUseTimestampRunFolder,
+	bool bUseLegacyFlatBlueprintFlowsLayout,
+	const FString& TimestampFolderName)
 {
-	// Hard‑coded export base so we never end up under the engine install or
-	// an unexpected working directory. This keeps all BEP exports in a single,
-	// predictable location the user can clean or diff easily.
-	const FString ExportBaseDir = TEXT("C:/BEP_EXPORTS");
+	// Keep all BEP exports rooted under the project directory by default.
+	const FString ExportBaseDir = GetDefaultBEPExportRoot();
 	EnsureDirectory(ExportBaseDir);
 
-	// Optional sub‑folder under the base, coming from the console command.
 	FString CleanOutputRoot = OutputRoot;
-	// Strip any quotes that might have come from the console argument.
 	CleanOutputRoot.ReplaceInline(TEXT("\""), TEXT(""));
 	CleanOutputRoot.TrimStartAndEndInline();
 
-	const FString RootDir = CleanOutputRoot.IsEmpty()
-		                         ? ExportBaseDir
-		                         : FPaths::Combine(ExportBaseDir, CleanOutputRoot);
+	FString RootDir;
+	if (CleanOutputRoot.IsEmpty())
+	{
+		RootDir = ExportBaseDir;
+	}
+	else if (FPaths::IsRelative(CleanOutputRoot))
+	{
+		RootDir = FPaths::Combine(ExportBaseDir, CleanOutputRoot);
+	}
+	else
+	{
+		RootDir = CleanOutputRoot;
+	}
 
 	EnsureDirectory(RootDir);
 
@@ -1188,7 +1438,22 @@ void FBlueprintFlowExporter::ExportAll(const FString& OutputRoot, const FString&
 	UE_LOG(LogBEP, Log, TEXT("[BEP] ExportAll: RootDir=%s AssetRoot=%s Format=%d"),
 		*RootDir, *AssetRoot, static_cast<int32>(Format));
 
-	ExportAllBlueprintFlows(RootDir / TEXT("BlueprintFlows"), AssetRoot, Format, ExcludedClassPatterns, MaxAssetsPerRun);
+	FString FlowRootDir = RootDir;
+	if (bUseTimestampRunFolder && !bUseLegacyFlatBlueprintFlowsLayout)
+	{
+		const FString RunFolder = TimestampFolderName.IsEmpty() ? BuildTimestampFolderName() : TimestampFolderName;
+		FlowRootDir = FPaths::Combine(RootDir, RunFolder);
+	}
+
+	ExportAllBlueprintFlows(
+		FlowRootDir,
+		AssetRoot,
+		Format,
+		ExcludedClassPatterns,
+		MaxAssetsPerRun,
+		bOrganizeBlueprintFlowsByPackagePath,
+		bUseTimestampRunFolder,
+		bUseLegacyFlatBlueprintFlowsLayout);
 	ExportAllInputMappingContexts(RootDir / TEXT("IMC"), AssetRoot, Format, ExcludedClassPatterns, MaxAssetsPerRun);
 	ExportAllDataAssetsAndTables(RootDir / TEXT("Data"), AssetRoot, ExcludedClassPatterns, MaxAssetsPerRun);
 	ExportAllStructSchemas(RootDir / TEXT("StructSchemas.txt"));

@@ -1,0 +1,635 @@
+Blueprint: BTT_DoWork (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_DoWork.BTT_DoWork)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Set LocWorkspace.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Get Current Workspace
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: RetWorkspace (object) Dir=Out
+        -> Set LocWorkspace.LocWorkspace
+        -> Get Slot Transform
+Target is BP Workspace.self
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: RetCharacter (object) Dir=Out
+        -> Set LocCharacter.LocCharacter
+        -> Get Slot Transform
+Target is BP Workspace.WorkerRef
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Get Current Workspace
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+    Node: Event Receive Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OwnerActor (object) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set LocWorkspace (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Set LocCharacter.execute
+      Pin: LocWorkspace (object) Dir=In
+        -> Get Current Workspace
+Target is BP Behavior Component.RetWorkspace
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set LocCharacter (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocWorkspace.then
+      Pin: then (exec) Dir=Out
+        -> Set TempLocation.execute
+      Pin: LocCharacter (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set BeginTransition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FinishedRot.then
+      Pin: then (exec) Dir=Out
+        -> Play Worker in Slot
+Target is BP Workspace.execute
+      Pin: BeginTransition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Get BeginTransition.BeginTransition
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+    Node: Get BeginTransition (K2Node_VariableGet)
+      Pin: BeginTransition (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get LocCharacter (K2Node_VariableGet)
+      Pin: LocCharacter (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Set Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Vector).A
+        -> VInterp to Constant.Current
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Event Receive Tick.DeltaSeconds
+      Pin: OutputPin (real) Dir=Out
+        -> VInterp to Constant.DeltaTime
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+      Pin: NewLocation (struct) Dir=In
+        -> VInterp to Constant.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Location
+Target is Actor.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set FinishedLoc.execute
+      Pin: else (exec) Dir=Out
+    Node: Equal (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ErrorTolerance (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get TempLocation.TempLocation
+      Pin: OutputPin (struct) Dir=Out
+        -> Equal (Vector).B
+    Node: Set TempLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocCharacter.then
+      Pin: then (exec) Dir=Out
+        -> Set TempRotation.execute
+      Pin: TempLocation (struct) Dir=In
+        -> Get Slot Transform
+Target is BP Workspace.SlotTransform_Location
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get TempLocation (K2Node_VariableGet)
+      Pin: TempLocation (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> VInterp to Constant.Target
+      Pin: self (object) Dir=In
+    Node: Set TempRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TempLocation.then
+      Pin: then (exec) Dir=Out
+        -> Set FinishedLoc.execute
+      Pin: TempRotation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get LocCharacter (K2Node_VariableGet)
+      Pin: LocCharacter (object) Dir=Out
+        -> Get AIController.ControlledActor
+        -> Get Actor Rotation
+Target is Actor.self
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get SnapRotation.SnapRotation
+      Pin: then (exec) Dir=Out
+        -> Set bUseControllerDesiredRotation.execute
+      Pin: else (exec) Dir=Out
+        -> Set FinishedRot.execute
+    Node: Set FinishedRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set bOrientRotationToMovement.execute
+      Pin: FinishedRot (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: VInterp to Constant (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get TempLocation.TempLocation
+      Pin: DeltaTime (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+      Pin: ReturnValue (object) Dir=Out
+        -> SetFocalPoint
+Target is AIController.self
+    Node: SetFocalPoint
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bOrientRotationToMovement.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get AIController.ReturnValue
+      Pin: FP (struct) Dir=In
+        -> vector + vector.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetFocalPoint
+Target is AIController.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Rotator).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set FinishedRot.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Rotator).A
+    Node: Equal (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get TempRotation.TempRotation
+      Pin: ErrorTolerance (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get TempRotation (K2Node_VariableGet)
+      Pin: TempRotation (struct) Dir=Out
+        -> Equal (Rotator).B
+      Pin: self (object) Dir=In
+    Node: Get TempRotation (K2Node_VariableGet)
+      Pin: TempRotation (struct) Dir=Out
+        -> Get Forward Vector.InRot
+      Pin: self (object) Dir=In
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get TempRotation.TempRotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> SetFocalPoint
+Target is AIController.FP
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+        -> vector + vector.B
+    Node: Get TempLocation (K2Node_VariableGet)
+      Pin: TempLocation (struct) Dir=Out
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get TempLocation.TempLocation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector * float.B
+    Node: Get LocCharacter (K2Node_VariableGet)
+      Pin: LocCharacter (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set bOrientRotationToMovement.self
+      Pin: self (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+    Node: Set bOrientRotationToMovement (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FinishedRot.then
+      Pin: then (exec) Dir=Out
+      Pin: bOrientRotationToMovement (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Get Slot Transform
+Target is BP Workspace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Workspace
+Target is BP Behavior Component.RetWorkspace
+      Pin: WorkerRef (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: SlotTransform (struct) Dir=Out
+      Pin: SlotTransform_Location (struct) Dir=Out
+        -> Set TempLocation.TempLocation
+      Pin: SlotTransform_Rotation (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SlotTransform_Scale (struct) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Slot Transform
+Target is BP Workspace.SlotTransform_Rotation
+      Pin: OutputPin (struct) Dir=Out
+        -> Set TempRotation.TempRotation
+    Node: Get LocCharacter (K2Node_VariableGet)
+      Pin: LocCharacter (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set bUseControllerDesiredRotation.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+    Node: Set bOrientRotationToMovement (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bUseControllerDesiredRotation.then
+      Pin: then (exec) Dir=Out
+        -> SetFocalPoint
+Target is AIController.execute
+      Pin: bOrientRotationToMovement (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set bUseControllerDesiredRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set bOrientRotationToMovement.execute
+      Pin: bUseControllerDesiredRotation (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Set bOrientRotationToMovement.self
+    Node: Get LocWorkspace (K2Node_VariableGet)
+      Pin: LocWorkspace (object) Dir=Out
+        -> Get SnapLocation.self
+        -> Get SnapRotation.self
+      Pin: self (object) Dir=In
+    Node: Get SnapLocation (K2Node_VariableGet)
+      Pin: SnapLocation (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: self (object) Dir=In
+        -> Get LocWorkspace.LocWorkspace
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get SnapLocation.SnapLocation
+      Pin: B (bool) Dir=In
+        -> Get SnapRotation.SnapRotation
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set BeginTransition.BeginTransition
+    Node: Get SnapRotation (K2Node_VariableGet)
+      Pin: SnapRotation (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: self (object) Dir=In
+        -> Get LocWorkspace.LocWorkspace
+    Node: Get LocWorkspace (K2Node_VariableGet)
+      Pin: LocWorkspace (object) Dir=Out
+        -> Get SnapRotation.self
+      Pin: self (object) Dir=In
+    Node: Get SnapRotation (K2Node_VariableGet)
+      Pin: SnapRotation (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get LocWorkspace.LocWorkspace
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Get SnapLocation.SnapLocation
+      Pin: then (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+        -> Set FinishedLoc.execute
+    Node: Get LocWorkspace (K2Node_VariableGet)
+      Pin: LocWorkspace (object) Dir=Out
+        -> Get SnapLocation.self
+      Pin: self (object) Dir=In
+    Node: Get SnapLocation (K2Node_VariableGet)
+      Pin: SnapLocation (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get LocWorkspace.LocWorkspace
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Play Worker in Slot
+Target is BP Workspace.then
+      Pin: Condition (bool) Dir=In
+        -> Get BeginTransition.BeginTransition
+      Pin: then (exec) Dir=Out
+        -> Set StartTime.execute
+      Pin: else (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Play Worker in Slot
+Target is BP Workspace (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set BeginTransition.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get LocWorkspace.LocWorkspace
+      Pin: WorkerRef (object) Dir=In
+        -> Get LocCharacter.LocCharacter
+      Pin: WorkSuccess (bool) Dir=Out
+    Node: Get LocWorkspace (K2Node_VariableGet)
+      Pin: LocWorkspace (object) Dir=Out
+        -> Play Worker in Slot
+Target is BP Workspace.self
+      Pin: self (object) Dir=In
+    Node: Get LocCharacter (K2Node_VariableGet)
+      Pin: LocCharacter (object) Dir=Out
+        -> Play Worker in Slot
+Target is BP Workspace.WorkerRef
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set FinishedLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: FinishedLoc (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get FinishedLoc (K2Node_VariableGet)
+      Pin: FinishedLoc (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: self (object) Dir=In
+    Node: Get FinishedRot (K2Node_VariableGet)
+      Pin: FinishedRot (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get FinishedRot.FinishedRot
+      Pin: B (bool) Dir=In
+        -> Get FinishedLoc.FinishedLoc
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Set FinishedRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: FinishedRot (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FinishedLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: FinishedLoc (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BeginTransition (K2Node_VariableGet)
+      Pin: BeginTransition (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set FinishedLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TempRotation.then
+      Pin: then (exec) Dir=Out
+        -> Set FinishedRot.execute
+      Pin: FinishedLoc (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FinishedRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FinishedLoc.then
+      Pin: then (exec) Dir=Out
+        -> Set BeginTransition.execute
+      Pin: FinishedRot (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set StartTime (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: StartTime (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set StartTime.StartTime
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Vector).ReturnValue
+      Pin: B (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get StartTime (K2Node_VariableGet)
+      Pin: StartTime (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get StartTime.StartTime
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.B

@@ -1,6 +1,6 @@
 # SOTS_EdUtil
 
-Editor-only plugin providing lightweight utilities. Current feature set is a generic JSON-to-DataAsset importer exposed to Blueprints.
+Editor-only plugin providing lightweight utilities. Feature set includes a generic JSON-to-DataAsset importer (Blueprint/CallInEditor) and a pre-made importer tab (Slate widget).
 
 ## Module
 - Plugin: `SOTS_EdUtil`
@@ -24,6 +24,12 @@ Editor-only plugin providing lightweight utilities. Current feature set is a gen
 - Marks the package dirty and calls `PostEditChange` when `bMarkDirty` is true (default).
 - Logs warnings for missing asset, bad path, parse failures, or struct mapping failures.
 
+## Built-in Importer Widget
+- Tab: **SOTS JSON Importer** (Nomad tab, registered by the plugin)
+- Location: Window → Developer Tools → SOTS JSON Importer (searchable via tab search)
+- UI fields: DataAsset picker, JSON file path with Browse, optional Array Property Name, and a mark-dirty checkbox.
+- Action: `Import JSON` button calls `USOTS_GenericJsonImporter` with the provided inputs.
+
 ### Usage (Blueprint)
 1) Create/open an Editor Utility Blueprint or any editor context that can call `CallInEditor` functions.
 2) Call `ImportJson`:
@@ -32,6 +38,13 @@ Editor-only plugin providing lightweight utilities. Current feature set is a gen
    - `ArrayPropertyName` (optional): name of the array property if the root JSON is an array.
    - `bMarkDirty` (optional): leave true to mark the asset dirty and trigger `PostEditChange`.
 3) Compile and press the Call In Editor button, or call from a scripted editor tool.
+
+### Usage (Built-in Widget)
+1) Open the tab: Window → Developer Tools → SOTS JSON Importer (or search for "SOTS JSON Importer" in the tab palette).
+2) Pick the target DataAsset in the asset picker.
+3) Set the JSON file path (use Browse) and optionally the array property name.
+4) Leave "Mark asset dirty" enabled unless you intentionally want a dry run.
+5) Click **Import JSON**; progress and issues log to Output Log.
 
 ### Notes
 - Works only in editor builds (`WITH_EDITOR`).

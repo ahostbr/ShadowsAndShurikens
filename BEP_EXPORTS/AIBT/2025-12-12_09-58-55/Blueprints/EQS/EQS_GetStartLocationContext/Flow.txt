@@ -1,0 +1,41 @@
+Blueprint: EQS_GetStartLocationContext (/Game/AIBehaviorToolkit/Blueprints/EQS/EQS_GetStartLocationContext.EQS_GetStartLocationContext)
+  Graph: EventGraph
+  Graph: ProvideSingleLocation
+    Node: Provide Single Location (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: QuerierObject (object) Dir=Out
+      Pin: QuerierActor (object) Dir=Out
+        -> Get AIController.ControlledActor
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Provide Single Location.then
+      Pin: ResultingLocation (struct) Dir=In
+        -> Get Value as Vector
+Target is Blackboard Component.ReturnValue
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Provide Single Location.QuerierActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Blackboard.self
+    Node: Get Blackboard (K2Node_VariableGet)
+      Pin: Blackboard (object) Dir=Out
+        -> Get Value as Vector
+Target is Blackboard Component.self
+      Pin: self (object) Dir=In
+        -> Get AIController.ReturnValue
+    Node: Get Value as Vector
+Target is Blackboard Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard.Blackboard
+      Pin: KeyName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ResultingLocation
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Get Value as Vector
+Target is Blackboard Component.KeyName

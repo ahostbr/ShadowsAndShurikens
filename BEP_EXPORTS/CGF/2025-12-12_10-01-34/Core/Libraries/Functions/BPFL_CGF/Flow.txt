@@ -1,0 +1,1363 @@
+Blueprint: BPFL_CGF (/Game/CoreGameFramework/Core/Libraries/Functions/BPFL_CGF.BPFL_CGF)
+  Graph: Error_Handling
+    Node: Error_Handling (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: In (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: PrintToScreen? (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: TextColor (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Duration (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Is Valid.InputObject
+      Pin: __WorldContext (object) Dir=Out
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Stack Trace.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Key (name) Dir=In
+    Node: Stack Trace (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Print String.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Get DebugMessagesON?.DebugMessagesON?
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: else (exec) Dir=Out
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get DebugMessagesON?.self
+    Node: Get DebugMessagesON? (K2Node_VariableGet)
+      Pin: DebugMessagesON? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Error_Handling.In
+      Pin: OutputPin (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Append.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+      Pin: C (string) Dir=In
+        -> Select.ReturnValue
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Select.Option 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Error_Handling.Object
+      Pin: OutputPin (object) Dir=Out
+        -> Get Display Name.Object
+        -> Is Valid.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Error_Handling.PrintToScreen?
+      Pin: OutputPin (bool) Dir=Out
+        -> Print String.bPrintToScreen
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Error_Handling.Duration
+      Pin: OutputPin (real) Dir=Out
+        -> Print String.Duration
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Error_Handling.TextColor
+      Pin: OutputPin (struct) Dir=Out
+        -> Print String.TextColor
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Error_Handling.then
+      Pin: InputObject (object) Dir=In
+        -> Error_Handling.Object
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (string) Dir=In
+      Pin: Option 1 (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Print String.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: GetGI
+    Node: GetGI (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_GameInstance.execute
+      Pin: Widget (object) Dir=Out
+        -> Get Display Name.Object
+      Pin: Actor (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Game Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_CGF_GameInstance.Object
+    Node: Cast To BP_CGF_GameInstance (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetGI.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Print String.execute
+      Pin: Object (object) Dir=In
+        -> Get Game Instance.ReturnValue
+      Pin: AsBP CGF Game Instance (object) Dir=Out
+        -> Return Node.BP CGF Game Instance
+      Pin: bSuccess (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_GameInstance.then
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Cast To BP_CGF_GameInstance.AsBP CGF Game Instance
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_GameInstance.CastFailed
+      Pin: then (exec) Dir=Out
+        -> Stack Trace.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> GetGI.Widget
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: C (string) Dir=In
+      Pin: D (string) Dir=In
+      Pin: E (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: F (string) Dir=In
+      Pin: G (string) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.E
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Append.ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Print String.InString
+    Node: Stack Trace (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Print String.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GetGI.Actor
+      Pin: OutputPin (object) Dir=Out
+        -> Get Display Name.Object
+  Graph: GetHUD
+    Node: GetHUD (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get HUD
+Target is Player Controller.self
+    Node: Get HUD
+Target is Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.HUD
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetHUD.then
+      Pin: HUD (object) Dir=In
+        -> Get HUD
+Target is Player Controller.ReturnValue
+  Graph: GetPC
+    Node: GetPC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.PlayerController
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetPC.then
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+  Graph: ReturnKeyForInputAction
+    Node: ReturnKeyForInputAction (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get All Player Mappable Action Key Mappings
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: InputToReturnKeyFor (object) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get All Player Mappable Action Key Mappings
+Target is Enhanced Input Subsystem Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> ReturnKeyForInputAction.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get All Player Mappable Action Key Mappings
+Target is Enhanced Input Subsystem Interface.self
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Player Mappable Action Key Mappings
+Target is Enhanced Input Subsystem Interface.then
+      Pin: Array (struct) Dir=In
+        -> Get All Player Mappable Action Key Mappings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Enhanced Action Key Mapping.EnhancedActionKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+    Node: Break Enhanced Action Key Mapping (K2Node_BreakStruct)
+      Pin: EnhancedActionKeyMapping (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: Triggers (object) Dir=Out
+      Pin: Modifiers (object) Dir=Out
+      Pin: Action (object) Dir=Out
+        -> Equal (Object).A
+      Pin: Key (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Break Enhanced Action Key Mapping.Action
+      Pin: B (object) Dir=In
+        -> Get InputToReturnKeyFor.InputToReturnKeyFor
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: KeyName (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: IsGamepadKey? (bool) Dir=In
+        -> Is Gamepad Key.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Get InputToReturnKeyFor (K2Node_VariableGet)
+      Pin: InputToReturnKeyFor (object) Dir=Out
+        -> Equal (Object).B
+    Node: Get Key Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bLongDisplayName (bool) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> To String (Text).InText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Key Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.KeyName
+    Node: Is Gamepad Key (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.IsGamepadKey?
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break Enhanced Action Key Mapping.Key
+      Pin: OutputPin (struct) Dir=Out
+        -> Get Key Display Name.Key
+        -> Is Gamepad Key.Key
+        -> Return Node.Key
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+  Graph: ReturnIMCforInputAction
+    Node: ReturnIMCforInputAction (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Player Mapping Rows Array.execute
+      Pin: InputActionToCheck (object) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Return Player Mapping Rows Array.then
+      Pin: Array (struct) Dir=In
+        -> Return Player Mapping Rows Array.Values
+      Pin: LoopBody (exec) Dir=Out
+        -> To Array.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Key Mapping Row.KeyMappingRow
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break Key Mapping Row (K2Node_BreakStruct)
+      Pin: KeyMappingRow (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Mappings (struct) Dir=Out
+        -> To Array.A
+    Node: To Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Key Mapping Row.Mappings
+      Pin: Result (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> To Array.then
+      Pin: Array (struct) Dir=In
+        -> To Array.Result
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: MappingName (name) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+        -> Equal (Object).A
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Break Player Key Mapping.AssociatedInputAction
+      Pin: B (object) Dir=In
+        -> Get InputActionToCheck.InputActionToCheck
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get InputActionToCheck (K2Node_VariableGet)
+      Pin: InputActionToCheck (object) Dir=Out
+        -> Equal (Object).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set DefaultName.execute
+      Pin: else (exec) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Succes? (bool) Dir=In
+        -> Get Found?.Found?
+      Pin: IMC Name (name) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Succes? (bool) Dir=In
+        -> Get Found?.Found?
+      Pin: IMC Name (name) Dir=In
+        -> Get DefaultName.DefaultName
+    Node: Get DefaultName (K2Node_VariableGet)
+      Pin: DefaultName (name) Dir=Out
+        -> Return Node.IMC Name
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Found?.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Set Found? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DefaultName.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Found? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get Found? (K2Node_VariableGet)
+      Pin: Found? (bool) Dir=Out
+        -> Return Node.Succes?
+    Node: Get Found? (K2Node_VariableGet)
+      Pin: Found? (bool) Dir=Out
+        -> Return Node.Succes?
+    Node: Set DefaultName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Found?.execute
+      Pin: DefaultName (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (name) Dir=Out
+    Node: Get DefaultName (K2Node_VariableGet)
+      Pin: DefaultName (name) Dir=Out
+    Node: Config Default IMC Name Returned On Fail (EdGraphNode_Comment)
+    Node: Return Player Mapping Rows Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ReturnIMCforInputAction.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Values (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: UserSettings (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Get DefaultName.DefaultName
+      Pin: OutputPin (name) Dir=Out
+        -> Return Node.IMC Name
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Break Player Key Mapping.MappingName
+      Pin: OutputPin (name) Dir=Out
+        -> Set DefaultName.DefaultName
+  Graph: ReturnPlayerMappingRowsArray
+    Node: ReturnPlayerMappingRowsArray (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Values.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Values.then
+      Pin: Values (struct) Dir=In
+        -> Values.Values
+      Pin: UserSettings (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+    Node: Get Player Mapping Rows
+Target is Enhanced Player Mappable Key Profile (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Active Key Profile
+Target is Enhanced Input User Settings.ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Values.TargetMap
+    Node: Get Active Key Profile
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Player Mapping Rows
+Target is Enhanced Player Mappable Key Profile.self
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.self
+    Node: Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Active Key Profile
+Target is Enhanced Input User Settings.self
+        -> Return Node.UserSettings
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ReturnPlayerMappingRowsArray.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get Player Mapping Rows
+Target is Enhanced Player Mappable Key Profile.ReturnValue
+      Pin: Values (struct) Dir=Out
+        -> Return Node.Values
+  Graph: ReturnMappingByName
+    Node: ReturnMappingByName (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Player Mapping Rows Array.execute
+      Pin: MappingToSearchFor (name) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Player Mapping Rows Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ReturnMappingByName.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Values (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: UserSettings (object) Dir=Out
+    Node: Break Key Mapping Row (K2Node_BreakStruct)
+      Pin: KeyMappingRow (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Mappings (struct) Dir=Out
+        -> To Array.A
+    Node: To Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Key Mapping Row.Mappings
+      Pin: Result (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Return Player Mapping Rows Array.then
+      Pin: Array (struct) Dir=In
+        -> Return Player Mapping Rows Array.Values
+      Pin: LoopBody (exec) Dir=Out
+        -> To Array.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Key Mapping Row.KeyMappingRow
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> To Array.then
+      Pin: Array (struct) Dir=In
+        -> To Array.Result
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+        -> Add Unique.NewItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: MappingName (name) Dir=Out
+        -> Equal (Name).A
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Get ReturnedMappingsArray (K2Node_VariableGet)
+      Pin: ReturnedMappingsArray (struct) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get ReturnedMappingsArray.ReturnedMappingsArray
+      Pin: NewItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (int) Dir=Out
+    Node: Equal (Name) (K2Node_PromotableOperator)
+      Pin: A (name) Dir=In
+        -> Break Player Key Mapping.MappingName
+      Pin: B (name) Dir=In
+        -> Get MappingToSearchFor.MappingToSearchFor
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get MappingToSearchFor (K2Node_VariableGet)
+      Pin: MappingToSearchFor (name) Dir=Out
+        -> Equal (Name).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Name).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ReturnedMappingsArray (K2Node_VariableGet)
+      Pin: ReturnedMappingsArray (struct) Dir=Out
+        -> Return Node.MappingsArray
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: MappingsArray (struct) Dir=In
+        -> Get ReturnedMappingsArray.ReturnedMappingsArray
+  Graph: DoesIMCContainInputAction
+    Node: DoesIMCContainInputAction (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Player Mapping Rows Array.execute
+      Pin: IA_ To SearchFor (object) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: Break Key Mapping Row (K2Node_BreakStruct)
+      Pin: KeyMappingRow (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: Mappings (struct) Dir=Out
+        -> To Array.A
+    Node: To Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Key Mapping Row.Mappings
+      Pin: Result (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> To Array.then
+      Pin: Array (struct) Dir=In
+        -> To Array.Result
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: MappingName (name) Dir=Out
+        -> To Text (Name).InName
+      Pin: DisplayName (text) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+        -> Equal (Object).A
+        -> Reroute Node.InputPin
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Break Player Key Mapping.AssociatedInputAction
+      Pin: B (object) Dir=In
+        -> Get IA_ To SearchFor.IA_ To SearchFor
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+        -> Set Found_IA?.Found_IA?
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Found_IA?.execute
+      Pin: else (exec) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Found? (bool) Dir=In
+        -> Get Found_IA?.Found_IA?
+      Pin: MappingName (name) Dir=In
+        -> Get FoundMappingName.FoundMappingName
+      Pin: IA (object) Dir=In
+        -> Get Found_IA.Found_IA
+      Pin: ReturnedDisplayName (text) Dir=In
+        -> Get Found_DisplayName.Found_DisplayName
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Return Player Mapping Rows Array.then
+      Pin: Array (struct) Dir=In
+        -> Return Player Mapping Rows Array.Values
+      Pin: Break (exec) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> To Array.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Key Mapping Row.KeyMappingRow
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Set FoundMappingName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Found_DisplayName.then
+      Pin: then (exec) Dir=Out
+        -> Set Found_IA.execute
+      Pin: FoundMappingName (name) Dir=In
+        -> String To Name.ReturnValue
+      Pin: Output_Get (name) Dir=Out
+    Node: Get FoundMappingName (K2Node_VariableGet)
+      Pin: FoundMappingName (name) Dir=Out
+        -> Return Node.MappingName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Found_IA.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Found_IA (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FoundMappingName.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Found_IA (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Found_IA (K2Node_VariableGet)
+      Pin: Found_IA (object) Dir=Out
+        -> Return Node.IA
+    Node: Set Found_DisplayName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Found_IA?.then
+      Pin: then (exec) Dir=Out
+        -> Set FoundMappingName.execute
+      Pin: Found_DisplayName (text) Dir=In
+        -> To Text (Name).ReturnValue
+      Pin: Output_Get (text) Dir=Out
+    Node: Get Found_DisplayName (K2Node_VariableGet)
+      Pin: Found_DisplayName (text) Dir=Out
+        -> Return Node.ReturnedDisplayName
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Condition (bool) Dir=In
+        -> Get Found_IA?.Found_IA?
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Found? (bool) Dir=In
+        -> Get Found_IA?.Found_IA?
+      Pin: MappingName (name) Dir=In
+      Pin: IA (object) Dir=In
+      Pin: ReturnedDisplayName (text) Dir=In
+    Node: Get IA_ To SearchFor (K2Node_VariableGet)
+      Pin: IA_ To SearchFor (object) Dir=Out
+        -> Equal (Object).B
+    Node: Set Found_IA? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Found_DisplayName.execute
+      Pin: Found_IA? (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get Found_IA? (K2Node_VariableGet)
+      Pin: Found_IA? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Found_IA? (K2Node_VariableGet)
+      Pin: Found_IA? (bool) Dir=Out
+        -> Return Node.Found?
+    Node: Get Found_IA? (K2Node_VariableGet)
+      Pin: Found_IA? (bool) Dir=Out
+        -> Return Node.Found?
+    Node: Return Player Mapping Rows Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DoesIMCContainInputAction.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Values (struct) Dir=Out
+        -> For Each Loop with Break.Array
+      Pin: UserSettings (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Break Player Key Mapping.AssociatedInputAction
+      Pin: OutputPin (object) Dir=Out
+        -> Set Found_IA.Found_IA
+    Node: To Text (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+        -> Break Player Key Mapping.MappingName
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Found_DisplayName.Found_DisplayName
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Name.InString
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Set FoundMappingName.FoundMappingName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Break Player Key Mapping.DisplayName
+      Pin: OutputPin (text) Dir=Out
+        -> To String (Text).InText
+  Graph: ReturnAllRegisteredMappingsArray
+    Node: ReturnAllRegisteredMappingsArray (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Player Mapping Rows Array.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear.then
+      Pin: Array (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> To Array.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Key Mapping Row.KeyMappingRow
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break Key Mapping Row (K2Node_BreakStruct)
+      Pin: KeyMappingRow (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Mappings (struct) Dir=Out
+        -> To Array.A
+    Node: To Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Key Mapping Row.Mappings
+      Pin: Result (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> To Array.then
+      Pin: Array (struct) Dir=In
+        -> To Array.Result
+      Pin: Break (exec) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Set LocalSuccess.execute
+    Node: Get LocalKeyMaps (K2Node_VariableGet)
+      Pin: LocalKeyMaps (struct) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get LocalKeyMaps.LocalKeyMaps
+      Pin: NewItem (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get LocalKeyMaps (K2Node_VariableGet)
+      Pin: LocalKeyMaps (struct) Dir=Out
+        -> Clear.TargetArray
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get LocalKeyMaps.LocalKeyMaps
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Mappings (struct) Dir=In
+        -> Get LocalKeyMaps.LocalKeyMaps
+      Pin: Success? (bool) Dir=In
+        -> Get LocalSuccess.LocalSuccess
+    Node: Get LocalKeyMaps (K2Node_VariableGet)
+      Pin: LocalKeyMaps (struct) Dir=Out
+        -> Return Node.Mappings
+    Node: Return Player Mapping Rows Array (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ReturnAllRegisteredMappingsArray.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Values (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: UserSettings (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Return Player Mapping Rows Array.Values
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: Get LocalSuccess (K2Node_VariableGet)
+      Pin: LocalSuccess (bool) Dir=Out
+        -> Return Node.Success?
+    Node: Set LocalSuccess (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: then (exec) Dir=Out
+      Pin: LocalSuccess (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Return Player Mapping Rows Array.then
+      Pin: InputObject (object) Dir=In
+        -> Return Player Mapping Rows Array.UserSettings
+      Pin: Is Valid (exec) Dir=Out
+        -> Clear.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set LocalSuccess.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set LocalSuccess.then
+      Pin: Mappings (struct) Dir=In
+        -> Get LocalKeyMaps.LocalKeyMaps
+      Pin: Success? (bool) Dir=In
+        -> Get LocalSuccess.LocalSuccess
+    Node: Get LocalKeyMaps (K2Node_VariableGet)
+      Pin: LocalKeyMaps (struct) Dir=Out
+        -> Return Node.Mappings
+    Node: Get LocalSuccess (K2Node_VariableGet)
+      Pin: LocalSuccess (bool) Dir=Out
+        -> Return Node.Success?
+    Node: Set LocalSuccess (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: LocalSuccess (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+  Graph: GetGS
+    Node: GetGS (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_GameState.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Game State (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_CGF_GameState.Object
+    Node: Cast To BP_CGF_GameState (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetGS.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get Game State.ReturnValue
+      Pin: AsBP CGF Game State (object) Dir=Out
+        -> Get CGFGameState.self
+        -> Return Node.CGF Game State
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CGFGameState (K2Node_VariableGet)
+      Pin: CGFGameState (byte) Dir=Out
+        -> Return Node.GameState
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_GameState.AsBP CGF Game State
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_GameState.then
+      Pin: GameState (byte) Dir=In
+        -> Get CGFGameState.CGFGameState
+      Pin: CGF Game State (Object) Dir=In
+        -> Cast To BP_CGF_GameState.AsBP CGF Game State
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_GameState.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+  Graph: GetPS
+    Node: GetPS (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerState.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerState.then
+      Pin: PlayerState (byte) Dir=In
+        -> Get PlayerState.PlayerState
+      Pin: CGF_PlayerState (object) Dir=In
+        -> Cast To BP_CGF_PlayerState.AsBP CGF Player State
+    Node: Cast To BP_CGF_PlayerState (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetPS.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get Player State.ReturnValue
+      Pin: AsBP CGF Player State (object) Dir=Out
+        -> Return Node.CGF_PlayerState
+        -> Get PlayerState.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Player State (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerStateIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_CGF_PlayerState.Object
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerState.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Get PlayerState (K2Node_VariableGet)
+      Pin: PlayerState (byte) Dir=Out
+        -> Return Node.PlayerState
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerState.AsBP CGF Player State
+  Graph: GameStateEquals
+    Node: GameStateEquals (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: State (byte) Dir=Out
+        -> Equal (Enum).B
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: CGF Game State (object) Dir=Out
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Equal?
+      Pin: A (byte) Dir=In
+        -> Get GS.GameState
+      Pin: B (byte) Dir=In
+        -> GameStateEquals.State
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GameStateEquals.then
+      Pin: Equal? (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+  Graph: PlayerStateEquals
+    Node: PlayerStateEquals (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerState.execute
+      Pin: State (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerState.then
+      Pin: Equal? (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Equal?
+      Pin: A (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (byte) Dir=In
+        -> Get PlayerState.PlayerState
+    Node: Cast To BP_CGF_PlayerState (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> PlayerStateEquals.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Player State.ReturnValue
+      Pin: AsBP CGF Player State (object) Dir=Out
+        -> Get PlayerState.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Player State (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerStateIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_CGF_PlayerState.Object
+    Node: Get PlayerState (K2Node_VariableGet)
+      Pin: PlayerState (byte) Dir=Out
+        -> Equal (Enum).B
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerState.AsBP CGF Player State
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> PlayerStateEquals.State
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: GetFormatedDateTime
+    Node: GetFormatedDateTime (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: InDateTime (struct) Dir=Out
+        -> Break Date Time.InDateTime
+      Pin: __WorldContext (object) Dir=Out
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.Formated DateTime
+      Pin: C (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: D (string) Dir=In
+      Pin: E (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: F (string) Dir=In
+      Pin: G (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: H (string) Dir=In
+      Pin: I (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: J (string) Dir=In
+      Pin: K (string) Dir=In
+        -> To String (Integer).ReturnValue
+    Node: Break Date Time (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDateTime (struct) Dir=In
+        -> GetFormatedDateTime.InDateTime
+      Pin: Year (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Month (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Day (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Hour (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Minute (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Second (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Millisecond (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetFormatedDateTime.then
+      Pin: Formated DateTime (string) Dir=In
+        -> Append.ReturnValue
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Month
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Day
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Year
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.E
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Hour
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.G
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Minute
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.I
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Second
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.K
+  Graph: ReturnKeyNameReplaced
+    Node: ReturnKeyNameReplaced (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Key (struct) Dir=Out
+        -> Get Key Display Name.Key
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> ReturnKeyNameReplaced.then
+      Pin: KeyName (string) Dir=In
+        -> Replace.ReturnValue
+    Node: Get Key Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> ReturnKeyNameReplaced.Key
+      Pin: bLongDisplayName (bool) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> To String (Text).InText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Key Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Replace.SourceString
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Replace.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Replace.SourceString
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.KeyName

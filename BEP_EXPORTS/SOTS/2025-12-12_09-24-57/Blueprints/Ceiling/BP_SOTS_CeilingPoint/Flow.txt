@@ -1,0 +1,154 @@
+Blueprint: BP_SOTS_CeilingPoint (/Game/SOTS/Blueprints/Ceiling/BP_SOTS_CeilingPoint.BP_SOTS_CeilingPoint)
+  Graph: EventGraph
+    Node: Event DoInteraction
+From BPI CGF Interact (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set World Location
+Target is Scene Component.execute
+      Pin: InteractionData (struct) Dir=Out
+      Pin: HitData (struct) Dir=Out
+        -> Break Hit Result.Hit
+    Node: Get Billboard (K2Node_VariableGet)
+      Pin: Billboard (object) Dir=Out
+        -> Set World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event DoInteraction
+From BPI CGF Interact.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Billboard.Billboard
+      Pin: NewLocation (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Event DoInteraction
+From BPI CGF Interact.HitData
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: Location_X (real) Dir=Out
+        -> Make Vector.X
+      Pin: Location_Y (real) Dir=Out
+        -> Make Vector.Y
+      Pin: Location_Z (real) Dir=Out
+        -> float - float.A
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Hit Result.Location_Z
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.Z
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get TransformComponent.self
+    Node: Get Right Vector
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TransformComponent.TransformComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: Get TransformComponent (K2Node_VariableGet)
+      Pin: TransformComponent (object) Dir=Out
+        -> Get Right Vector
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Right Vector
+Target is Scene Component.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Hit Result.Location_X
+      Pin: Y (real) Dir=In
+        -> Break Hit Result.Location_Y
+      Pin: Z (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Location
+Target is Scene Component.NewLocation
+    Node: Event ActorOnClicked (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ButtonPressed (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Event ActorOnClicked.ButtonPressed
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event ActorOnClicked.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: else (exec) Dir=Out
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+    Node: Get Box (K2Node_VariableGet)
+      Pin: Box (object) Dir=Out
+        -> Get Component Bounds.Component
+      Pin: self (object) Dir=In
+    Node: Get Component Bounds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Component (object) Dir=In
+        -> Get Box.Box
+      Pin: Origin (struct) Dir=Out
+      Pin: BoxExtent (struct) Dir=Out
+      Pin: SphereRadius (real) Dir=Out

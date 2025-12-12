@@ -1,0 +1,203 @@
+Blueprint: BP_Interactive_Chain (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Interactive_Chain.BP_Interactive_Chain)
+  Graph: EventGraph
+    Node: Get Chain (K2Node_VariableGet)
+      Pin: Chain (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Chain pull.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Chain.Chain
+      Pin: NewLocation (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: On Component Begin Overlap (Interact trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Interact trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Get Handle (K2Node_VariableGet)
+      Pin: Handle (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get Handle highlighted (K2Node_VariableGet)
+      Pin: Handle highlighted (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Toggle Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Interact trigger).then
+        -> On Component End Overlap (Interact trigger).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Handle highlighted.Handle highlighted
+        -> Get TextRender1.TextRender1
+        -> Get Handle.Handle
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+        -> Chain pull.Chain height
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+    Node: Chain pull (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Do Once.Completed
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+        -> Do Once.Completed
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+        -> Branch.execute
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: Chain height (real) Dir=Out
+        -> Make Vector.Z
+    Node: Move chain
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Direction (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Move chain
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Move chain
+Custom Event.Direction
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+        -> Sequence.execute
+    Node: Get Target LED (K2Node_VariableGet)
+      Pin: Target LED (object) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.self
+      Pin: self (object) Dir=In
+    Node: Toggle Light
+Target is BP LED Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Flip Flop.A
+        -> Flip Flop.B
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Target LED.Target LED
+      Pin: Turn on/off (bool) Dir=In
+        -> Flip Flop.IsA
+    Node: Flip Flop (K2Node_MacroInstance)
+      Pin: None (exec) Dir=In
+        -> Branch.then
+      Pin: A (exec) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.execute
+      Pin: B (exec) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.execute
+      Pin: IsA (bool) Dir=Out
+        -> Toggle Light
+Target is BP LED Basic.Turn on/off
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Chain pull.Direction
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Chain pull.Finished
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Flip Flop.None
+      Pin: else (exec) Dir=Out
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reset (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Chain pull.Play
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reset (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Chain pull.Reverse
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then_0 (exec) Dir=Out
+        -> Do Once.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Delta seconds.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Set Delta seconds.Delta seconds
+    Node: Set Delta seconds (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: Delta seconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get TextRender1 (K2Node_VariableGet)
+      Pin: TextRender1 (object) Dir=Out
+        -> Toggle Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Delta Time (EdGraphNode_Comment)
+    Node: Set Visibilty of Components (EdGraphNode_Comment)
+    Node: Play Animation (EdGraphNode_Comment)
+    Node: If the animation is finished in the right direction it will toggle the light (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,3072 @@
+Blueprint: AC_SOTS_Player_CoverSystem (/Game/SOTS/Player/Systems/Components/AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_SOTS_Player.execute
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_SOTS_Player.Object
+    Node: Cast To BP_SOTS_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Set PlayerREF.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsBP SOTS Player (object) Dir=Out
+        -> Set PlayerREF.PlayerREF
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set PlayerREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_SOTS_Player.then
+      Pin: then (exec) Dir=Out
+        -> Set Motion Warping.execute
+      Pin: PlayerREF (object) Dir=In
+        -> Cast To BP_SOTS_Player.AsBP SOTS Player
+      Pin: Output_Get (object) Dir=Out
+        -> Get MotionWarping.self
+      Pin: self (object) Dir=In
+    Node: Get Correct Enter Cover Montage
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set LegIK.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: Montage (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: OnCompleted (exec) Dir=Out
+      Pin: OnBlendOut (exec) Dir=Out
+        -> Set CoverState.execute
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: PlayEnterCoverMontage
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ABP_SandboxCharacterParkour.execute
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Mesh.self
+        -> Get Players_Anim_BP.self
+      Pin: self (object) Dir=In
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get MotionWarping (K2Node_VariableGet)
+      Pin: MotionWarping (object) Dir=Out
+        -> Set Motion Warping.Motion Warping
+      Pin: self (object) Dir=In
+        -> Set PlayerREF.Output_Get
+    Node: Set Motion Warping (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set PlayerREF.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Motion Warping (object) Dir=In
+        -> Get MotionWarping.MotionWarping
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Prepare for Motion Warping
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set Movement Mode
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Set Movement Mode
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CoverState.then
+      Pin: then (exec) Dir=Out
+        -> Get Player Mesh
+Target is BPI Player Abilitys.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: NewMovementMode (byte) Dir=In
+      Pin: NewCustomMode (byte) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Prepare for Motion Warping
+Target is AC SOTS Player Cover System.then
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set CoverState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsInCover?.then
+      Pin: then (exec) Dir=Out
+        -> Set Movement Mode
+Target is Character Movement Component.execute
+      Pin: CoverState (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Players_Anim_BP.Players_Anim_BP
+    Node: Get Players_Anim_BP (K2Node_VariableGet)
+      Pin: Players_Anim_BP (object) Dir=Out
+        -> Set CoverState.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Correct Enter Cover Montage
+Target is AC SOTS Player Cover System.then
+      Pin: InputObject (object) Dir=In
+        -> Get Correct Enter Cover Montage
+Target is AC SOTS Player Cover System.Montage
+      Pin: Is Valid (exec) Dir=Out
+        -> Prepare for Motion Warping
+Target is AC SOTS Player Cover System.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To ABP_SandboxCharacterParkour.Object
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Mesh.self
+      Pin: self (object) Dir=In
+    Node: Cast To ABP_SandboxCharacterParkour (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> PlayEnterCoverMontage
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set As ABP Sandbox Character Parkour.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: AsABP Sandbox Character Parkour (object) Dir=Out
+        -> Set As ABP Sandbox Character Parkour.As ABP Sandbox Character Parkour
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set LegIK (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set As ABP Sandbox Character Parkour.then
+      Pin: then (exec) Dir=Out
+        -> Get Correct Enter Cover Montage
+Target is AC SOTS Player Cover System.execute
+      Pin: LegIK (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set As ABP Sandbox Character Parkour.Output_Get
+    Node: Set As ABP Sandbox Character Parkour (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To ABP_SandboxCharacterParkour.then
+      Pin: then (exec) Dir=Out
+        -> Set LegIK.execute
+      Pin: As ABP Sandbox Character Parkour (object) Dir=In
+        -> Cast To ABP_SandboxCharacterParkour.AsABP Sandbox Character Parkour
+      Pin: Output_Get (object) Dir=Out
+        -> Set LegIK.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Cached Relative Rotation.then
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: self (object) Dir=In
+        -> Get Player Mesh
+Target is BPI Player Abilitys.PlayersMesh
+      Pin: NewRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get Player Mesh
+Target is BPI Player Abilitys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Movement Mode
+Target is Character Movement Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Cached Relative Rotation.execute
+      Pin: self (interface) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: PlayersMesh (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self
+        -> Get RelativeRotation.self
+    Node: Get Current Cover Hit Normal (K2Node_VariableGet)
+      Pin: Current Cover Hit Normal (struct) Dir=Out
+        -> Break Vector.InVec
+      Pin: self (object) Dir=In
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> float + float.A
+    Node: Set IsInCover? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CoverState.then
+      Pin: then (exec) Dir=Out
+        -> Set CoverState.execute
+      Pin: IsInCover? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CoverState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnBlendOut
+      Pin: then (exec) Dir=Out
+        -> Set IsInCover?.execute
+      Pin: CoverState (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Set CoverState.Output_Get
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set CoverState.CoverState
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Player Mesh
+Target is BPI Player Abilitys.self
+      Pin: self (object) Dir=In
+    Node: StartInCoverTracing
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingEnabled?.execute
+    Node: Set InCoverTracingEnabled? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> StartInCoverTracing
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Event.execute
+      Pin: InCoverTracingEnabled? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Timer by Event (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set InCoverTracingEnabled?.then
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingTimerHandle.execute
+      Pin: self (object) Dir=In
+      Pin: Delegate (delegate) Dir=In
+        -> InCoverTracingTick
+Custom Event.OutputDelegate
+      Pin: Time (real) Dir=In
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set InCoverTracingTimerHandle.InCoverTracingTimerHandle
+    Node: Set InCoverTracingTimerHandle (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Event.then
+      Pin: then (exec) Dir=Out
+      Pin: InCoverTracingTimerHandle (struct) Dir=In
+        -> Set Timer by Event.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: InCoverTracingTick
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Set Timer by Event.Delegate
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: StopInCoverTracing
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear and Invalidate Timer by Handle.execute
+    Node: Get InCoverTracingTimerHandle (K2Node_VariableGet)
+      Pin: InCoverTracingTimerHandle (struct) Dir=Out
+        -> Clear and Invalidate Timer by Handle.Handle
+      Pin: self (object) Dir=In
+    Node: Clear and Invalidate Timer by Handle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> StopInCoverTracing
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Handle (struct) Dir=In
+        -> Get InCoverTracingTimerHandle.InCoverTracingTimerHandle
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear and Setup for New Trace
+Target is AC SOTS Player Cover System.then
+      Pin: Array (struct) Dir=In
+        -> Get Traces.Traces
+      Pin: LoopBody (exec) Dir=Out
+        -> Set InCoverTracingTick_Hit Result.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break F Trace Data.F_TraceData
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get BPC_TraceComponent.self
+      Pin: self (object) Dir=In
+    Node: Get BPC_TraceComponent (K2Node_VariableGet)
+      Pin: BPC_TraceComponent (object) Dir=Out
+        -> Get Traces.self
+        -> Do Trace
+Target is BPC Trace Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get Traces (K2Node_VariableGet)
+      Pin: Traces (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get BPC_TraceComponent.BPC_TraceComponent
+    Node: Do Trace
+Target is BPC Trace Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Clear and Setup for New Trace
+Target is AC SOTS Player Cover System.execute
+      Pin: self (object) Dir=In
+        -> Get BPC_TraceComponent.BPC_TraceComponent
+      Pin: Trace_DA (object) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (object) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Check Cover State Container Has Tag.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Do Trace
+Target is BPC Trace Component.Trace_DA
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+      Pin: Option 1 (object) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Check Cover State Container Has Tag.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 0
+    Node: Break F Trace Data (K2Node_BreakStruct)
+      Pin: F_TraceData (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1 (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set InCoverTracingTick_Hit Result.InCoverTracingTick_Hit Result
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: TraceUniqueID_30_A32B98F940423F655C853AB118BD21FE (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set InCoverTracingTick_Hit Result (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingTick_LineTraceResult.execute
+      Pin: InCoverTracingTick_Hit Result (struct) Dir=In
+        -> Break F Trace Data.HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Break F Trace Data.TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854
+      Pin: OutputPin (bool) Dir=Out
+        -> Set InCoverTracingTick_LineTraceResult.InCoverTracingTick_LineTraceResult
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F Trace Data.HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1
+      Pin: OutputPin (struct) Dir=Out
+        -> Set InCoverTracingTick_Hit Result_0.InCoverTracingTick_Hit Result_0
+    Node: Set InCoverTracingTick_LineTraceResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InCoverTracingTick_Hit Result.then
+      Pin: then (exec) Dir=Out
+        -> Switch on Gameplay Tag.execute
+      Pin: InCoverTracingTick_LineTraceResult (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+        -> Set LeftSideTraceResult.LeftSideTraceResult
+        -> Set RightSideTraceResult.RightSideTraceResult
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.Cover.CornerStopTrace
+      Pin: Condition (bool) Dir=In
+        -> Get InCoverTracingTick_LineTraceResult.InCoverTracingTick_LineTraceResult
+      Pin: then (exec) Dir=Out
+        -> Set In Cover Tracing Tick Line Trace Result.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Get InCoverTracingTick_LineTraceResult (K2Node_VariableGet)
+      Pin: InCoverTracingTick_LineTraceResult (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set CoverState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Gameplay Tag.then
+      Pin: then (exec) Dir=Out
+      Pin: CoverState (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get RelativeRotation (K2Node_VariableGet)
+      Pin: RelativeRotation (struct) Dir=Out
+        -> Set Cached Relative Rotation.Cached Relative Rotation
+      Pin: self (object) Dir=In
+        -> Get Player Mesh
+Target is BPI Player Abilitys.PlayersMesh
+    Node: Set Cached Relative Rotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Player Mesh
+Target is BPI Player Abilitys.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: Cached Relative Rotation (struct) Dir=In
+        -> Get RelativeRotation.RelativeRotation
+      Pin: Output_Get (struct) Dir=Out
+        -> To String (Rotator).InRot
+      Pin: self (object) Dir=In
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Rotation
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: To String (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Set Cached Relative Rotation.Output_Get
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> To String (Rotator).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+    Node: Add Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set CoverState.execute
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get CoverStateContainer.CoverStateContainer
+      Pin: Tag (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Get CoverStateContainer (K2Node_VariableGet)
+      Pin: CoverStateContainer (struct) Dir=Out
+        -> Add Gameplay Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Check Cover State Container Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Tag (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Check Cover State Container Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Tag (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Check Cover State Container Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Tag (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Check Cover State Container Has Tag.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Check Cover State Container Has Tag.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Check Cover State Container Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Tag (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+      Pin: Option 1 (struct) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Check Cover State Container Has Tag.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Gameplay Tag.Tag
+        -> Set CoverState.CoverState
+        -> Not Equal (GameplayTag).B
+    Node: Get DEBUGMODE (K2Node_VariableGet)
+      Pin: DEBUGMODE (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Motion Warping.then
+      Pin: Condition (bool) Dir=In
+        -> Get DEBUGMODE.DEBUGMODE
+      Pin: then (exec) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Push to Stack Layer
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Layer (struct) Dir=In
+      Pin: UserWidget (softclass) Dir=In
+      Pin: WidgetData (struct) Dir=In
+      Pin: AlreadyValidWidgetGameplayTag (struct) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Push to Stack Layer
+Target is BPI CGF User Interface.self
+    Node: Create WBP Cover Debug Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Add to Viewport
+Target is User Widget.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add to Viewport
+Target is User Widget.self
+      Pin: OwningPlayer (object) Dir=In
+    Node: Add to Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create WBP Cover Debug Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Create WBP Cover Debug Widget.ReturnValue
+      Pin: ZOrder (int) Dir=In
+    Node: Start in Cover Tracing
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F Trace Data.TraceUniqueID_30_A32B98F940423F655C853AB118BD21FE
+      Pin: OutputPin (struct) Dir=Out
+        -> Switch on Gameplay Tag.Selection
+    Node: Switch on Gameplay Tag (GameplayTagsK2Node_SwitchGameplayTag)
+      Pin: execute (exec) Dir=In
+        -> Set InCoverTracingTick_LineTraceResult.then
+      Pin: Selection (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NotEqual_TagTag (object) Dir=In
+      Pin: SAS.Traces.Cover.CornerStopTrace (exec) Dir=Out
+        -> Branch.execute
+      Pin: SAS.Traces.Cover.LeftSideTrace (exec) Dir=Out
+        -> Set LeftSideTraceResult.execute
+      Pin: SAS.Traces.Cover.RightSideTrace (exec) Dir=Out
+        -> Set RightSideTraceResult.execute
+    Node: Get CoverState (K2Node_VariableGet)
+      Pin: CoverState (struct) Dir=Out
+        -> Not Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add Gameplay Tag.execute
+      Pin: else (exec) Dir=Out
+    Node: Not Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: B (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set LeftSideTraceResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.Cover.LeftSideTrace
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: LeftSideTraceResult (bool) Dir=In
+        -> Set InCoverTracingTick_LineTraceResult.Output_Get
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RightSideTraceResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.Cover.RightSideTrace
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: RightSideTraceResult (bool) Dir=In
+        -> Set InCoverTracingTick_LineTraceResult.Output_Get
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set In Cover Tracing Tick Line Trace Result (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: In Cover Tracing Tick Line Trace Result (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get In Cover Tracing Tick Line Trace Result (K2Node_VariableGet)
+      Pin: In Cover Tracing Tick Line Trace Result (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: self (object) Dir=In
+    Node: Get RightSideTraceResult (K2Node_VariableGet)
+      Pin: RightSideTraceResult (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: self (object) Dir=In
+    Node: Get LeftSideTraceResult (K2Node_VariableGet)
+      Pin: LeftSideTraceResult (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: self (object) Dir=In
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get RightSideTraceResult.RightSideTraceResult
+      Pin: B (bool) Dir=In
+        -> Get LeftSideTraceResult.LeftSideTraceResult
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get In Cover Tracing Tick Line Trace Result.In Cover Tracing Tick Line Trace Result
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set AtCorner?.execute
+      Pin: else (exec) Dir=Out
+    Node: Play Montage (K2Node_PlayMontage)
+      Pin: execute (exec) Dir=In
+        -> Add or Update Warp Target
+Target is Motion Warping Component.then
+      Pin: then (exec) Dir=Out
+        -> Change Cover Channel Response
+Target is AC SOTS Player Cover System.execute
+      Pin: OnCompleted (exec) Dir=Out
+        -> Set AtCorner?.execute
+      Pin: OnBlendOut (exec) Dir=Out
+      Pin: OnInterrupted (exec) Dir=Out
+      Pin: OnNotifyBegin (exec) Dir=Out
+      Pin: OnNotifyEnd (exec) Dir=Out
+      Pin: NotifyName (name) Dir=Out
+      Pin: InSkeletalMeshComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: MontageToPlay (object) Dir=In
+        -> Select.ReturnValue
+      Pin: PlayRate (real) Dir=In
+      Pin: StartingPosition (real) Dir=In
+      Pin: StartingSection (name) Dir=In
+      Pin: bShouldStopAllMontages (bool) Dir=In
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Mesh.self
+        -> Get MotionWarping.self
+        -> Get CapsuleComponent.self
+      Pin: self (object) Dir=In
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Play Montage.InSkeletalMeshComponent
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get MotionWarping (K2Node_VariableGet)
+      Pin: MotionWarping (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Add or Update Warp Target
+Target is Motion Warping Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.then
+      Pin: then (exec) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.execute
+      Pin: self (object) Dir=In
+        -> Get MotionWarping.MotionWarping
+      Pin: WarpTarget (struct) Dir=In
+      Pin: WarpTarget_Name (name) Dir=In
+      Pin: WarpTarget_Location (struct) Dir=In
+      Pin: WarpTarget_Location_X (real) Dir=In
+        -> Get CornerMovementLocation_X.CornerMovementLocation_X
+      Pin: WarpTarget_Location_Y (real) Dir=In
+        -> Get CornerMovementLocation_Y.CornerMovementLocation_Y
+      Pin: WarpTarget_Location_Z (real) Dir=In
+      Pin: WarpTarget_Rotation (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: WarpTarget_Component (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: WarpTarget_BoneName (name) Dir=In
+      Pin: WarpTarget_bFollowComponent (bool) Dir=In
+      Pin: WarpTarget_LocationOffsetDirection (byte) Dir=In
+      Pin: WarpTarget_AvatarActor (object) Dir=In
+      Pin: WarpTarget_LocationOffset (struct) Dir=In
+      Pin: WarpTarget_RotationOffset (struct) Dir=In
+    Node: Rotation From X Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Normal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Combine Rotators.A
+        -> Combine Rotators.A
+    Node: Get In Cover Tracing Tick Line Trace Result (K2Node_VariableGet)
+      Pin: In Cover Tracing Tick Line Trace Result (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: self (object) Dir=In
+    Node: Get LeftSideTraceResult (K2Node_VariableGet)
+      Pin: LeftSideTraceResult (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set LeftSideTraceResult.then
+        -> Set RightSideTraceResult.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingTick_Hit Result_0.execute
+      Pin: else (exec) Dir=Out
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get In Cover Tracing Tick Line Trace Result.In Cover Tracing Tick Line Trace Result
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Setup Plane Constraint
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Print String.then
+      Pin: then (exec) Dir=Out
+        -> Start in Cover Tracing
+Target is AC SOTS Player Cover System.execute
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+      Pin: Set? (bool) Dir=In
+      Pin: Current Cover Hit Normal (struct) Dir=In
+      Pin: Current Cover Hit Location (struct) Dir=In
+    Node: Setup Plane Constraint
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CornerMovementLocation_Y.then
+        -> Set CornerMovementLocation_Y.then
+      Pin: then (exec) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.execute
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+      Pin: Set? (bool) Dir=In
+      Pin: Current Cover Hit Normal (struct) Dir=In
+      Pin: Current Cover Hit Location (struct) Dir=In
+    Node: Set InCoverTracingTick_Hit Result_0 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: InCoverTracingTick_Hit Result_0 (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bBlockingHit (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bInitialOverlap (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Time (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Distance (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Location (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ImpactPoint (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Normal (struct) Dir=Out
+        -> Rotation From X Vector.InVec
+      Pin: InCoverTracingTick_Hit Result_0_ImpactNormal (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_PhysMat (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitActor (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitComponent (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitBoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_BoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitItem (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ElementIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_FaceIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceStart (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup Plane Constraint
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AtCorner?.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+      Pin: Set? (bool) Dir=In
+      Pin: Current Cover Hit Normal (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Normal
+      Pin: Current Cover Hit Location (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Location
+    Node: Get (K2Node_VariableGet)
+      Pin: InCoverTracingTick_Hit Result_0 (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bBlockingHit (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bInitialOverlap (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Time (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Distance (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Location (struct) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.Current Cover Hit Location
+      Pin: InCoverTracingTick_Hit Result_0_ImpactPoint (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Normal (struct) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.Current Cover Hit Normal
+      Pin: InCoverTracingTick_Hit Result_0_ImpactNormal (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_PhysMat (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitActor (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitComponent (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitBoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_BoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitItem (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ElementIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_FaceIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceStart (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (object) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get AC_SOTS_Player_CoverSystem.self
+      Pin: self (object) Dir=In
+    Node: Get AC_SOTS_Player_CoverSystem (K2Node_VariableGet)
+      Pin: AC_SOTS_Player_CoverSystem (object) Dir=Out
+        -> Get CoverState.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get CoverState (K2Node_VariableGet)
+      Pin: CoverState (struct) Dir=Out
+        -> Equal (GameplayTag).A
+        -> Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+      Pin: Option 1 (object) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 0
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set AtCorner? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: AtCorner? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> InCoverTracingTick
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get AtCorner?.AtCorner?
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Do Trace
+Target is BPC Trace Component.execute
+    Node: Get AtCorner? (K2Node_VariableGet)
+      Pin: AtCorner? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set AtCorner? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.OnCompleted
+      Pin: then (exec) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.execute
+      Pin: AtCorner? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get RightSideTraceResult (K2Node_VariableGet)
+      Pin: RightSideTraceResult (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: self (object) Dir=In
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get RightSideTraceResult.RightSideTraceResult
+      Pin: B (bool) Dir=In
+        -> Get LeftSideTraceResult.LeftSideTraceResult
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Component
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Component
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Combine Rotators.ReturnValue
+      Pin: Option 1 (struct) Dir=In
+        -> Combine Rotators.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Rotation
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Rotation
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get AC_SOTS_Player_CoverSystem.self
+      Pin: self (object) Dir=In
+    Node: Get AC_SOTS_Player_CoverSystem (K2Node_VariableGet)
+      Pin: AC_SOTS_Player_CoverSystem (object) Dir=Out
+        -> Get CoverState.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get CoverState (K2Node_VariableGet)
+      Pin: CoverState (struct) Dir=Out
+        -> Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Actor Forward Vector
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> vector * vector.ReturnValue_X
+      Pin: B (real) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Location_X
+      Pin: ReturnValue (real) Dir=Out
+        -> Set CornerMovementLocation_X.CornerMovementLocation_X
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> vector * vector.ReturnValue_Y
+      Pin: B (real) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Location_Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Set CornerMovementLocation_Y.CornerMovementLocation_Y
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue_Z (real) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: InCoverTracingTick_Hit Result_0 (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bBlockingHit (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bInitialOverlap (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Time (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Distance (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Location (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Location_X (real) Dir=Out
+        -> float + float.B
+      Pin: InCoverTracingTick_Hit Result_0_Location_Y (real) Dir=Out
+        -> float + float.B
+      Pin: InCoverTracingTick_Hit Result_0_Location_Z (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ImpactPoint (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Normal (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ImpactNormal (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_PhysMat (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitActor (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitComponent (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitBoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_BoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitItem (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ElementIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_FaceIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceStart (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Add or Update Warp Target
+Target is Motion Warping Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add or Update Warp Target
+Target is Motion Warping Component.then
+      Pin: then (exec) Dir=Out
+        -> Play Montage.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WarpTarget (struct) Dir=In
+      Pin: WarpTarget_Name (name) Dir=In
+      Pin: WarpTarget_Location (struct) Dir=In
+      Pin: WarpTarget_Location_X (real) Dir=In
+        -> Get CornerMovementLocation_X.CornerMovementLocation_X
+      Pin: WarpTarget_Location_Y (real) Dir=In
+        -> Get CornerMovementLocation_Y.CornerMovementLocation_Y
+      Pin: WarpTarget_Location_Z (real) Dir=In
+      Pin: WarpTarget_Rotation (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: WarpTarget_Component (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: WarpTarget_BoneName (name) Dir=In
+      Pin: WarpTarget_bFollowComponent (bool) Dir=In
+      Pin: WarpTarget_LocationOffsetDirection (byte) Dir=In
+      Pin: WarpTarget_AvatarActor (object) Dir=In
+      Pin: WarpTarget_LocationOffset (struct) Dir=In
+      Pin: WarpTarget_RotationOffset (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get MotionWarping.MotionWarping
+      Pin: OutputPin (object) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.self
+    Node: Get (K2Node_VariableGet)
+      Pin: InCoverTracingTick_Hit Result_0 (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bBlockingHit (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_bInitialOverlap (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Time (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Distance (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_Location (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ImpactPoint (struct) Dir=Out
+        -> vector + vector.A
+      Pin: InCoverTracingTick_Hit Result_0_Normal (struct) Dir=Out
+        -> Make Rot from ZY.Z
+        -> Make Rot from ZY.Y
+      Pin: InCoverTracingTick_Hit Result_0_ImpactNormal (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_PhysMat (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitActor (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitComponent (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitBoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_BoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_HitItem (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_ElementIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_FaceIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceStart (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Rot from ZY (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Z (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Normal
+      Pin: Y (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_Normal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Right Vector.InRot
+    Node: Get Right Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Make Rot from ZY.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_0_ImpactPoint
+      Pin: B (struct) Dir=In
+        -> Get Right Vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+      Pin: ReturnValue_Y (real) Dir=Out
+      Pin: ReturnValue_Z (real) Dir=Out
+    Node: Clear and Setup for New Trace
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Trace
+Target is BPC Trace Component.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+    Node: Setup Plane Constraint
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+      Pin: Set? (bool) Dir=In
+      Pin: Current Cover Hit Normal (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_Normal
+      Pin: Current Cover Hit Location (struct) Dir=In
+        -> vector + vector.ReturnValue
+    Node: Get (K2Node_VariableGet)
+      Pin: InCoverTracingTick_Hit Result (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_bBlockingHit (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_bInitialOverlap (bool) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_Time (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_Distance (real) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_Location (struct) Dir=Out
+        -> vector + vector.B
+      Pin: InCoverTracingTick_Hit Result_ImpactPoint (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_Normal (struct) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.Current Cover Hit Normal
+        -> vector * vector.A
+      Pin: InCoverTracingTick_Hit Result_ImpactNormal (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_PhysMat (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_HitActor (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_HitComponent (object) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_HitBoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_BoneName (name) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_HitItem (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_ElementIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_FaceIndex (int) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_TraceStart (struct) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Current Cover Hit Location (K2Node_VariableGet)
+      Pin: Current Cover Hit Location (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_Normal
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get.InCoverTracingTick_Hit Result_Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.Current Cover Hit Location
+    Node: Get Current Cover Hit Normal (K2Node_VariableGet)
+      Pin: Current Cover Hit Normal (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Change Cover Channel Response
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Montage.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewResponse (byte) Dir=In
+      Pin: Set? (bool) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Component Tick Enabled
+Target is Actor Component.self
+    Node: Set Component Tick Enabled
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: bEnabled (bool) Dir=In
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get CapsuleComponent.self
+      Pin: self (object) Dir=In
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get Overlapping Actors
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get Overlapping Actors
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: OverlappingActors (object) Dir=Out
+        -> Is Not Empty.TargetArray
+        -> GET.Array
+      Pin: ClassFilter (class) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set AtCorner?.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_SOTS_CoverHelper.execute
+      Pin: else (exec) Dir=Out
+        -> Set CornerMovementLocation_X.execute
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Overlapping Actors
+Target is Primitive Component.OverlappingActors
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Overlapping Actors
+Target is Primitive Component.OverlappingActors
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Cast To BP_SOTS_CoverHelper.Object
+    Node: Cast To BP_SOTS_CoverHelper (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> GET.Output
+      Pin: AsBP SOTS Cover Helper (object) Dir=Out
+        -> Get Cover Location
+Target is BP SOTS Cover Helper.self
+        -> Get ResponseTag.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Cover Location
+Target is BP SOTS Cover Helper (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set CornerMovementLocation_X.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_SOTS_CoverHelper.AsBP SOTS Cover Helper
+      Pin: CoverLocationIndex (int) Dir=In
+      Pin: WorldCoverLocation (struct) Dir=Out
+      Pin: WorldCoverLocation_X (real) Dir=Out
+        -> Set CornerMovementLocation_X.CornerMovementLocation_X
+      Pin: WorldCoverLocation_Y (real) Dir=Out
+        -> Set CornerMovementLocation_Y.CornerMovementLocation_Y
+      Pin: WorldCoverLocation_Z (real) Dir=Out
+    Node: Set CornerMovementLocation_X (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Cover Location
+Target is BP SOTS Cover Helper.then
+      Pin: then (exec) Dir=Out
+        -> Set CornerMovementLocation_Y.execute
+      Pin: CornerMovementLocation_X (real) Dir=In
+        -> Get Cover Location
+Target is BP SOTS Cover Helper.WorldCoverLocation_X
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CornerMovementLocation_Y (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CornerMovementLocation_X.then
+      Pin: then (exec) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.execute
+      Pin: CornerMovementLocation_Y (real) Dir=In
+        -> Get Cover Location
+Target is BP SOTS Cover Helper.WorldCoverLocation_Y
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CornerMovementLocation_X (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set CornerMovementLocation_Y.execute
+      Pin: CornerMovementLocation_X (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CornerMovementLocation_Y (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CornerMovementLocation_X.then
+      Pin: then (exec) Dir=Out
+        -> Setup Plane Constraint
+Target is AC SOTS Player Cover System.execute
+      Pin: CornerMovementLocation_Y (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CornerMovementLocation_X (K2Node_VariableGet)
+      Pin: CornerMovementLocation_X (real) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Location_X
+        -> float + float.A
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Location_X
+      Pin: self (object) Dir=In
+    Node: Get CornerMovementLocation_Y (K2Node_VariableGet)
+      Pin: CornerMovementLocation_Y (real) Dir=Out
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Location_Y
+        -> Add or Update Warp Target
+Target is Motion Warping Component.WarpTarget_Location_Y
+      Pin: self (object) Dir=In
+    Node: Get ResponseTag (K2Node_VariableGet)
+      Pin: ResponseTag (struct) Dir=Out
+        -> Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+        -> Cast To BP_SOTS_CoverHelper.AsBP SOTS Cover Helper
+    Node: Get CoverState (K2Node_VariableGet)
+      Pin: CoverState (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get AC_SOTS_Player_CoverSystem.self
+      Pin: self (object) Dir=In
+    Node: Get AC_SOTS_Player_CoverSystem (K2Node_VariableGet)
+      Pin: AC_SOTS_Player_CoverSystem (object) Dir=Out
+        -> Get CoverState.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get CoverState (K2Node_VariableGet)
+      Pin: CoverState (struct) Dir=Out
+        -> Equal (GameplayTag).B
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get ResponseTag.ResponseTag
+      Pin: B (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_SOTS_CoverHelper.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Get Cover Location
+Target is BP SOTS Cover Helper.execute
+      Pin: else (exec) Dir=Out
+        -> Set CornerMovementLocation_X.execute
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (object) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Play Montage.MontageToPlay
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get AC_SOTS_Player_CoverSystem.self
+      Pin: self (object) Dir=In
+    Node: Get AC_SOTS_Player_CoverSystem (K2Node_VariableGet)
+      Pin: AC_SOTS_Player_CoverSystem (object) Dir=Out
+        -> Get CoverState.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get CoverState (K2Node_VariableGet)
+      Pin: CoverState (struct) Dir=Out
+        -> Equal (GameplayTag).A
+        -> Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+        -> Get AC_SOTS_Player_CoverSystem.AC_SOTS_Player_CoverSystem
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+      Pin: Option 1 (object) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Select.Option 0
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverState.CoverState
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get CornerMovementLocation_X.CornerMovementLocation_X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Combine Rotators (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Rotation From X Vector.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+    Node: Combine Rotators (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Rotation From X Vector.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 0
+  Graph: EvaluateCover
+    Node: EvaluateCover (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on Gameplay Tag.execute
+    Node: Determine Cover Type (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CoverType (struct) Dir=Out
+        -> Switch on Gameplay Tag.Selection
+    Node: Switch on Gameplay Tag (GameplayTagsK2Node_SwitchGameplayTag)
+      Pin: execute (exec) Dir=In
+        -> EvaluateCover.then
+      Pin: Selection (struct) Dir=In
+        -> Determine Cover Type.CoverType
+      Pin: NotEqual_TagTag (object) Dir=In
+      Pin: SAS.World.CoverType.High (exec) Dir=Out
+        -> Play Enter Cover Montage
+Target is AC SOTS Player Cover System.execute
+      Pin: SAS.World.CoverType.Low (exec) Dir=Out
+        -> Play Enter Cover Montage
+Target is AC SOTS Player Cover System.execute
+      Pin: SAS.World.CoverType.None (exec) Dir=Out
+    Node: Play Enter Cover Montage
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.World.CoverType.High
+        -> Switch on Gameplay Tag.SAS.World.CoverType.Low
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetActorToIgnore
+    Node: GetActorToIgnore (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> GetActorToIgnore.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Unique.NewItem
+    Node: Get Actors to Ignore (K2Node_VariableGet)
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Add Unique.TargetArray
+        -> Return Node.Actors to Ignore
+      Pin: self (object) Dir=In
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Actors to Ignore.Actors to Ignore
+      Pin: NewItem (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Add Unique.then
+      Pin: Actors to Ignore (object) Dir=In
+        -> Get Actors to Ignore.Actors to Ignore
+  Graph: TraceForward
+    Node: TraceForward (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: Target (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+        -> Get Forward Vector
+Target is Scene Component.self
+      Pin: DrawDistance (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DrawDebugType (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> TraceForward.Target
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+        -> Reroute Node.InputPin
+    Node: Get Forward Vector
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> TraceForward.Target
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector
+Target is Scene Component.ReturnValue
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> TraceForward.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+      Pin: DrawDebugType (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutHit (struct) Dir=Out
+        -> Return Node.OutHit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.HitResult
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: OutHit (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: HitResult (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> TraceForward.DrawDebugType
+      Pin: OutputPin (byte) Dir=Out
+        -> Line Trace By Channel.DrawDebugType
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> TraceForward.DrawDistance
+      Pin: OutputPin (real) Dir=Out
+        -> vector * vector.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Line Trace By Channel.Start
+  Graph: DetermineCoverType
+    Node: DetermineCoverType (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Trace Height
+Target is AC SOTS Player Cover System.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: CoverType (struct) Dir=In
+        -> Get LocalCoverType.LocalCoverType
+    Node: Get LocalHighHit (K2Node_VariableGet)
+      Pin: LocalHighHit (bool) Dir=Out
+        -> AND Boolean.A
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get LocalHighHit.LocalHighHit
+      Pin: B (bool) Dir=In
+        -> Get LocalLowHit.LocalLowHit
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get LocalLowHit (K2Node_VariableGet)
+      Pin: LocalLowHit (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set LocalLowHitResult.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set LocalCoverType.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set LocalCoverType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentCoverHit.execute
+      Pin: LocalCoverType (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get LocalCoverType (K2Node_VariableGet)
+      Pin: LocalCoverType (struct) Dir=Out
+        -> Return Node.CoverType
+    Node: Get LocalHighHit (K2Node_VariableGet)
+      Pin: LocalHighHit (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get LocalHighHit.LocalHighHit
+      Pin: then (exec) Dir=Out
+        -> Set LocalCoverType.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Get LocalLowHit (K2Node_VariableGet)
+      Pin: LocalLowHit (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get LocalLowHit.LocalLowHit
+      Pin: then (exec) Dir=Out
+        -> Set LocalCoverType.execute
+      Pin: else (exec) Dir=Out
+        -> Set LocalCoverType.execute
+    Node: Set LocalCoverType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentCoverHit.execute
+      Pin: LocalCoverType (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set CurrentCoverHit.then
+        -> Set CurrentCoverHit.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Sequence.execute
+    Node: Set LocalCoverType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: LocalCoverType (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get LocalLowHitResult (K2Node_VariableGet)
+      Pin: LocalLowHitResult (struct) Dir=Out
+        -> Set CurrentCoverHit.CurrentCoverHit
+    Node: Set CurrentCoverHit (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalCoverType.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: CurrentCoverHit (struct) Dir=In
+        -> Get LocalLowHitResult.LocalLowHitResult
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CurrentCoverHit (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalCoverType.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: CurrentCoverHit (struct) Dir=In
+        -> Get LocalHighHitResult.LocalHighHitResult
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set LocalCoverType.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get LocalHighHitResult (K2Node_VariableGet)
+      Pin: LocalHighHitResult (struct) Dir=Out
+        -> Set CurrentCoverHit.CurrentCoverHit
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then_0 (exec) Dir=Out
+        -> Set.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: CurrentCoverHit (struct) Dir=Out
+      Pin: CurrentCoverHit_bBlockingHit (bool) Dir=Out
+      Pin: CurrentCoverHit_bInitialOverlap (bool) Dir=Out
+      Pin: CurrentCoverHit_Time (real) Dir=Out
+      Pin: CurrentCoverHit_Distance (real) Dir=Out
+      Pin: CurrentCoverHit_Location (struct) Dir=Out
+      Pin: CurrentCoverHit_Location_X (real) Dir=Out
+        -> Set.Current Cover Hit Location_X
+      Pin: CurrentCoverHit_Location_Y (real) Dir=Out
+        -> Set.Current Cover Hit Location_Y
+      Pin: CurrentCoverHit_Location_Z (real) Dir=Out
+      Pin: CurrentCoverHit_ImpactPoint (struct) Dir=Out
+      Pin: CurrentCoverHit_Normal (struct) Dir=Out
+        -> Set Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: CurrentCoverHit_ImpactNormal (struct) Dir=Out
+      Pin: CurrentCoverHit_PhysMat (object) Dir=Out
+      Pin: CurrentCoverHit_HitActor (object) Dir=Out
+        -> Set Current Cover Hit Hit Actor.Current Cover Hit Hit Actor
+      Pin: CurrentCoverHit_HitComponent (object) Dir=Out
+      Pin: CurrentCoverHit_HitBoneName (name) Dir=Out
+      Pin: CurrentCoverHit_BoneName (name) Dir=Out
+      Pin: CurrentCoverHit_HitItem (int) Dir=Out
+      Pin: CurrentCoverHit_ElementIndex (int) Dir=Out
+      Pin: CurrentCoverHit_FaceIndex (int) Dir=Out
+      Pin: CurrentCoverHit_TraceStart (struct) Dir=Out
+      Pin: CurrentCoverHit_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Current Cover Hit Normal (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Cover Hit Hit Actor.execute
+      Pin: Current Cover Hit Normal (struct) Dir=In
+        -> Get.CurrentCoverHit_Normal
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Current Cover Hit Hit Actor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Cover Hit Normal.then
+      Pin: then (exec) Dir=Out
+      Pin: Current Cover Hit Hit Actor (object) Dir=In
+        -> Get.CurrentCoverHit_HitActor
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Current Cover Hit Normal.execute
+      Pin: Current Cover Hit Location (struct) Dir=In
+      Pin: Current Cover Hit Location_X (real) Dir=In
+        -> Get.CurrentCoverHit_Location_X
+      Pin: Current Cover Hit Location_Y (real) Dir=In
+        -> Get.CurrentCoverHit_Location_Y
+      Pin: Current Cover Hit Location_Z (real) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue_Z
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+      Pin: ReturnValue_Y (real) Dir=Out
+      Pin: ReturnValue_Z (real) Dir=Out
+        -> Set.Current Cover Hit Location_Z
+    Node: Trace Height
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DetermineCoverType.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalHighHitResult.execute
+      Pin: self (object) Dir=In
+      Pin: HighHit (struct) Dir=Out
+        -> Set LocalHighHitResult.LocalHighHitResult
+      Pin: HighHitResult (bool) Dir=Out
+        -> Set LocalHighHit.LocalHighHit
+      Pin: LowHit (struct) Dir=Out
+        -> Set LocalLowHitResult.LocalLowHitResult
+      Pin: LowHitResult (bool) Dir=Out
+        -> Set LocalLowHit.LocalLowHit
+    Node: Set LocalHighHit (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalHighHitResult.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalLowHit.execute
+      Pin: LocalHighHit (bool) Dir=In
+        -> Trace Height
+Target is AC SOTS Player Cover System.HighHitResult
+      Pin: Output_Get (bool) Dir=Out
+    Node: Set LocalHighHitResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Trace Height
+Target is AC SOTS Player Cover System.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalHighHit.execute
+      Pin: LocalHighHitResult (struct) Dir=In
+        -> Trace Height
+Target is AC SOTS Player Cover System.HighHit
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set LocalLowHitResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalLowHit.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: LocalLowHitResult (struct) Dir=In
+        -> Trace Height
+Target is AC SOTS Player Cover System.LowHit
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set LocalLowHit (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalHighHit.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalLowHitResult.execute
+      Pin: LocalLowHit (bool) Dir=In
+        -> Trace Height
+Target is AC SOTS Player Cover System.LowHitResult
+      Pin: Output_Get (bool) Dir=Out
+  Graph: AddCoverIMC
+    Node: AddCoverIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.execute
+    Node: Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.self
+    Node: Register Input Mapping Context
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AddCoverIMC.then
+      Pin: then (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: self (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: IMC (object) Dir=In
+        -> Get IMC_WhileInCover_REF.IMC_WhileInCover_REF
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> Get IMC_WhileInCover_REF.IMC_WhileInCover_REF
+      Pin: Priority (int) Dir=In
+      Pin: Options (struct) Dir=In
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.self
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+    Node: Get IMC_WhileInCover_REF (K2Node_VariableGet)
+      Pin: IMC_WhileInCover_REF (object) Dir=Out
+        -> Register Input Mapping Context
+Target is Enhanced Input User Settings.IMC
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: self (object) Dir=In
+  Graph: RemoveCoverIMC
+    Node: RemoveCoverIMC (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Unregister Input Mapping Context
+Target is Enhanced Input User Settings.execute
+    Node: Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Unregister Input Mapping Context
+Target is Enhanced Input User Settings.self
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.self
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+    Node: Get IMC_WhileInCover_REF (K2Node_VariableGet)
+      Pin: IMC_WhileInCover_REF (object) Dir=Out
+        -> Unregister Input Mapping Context
+Target is Enhanced Input User Settings.IMC
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.MappingContext
+      Pin: self (object) Dir=In
+    Node: Unregister Input Mapping Context
+Target is Enhanced Input User Settings (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> RemoveCoverIMC.then
+      Pin: then (exec) Dir=Out
+        -> Remove Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+      Pin: self (object) Dir=In
+        -> Get Enhanced Input User Settings
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: IMC (object) Dir=In
+        -> Get IMC_WhileInCover_REF.IMC_WhileInCover_REF
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Remove Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Unregister Input Mapping Context
+Target is Enhanced Input User Settings.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+        -> Get IMC_WhileInCover_REF.IMC_WhileInCover_REF
+      Pin: Options (struct) Dir=In
+  Graph: PrepareForMotionWarping
+    Node: PrepareForMotionWarping (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Movement Mode
+Target is Character Movement Component.execute
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get CharacterMovement.self
+        -> Get CapsuleComponent.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set Movement Mode
+Target is Character Movement Component.self
+        -> Set MaxWalkSpeed.self
+        -> Reroute Node.InputPin
+        -> Set MaxFlySpeed.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Set Movement Mode
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> PrepareForMotionWarping.then
+      Pin: then (exec) Dir=Out
+        -> Set MaxWalkSpeed.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: NewMovementMode (byte) Dir=In
+      Pin: NewCustomMode (byte) Dir=In
+    Node: Set MaxWalkSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Movement Mode
+Target is Character Movement Component.then
+      Pin: then (exec) Dir=Out
+        -> Set MaxWalkSpeedCrouched.execute
+      Pin: MaxWalkSpeed (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Set MaxWalkSpeedCrouched (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set MaxWalkSpeed.then
+      Pin: then (exec) Dir=Out
+        -> Set bOrientRotationToMovement.execute
+      Pin: MaxWalkSpeedCrouched (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Set MaxWalkSpeedCrouched.self
+        -> Reroute Node.InputPin
+    Node: Set BrakingDecelerationFlying (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bOrientRotationToMovement.then
+      Pin: then (exec) Dir=Out
+        -> Set MaxFlySpeed.execute
+      Pin: BrakingDecelerationFlying (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set bOrientRotationToMovement.self
+        -> Reroute Node.InputPin
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get MotionWarping.self
+        -> Get Actor Forward Vector
+Target is Actor.self
+        -> Get Movement Component
+Target is Pawn.self
+        -> Get CapsuleComponent.self
+      Pin: self (object) Dir=In
+    Node: Get MotionWarping (K2Node_VariableGet)
+      Pin: MotionWarping (object) Dir=Out
+        -> Add or Update Warp Target from Location and Rotation
+Target is Motion Warping Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Add or Update Warp Target from Location and Rotation
+Target is Motion Warping Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bUseControllerDesiredRotation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get MotionWarping.MotionWarping
+      Pin: WarpTargetName (name) Dir=In
+      Pin: TargetLocation (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TargetRotation (struct) Dir=In
+        -> Combine Rotators.ReturnValue
+    Node: Set Capsule Radius
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set MaxFlySpeed.then
+      Pin: then (exec) Dir=Out
+        -> Set bUseControllerRotationYaw.execute
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: Radius (real) Dir=In
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Capsule Radius
+Target is Capsule Collision.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get Current Cover Hit Location (K2Node_VariableGet)
+      Pin: Current Cover Hit Location (struct) Dir=Out
+        -> vector + vector.B
+      Pin: self (object) Dir=In
+    Node: Get Current Cover Hit Normal (K2Node_VariableGet)
+      Pin: Current Cover Hit Normal (struct) Dir=Out
+        -> Make Rot from X.X
+        -> Make Rot from ZY.Z
+        -> Make Rot from ZY.Y
+        -> vector * vector.A
+        -> Make Rot from Z.Z
+        -> Make Rot from XZ.X
+        -> Make Rot from XZ.Z
+      Pin: self (object) Dir=In
+    Node: Make Rot from X (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Combine Rotators.A
+    Node: Set bOrientRotationToMovement (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set MaxWalkSpeedCrouched.then
+      Pin: then (exec) Dir=Out
+        -> Set BrakingDecelerationFlying.execute
+      Pin: bOrientRotationToMovement (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set BrakingDecelerationFlying.self
+        -> Set bUseControllerDesiredRotation.self
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> vector * vector.ReturnValue_X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> vector * vector.ReturnValue_Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue_Z (real) Dir=Out
+    Node: Get Movement Component
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: ReturnValue (object) Dir=Out
+    Node: Set bUseControllerDesiredRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bUseControllerRotationYaw.then
+      Pin: then (exec) Dir=Out
+        -> Add or Update Warp Target from Location and Rotation
+Target is Motion Warping Component.execute
+      Pin: bUseControllerDesiredRotation (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set bUseControllerRotationYaw (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Capsule Radius
+Target is Capsule Collision.then
+      Pin: then (exec) Dir=Out
+        -> Set bUseControllerDesiredRotation.execute
+      Pin: bUseControllerRotationYaw (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set bUseControllerRotationYaw.self
+    Node: Make Rot from ZY (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Z (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: Y (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Forward Vector.InRot
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Make Rot from ZY.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Current Cover Hit Location.Current Cover Hit Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add or Update Warp Target from Location and Rotation
+Target is Motion Warping Component.TargetLocation
+    Node: Scale Rotator (Float) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Make Rot from Z.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Combine Rotators (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Make Rot from X.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add or Update Warp Target from Location and Rotation
+Target is Motion Warping Component.TargetRotation
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+    Node: Change Cover Channel Response
+Target is AC SOTS Player Cover System (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewResponse (byte) Dir=In
+      Pin: Set? (bool) Dir=In
+    Node: Make Rot from Z (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Z (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Scale Rotator (Float).A
+    Node: Make Rot from XZ (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: Z (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Set MaxFlySpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set BrakingDecelerationFlying.then
+      Pin: then (exec) Dir=Out
+        -> Set Capsule Radius
+Target is Capsule Collision.execute
+      Pin: MaxFlySpeed (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+  Graph: GetCorrectEnterCoverMontage
+    Node: GetCorrectEnterCoverMontage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Not Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverType.CoverType
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetCorrectEnterCoverMontage.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get CoverType (K2Node_VariableGet)
+      Pin: CoverType (struct) Dir=Out
+        -> Not Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+    Node: Get CoverType (K2Node_VariableGet)
+      Pin: CoverType (struct) Dir=Out
+        -> Equal (GameplayTag).A
+        -> Equal (GameplayTag).A
+      Pin: self (object) Dir=In
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverType.CoverType
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Equal (GameplayTag) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get CoverType.CoverType
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Montage (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Equal (GameplayTag).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Montage (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Montage (object) Dir=In
+  Graph: TraceHeight
+    Node: TraceHeight (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector
+Target is Scene Component.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get Actor to Ignore (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> TraceHeight.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalHighHitResult.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actor to Ignore.Actors to Ignore
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get DebugTrace.DebugTrace
+      Pin: OutHit (struct) Dir=Out
+        -> Set LocalHighHitResult.LocalHighHitResult
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+        -> Get Draw Time.Draw Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set LocalHighHit.LocalHighHit
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get HeadHeightCoverArrow.self
+        -> Get RootComponent.self
+      Pin: self (object) Dir=In
+    Node: Get HeadHeightCoverArrow (K2Node_VariableGet)
+      Pin: HeadHeightCoverArrow (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get Forward Vector
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get RootComponent.RootComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get HeadHeightCoverArrow.HeadHeightCoverArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Get LowHeightCoverArrow (K2Node_VariableGet)
+      Pin: LowHeightCoverArrow (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector
+Target is Scene Component.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set LocalHighHit.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalLowHitResult.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actor to Ignore.Actors to Ignore
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get DebugTrace.DebugTrace
+      Pin: OutHit (struct) Dir=Out
+        -> Set LocalLowHitResult.LocalLowHitResult
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+        -> Get Draw Time.Draw Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Forward Vector
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get RootComponent.RootComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get LowHeightCoverArrow.LowHeightCoverArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Get Actor to Ignore (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get LowHeightCoverArrow.self
+      Pin: self (object) Dir=In
+    Node: Set LocalHighHit (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalHighHitResult.then
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: LocalHighHit (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get DebugTrace (K2Node_VariableGet)
+      Pin: DebugTrace (byte) Dir=Out
+        -> Line Trace By Channel.DrawDebugType
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Line Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+    Node: Get Draw Time (K2Node_VariableGet)
+      Pin: Draw Time (real) Dir=Out
+        -> Line Trace By Channel.DrawTime
+      Pin: self (object) Dir=In
+    Node: Get DebugTrace (K2Node_VariableGet)
+      Pin: DebugTrace (byte) Dir=Out
+        -> Line Trace By Channel.DrawDebugType
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Line Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+    Node: Get Draw Time (K2Node_VariableGet)
+      Pin: Draw Time (real) Dir=Out
+        -> Line Trace By Channel.DrawTime
+      Pin: self (object) Dir=In
+    Node: Set LocalHighHitResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalHighHit.execute
+      Pin: LocalHighHitResult (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set LocalLowHitResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalLowHit.execute
+      Pin: LocalLowHitResult (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: Output_Get (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get RootComponent (K2Node_VariableGet)
+      Pin: RootComponent (object) Dir=Out
+        -> Get Forward Vector
+Target is Scene Component.self
+        -> Get Forward Vector
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Set LocalLowHit (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalLowHitResult.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: LocalLowHit (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set LocalLowHit.then
+      Pin: HighHit (struct) Dir=In
+        -> Get LocalHighHitResult.LocalHighHitResult
+      Pin: HighHitResult (bool) Dir=In
+        -> Get LocalHighHit.LocalHighHit
+      Pin: LowHit (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LowHitResult (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get LocalHighHitResult (K2Node_VariableGet)
+      Pin: LocalHighHitResult (struct) Dir=Out
+        -> Return Node.HighHit
+    Node: Get LocalHighHit (K2Node_VariableGet)
+      Pin: LocalHighHit (bool) Dir=Out
+        -> Return Node.HighHitResult
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Return Node.LowHit
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Set LocalLowHitResult.Output_Get
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Set LocalLowHit.LocalLowHit
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Set LocalLowHit.Output_Get
+      Pin: OutputPin (bool) Dir=Out
+        -> Return Node.LowHitResult
+  Graph: CheckCoverStateContainerHasTag
+    Node: CheckCoverStateContainerHasTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Tag (struct) Dir=Out
+        -> Has Tag.Tag
+      Pin: bExactMatch (bool) Dir=Out
+        -> Has Tag.bExactMatch
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> CheckCoverStateContainerHasTag.then
+      Pin: ReturnValue (bool) Dir=In
+        -> Has Tag.ReturnValue
+    Node: Get CoverStateContainer (K2Node_VariableGet)
+      Pin: CoverStateContainer (struct) Dir=Out
+        -> Has Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get CoverStateContainer.CoverStateContainer
+      Pin: Tag (struct) Dir=In
+        -> CheckCoverStateContainerHasTag.Tag
+      Pin: bExactMatch (bool) Dir=In
+        -> CheckCoverStateContainerHasTag.bExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: SetupPlaneConstraint
+    Node: SetupPlaneConstraint (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bEnabled (bool) Dir=Out
+        -> Set Plane Constraint Enabled
+Target is Movement Component.bEnabled
+        -> Branch.Condition
+      Pin: Set? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: Current Cover Hit Normal (struct) Dir=Out
+        -> Set Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: Current Cover Hit Location (struct) Dir=Out
+        -> Set Current Cover Hit Location.Current Cover Hit Location
+    Node: Set Plane Constraint Enabled
+Target is Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Cover Hit Location.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set ConstrainedPlane.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: bEnabled (bool) Dir=In
+        -> SetupPlaneConstraint.bEnabled
+    Node: Set ConstrainedPlane (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Plane Constraint Enabled
+Target is Movement Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Plane Constraint Axis Setting
+Target is Movement Component.execute
+      Pin: ConstrainedPlane (struct) Dir=In
+        -> Constrain Direction to Plane
+Target is Movement Component.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Plane Constraint Axis Setting
+Target is Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ConstrainedPlane.then
+      Pin: then (exec) Dir=Out
+        -> Set Plane Constraint Normal
+Target is Movement Component.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: NewAxisSetting (byte) Dir=In
+    Node: Constrain Direction to Plane
+Target is Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: Direction (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ConstrainedPlane.ConstrainedPlane
+    Node: Cross Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Current Cover Hit Normal.Current Cover Hit Normal
+      Pin: B (struct) Dir=In
+        -> Get Actor Up Vector
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Normalize.A
+    Node: Get (K2Node_VariableGet)
+      Pin: CurrentCoverHit (struct) Dir=Out
+      Pin: CurrentCoverHit_bBlockingHit (bool) Dir=Out
+      Pin: CurrentCoverHit_bInitialOverlap (bool) Dir=Out
+      Pin: CurrentCoverHit_Time (real) Dir=Out
+      Pin: CurrentCoverHit_Distance (real) Dir=Out
+      Pin: CurrentCoverHit_Location (struct) Dir=Out
+      Pin: CurrentCoverHit_ImpactPoint (struct) Dir=Out
+      Pin: CurrentCoverHit_Normal (struct) Dir=Out
+      Pin: CurrentCoverHit_ImpactNormal (struct) Dir=Out
+      Pin: CurrentCoverHit_PhysMat (object) Dir=Out
+      Pin: CurrentCoverHit_HitActor (object) Dir=Out
+        -> Get Actor Up Vector
+Target is Actor.self
+      Pin: CurrentCoverHit_HitComponent (object) Dir=Out
+      Pin: CurrentCoverHit_HitBoneName (name) Dir=Out
+      Pin: CurrentCoverHit_BoneName (name) Dir=Out
+      Pin: CurrentCoverHit_HitItem (int) Dir=Out
+      Pin: CurrentCoverHit_ElementIndex (int) Dir=Out
+      Pin: CurrentCoverHit_FaceIndex (int) Dir=Out
+      Pin: CurrentCoverHit_TraceStart (struct) Dir=Out
+      Pin: CurrentCoverHit_TraceEnd (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Current Cover Hit Normal (K2Node_VariableGet)
+      Pin: Current Cover Hit Normal (struct) Dir=Out
+        -> Cross Product.A
+      Pin: self (object) Dir=In
+    Node: Get Actor Up Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get.CurrentCoverHit_HitActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Cross Product.B
+        -> Cross Product.B
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Cross Product.ReturnValue
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Cross Product.A
+    Node: Set Plane Constraint Normal
+Target is Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Plane Constraint Axis Setting
+Target is Movement Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: PlaneNormal (struct) Dir=In
+        -> Cross Product.ReturnValue
+    Node: Cross Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Up Vector
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Plane Constraint Normal
+Target is Movement Component.PlaneNormal
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set Plane Constraint Enabled
+Target is Movement Component.self
+        -> Constrain Direction to Plane
+Target is Movement Component.self
+        -> Set Plane Constraint Enabled
+Target is Movement Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: Current Cover Hit Location (struct) Dir=Out
+      Pin: Current Cover Hit Location_X (real) Dir=Out
+        -> float + float.B
+      Pin: Current Cover Hit Location_Y (real) Dir=Out
+        -> float + float.B
+      Pin: Current Cover Hit Location_Z (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> vector * vector.ReturnValue_X
+      Pin: B (real) Dir=In
+        -> Get.Current Cover Hit Location_X
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.X
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> vector * vector.ReturnValue_Y
+      Pin: B (real) Dir=In
+        -> Get.Current Cover Hit Location_Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.Y
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue_Z (real) Dir=Out
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Y (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Z (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Constrain Direction to Plane
+Target is Movement Component.Direction
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get Actor Forward Vector
+Target is Actor.self
+        -> Get Actor Right Vector
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Set Plane Constraint Normal
+Target is Movement Component.self
+        -> Set Plane Constraint Axis Setting
+Target is Movement Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetupPlaneConstraint.then
+      Pin: Condition (bool) Dir=In
+        -> SetupPlaneConstraint.bEnabled
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Set Plane Constraint Enabled
+Target is Movement Component.execute
+    Node: Set Plane Constraint Enabled
+Target is Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: bEnabled (bool) Dir=In
+    Node: Set Current Cover Hit Normal (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Cover Hit Location.execute
+      Pin: Current Cover Hit Normal (struct) Dir=In
+        -> SetupPlaneConstraint.Current Cover Hit Normal
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Current Cover Hit Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Cover Hit Normal.then
+      Pin: then (exec) Dir=Out
+        -> Set Plane Constraint Enabled
+Target is Movement Component.execute
+      Pin: Current Cover Hit Location (struct) Dir=In
+        -> SetupPlaneConstraint.Current Cover Hit Location
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> SetupPlaneConstraint.Set?
+      Pin: then (exec) Dir=Out
+        -> Set Current Cover Hit Normal.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Plane Constraint Enabled
+Target is Movement Component.execute
+    Node: Get Actor Right Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Right Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+  Graph: ClearAndSetupForNewTrace
+    Node: ClearAndSetupForNewTrace (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingTick_Hit Result.execute
+    Node: Set InCoverTracingTick_Hit Result (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ClearAndSetupForNewTrace.then
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingTick_LineTraceResult.execute
+      Pin: InCoverTracingTick_Hit Result (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set InCoverTracingTick_LineTraceResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InCoverTracingTick_Hit Result.then
+      Pin: then (exec) Dir=Out
+        -> Set LeftSideTraceResult.execute
+      Pin: InCoverTracingTick_LineTraceResult (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set LeftSideTraceResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InCoverTracingTick_LineTraceResult.then
+      Pin: then (exec) Dir=Out
+        -> Set RightSideTraceResult.execute
+      Pin: LeftSideTraceResult (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RightSideTraceResult (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LeftSideTraceResult.then
+      Pin: then (exec) Dir=Out
+        -> Set InCoverTracingTick_Hit Result_0.execute
+      Pin: RightSideTraceResult (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set InCoverTracingTick_Hit Result_0 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set RightSideTraceResult.then
+      Pin: then (exec) Dir=Out
+      Pin: InCoverTracingTick_Hit Result_0 (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: ChangeCoverChannelResponse
+    Node: ChangeCoverChannelResponse (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: NewResponse (byte) Dir=Out
+        -> Set Response.Response
+      Pin: Set? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Response to Channel
+Target is Primitive Component.then
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.self
+        -> Get Collision Response to Channel
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+        -> Get PlayerREF.PlayerREF
+    Node: Get PlayerREF (K2Node_VariableGet)
+      Pin: PlayerREF (object) Dir=Out
+        -> Get CapsuleComponent.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Response.then
+        -> Set Response.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: Channel (byte) Dir=In
+      Pin: NewResponse (byte) Dir=In
+        -> Get Response.Response
+    Node: Get Collision Response to Channel
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: Channel (byte) Dir=In
+      Pin: ReturnValue (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: A (byte) Dir=In
+        -> Get Collision Response to Channel
+Target is Primitive Component.ReturnValue
+      Pin: B (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Response.Response
+    Node: Set Response (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: Response (byte) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (byte) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> ChangeCoverChannelResponse.then
+      Pin: Condition (bool) Dir=In
+        -> ChangeCoverChannelResponse.Set?
+      Pin: then (exec) Dir=Out
+        -> Set Response.execute
+      Pin: else (exec) Dir=Out
+        -> Set Response.execute
+    Node: Set Response (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.execute
+      Pin: Response (byte) Dir=In
+        -> ChangeCoverChannelResponse.NewResponse
+      Pin: Output_Get (byte) Dir=Out
+    Node: Get Response (K2Node_VariableGet)
+      Pin: Response (byte) Dir=Out
+        -> Set Collision Response to Channel
+Target is Primitive Component.NewResponse
+  Graph: CoverStateChanged
+    Node: CoverStateChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

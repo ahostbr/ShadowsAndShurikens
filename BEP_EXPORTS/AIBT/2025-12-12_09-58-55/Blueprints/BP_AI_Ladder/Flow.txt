@@ -1,0 +1,347 @@
+Blueprint: BP_AI_Ladder (/Game/AIBehaviorToolkit/Blueprints/BP_AI_Ladder.BP_AI_Ladder)
+  Graph: EventGraph
+    Node: Event Receive Smart Link Reached (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.execute
+      Pin: Agent (object) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.self
+        -> Get Actor Location
+Target is Actor.self
+      Pin: Destination (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event Receive Smart Link Reached.Destination
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: On Climb Ladder
+Target is BPI Parkour (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Smart Link Reached.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Event Receive Smart Link Reached.Agent
+      Pin: LadderEntryLocation (struct) Dir=In
+        -> Get Enter Location.EnterLoc
+      Pin: LadderExitLocation (struct) Dir=In
+        -> Get Exit Location.ExitLoc
+      Pin: TargetLocation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LadderRotation (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: FromTop (bool) Dir=In
+        -> float > float.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.TargetLocation
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.LadderRotation
+    Node: Get Exit Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Loc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ExitLoc (struct) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.LadderExitLocation
+        -> Reroute Node.InputPin
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event Receive Smart Link Reached.Agent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Exit Location.Loc
+        -> Get Enter Location.Loc
+    Node: Get Enter Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Loc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: EnterLoc (struct) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.LadderEntryLocation
+        -> Break Vector.InVec
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Enter Location.EnterLoc
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> float > float.A
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> float > float.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Exit Location.ExitLoc
+      Pin: OutputPin (struct) Dir=Out
+        -> Break Vector.InVec
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+        -> Break Vector.Z
+      Pin: ReturnValue (bool) Dir=Out
+        -> On Climb Ladder
+Target is BPI Parkour.FromTop
+    Node: When the AI reaches the entry point on one side of the ladder, trigger the Event for moving and animating the AI thru the ladder. (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+    Node: Get TopArrow (K2Node_VariableGet)
+      Pin: TopArrow (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get TopArrow.TopArrow
+      Pin: NewLocation (struct) Dir=In
+        -> Get TopSnapOffset.TopSnapOffset
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get TopSnapOffset (K2Node_VariableGet)
+      Pin: TopSnapOffset (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+      Pin: self (object) Dir=In
+    Node: Get BottomArrow (K2Node_VariableGet)
+      Pin: BottomArrow (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Location
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BottomArrow.BottomArrow
+      Pin: NewLocation (struct) Dir=In
+        -> Get BottomSnapOffset.BottomSnapOffset
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get BottomSnapOffset (K2Node_VariableGet)
+      Pin: BottomSnapOffset (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+      Pin: self (object) Dir=In
+  Graph: GetEnterLocation
+    Node: GetEnterLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Loc (struct) Dir=Out
+        -> vector - vector.A
+        -> vector - vector.A
+    Node: Get TopArrow (K2Node_VariableGet)
+      Pin: TopArrow (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get BottomArrow (K2Node_VariableGet)
+      Pin: BottomArrow (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TopArrow.TopArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+        -> Reroute Node.InputPin
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> GetEnterLocation.Loc
+      Pin: B (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetEnterLocation.then
+      Pin: EnterLoc (struct) Dir=In
+        -> Select.ReturnValue
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> GetEnterLocation.Loc
+      Pin: B (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BottomArrow.BottomArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+        -> Reroute Node.InputPin
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.B
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Option 1 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Index (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.EnterLoc
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Select.Option 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Select.Option 0
+  Graph: GetExitLocation
+    Node: GetExitLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Loc (struct) Dir=Out
+        -> vector - vector.A
+        -> vector - vector.A
+    Node: Get TopArrow (K2Node_VariableGet)
+      Pin: TopArrow (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get BottomArrow (K2Node_VariableGet)
+      Pin: BottomArrow (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TopArrow.TopArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+        -> Reroute Node.InputPin
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> GetExitLocation.Loc
+      Pin: B (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetExitLocation.then
+      Pin: ExitLoc (struct) Dir=In
+        -> Select.ReturnValue
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> GetExitLocation.Loc
+      Pin: B (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BottomArrow.BottomArrow
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+        -> Reroute Node.InputPin
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.B
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Option 1 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Index (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ExitLoc
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Select.Option 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Select.Option 0
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index

@@ -1,0 +1,124 @@
+Blueprint: BP_ThrowableProjectileBase (/Game/InventorySystemPro/Blueprints/Weapons/Projectiles/BP_ThrowableProjectileBase.BP_ThrowableProjectileBase)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.execute
+      Pin: self (object) Dir=In
+    Node: Set Static Mesh
+Target is Static Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Scale 3D
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get StaticMesh.StaticMesh
+      Pin: NewMesh (object) Dir=In
+        -> Get ProjectileMesh.ProjectileMesh
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get ProjectileMesh (K2Node_VariableGet)
+      Pin: ProjectileMesh (object) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.NewMesh
+      Pin: self (object) Dir=In
+    Node: Set Relative Scale 3D
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Static Mesh
+Target is Static Mesh Component.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get StaticMesh.StaticMesh
+      Pin: NewScale3D (struct) Dir=In
+        -> Get ProjectileScale.ProjectileScale
+    Node: Get ProjectileScale (K2Node_VariableGet)
+      Pin: ProjectileScale (struct) Dir=Out
+        -> Set Relative Scale 3D
+Target is Scene Component.NewScale3D
+      Pin: self (object) Dir=In
+    Node: Get StaticMesh (K2Node_VariableGet)
+      Pin: StaticMesh (object) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.self
+      Pin: self (object) Dir=In
+    Node: Get StaticMesh (K2Node_VariableGet)
+      Pin: StaticMesh (object) Dir=Out
+        -> Set Relative Scale 3D
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Get IsHoming? (K2Node_VariableGet)
+      Pin: IsHoming? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Scale 3D
+Target is Scene Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsHoming?.IsHoming?
+      Pin: then (exec) Dir=Out
+        -> Set HomingTargetComponent.execute
+      Pin: else (exec) Dir=Out
+    Node: Get SceneCompForHoming (K2Node_VariableGet)
+      Pin: SceneCompForHoming (object) Dir=Out
+        -> Set HomingTargetComponent.HomingTargetComponent
+      Pin: self (object) Dir=In
+    Node: Get ProjectileMovement (K2Node_VariableGet)
+      Pin: ProjectileMovement (object) Dir=Out
+        -> Set HomingTargetComponent.self
+        -> Set HomingAccelerationMagnitude.self
+      Pin: self (object) Dir=In
+    Node: Set HomingTargetComponent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set HomingAccelerationMagnitude.execute
+      Pin: HomingTargetComponent (object) Dir=In
+        -> Get SceneCompForHoming.SceneCompForHoming
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+    Node: Set HomingAccelerationMagnitude (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set HomingTargetComponent.then
+      Pin: then (exec) Dir=Out
+        -> Set bIsHomingProjectile.execute
+      Pin: HomingAccelerationMagnitude (real) Dir=In
+        -> Get Homing Acceleration Magnitude.Homing Acceleration Magnitude
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+    Node: Get Homing Acceleration Magnitude (K2Node_VariableGet)
+      Pin: Homing Acceleration Magnitude (real) Dir=Out
+        -> Set HomingAccelerationMagnitude.HomingAccelerationMagnitude
+      Pin: self (object) Dir=In
+    Node: Get ProjectileMovement (K2Node_VariableGet)
+      Pin: ProjectileMovement (object) Dir=Out
+        -> Set bIsHomingProjectile.self
+      Pin: self (object) Dir=In
+    Node: Set bIsHomingProjectile (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set HomingAccelerationMagnitude.then
+      Pin: then (exec) Dir=Out
+      Pin: bIsHomingProjectile (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

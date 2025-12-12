@@ -1,0 +1,37 @@
+Blueprint: BP_SOTS_Player (/Game/SOTS/Characters/BP_SOTS_Player.BP_SOTS_Player)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: G (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+      Pin: Released (exec) Dir=Out
+        -> Try Perform Parkour.execute
+      Pin: Key (struct) Dir=Out
+    Node: Get SOTS_Parkour (K2Node_VariableGet)
+      Pin: SOTS_Parkour (object) Dir=Out
+        -> Try Perform Parkour.self
+      Pin: self (object) Dir=In
+    Node: Try Perform Parkour (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> G.Released
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SOTS_Parkour.SOTS_Parkour
+  Graph: UserConstructionScript
+    Node: ConstructionScript (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: User Construction Script.execute
+    Node: Parent: User Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> ConstructionScript.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

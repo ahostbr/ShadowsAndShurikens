@@ -1,0 +1,32 @@
+Blueprint: BP_CGF_PlayerState (/Game/CoreGameFramework/Core/PlayerState/BP_CGF_PlayerState.BP_CGF_PlayerState)
+  Graph: EventGraph
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: SetPlayerState
+    Node: SetPlayerState (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set PlayerState.execute
+      Pin: PlayerState (byte) Dir=Out
+        -> Set PlayerState.PlayerState
+    Node: Set PlayerState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetPlayerState.then
+      Pin: then (exec) Dir=Out
+        -> Call On Player State Changed.execute
+      Pin: PlayerState (byte) Dir=In
+        -> SetPlayerState.PlayerState
+      Pin: Output_Get (byte) Dir=Out
+        -> Call On Player State Changed.PlayerState
+      Pin: self (object) Dir=In
+    Node: Call On Player State Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set PlayerState.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerState (byte) Dir=In
+        -> Set PlayerState.Output_Get
+  Graph: OnPlayerStateChanged
+    Node: OnPlayerStateChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: PlayerState (byte) Dir=Out

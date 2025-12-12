@@ -1,0 +1,401 @@
+Blueprint: BPW_CGF_Base_InputEnabledWidget (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_Base_InputEnabledWidget.BPW_CGF_Base_InputEnabledWidget)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Visibility Changed.execute
+    Node: OnVisibilityChanged_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Visibility Changed.Delegate
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: InVisibility (byte) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Bind Event to On Visibility Changed (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Initialized.then
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Delegate (delegate) Dir=In
+        -> OnVisibilityChanged_Event
+Custom Event.OutputDelegate
+    Node: Switch on ESlateVisibility (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: Selection (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Visible (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Collapsed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Hidden (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: HitTestInvisible (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelfHitTestInvisible (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Event On Added to Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Event On Removed from Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Push to Input Enabled Widget Stack
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: DefaultFocusedWidget (object) Dir=In
+        -> Get ThisWidgetsDefaultFocusableWidget.ThisWidgetsDefaultFocusableWidget
+    Node: Get ThisWidgetsDefaultFocusableWidget (K2Node_VariableGet)
+      Pin: ThisWidgetsDefaultFocusableWidget (object) Dir=Out
+        -> Push to Input Enabled Widget Stack
+Target is BP CGF Player Controller.DefaultFocusedWidget
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Push to Input Enabled Widget Stack
+Target is BP CGF Player Controller.Widget
+    Node: Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.Widget
+    Node: Event On Initialized (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Visibility Changed.execute
+    Node: Event Destruct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Destruct.then
+      Pin: then (exec) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Do Unbind from Visiblity Changed
+Target is BPW CGF Base Input Enabled Widget.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.Widget
+    Node: Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.Widget
+    Node: Input Enabled Widgets Vis Has Changed
+Target is BP CGF Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To BP_CGF_PlayerController.AsBP CGF Player Controller
+      Pin: Vis (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Input Enabled Widgets Vis Has Changed
+Target is BP CGF Player Controller.Widget
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Input Enabled Widgets Vis Has Changed
+Target is BP CGF Player Controller.Vis
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> OnVisibilityChanged_Event
+Custom Event.InVisibility
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Event On Mouse Enter (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event On Added to Focus Path.then
+        -> Event On Mouse Enter.then
+      Pin: then (exec) Dir=Out
+        -> Push to Input Enabled Widget Stack
+Target is BP CGF Player Controller.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Push to Input Enabled Widget Stack
+Target is BP CGF Player Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event On Removed from Focus Path.then
+        -> Event On Mouse Leave.then
+      Pin: then (exec) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Event On Mouse Leave (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnVisibilityChanged_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Switch on ESlateVisibility.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> OnVisibilityChanged_Event
+Custom Event.InVisibility
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Switch on ESlateVisibility.Selection
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Input Enabled Widgets Vis Has Changed
+Target is BP CGF Player Controller.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Input Enabled Widgets Vis Has Changed
+Target is BP CGF Player Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Cast To BP_CGF_PlayerController.Object
+    Node: Cast To BP_CGF_PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: AsBP CGF Player Controller (object) Dir=Out
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.CastFailed
+        -> Cast To BP_CGF_PlayerController.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Cast To BP_CGF_PlayerController.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on ESlateVisibility.Visible
+        -> Switch on ESlateVisibility.HitTestInvisible
+        -> Switch on ESlateVisibility.SelfHitTestInvisible
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on ESlateVisibility.Collapsed
+        -> Switch on ESlateVisibility.Hidden
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_CGF_PlayerController.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_CGF_PlayerController.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Error Handling.execute
+    Node: DoUnbindFromVisiblityChanged
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Unbind all Events from On Visibility Changed.execute
+    Node: Unbind all Events from On Visibility Changed (K2Node_ClearDelegate)
+      Pin: execute (exec) Dir=In
+        -> DoUnbindFromVisiblityChanged
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Input System Overview :
+All Widgets That Inherit From This Widget Class Will Add IMC_UI_Controls Mapping Context As Well As Adding Themselves To The Player Controller "InputEnabledWidgetStack".
+When The PC Recieves Input It Will Send It To The Top Of The Stack.  Via The BPI_CGF_User_Interface Events.
+When A Widget Losses Focus Or is Collapsed/Hidden It Is Popped And The Stack Is Checked,
+If Empty The IMC_UI Controls Mapping Is Removed. (EdGraphNode_Comment)
+    Node: Push (EdGraphNode_Comment)
+    Node: Pop (EdGraphNode_Comment)
+    Node: Do Unbind from Visiblity Changed
+Target is BPW CGF Base Input Enabled Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Pop from Input Enabled Widget Stack
+Target is BP CGF Player Controller.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: OnMouseButtonDown
+    Node: On Mouse Button Down (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Mouse Button Down.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Handled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+    Node: This Ensures Clicks Dont Go Threw The Background If This Is False When Removed From Focus Path, The Widget Will Be Popped From The InputEnabledStack And Its Layer By Default. Override This If You Wish. (EdGraphNode_Comment)
+    Node: Get BlockBackgroundClicks? (K2Node_VariableGet)
+      Pin: BlockBackgroundClicks? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Unhandled.ReturnValue
+      Pin: Option 1 (struct) Dir=In
+        -> Handled.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Get BlockBackgroundClicks?.BlockBackgroundClicks?
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Unhandled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 0

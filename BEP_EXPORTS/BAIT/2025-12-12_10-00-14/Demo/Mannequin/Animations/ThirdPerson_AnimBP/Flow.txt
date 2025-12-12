@@ -1,0 +1,274 @@
+Blueprint: ThirdPerson_AnimBP (/Game/BossAIToolkit/Demo/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP)
+  Graph: EventGraph
+    Node: Setting 'Speed' (use in 1D blend space) (EdGraphNode_Comment)
+    Node: See if PawnOwner is valid (will not be in Persona) (EdGraphNode_Comment)
+    Node: Event Blueprint Update Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: DeltaTimeX (real) Dir=Out
+    Node: Try Get Pawn Owner
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Movement Component
+Target is Pawn.self
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+        -> Calculate Direction
+Target is Anim Instance.Velocity
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Speed.Speed
+    Node: Set Speed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsInAir?.then
+      Pin: then (exec) Dir=Out
+        -> Set Direction.execute
+      Pin: Speed (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsInAir? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Speed.execute
+      Pin: IsInAir? (bool) Dir=In
+        -> Is Falling
+Target is Nav Movement Component.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Movement Component
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Falling
+Target is Nav Movement Component.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Sequence.then_0
+      Pin: InputObject (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set IsInAir?.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Falling
+Target is Nav Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Movement Component
+Target is Pawn.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set IsInAir?.IsInAir?
+    Node: Set 'IsInAir' (used in state machine) (EdGraphNode_Comment)
+    Node: Set Direction (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Speed.then
+      Pin: then (exec) Dir=Out
+        -> Get Crowd Control State
+Target is BI Crowd Control.execute
+      Pin: Direction (real) Dir=In
+        -> Calculate Direction
+Target is Anim Instance.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Get Velocity
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: Calculate Direction
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Velocity (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: BaseRotation (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Direction.Direction
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Calculate Direction
+Target is Anim Instance.BaseRotation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get Actor Rotation
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: Set CrowdControlState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Crowd Control State
+Target is BI Crowd Control.then
+      Pin: then (exec) Dir=Out
+      Pin: CrowdControlState (byte) Dir=In
+        -> Get Crowd Control State
+Target is BI Crowd Control.CurrentState
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get Crowd Control State
+Target is BI Crowd Control.self
+    Node: Get Crowd Control State
+Target is BI Crowd Control (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set Direction.then
+      Pin: then (exec) Dir=Out
+        -> Set CrowdControlState.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: CurrentState (byte) Dir=Out
+        -> Set CrowdControlState.CrowdControlState
+    Node: Set PawnRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: PawnRef (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Blueprint Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Event Blueprint Update Animation.then
+      Pin: then_0 (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: then_1 (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Blueprint Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: TICK (EdGraphNode_Comment)
+    Node: Comment (EdGraphNode_Comment)
+  Graph: AnimGraph
+    Node: Output Pose
+AnimGraph (AnimGraphNode_Root)
+      Pin: Result (struct) Dir=In
+        -> Layered blend per bone.Pose
+    Node: Default
+State Machine (AnimGraphNode_StateMachine)
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'PostMove'.Pose
+    Node: Save cached pose 'PostMove' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Default
+State Machine.Pose
+    Node: Use cached pose 'PostMove' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Apply Mesh Space Additive.Base
+    Node: Slot 'DefaultSlot'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> Layered blend per bone.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BlendPoses_0
+    Node: Apply Mesh Space Additive (AnimGraphNode_ApplyMeshSpaceAdditive)
+      Pin: Base (struct) Dir=In
+        -> Use cached pose 'PostMove'.Pose
+      Pin: Additive (struct) Dir=In
+        -> Idle_Block_MSA
+Sequence Player.Pose
+      Pin: Alpha (real) Dir=In
+        -> To Float (Boolean).ReturnValue
+      Pin: bAlphaBoolEnabled (bool) Dir=In
+      Pin: AlphaCurveName (name) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'PostAdditive'.Pose
+    Node: Idle_Block_MSA
+Sequence Player (AnimGraphNode_SequencePlayer)
+      Pin: Pose (struct) Dir=Out
+        -> Apply Mesh Space Additive.Additive
+    Node: Get ActionState (K2Node_VariableGet)
+      Pin: ActionState (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: self (object) Dir=In
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> To Float (Boolean).InBool
+      Pin: A (byte) Dir=In
+        -> Get ActionState.ActionState
+      Pin: B (byte) Dir=In
+    Node: To Float (Boolean) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InBool (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Apply Mesh Space Additive.Alpha
+    Node: Layered blend per bone (AnimGraphNode_LayeredBoneBlend)
+      Pin: BasePose (struct) Dir=In
+        -> Use cached pose 'PostAdditive'.Pose
+      Pin: BlendPoses_0 (struct) Dir=In
+        -> Slot 'UpperBody'
+Group 'DefaultGroup'.Pose
+      Pin: BlendWeights_0 (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Source
+    Node: Layered blend per bone (AnimGraphNode_LayeredBoneBlend)
+      Pin: BasePose (struct) Dir=In
+        -> Use cached pose 'PostAdditive'.Pose
+      Pin: BlendPoses_0 (struct) Dir=In
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Pose
+      Pin: BlendWeights_0 (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Output Pose
+AnimGraph.Result
+    Node: Save cached pose 'PostAdditive' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Apply Mesh Space Additive.Pose
+    Node: Slot 'UpperBody'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> Use cached pose 'PostAdditive'.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BlendPoses_0
+    Node: Use cached pose 'PostAdditive' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BasePose
+    Node: Use cached pose 'PostAdditive' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BasePose
+    Node: Use cached pose 'PostAdditive' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'UpperBody'
+Group 'DefaultGroup'.Source

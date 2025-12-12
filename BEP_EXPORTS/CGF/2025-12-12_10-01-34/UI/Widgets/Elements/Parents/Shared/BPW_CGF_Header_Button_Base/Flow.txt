@@ -1,0 +1,308 @@
+Blueprint: BPW_CGF_Header_Button_Base (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/Shared/BPW_CGF_Header_Button_Base.BPW_CGF_Header_Button_Base)
+  Graph: EventGraph
+    Node: Event On Added to Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set RenderTransform.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Event On Removed from Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set RenderTransform.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Set RenderTransform (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event On Added to Focus Path.then
+        -> DoManualHover
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: RenderTransform (struct) Dir=In
+        -> Make Widget Transform.WidgetTransform
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RenderTransform (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event On Removed from Focus Path.then
+        -> DoManualUnHover
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: RenderTransform (struct) Dir=In
+        -> Make Widget Transform.WidgetTransform
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Widget Transform (K2Node_MakeStruct)
+      Pin: WidgetTransform (struct) Dir=Out
+        -> Set RenderTransform.RenderTransform
+      Pin: Translation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: Shear (struct) Dir=In
+      Pin: Angle (real) Dir=In
+    Node: Make Widget Transform (K2Node_MakeStruct)
+      Pin: WidgetTransform (struct) Dir=Out
+        -> Set RenderTransform.RenderTransform
+      Pin: Translation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: Shear (struct) Dir=In
+      Pin: Angle (real) Dir=In
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set RenderTransform.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InFontInfo (struct) Dir=In
+        -> Make Hover Font.SlateFontInfo
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture.execute
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set RenderTransform.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+      Pin: InFontInfo (struct) Dir=In
+        -> Get DefaultFont.DefaultFont
+    Node: Make Hover Font (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SlateFontInfo (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+    Node: On Clicked (Button) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Image Button Base Clicked Dispatcher.execute
+    Node: Call On Image Button Base Clicked Dispatcher (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Button).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Category (K2Node_VariableGet)
+      Pin: Category (byte) Dir=Out
+        -> Enum to String.Enumerator
+      Pin: self (object) Dir=In
+    Node: Enum to String (K2Node_GetEnumeratorNameAsString)
+      Pin: Enumerator (byte) Dir=In
+        -> Get Category.Category
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Enum to String.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Set Texture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Border.execute
+      Pin: Texture (object) Dir=In
+        -> Get Texture.Texture
+      Pin: Output_Get (object) Dir=Out
+        -> Set Brush from Texture
+Target is Border.Texture
+      Pin: self (object) Dir=In
+    Node: Get Border (K2Node_VariableGet)
+      Pin: Border (object) Dir=Out
+        -> Set Brush from Texture
+Target is Border.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture.then
+      Pin: then (exec) Dir=Out
+        -> Set DefaultFont.execute
+      Pin: self (object) Dir=In
+        -> Get Border.Border
+      Pin: Texture (object) Dir=In
+        -> Set Texture.Output_Get
+    Node: Get Texture (K2Node_VariableGet)
+      Pin: Texture (object) Dir=Out
+        -> Set Texture.Texture
+      Pin: self (object) Dir=In
+    Node: DoManualHover
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set RenderTransform.execute
+    Node: DoManualUnHover
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set RenderTransform.execute
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Get Font.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: Get Font (K2Node_VariableGet)
+      Pin: Font (struct) Dir=Out
+        -> Set DefaultFont.DefaultFont
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+    Node: Set DefaultFont (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Border.then
+      Pin: then (exec) Dir=Out
+      Pin: DefaultFont (struct) Dir=In
+        -> Get Font.Font
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get DefaultFont (K2Node_VariableGet)
+      Pin: DefaultFont (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Set Font
+Target is Text.self
+        -> Set Font
+Target is Text.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+  Graph: MakeHoverFont
+    Node: MakeHoverFont (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> MakeHoverFont.then
+      Pin: SlateFontInfo (struct) Dir=In
+        -> Make Slate Font Info.ReturnValue
+    Node: Break Slate Font Info (K2Node_BreakStruct)
+      Pin: SlateFontInfo (struct) Dir=In
+        -> Get Font.Font
+      Pin: FontObject (object) Dir=Out
+        -> Make Slate Font Info.FontObject
+      Pin: FontMaterial (object) Dir=Out
+        -> Make Slate Font Info.FontMaterial
+      Pin: OutlineSettings (struct) Dir=Out
+        -> Break Font Outline Settings.FontOutlineSettings
+      Pin: TypefaceFontName (name) Dir=Out
+        -> Make Slate Font Info.TypefaceFontName
+      Pin: Size (real) Dir=Out
+        -> Make Slate Font Info.Size
+      Pin: LetterSpacing (int) Dir=Out
+        -> Make Slate Font Info.LetterSpacing
+      Pin: SkewAmount (real) Dir=Out
+        -> Make Slate Font Info.SkewAmount
+      Pin: bForceMonospaced (bool) Dir=Out
+        -> Make Slate Font Info.bForceMonospaced
+      Pin: bMaterialIsStencil (bool) Dir=Out
+      Pin: MonospacedWidth (real) Dir=Out
+        -> Make Slate Font Info.MonospacedWidth
+    Node: Break Font Outline Settings (K2Node_BreakStruct)
+      Pin: FontOutlineSettings (struct) Dir=In
+        -> Break Slate Font Info.OutlineSettings
+      Pin: OutlineSize (int) Dir=Out
+        -> Make Font Outline Settings.OutlineSize
+      Pin: bMiteredCorners (bool) Dir=Out
+        -> Make Font Outline Settings.bMiteredCorners
+      Pin: bSeparateFillAlpha (bool) Dir=Out
+        -> Make Font Outline Settings.bSeparateFillAlpha
+      Pin: bApplyOutlineToDropShadows (bool) Dir=Out
+        -> Make Font Outline Settings.bApplyOutlineToDropShadows
+      Pin: OutlineMaterial (object) Dir=Out
+        -> Make Font Outline Settings.OutlineMaterial
+      Pin: OutlineColor (struct) Dir=Out
+    Node: Make Font Outline Settings (K2Node_MakeStruct)
+      Pin: FontOutlineSettings (struct) Dir=Out
+        -> Make Slate Font Info.OutlineSettings
+      Pin: OutlineSize (int) Dir=In
+        -> Break Font Outline Settings.OutlineSize
+      Pin: bMiteredCorners (bool) Dir=In
+        -> Break Font Outline Settings.bMiteredCorners
+      Pin: bSeparateFillAlpha (bool) Dir=In
+        -> Break Font Outline Settings.bSeparateFillAlpha
+      Pin: bApplyOutlineToDropShadows (bool) Dir=In
+        -> Break Font Outline Settings.bApplyOutlineToDropShadows
+      Pin: OutlineMaterial (object) Dir=In
+        -> Break Font Outline Settings.OutlineMaterial
+      Pin: OutlineColor (struct) Dir=In
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Get Font.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: Get Font (K2Node_VariableGet)
+      Pin: Font (struct) Dir=Out
+        -> Break Slate Font Info.SlateFontInfo
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+    Node: Make Slate Font Info (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FontObject (object) Dir=In
+        -> Break Slate Font Info.FontObject
+      Pin: FontMaterial (object) Dir=In
+        -> Break Slate Font Info.FontMaterial
+      Pin: OutlineSettings (struct) Dir=In
+        -> Make Font Outline Settings.FontOutlineSettings
+      Pin: TypefaceFontName (name) Dir=In
+        -> Break Slate Font Info.TypefaceFontName
+      Pin: Size (real) Dir=In
+        -> Break Slate Font Info.Size
+      Pin: LetterSpacing (int) Dir=In
+        -> Break Slate Font Info.LetterSpacing
+      Pin: SkewAmount (real) Dir=In
+        -> Break Slate Font Info.SkewAmount
+      Pin: bForceMonospaced (bool) Dir=In
+        -> Break Slate Font Info.bForceMonospaced
+      Pin: bMaterialIsStencil (bool) Dir=In
+      Pin: MonospacedWidth (real) Dir=In
+        -> Break Slate Font Info.MonospacedWidth
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.SlateFontInfo

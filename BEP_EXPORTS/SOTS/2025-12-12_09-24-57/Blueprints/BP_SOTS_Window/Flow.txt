@@ -1,0 +1,153 @@
+Blueprint: BP_SOTS_Window (/Game/SOTS/Blueprints/BP_SOTS_Window.BP_SOTS_Window)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Event DoInteraction
+From BPI CGF Interact (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: InteractionData (struct) Dir=Out
+      Pin: HitData (struct) Dir=Out
+    Node: Set Simulate Physics
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get.SM_Window_05a
+      Pin: bSimulate (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Simulate Physics
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Component
+Target is Actor Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Destroy Component
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.SM_Window_05a
+      Pin: Object (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Event DoInteraction
+From BPI CGF Interact.then
+      Pin: then (exec) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.execute
+      Pin: else (exec) Dir=Out
+      Pin: SM_Window_05a (object) Dir=Out
+        -> Set Simulate Physics
+Target is Primitive Component.self
+        -> Destroy Component
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WidgetsRelative Transform Location.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: NewRotation (struct) Dir=In
+        -> Get RelativeRotation.RelativeRotation
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+      Pin: BPC_CGF_InteractionComp (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set WidgetsRelative Transform Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: WidgetsRelative Transform Location (struct) Dir=In
+        -> Get RelativeLocation.RelativeLocation
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+      Pin: WidgetCompOnActor (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get.BPC_CGF_InteractionComp
+    Node: Get RelativeLocation (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+        -> Set WidgetsRelative Transform Location.WidgetsRelative Transform Location
+      Pin: self (object) Dir=In
+    Node: Get RelativeRotation (K2Node_VariableGet)
+      Pin: RelativeRotation (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.WidgetCompOnActor
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.BPC_CGF_InteractionComp
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set WidgetsRelative Transform Location.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+      Pin: OutputPin (object) Dir=Out
+        -> Get RelativeRotation.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self

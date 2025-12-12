@@ -1,0 +1,509 @@
+Blueprint: BTT_RandomLocation (/Game/BossAIToolkit/Blueprints/BehaviorTrees/Tasks/BTT_RandomLocation.BTT_RandomLocation)
+  Graph: EventGraph
+    Node: Event Receive Execute AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: OwnerController (object) Dir=Out
+      Pin: ControlledPawn (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Random Reachable Point in Radius (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Origin (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+      Pin: RandomLocation (struct) Dir=Out
+        -> Set Target Location
+Target is BPC Boss Behavior.NewLocation
+      Pin: Radius (real) Dir=In
+        -> Get Blackboard Value as Float.ReturnValue
+      Pin: NavData (object) Dir=In
+      Pin: FilterClass (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get OriginKey (K2Node_VariableGet)
+      Pin: OriginKey (struct) Dir=Out
+        -> Get Blackboard Value as Vector.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get OriginKey.OriginKey
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Random Reachable Point in Radius.Origin
+    Node: Get MaxDistanceKey (K2Node_VariableGet)
+      Pin: MaxDistanceKey (struct) Dir=Out
+        -> Get Blackboard Value as Float.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get MaxDistanceKey.MaxDistanceKey
+      Pin: ReturnValue (real) Dir=Out
+        -> Get Random Reachable Point in Radius.Radius
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Event Receive Execute AI.ControlledPawn
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Receive Execute AI.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set BossBehaviorRef.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Target Location
+Target is BPC Boss Behavior.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Set Target Location
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: NewLocation (struct) Dir=In
+        -> Get Random Reachable Point in Radius.RandomLocation
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnFindWalkLocation
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get Random Reachable Point in Radius.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Target Location
+Target is BPC Boss Behavior.execute
+      Pin: else (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set BossBehaviorRef.BossBehaviorRef
+    Node: Set BossBehaviorRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: BossBehaviorRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+        -> Get CharacterRef.self
+      Pin: self (object) Dir=In
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Set Target Location
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterRef (K2Node_VariableGet)
+      Pin: CharacterRef (object) Dir=Out
+        -> Get CharacterMovement.self
+      Pin: self (object) Dir=In
+        -> Set BossBehaviorRef.Output_Get
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Get MovementMode.self
+      Pin: self (object) Dir=In
+        -> Get CharacterRef.CharacterRef
+    Node: Get MovementMode (K2Node_VariableGet)
+      Pin: MovementMode (byte) Dir=Out
+        -> Not Equal (Enum).A
+        -> Not Equal (Enum).A
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Not Equal (Enum) (K2Node_EnumInequality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: A (byte) Dir=In
+        -> Get MovementMode.MovementMode
+      Pin: B (byte) Dir=In
+    Node: Not Equal (Enum) (K2Node_EnumInequality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: A (byte) Dir=In
+        -> Get MovementMode.MovementMode
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set BossBehaviorRef.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Find Walk Location
+Target is BTT Random Location.execute
+      Pin: else (exec) Dir=Out
+        -> On Find Fly Location
+Target is BTT Random Location.execute
+    Node: OnFindWalkLocation
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: OnFindFlyLocation
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sphere Trace By Channel.execute
+    Node: Get MaxDistanceKey (K2Node_VariableGet)
+      Pin: MaxDistanceKey (struct) Dir=Out
+        -> Get Blackboard Value as Float.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get MaxDistanceKey.MaxDistanceKey
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Point in Bounding Box.HalfSize_X
+        -> Random Point in Bounding Box.HalfSize_Y
+        -> Random Point in Bounding Box.HalfSize_Z
+    Node: Random Point in Bounding Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Center (struct) Dir=In
+        -> Get Blackboard Value.Loc
+      Pin: HalfSize (struct) Dir=In
+      Pin: HalfSize_X (real) Dir=In
+        -> Get Blackboard Value as Float.ReturnValue
+      Pin: HalfSize_Y (real) Dir=In
+        -> Get Blackboard Value as Float.ReturnValue
+      Pin: HalfSize_Z (real) Dir=In
+        -> Get Blackboard Value as Float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sphere Trace By Channel.End
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterRef.CharacterRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Target Location
+Target is BPC Boss Behavior.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Sphere Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+        -> Select.Option 1
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+        -> Select.Option 0
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Break Hit Result.TraceEnd
+      Pin: Option 1 (struct) Dir=In
+        -> Break Hit Result.Location
+      Pin: Index (bool) Dir=In
+        -> Sphere Trace By Channel.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector - vector.A
+    Node: Sphere Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnFindFlyLocation
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: End (struct) Dir=In
+        -> Random Point in Bounding Box.ReturnValue
+      Pin: Radius (real) Dir=In
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Sphere Trace By Channel.ActorsToIgnore
+        -> Reroute Node.InputPin
+      Pin: [0] (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get CharacterRef.CharacterRef
+      Pin: OutputPin (object) Dir=Out
+        -> Make Array.[0]
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sphere Trace By Channel.Start
+    Node: Get OriginKey (K2Node_VariableGet)
+      Pin: OriginKey (struct) Dir=Out
+        -> Get Blackboard Value.BBKey
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BBKey (struct) Dir=In
+        -> Get OriginKey.OriginKey
+      Pin: Loc (struct) Dir=Out
+        -> Random Point in Bounding Box.Center
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sphere Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Set Target Location
+Target is BPC Boss Behavior.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+      Pin: B_Y (real) Dir=In
+      Pin: B_Z (real) Dir=In
+        -> Get GroundOffset.GroundOffset
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Make Array.Array
+      Pin: OutputPin (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+        -> vector + vector.A
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+        -> Select.Option 0
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Break Hit Result.TraceStart
+      Pin: Option 1 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Target Location
+Target is BPC Boss Behavior.NewLocation
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Hit Result.Location
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+      Pin: B_Y (real) Dir=In
+      Pin: B_Z (real) Dir=In
+        -> Get GroundOffset.GroundOffset
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+    Node: Get GroundOffset (K2Node_VariableGet)
+      Pin: GroundOffset (real) Dir=Out
+        -> vector - vector.B_Z
+      Pin: self (object) Dir=In
+    Node: Get GroundOffset (K2Node_VariableGet)
+      Pin: GroundOffset (real) Dir=Out
+        -> vector + vector.B_Z
+      Pin: self (object) Dir=In
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Get CharacterRef.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterRef (K2Node_VariableGet)
+      Pin: CharacterRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Set Target Location
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: NewLocation (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Set Target Location
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: On Find Walk Location
+Target is BTT Random Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Find Fly Location
+Target is BTT Random Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Not Equal (Enum).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Not Equal (Enum).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+  Graph: GetBlackboardValue
+    Node: GetBlackboardValue (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: BBKey (struct) Dir=Out
+        -> Get Blackboard Value as Actor.Key
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Loc (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+    Node: Get Blackboard Value as Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> GetBlackboardValue.BBKey
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Actor Location
+Target is Actor.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> GetBlackboardValue.then
+      Pin: InputObject (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Blackboard Value as Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Loc
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Loc
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: Loc (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> GetBlackboardValue.BBKey
+      Pin: OutputPin (struct) Dir=Out
+        -> Get Blackboard Value as Vector.Key

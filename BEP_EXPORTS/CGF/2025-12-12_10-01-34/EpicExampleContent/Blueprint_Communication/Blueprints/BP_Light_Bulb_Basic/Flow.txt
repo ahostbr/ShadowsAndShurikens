@@ -1,0 +1,215 @@
+Blueprint: BP_Light_Bulb_Basic (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Light_Bulb_Basic.BP_Light_Bulb_Basic)
+  Graph: EventGraph
+    Node: Update Light Color
+Target is BP Light Bulb Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: New color (struct) Dir=In
+    Node: Toggle light
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Turn on/off (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Toggle light
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Toggle light
+Custom Event.Turn on/off
+      Pin: then (exec) Dir=Out
+        -> Light flash.PlayFromStart
+      Pin: else (exec) Dir=Out
+        -> Sequence.execute
+    Node: Update Light Color
+Target is BP Light Bulb Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Light flash.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: New color (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+        -> Light flash.flash
+      Pin: ReturnValue (struct) Dir=Out
+        -> Update Light Color
+Target is BP Light Bulb Basic.New color
+    Node: Light flash (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Branch.then
+      Pin: Stop (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Update Light Color
+Target is BP Light Bulb Basic.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: flash (real) Dir=Out
+        -> Make Color.A
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then_0 (exec) Dir=Out
+        -> Light flash.Stop
+      Pin: then_1 (exec) Dir=Out
+        -> Update Light Color
+Target is BP Light Bulb Basic.execute
+    Node: Toggle Light with flicker transition (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.execute
+    Node: Get Light bulb (K2Node_VariableGet)
+      Pin: Light bulb (object) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.self
+        -> Create Dynamic Material Instance
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Light bulb material 1.execute
+      Pin: self (object) Dir=In
+        -> Get Light bulb.Light bulb
+      Pin: ElementIndex (int) Dir=In
+      Pin: SourceMaterial (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Light bulb material 1.Light bulb material 1
+    Node: Create Dynamic Material Instance
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Light bulb material 1.then
+      Pin: then (exec) Dir=Out
+        -> Set Light bulb material 2.execute
+      Pin: self (object) Dir=In
+        -> Get Light bulb.Light bulb
+      Pin: ElementIndex (int) Dir=In
+      Pin: SourceMaterial (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Light bulb material 2.Light bulb material 2
+    Node: Set Light bulb material 1 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.execute
+      Pin: Light bulb material 1 (object) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Light bulb material 2 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: Light bulb material 2 (object) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material instances for for each element of the Light Bulb mesh (EdGraphNode_Comment)
+  Graph: Update light color
+    Node: Update light color (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: New color (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+        -> Break Color.InColor
+        -> Set Light Color
+Target is Light Component.NewLightColor
+    Node: Get Light bulb material 1 (K2Node_VariableGet)
+      Pin: Light bulb material 1 (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Get Light bulb material 2 (K2Node_VariableGet)
+      Pin: Light bulb material 2 (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update light color.then
+      Pin: then (exec) Dir=Out
+        -> Set Light Color
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get Light bulb material 1.Light bulb material 1
+        -> Get Light bulb material 2.Light bulb material 2
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Update light color.New color
+    Node: Get Light (K2Node_VariableGet)
+      Pin: Light (object) Dir=Out
+        -> Set Intensity
+Target is Light Component.self
+        -> Set Light Color
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Light Color
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get Light.Light
+      Pin: NewLightColor (struct) Dir=In
+        -> Update light color.New color
+      Pin: bSRGB (bool) Dir=In
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Light Color
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Light.Light
+      Pin: NewIntensity (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Break Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InColor (struct) Dir=In
+        -> Update light color.New color
+      Pin: R (real) Dir=Out
+      Pin: G (real) Dir=Out
+      Pin: B (real) Dir=Out
+      Pin: A (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.A
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Intensity
+Target is Light Component.NewIntensity
+    Node: Set Material parameters to match lightcolor (EdGraphNode_Comment)
+    Node: Set the light color and brightness (EdGraphNode_Comment)

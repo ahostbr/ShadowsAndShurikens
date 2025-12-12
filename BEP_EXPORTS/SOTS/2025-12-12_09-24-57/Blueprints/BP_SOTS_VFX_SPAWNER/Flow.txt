@@ -1,0 +1,199 @@
+Blueprint: BP_SOTS_VFX_SPAWNER (/Game/SOTS/Blueprints/BP_SOTS_VFX_SPAWNER.BP_SOTS_VFX_SPAWNER)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Life Span
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InLifespan (real) Dir=In
+        -> Get Lifespan.Lifespan
+    Node: On System Finished (Niagara) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Niagara Finished.execute
+      Pin: PSystem (object) Dir=Out
+    Node: Call On Niagara Finished (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On System Finished (Niagara).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Component Deactivated (Cascade) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Cascade Finished.execute
+      Pin: Component (object) Dir=Out
+    Node: Call On Cascade Finished (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Component Deactivated (Cascade).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UseLifeSpan? (K2Node_VariableGet)
+      Pin: UseLifeSpan? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: Condition (bool) Dir=In
+        -> Get UseLifeSpan?.UseLifeSpan?
+      Pin: then (exec) Dir=Out
+        -> Set Life Span
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Lifespan (K2Node_VariableGet)
+      Pin: Lifespan (real) Dir=Out
+        -> Set Life Span
+Target is Actor.InLifespan
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get Niagara (K2Node_VariableGet)
+      Pin: Niagara (object) Dir=Out
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.self
+        -> Set Auto Activate
+Target is Actor Component.self
+        -> Set Custom Time Dilation
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara System Asset
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Custom Time Dilation
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Auto Activate
+Target is Actor Component.execute
+      Pin: self (object) Dir=In
+        -> Get Niagara.Niagara
+      Pin: InAsset (object) Dir=In
+        -> Get NiagaraSystem.NiagaraSystem
+      Pin: bResetExistingOverrideParameters (bool) Dir=In
+    Node: Get NiagaraSystem (K2Node_VariableGet)
+      Pin: NiagaraSystem (object) Dir=Out
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.InAsset
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Construction Script.then
+      Pin: InputObject (object) Dir=In
+        -> Get NiagaraSystem.NiagaraSystem
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Custom Time Dilation
+Target is Niagara Particle System Component.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Cascade (K2Node_VariableGet)
+      Pin: Cascade (object) Dir=Out
+        -> Set Template
+Target is Cascade Particle System Component.self
+        -> Set Auto Activate
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Set Template
+Target is Cascade Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CustomTimeDilation.then
+      Pin: then (exec) Dir=Out
+        -> Set Auto Activate
+Target is Actor Component.execute
+      Pin: self (object) Dir=In
+        -> Get Cascade.Cascade
+      Pin: NewTemplate (object) Dir=In
+        -> Get CascadeTemplate.CascadeTemplate
+    Node: Get CascadeTemplate (K2Node_VariableGet)
+      Pin: CascadeTemplate (object) Dir=Out
+        -> Set Template
+Target is Cascade Particle System Component.NewTemplate
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Auto Activate
+Target is Actor Component.execute
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Auto Activate
+Target is Actor Component.then
+      Pin: InputObject (object) Dir=In
+        -> Get CascadeTemplate.CascadeTemplate
+      Pin: Is Valid (exec) Dir=Out
+        -> Set CustomTimeDilation.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set Auto Activate
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Template
+Target is Cascade Particle System Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Cascade.Cascade
+      Pin: bNewAutoActivate (bool) Dir=In
+    Node: Set Auto Activate
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get Niagara.Niagara
+      Pin: bNewAutoActivate (bool) Dir=In
+    Node: Get Cascade (K2Node_VariableGet)
+      Pin: Cascade (object) Dir=Out
+        -> Set CustomTimeDilation.self
+      Pin: self (object) Dir=In
+    Node: Set CustomTimeDilation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Template
+Target is Cascade Particle System Component.execute
+      Pin: CustomTimeDilation (real) Dir=In
+        -> Get Custom Time Dilation.Custom Time Dilation
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Cascade.Cascade
+    Node: Get Custom Time Dilation (K2Node_VariableGet)
+      Pin: Custom Time Dilation (real) Dir=Out
+        -> Set CustomTimeDilation.CustomTimeDilation
+      Pin: self (object) Dir=In
+    Node: Set Custom Time Dilation
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.execute
+      Pin: self (object) Dir=In
+        -> Get Niagara.Niagara
+      Pin: Dilation (real) Dir=In
+        -> Get Custom Time Dilation.Custom Time Dilation
+    Node: Get Custom Time Dilation (K2Node_VariableGet)
+      Pin: Custom Time Dilation (real) Dir=Out
+        -> Set Custom Time Dilation
+Target is Niagara Particle System Component.Dilation
+      Pin: self (object) Dir=In
+  Graph: OnNiagaraFinished
+    Node: OnNiagaraFinished (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnCascadeFinished
+    Node: OnCascadeFinished (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

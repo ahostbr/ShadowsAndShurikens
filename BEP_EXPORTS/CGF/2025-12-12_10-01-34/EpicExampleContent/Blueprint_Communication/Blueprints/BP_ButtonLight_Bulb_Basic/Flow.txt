@@ -1,0 +1,118 @@
+Blueprint: BP_ButtonLight_Bulb_Basic (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_ButtonLight_Bulb_Basic.BP_ButtonLight_Bulb_Basic)
+  Graph: EventGraph
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Flip Flop.B
+      Pin: then (exec) Dir=Out
+        -> Toggle Light
+Target is BP Light Bulb Basic.execute
+      Pin: self (object) Dir=In
+        -> Get Button light material.Button light material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Flip Flop.A
+      Pin: then (exec) Dir=Out
+        -> Toggle Light
+Target is BP Light Bulb Basic.execute
+      Pin: self (object) Dir=In
+        -> Get Button light material.Button light material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Get Button light material (K2Node_VariableGet)
+      Pin: Button light material (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Flip Flop (K2Node_MacroInstance)
+      Pin: None (exec) Dir=In
+        -> On Component End Overlap (Trigger collision).then
+        -> On Component Begin Overlap (Trigger collision).then
+      Pin: A (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: B (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: IsA (bool) Dir=Out
+    Node: Get Target light (K2Node_VariableGet)
+      Pin: Target light (object) Dir=Out
+        -> Toggle Light
+Target is BP Light Bulb Basic.self
+        -> Toggle Light
+Target is BP Light Bulb Basic.self
+      Pin: self (object) Dir=In
+    Node: Toggle Light
+Target is BP Light Bulb Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Target light.Target light
+      Pin: Turn on/off (bool) Dir=In
+    Node: Toggle Light
+Target is BP Light Bulb Basic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Target light.Target light
+      Pin: Turn on/off (bool) Dir=In
+    Node: On Component Begin Overlap (Trigger collision) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Flip Flop.None
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Trigger collision) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Flip Flop.None
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.execute
+    Node: Get ButtonMesh (K2Node_VariableGet)
+      Pin: ButtonMesh (object) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Button light material (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: Button light material (object) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Button light material.execute
+      Pin: self (object) Dir=In
+        -> Get ButtonMesh.ButtonMesh
+      Pin: ElementIndex (int) Dir=In
+      Pin: SourceMaterial (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Button light material.Button light material

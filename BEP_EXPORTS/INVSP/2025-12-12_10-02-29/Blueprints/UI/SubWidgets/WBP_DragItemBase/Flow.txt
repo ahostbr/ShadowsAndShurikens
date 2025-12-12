@@ -1,0 +1,392 @@
+Blueprint: WBP_DragItemBase (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_DragItemBase.WBP_DragItemBase)
+  Graph: EventGraph
+  Graph: UpdateSize
+    Node: UpdateSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: Height (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: Width (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateSize.then
+      Pin: then (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get DragItemSizeBoxRef.DragItemSizeBoxRef
+      Pin: InHeightOverride (real) Dir=In
+        -> UpdateSize.Height
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get DragItemSizeBoxRef.DragItemSizeBoxRef
+      Pin: InWidthOverride (real) Dir=In
+        -> UpdateSize.Width
+    Node: Update Width & Height of the Drag Widget (EdGraphNode_Comment)
+    Node: Get DragItemSizeBoxRef (K2Node_VariableGet)
+      Pin: DragItemSizeBoxRef (object) Dir=Out
+        -> Set Height Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Get DragItemSizeBoxRef (K2Node_VariableGet)
+      Pin: DragItemSizeBoxRef (object) Dir=Out
+        -> Set Width Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+  Graph: UpdateWidgetRotation
+    Node: UpdateWidgetRotation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bIsRotated.execute
+      Pin: bIsRotated (bool) Dir=Out
+        -> Set bIsRotated.bIsRotated
+    Node: Set Image
+Target is WBP Drag Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bIsRotated.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bIsRotated (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateWidgetRotation.then
+      Pin: then (exec) Dir=Out
+        -> Set Image
+Target is WBP Drag Item Base.execute
+      Pin: bIsRotated (bool) Dir=In
+        -> UpdateWidgetRotation.bIsRotated
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Widget Rotation (EdGraphNode_Comment)
+  Graph: SetImage
+    Node: SetImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsRotated.bIsRotated
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: else (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> SetImage.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Brush from Material
+Target is Image.Material
+        -> Set Brush from Material
+Target is Image.Material
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Material (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+    Node: Get ItemImageTexture (K2Node_VariableGet)
+      Pin: ItemImageTexture (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Get bIsRotated (K2Node_VariableGet)
+      Pin: bIsRotated (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Sets drag item image based on a material to allow for rotation of the image (EdGraphNode_Comment)
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Y (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+    Node: GetSizeX
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeX
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: GetSizeY
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeY
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Y (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+    Node: GetSizeX
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeX
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: GetSizeY
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeY
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Match image size to texture size (EdGraphNode_Comment)
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Material (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+    Node: Get ItemImageTexture (K2Node_VariableGet)
+      Pin: ItemImageTexture (object) Dir=Out
+        -> GetSizeY
+Target is Texture 2D.self
+        -> GetSizeX
+Target is Texture 2D.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get ItemImageTexture (K2Node_VariableGet)
+      Pin: ItemImageTexture (object) Dir=Out
+        -> GetSizeX
+Target is Texture 2D.self
+        -> GetSizeY
+Target is Texture 2D.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Brush from Material
+Target is Image.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Brush from Material
+Target is Image.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get BackgroundImageRef (K2Node_VariableGet)
+      Pin: BackgroundImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Desired Size Override
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get BackgroundImageRef.BackgroundImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Get PulseEffectImageRef (K2Node_VariableGet)
+      Pin: PulseEffectImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Desired Size Override
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PulseEffectImageRef.PulseEffectImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Get BackgroundImageRef (K2Node_VariableGet)
+      Pin: BackgroundImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Desired Size Override
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get BackgroundImageRef.BackgroundImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Get PulseEffectImageRef (K2Node_VariableGet)
+      Pin: PulseEffectImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Desired Size Override
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PulseEffectImageRef.PulseEffectImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue

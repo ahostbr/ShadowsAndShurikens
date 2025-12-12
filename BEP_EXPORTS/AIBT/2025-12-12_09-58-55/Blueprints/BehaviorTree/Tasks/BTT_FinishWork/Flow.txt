@@ -1,0 +1,121 @@
+Blueprint: BTT_FinishWork (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_FinishWork.BTT_FinishWork)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Slot
+Target is BP Workspace.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Get Current Workspace
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Get Current Workspace
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: RetWorkspace (object) Dir=Out
+        -> Remove from Slot
+Target is BP Workspace.self
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: RetCharacter (object) Dir=Out
+        -> Remove from Slot
+Target is BP Workspace.WorkerRef
+    Node: Remove from Slot
+Target is BP Workspace (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> SetFocus
+Target is AIController.execute
+      Pin: self (object) Dir=In
+        -> Get Current Workspace
+Target is BP Behavior Component.RetWorkspace
+      Pin: WorkerRef (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Stop Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+    Node: SetFocus
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove from Slot
+Target is BP Workspace.then
+      Pin: then (exec) Dir=Out
+        -> On Stop Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewFocus (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: OutputPin (object) Dir=Out
+        -> SetFocus
+Target is AIController.self
+    Node: On Stop Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetFocus
+Target is AIController.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> On Stop Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).self

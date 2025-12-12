@@ -1,0 +1,127 @@
+Blueprint: BP_BehaviorTriggerComponent (/Game/AIBehaviorToolkit/Blueprints/BP_BehaviorTriggerComponent.BP_BehaviorTriggerComponent)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: SendAreaMessageReplicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Report Noise Event.execute
+      Pin: Instigator (object) Dir=Out
+        -> Report Noise Event.Instigator
+      Pin: Location (struct) Dir=Out
+        -> Report Noise Event.NoiseLocation
+      Pin: Radius (real) Dir=Out
+        -> Report Noise Event.Loudness
+      Pin: Message (byte) Dir=Out
+        -> Enum to Name.Enumerator
+    Node: Report Noise Event (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SendAreaMessageReplicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: NoiseLocation (struct) Dir=In
+        -> SendAreaMessageReplicated From Client
+Executes On Server
+Custom Event.Location
+      Pin: Loudness (real) Dir=In
+        -> SendAreaMessageReplicated From Client
+Executes On Server
+Custom Event.Radius
+      Pin: Instigator (object) Dir=In
+        -> SendAreaMessageReplicated From Client
+Executes On Server
+Custom Event.Instigator
+      Pin: MaxRange (real) Dir=In
+      Pin: Tag (name) Dir=In
+        -> Enum to Name.ReturnValue
+    Node: Enum to Name (K2Node_GetEnumeratorName)
+      Pin: Enumerator (byte) Dir=In
+        -> SendAreaMessageReplicated From Client
+Executes On Server
+Custom Event.Message
+      Pin: ReturnValue (name) Dir=Out
+        -> Report Noise Event.Tag
+    Node: SendDirectMessage
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ReceivingActor (object) Dir=Out
+        -> Get Components By Class
+Target is Actor.self
+      Pin: Message (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Components By Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> SendDirectMessage
+Custom Event.ReceivingActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SendDirectMessage
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Receive Message Tag
+Target is BP Behavior Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Receive Message Tag
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: MessageTag (byte) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Receive Message Tag
+Target is BP Behavior Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GET.Output
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Receive Message Tag
+Target is BP Behavior Component.MessageTag
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> SendDirectMessage
+Custom Event.Message
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Components By Class
+Target is Actor.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Is Valid.Object
+        -> Reroute Node.InputPin

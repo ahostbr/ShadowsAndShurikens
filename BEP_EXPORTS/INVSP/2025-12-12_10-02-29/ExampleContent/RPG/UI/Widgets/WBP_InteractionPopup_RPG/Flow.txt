@@ -1,0 +1,108 @@
+Blueprint: WBP_InteractionPopup_RPG (/Game/InventorySystemPro/ExampleContent/RPG/UI/Widgets/WBP_InteractionPopup_RPG.WBP_InteractionPopup_RPG)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set InventoryInputIconRef.execute
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Change Mapped Key
+Target is WBP Inventory Input Icon.execute
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Set InventoryInputIconRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set FadeAnimation.execute
+      Pin: InventoryInputIconRef (object) Dir=In
+        -> Get WBP_InventoryInputIcon.WBP_InventoryInputIcon
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get WBP_InventoryInputIcon (K2Node_VariableGet)
+      Pin: WBP_InventoryInputIcon (object) Dir=Out
+        -> Set InventoryInputIconRef.InventoryInputIconRef
+      Pin: self (object) Dir=In
+    Node: Set FadeAnimation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InventoryInputIconRef.then
+      Pin: then (exec) Dir=Out
+      Pin: FadeAnimation (object) Dir=In
+        -> Get InteractionFade.InteractionFade
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get InteractionFade (K2Node_VariableGet)
+      Pin: InteractionFade (object) Dir=Out
+        -> Set FadeAnimation.FadeAnimation
+      Pin: self (object) Dir=In
+    Node: Get WBP_InventoryInputIcon (K2Node_VariableGet)
+      Pin: WBP_InventoryInputIcon (object) Dir=Out
+        -> Change Mapped Key
+Target is WBP Inventory Input Icon.self
+      Pin: self (object) Dir=In
+    Node: Change Mapped Key
+Target is WBP Inventory Input Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WBP_InventoryInputIcon.WBP_InventoryInputIcon
+      Pin: NewKey (struct) Dir=In
+        -> Break Player Key Mapping.CurrentKey
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Key Mapping for Input Action
+Target is BP Inventory Controller Component.self
+    Node: Get Key Mapping for Input Action
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: InputMappingContext (object) Dir=In
+      Pin: InputMappingName (name) Dir=In
+      Pin: Slot (byte) Dir=In
+      Pin: PlayerKeyMapping (struct) Dir=Out
+        -> Break Player Key Mapping.PlayerKeyMapping
+    Node: Break Player Key Mapping (K2Node_BreakStruct)
+      Pin: PlayerKeyMapping (struct) Dir=In
+        -> Get Key Mapping for Input Action
+Target is BP Inventory Controller Component.PlayerKeyMapping
+      Pin: MappingName (name) Dir=Out
+      Pin: DisplayName (text) Dir=Out
+      Pin: DisplayCategory (text) Dir=Out
+      Pin: Slot (byte) Dir=Out
+      Pin: bIsDirty (bool) Dir=Out
+      Pin: DefaultKey (struct) Dir=Out
+      Pin: CurrentKey (struct) Dir=Out
+        -> Change Mapped Key
+Target is WBP Inventory Input Icon.NewKey
+      Pin: HardwareDeviceId (struct) Dir=Out
+      Pin: AssociatedInputAction (object) Dir=Out
+      Pin: AssociatedInputActionSoft (softobject) Dir=Out
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self

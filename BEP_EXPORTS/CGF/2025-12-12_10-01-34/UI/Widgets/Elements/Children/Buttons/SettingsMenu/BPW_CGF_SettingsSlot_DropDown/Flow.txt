@@ -1,0 +1,1795 @@
+Blueprint: BPW_CGF_SettingsSlot_DropDown (/Game/CoreGameFramework/UI/Widgets/Elements/Children/Buttons/SettingsMenu/BPW_CGF_SettingsSlot_DropDown.BPW_CGF_SettingsSlot_DropDown)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: self (object) Dir=In
+    Node: On Selection Changed (ComboBox) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Switch on ESlateVisibility.execute
+      Pin: SelectedItem (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectionType (byte) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Call On Combo Box Selection Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: SelectedItem (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ItemType (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SlotsData (struct) Dir=In
+        -> Get SlotData.SlotData
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get SlotData.self
+      Pin: self (object) Dir=In
+    Node: Get SlotData (K2Node_VariableGet)
+      Pin: SlotData (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> Get SlotData.SlotData
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> To String (Text).InText
+      Pin: SettingsOptions_18_BBB8446E45D866949245FDB33271A340 (text) Dir=Out
+        -> For Each Loop.Array
+      Pin: SelectedOption_38_C002D2F04261F0CB9A0269B76A949853 (text) Dir=Out
+        -> To String (Text).InText
+    Node: Handle Resolution DropDown
+Collapsed Graph (K2Node_Composite)
+      Pin: Completed (Exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Resolution
+    Node: VFX Set Screen Resolution
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Resolution (struct) Dir=In
+        -> Make Int Point.IntPoint
+    Node: Make Int Point (K2Node_MakeStruct)
+      Pin: IntPoint (struct) Dir=Out
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.Resolution
+      Pin: X (int) Dir=In
+        -> String To Integer.ReturnValue
+      Pin: Y (int) Dir=In
+        -> String To Integer.ReturnValue
+    Node: Split (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Get Selected Item.Selected Item
+      Pin: InStr (string) Dir=In
+      Pin: LeftS (string) Dir=Out
+        -> String To Integer.InString
+      Pin: RightS (string) Dir=Out
+        -> String To Integer.InString
+      Pin: SearchCase (byte) Dir=In
+      Pin: SearchDir (byte) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: String To Integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Split.LeftS
+      Pin: ReturnValue (int) Dir=Out
+        -> Make Int Point.X
+    Node: String To Integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Split.RightS
+      Pin: ReturnValue (int) Dir=Out
+        -> Make Int Point.Y
+    Node: Set Selected Item (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set DirectSet?.then
+        -> Set DirectSet?.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Option.execute
+      Pin: Selected Item (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get Selected Item (K2Node_VariableGet)
+      Pin: Selected Item (string) Dir=Out
+        -> Split.SourceString
+      Pin: self (object) Dir=In
+    Node: Selection Changed (EdGraphNode_Comment)
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Switch on String.Default
+      Pin: Array (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingsOptions_18_BBB8446E45D866949245FDB33271A340
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Option
+Target is ComboBox (String).execute
+      Pin: Array Element (text) Dir=Out
+        -> To String (Text).InText
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Set Selected Option
+Target is ComboBox (String).execute
+    Node: Add Option
+Target is ComboBox (String) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ComboBox.ComboBox
+      Pin: Option (string) Dir=In
+        -> To String (Text).ReturnValue
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (string) Dir=Out
+        -> Add Option
+Target is ComboBox (String).Option
+    Node: Set Selected Option
+Target is ComboBox (String) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Selected Item.execute
+      Pin: self (object) Dir=In
+        -> Get ComboBox.ComboBox
+      Pin: Option (string) Dir=In
+        -> To String (Text).ReturnValue
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SelectedOption_38_C002D2F04261F0CB9A0269B76A949853
+      Pin: ReturnValue (string) Dir=Out
+        -> Set Selected Option
+Target is ComboBox (String).Option
+        -> Reroute Node.InputPin
+    Node: VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set SelectedItemsIndex.then
+        -> Set SelectedItemsIndex.then
+        -> Set SelectedItemsIndex.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: InFullscreenMode (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get Selected Item (K2Node_VariableGet)
+      Pin: Selected Item (string) Dir=Out
+        -> Switch on String.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on String (K2Node_SwitchString)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.WindowMode
+      Pin: Selection (string) Dir=In
+        -> Get Selected Item.Selected Item
+      Pin: NotEqual_StriStri (object) Dir=In
+      Pin: Fullscreen (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+      Pin: Windowed Fullscreen (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+      Pin: Windowed (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Fullscreen
+      Pin: then (exec) Dir=Out
+        -> VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu.execute
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Windowed Fullscreen
+      Pin: then (exec) Dir=Out
+        -> VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu.execute
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Windowed
+      Pin: then (exec) Dir=Out
+        -> VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu.execute
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Option 2 (byte) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+      Pin: ReturnValue (byte) Dir=Out
+        -> VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu.InFullscreenMode
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get ComboBox (K2Node_VariableGet)
+      Pin: ComboBox (object) Dir=Out
+        -> Add Option
+Target is ComboBox (String).self
+        -> Set Selected Option
+Target is ComboBox (String).self
+      Pin: self (object) Dir=In
+    Node: VFX Set Max FPS
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: MaxFPS (int) Dir=In
+        -> String To Integer.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Set Selected Item.Output_Get
+      Pin: OutputPin (string) Dir=Out
+        -> Call On Combo Box Selection Changed.SelectedItem
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Option.then
+      Pin: then_0 (exec) Dir=Out
+        -> Get.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Call On Combo Box Selection Changed.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> On Selection Changed (ComboBox).SelectionType
+      Pin: OutputPin (byte) Dir=Out
+        -> Call On Combo Box Selection Changed.ItemType
+    Node: Set Selected Option (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Item.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Selected Option (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Selected Item.Selected Item
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Selected Option.Selected Option
+    Node: Get Selected Item (K2Node_VariableGet)
+      Pin: Selected Item (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+    Node: Resolution (EdGraphNode_Comment)
+    Node: WindowMode (EdGraphNode_Comment)
+    Node: MAXFPS (EdGraphNode_Comment)
+    Node: ApplySettings (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Max FPS
+Target is BPW CGF Settings Menu.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.execute
+    Node: Switch on String (K2Node_SwitchString)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Selection (string) Dir=In
+        -> Get Selected Item.Selected Item
+      Pin: NotEqual_StriStri (object) Dir=In
+      Pin: Low (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Medium (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: High (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Epic (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Cinematic (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: OFF (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 2x (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 4x (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 8x (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 16x (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Selected Item (K2Node_VariableGet)
+      Pin: Selected Item (string) Dir=Out
+        -> Switch on String.Selection
+      Pin: self (object) Dir=In
+    Node: VFX Set Foliage Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: FoliageQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set SelectedItemsIndex.then
+        -> Set SelectedItemsIndex.then
+        -> Set SelectedItemsIndex.then
+        -> Set SelectedItemsIndex.then
+        -> Set SelectedItemsIndex.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Switch on String.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+        -> Set All Settings to Match Overall Quality
+Target is BPW CGF Settings Slot Drop Down.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.execute
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SelectedItemsIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectedItemsIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: VFX Set Shadow Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Switch on String (K2Node_SwitchString)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Selection (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: NotEqual_StriStri (object) Dir=In
+      Pin: Overall Quality (exec) Dir=Out
+        -> VFX Set Overall Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: Foliage Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Global Illumination Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Shadow Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Texture Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Visual Effect Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Post Processing Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Anti-Aliasing Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: View Distance Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Reflection Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Shading Quality (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get SlotData.self
+      Pin: self (object) Dir=In
+    Node: Get SlotData (K2Node_VariableGet)
+      Pin: SlotData (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> Get SlotData.SlotData
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> To String (Text).InText
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=Out
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: ReturnValue (string) Dir=Out
+        -> Switch on String.Selection
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Overall Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.IlluminationQuality
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.FoliageQuality
+        -> VFX Set Overall Quality
+Target is BPW CGF Settings Menu.Quality
+      Pin: self (object) Dir=In
+    Node: VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: IlluminationQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Global Illumination Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.Value
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.Value
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Shadow Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.ParentSlotRef
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: VFX Set Texture Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Texture Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.Value
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.PostProcessQuality
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.AAQuality
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Visual Effect Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: PostProcessQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Post Processing Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: VFX Set AA Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: AAQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Anti-Aliasing Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Max FPS
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.Value
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.ReflectionQuality
+      Pin: self (object) Dir=In
+    Node: VFX Set View Distance Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.View Distance Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: VFX Set Reflection Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: ReflectionQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Reflection Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: VFX Set Shading Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.Value
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Shading Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set VFX Setting (EdGraphNode_Comment)
+    Node: Construct  (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Max FPS
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Max FPS
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Foliage Quality
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Get.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Get.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Error Handling.execute
+    Node: VFX Set Overall Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Overall Quality
+      Pin: then (exec) Dir=Out
+        -> Set All Settings to Match Overall Quality
+Target is BPW CGF Settings Slot Drop Down.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Quality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Set All Settings to Match Overall Quality
+Target is BPW CGF Settings Slot Drop Down (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Overall Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.SlotRef
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Apply Settings Delayed
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: SlotRef (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+      Pin: SelectedOption (text) Dir=In
+        -> Get Selected Option.Selected Option
+      Pin: DirectSet? (bool) Dir=In
+        -> Get DirectSet?.DirectSet?
+    Node: CGF Do Only After Game Time Elapsed (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Switch on ESlateVisibility.Visible
+        -> Switch on ESlateVisibility.HitTestInvisible
+        -> Switch on ESlateVisibility.SelfHitTestInvisible
+      Pin: Time (real) Dir=In
+      Pin: True (exec) Dir=Out
+        -> Switch on ESelectInfo.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set Selected Item.Selected Item
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get SlotData.self
+      Pin: self (object) Dir=In
+    Node: Get SlotData (K2Node_VariableGet)
+      Pin: SlotData (struct) Dir=Out
+        -> Call On Combo Box Selection Changed.SlotsData
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get SlotData.self
+      Pin: self (object) Dir=In
+    Node: Get SlotData (K2Node_VariableGet)
+      Pin: SlotData (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> Get SlotData.SlotData
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> To String (Text).InText
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=Out
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: ReturnValue (string) Dir=Out
+        -> Switch on String.Selection
+    Node: Switch on String (K2Node_SwitchString)
+      Pin: Default (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Selection (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: NotEqual_StriStri (object) Dir=In
+      Pin: Resolution (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: WindowMode (exec) Dir=Out
+        -> Switch on String.execute
+      Pin: Max FPS (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Audio Device (exec) Dir=Out
+        -> HandleAudioDeviceSwap
+Collapsed Graph.execute
+      Pin: Anti-Aliasing Method (exec) Dir=Out
+        -> Print String.execute
+    Node: Get Viewport Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> To IntPoint (Vector2D).InVector2D
+    Node: VFX Set Screen Resolution
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Full Screen Mode
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Resolution (struct) Dir=In
+        -> To IntPoint (Vector2D).ReturnValue
+    Node: To IntPoint (Vector2D) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVector2D (struct) Dir=In
+        -> Get Viewport Size.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.Resolution
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Screen Resolution
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Default
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Switch on String.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Get.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Switch on String.execute
+    Node: Switch On Setting Name,
+If Quality Setting Set Selected Items Index And Switch Again. (EdGraphNode_Comment)
+    Node: Check Press  Type And Set Direct Set And Selected Item Vars up (EdGraphNode_Comment)
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Selected Option.Selected Option
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Integer.InString
+    Node: String To Integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> VFX Set Max FPS
+Target is BPW CGF Settings Menu.MaxFPS
+    Node: Get Selected Option (K2Node_VariableGet)
+      Pin: Selected Option (text) Dir=Out
+        -> To String (Text).InText
+      Pin: self (object) Dir=In
+    Node: Handle Audio Device DropDown
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Audio Device
+    Node: Switch on String (K2Node_SwitchString)
+      Pin: Default (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: execute (exec) Dir=In
+        -> Clear Options
+Target is ComboBox (String).then
+      Pin: Selection (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: NotEqual_StriStri (object) Dir=In
+      Pin: Audio Device (exec) Dir=Out
+        -> Handle Audio Device DropDown
+Collapsed Graph.execute
+      Pin: Resolution (exec) Dir=Out
+        -> Handle Resolution DropDown
+Collapsed Graph.execute
+      Pin: Anti-Aliasing Method (exec) Dir=Out
+        -> HandleAnti-Aliasing Method
+Collapsed Graph.execute
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: ReturnValue (string) Dir=Out
+        -> Switch on String.Selection
+    Node: HandleAudioDeviceSwap
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Audio Device
+    Node: Audio Device (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> HandleAudioDeviceSwap
+Collapsed Graph.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.execute
+    Node: Set Selected Item (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Option
+Target is ComboBox (String).then
+      Pin: then (exec) Dir=Out
+      Pin: Selected Item (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Clear Options
+Target is ComboBox (String) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> BindFocusEvents
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+        -> Switch on String.execute
+      Pin: self (object) Dir=In
+        -> Get ComboBox.ComboBox
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: Reset (exec) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> BindFocusEvents
+Collapsed Graph.execute
+    Node: Get Selected Option (K2Node_VariableGet)
+      Pin: Selected Option (text) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.SelectedOption
+      Pin: self (object) Dir=In
+    Node: Switch on ESelectInfo (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> CGF Do Only After Game Time Elapsed.True
+      Pin: Selection (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: OnKeyPress (exec) Dir=Out
+        -> Set DirectSet?.execute
+      Pin: OnNavigation (exec) Dir=Out
+        -> Set DirectSet?.execute
+      Pin: OnMouseClick (exec) Dir=Out
+        -> Set DirectSet?.execute
+      Pin: Direct (exec) Dir=Out
+        -> Set DirectSet?.execute
+    Node: When Directly Set Via Code Or Other Widgets Set This Bool, And Pass It In Apply Settings To Do A Delay. This is To Prevent The Settings All Applying Multiple Times (EdGraphNode_Comment)
+    Node: Set DirectSet? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on ESelectInfo.Direct
+      Pin: then (exec) Dir=Out
+        -> Set Selected Item.execute
+      Pin: DirectSet? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set DirectSet? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on ESelectInfo.OnKeyPress
+        -> Switch on ESelectInfo.OnNavigation
+        -> Switch on ESelectInfo.OnMouseClick
+      Pin: then (exec) Dir=Out
+        -> Set Selected Item.execute
+      Pin: DirectSet? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get DirectSet? (K2Node_VariableGet)
+      Pin: DirectSet? (bool) Dir=Out
+        -> Apply Settings Delayed
+Target is BPW CGF Settings Menu.DirectSet?
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Low
+        -> Switch on String.OFF
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Medium
+        -> Switch on String.2x
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.High
+        -> Switch on String.4x
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Epic
+        -> Switch on String.8x
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Cinematic
+        -> Switch on String.16x
+      Pin: OutputPin (exec) Dir=Out
+        -> Set SelectedItemsIndex.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> On Selection Changed (ComboBox).SelectedItem
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Switch on ESelectInfo.Selection
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> Get Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ESlateVisibility.Selection
+    Node: Switch on ESlateVisibility (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> On Selection Changed (ComboBox).then
+      Pin: Selection (byte) Dir=In
+        -> Get Visibility
+Target is Widget.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Visible (exec) Dir=Out
+        -> CGF Do Only After Game Time Elapsed.execute
+      Pin: Collapsed (exec) Dir=Out
+      Pin: Hidden (exec) Dir=Out
+      Pin: HitTestInvisible (exec) Dir=Out
+        -> CGF Do Only After Game Time Elapsed.execute
+      Pin: SelfHitTestInvisible (exec) Dir=Out
+        -> CGF Do Only After Game Time Elapsed.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> On Selection Changed (ComboBox).SelectionType
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Set Selected Item.Selected Item
+    Node: BindFocusEvents
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Clear Options
+Target is ComboBox (String).execute
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+    Node: Get ComboBox (K2Node_VariableGet)
+      Pin: ComboBox (object) Dir=Out
+        -> Clear Options
+Target is ComboBox (String).self
+      Pin: self (object) Dir=In
+    Node: HandleAnti-Aliasing Method
+Collapsed Graph (K2Node_Composite)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Anti-Aliasing Method
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on String.Resolution
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Print String.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+        -> Find.Value
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Get AA_ConsoleCommands (K2Node_VariableGet)
+      Pin: AA_ConsoleCommands (string) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Get AA_ConsoleCommands.AA_ConsoleCommands
+      Pin: Key (string) Dir=In
+        -> Get Selected Item.Selected Item
+      Pin: Value (string) Dir=Out
+        -> Execute Console Command.Command
+        -> Print String.InString
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Selected Item (K2Node_VariableGet)
+      Pin: Selected Item (string) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Execute Console Command.then
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Selected Item (K2Node_VariableGet)
+      Pin: Selected Item (string) Dir=Out
+        -> Equal Exactly (String).A
+      Pin: self (object) Dir=In
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Selected Item.Selected Item
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+        -> Find.Value
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Get TSR_ConsoleCommands (K2Node_VariableGet)
+      Pin: TSR_ConsoleCommands (string) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Get TSR_ConsoleCommands.TSR_ConsoleCommands
+      Pin: Key (string) Dir=In
+      Pin: Value (string) Dir=Out
+        -> Execute Console Command.Command
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Execute Console Command.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on String.Anti-Aliasing Method
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Find.Value
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+  Graph: GetLastSelectedOptionIndex
+    Node: GetLastSelectedOptionIndex (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Get Settings Options (K2Node_VariableGet)
+      Pin: Settings Options (text) Dir=Out
+        -> For Each Loop with Break.Array
+      Pin: self (object) Dir=In
+        -> Get.ParentSlotRef
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> GetLastSelectedOptionIndex.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: else (exec) Dir=Out
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get Settings Options.self
+      Pin: self (object) Dir=In
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get.then
+      Pin: Array (text) Dir=In
+        -> Get Settings Options.Settings Options
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (text) Dir=Out
+        -> Equal Exactly (Text).A
+      Pin: Array Index (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Selected Option (K2Node_VariableGet)
+      Pin: Selected Option (text) Dir=Out
+        -> Equal Exactly (Text).B
+      Pin: self (object) Dir=In
+    Node: Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: B (text) Dir=In
+        -> Get Selected Option.Selected Option
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (Text).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Local_Index.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Local_Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Local_Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: LocalIndex (int) Dir=In
+        -> Get Local_Index.Local_Index
+    Node: Get Local_Index (K2Node_VariableGet)
+      Pin: Local_Index (int) Dir=Out
+        -> Return Node.LocalIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Local_Index.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Each Loop with Break.Array Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Set Local_Index.Local_Index
+  Graph: ApplySettingsAndSave
+    Node: ApplySettingsAndSave (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: SetAllSettingsToMatchOverallQuality
+    Node: SetAllSettingsToMatchOverallQuality (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.execute
+    Node: VFX Set Foliage Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetAllSettingsToMatchOverallQuality.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: FoliageQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: VFX Set Shadow Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu.IlluminationQuality
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.FoliageQuality
+      Pin: self (object) Dir=In
+    Node: VFX Set Global Illumination Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Foliage Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: IlluminationQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.Value
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.Value
+      Pin: self (object) Dir=In
+    Node: VFX Set Texture Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Shadow Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Texture Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.Value
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.PostProcessQuality
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.AAQuality
+      Pin: self (object) Dir=In
+    Node: VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Visual Effect Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: PostProcessQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: VFX Set AA Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Post Processing Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: AAQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.self
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.Value
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.ReflectionQuality
+      Pin: self (object) Dir=In
+    Node: VFX Set View Distance Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set AA Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: VFX Set Reflection Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set View Distance Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: ReflectionQuality (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: VFX Set Shading Quality
+Target is BPW CGF Settings Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Reflection Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> Get All Widgets Of Class.execute
+      Pin: self (object) Dir=In
+        -> Get As BPW CGF Settings Menu.As BPW CGF Settings Menu
+      Pin: Value (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get As BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+    Node: Get As BPW CGF Settings Menu (K2Node_VariableGet)
+      Pin: As BPW CGF Settings Menu (object) Dir=Out
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.self
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.Value
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+    Node: Get All Widgets Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VFX Set Shading Quality
+Target is BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: FoundWidgets (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: WidgetClass (class) Dir=In
+      Pin: TopLevelOnly (bool) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Widgets Of Class.then
+      Pin: Array (object) Dir=In
+        -> Get All Widgets Of Class.FoundWidgets
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Not Equal (Object).A
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Not Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Not Equal (Object).B
+    Node: Get ComboBox (K2Node_VariableGet)
+      Pin: ComboBox (object) Dir=Out
+        -> Set Selected Index
+Target is ComboBox (String).self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Selected Index
+Target is ComboBox (String) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ComboBox.ComboBox
+      Pin: Index (int) Dir=In
+        -> Get SelectedItemsIndex.SelectedItemsIndex
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Selected Index
+Target is ComboBox (String).execute
+      Pin: else (exec) Dir=Out
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SearchIn (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: Substring (string) Dir=In
+      Pin: bUseCase (bool) Dir=In
+      Pin: bSearchFromEnd (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ParentSlotRef (K2Node_VariableGet)
+      Pin: ParentSlotRef (object) Dir=Out
+        -> Get SlotData.self
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get SlotData (K2Node_VariableGet)
+      Pin: SlotData (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: self (object) Dir=In
+        -> Get ParentSlotRef.ParentSlotRef
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> Get SlotData.SlotData
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> To String (Text).InText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: ReturnValue (string) Dir=Out
+        -> Contains.SearchIn
+    Node: Get SelectedItemsIndex (K2Node_VariableGet)
+      Pin: SelectedItemsIndex (int) Dir=Out
+        -> Set Selected Index
+Target is ComboBox (String).Index
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Get ParentSlotRef.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get ComboBox.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set All DropDowns With Quality In There Name To The Selected Index. (EdGraphNode_Comment)
+    Node: Set All VFX Settings Manually (EdGraphNode_Comment)
+  Graph: OnIndexChanged
+    Node: OnIndexChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Index (int) Dir=Out
+  Graph: OnComboBoxSelectionChanged
+    Node: OnComboBoxSelectionChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: SelectedItem (string) Dir=Out
+      Pin: ItemType (byte) Dir=Out
+      Pin: SlotsData (struct) Dir=Out

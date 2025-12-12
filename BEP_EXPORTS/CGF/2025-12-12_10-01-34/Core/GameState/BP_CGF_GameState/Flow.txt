@@ -1,0 +1,101 @@
+Blueprint: BP_CGF_GameState (/Game/CoreGameFramework/Core/GameState/BP_CGF_GameState.BP_CGF_GameState)
+  Graph: EventGraph
+    Node: SetGameState
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CGFGameState.execute
+      Pin: CGFGameState (byte) Dir=Out
+        -> Set CGFGameState.CGFGameState
+    Node: Set CGFGameState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetGameState
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Call On Game State Changed.execute
+      Pin: CGFGameState (byte) Dir=In
+        -> SetGameState
+Custom Event.CGFGameState
+      Pin: Output_Get (byte) Dir=Out
+        -> Call On Game State Changed.GameState
+      Pin: self (object) Dir=In
+    Node: Call On Game State Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set CGFGameState.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: GameState (byte) Dir=In
+        -> Set CGFGameState.Output_Get
+    Node: Get Game State (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+      Pin: GameStateRef (object) Dir=Out
+    Node: On Construct This Var Is Set From The Game Instance (EdGraphNode_Comment)
+    Node: Get CGFGameState (K2Node_VariableGet)
+      Pin: CGFGameState (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set CGFGameState.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+        -> Get GameState.self
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Actor
+    Node: Set CGFGameState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: CGFGameState (byte) Dir=In
+        -> Get GameState.GameState
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get GameState (K2Node_VariableGet)
+      Pin: GameState (byte) Dir=Out
+        -> Set CGFGameState.CGFGameState
+      Pin: self (object) Dir=In
+        -> Set BP CGF Game Instance.Output_Get
+  Graph: GetGameState
+    Node: GetGameState (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetGameState.then
+      Pin: GameState (byte) Dir=In
+        -> Get CGFGameState.CGFGameState
+      Pin: GameStateRef (object) Dir=In
+        -> Self-Reference.self
+    Node: Get CGFGameState (K2Node_VariableGet)
+      Pin: CGFGameState (byte) Dir=Out
+        -> Return Node.GameState
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Return Node.GameStateRef
+  Graph: OnGameStateChanged
+    Node: OnGameStateChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: GameState (byte) Dir=Out

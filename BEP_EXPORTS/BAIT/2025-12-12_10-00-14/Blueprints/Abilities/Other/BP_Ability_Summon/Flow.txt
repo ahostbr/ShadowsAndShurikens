@@ -1,0 +1,203 @@
+Blueprint: BP_Ability_Summon (/Game/BossAIToolkit/Blueprints/Abilities/Other/BP_Ability_Summon.BP_Ability_Summon)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set SpawnCount.execute
+      Pin: self (object) Dir=In
+    Node: Event OnExecute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> For Loop.execute
+      Pin: Duration (real) Dir=Out
+    Node: SpawnActor (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: Class (class) Dir=In
+        -> Get SpawnClass.SpawnClass
+      Pin: ReturnValue (object) Dir=Out
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+        -> Self-Reference.self
+      Pin: Instigator (object) Dir=In
+    Node: Get AbilityInfo (K2Node_VariableGet)
+      Pin: AbilityInfo (struct) Dir=Out
+        -> Break F Boss Ability.F_BossAbility
+      Pin: self (object) Dir=In
+    Node: Break F Boss Ability (K2Node_BreakStruct)
+      Pin: F_BossAbility (struct) Dir=In
+        -> Get AbilityInfo.AbilityInfo
+      Pin: AbilityName_2_7BDF787B47DAA120ADD0FC99DDFBCE98 (name) Dir=Out
+      Pin: AbilityClass_78_20197BE848F023D46363D988148E8812 (class) Dir=Out
+      Pin: ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA (name) Dir=Out
+      Pin: Damage_79_045879CF4A32CEC479823994B9FB52C2 (struct) Dir=Out
+      Pin: Targeting_80_C3E0562A42DA13AB69A88191173DAD2E (struct) Dir=Out
+        -> Break F Boss Ability Targeting.F_BossAbilityTargeting
+      Pin: Modifier_68_9F6259774C70A5FB7DE538BB3C951747 (struct) Dir=Out
+        -> Break Vector.InVec
+      Pin: Visuals_81_5964BD6B4A908F26C2F56A918B7FB6A2 (struct) Dir=Out
+        -> Break F Boss Ability Visuals.F_BossAbilityVisuals
+      Pin: Duration_34_815036DA4DADC4EB735F1FBEEAD1C940 (real) Dir=Out
+      Pin: Cooldown_23_7AB88B49472E7334AB17849F234AE205 (real) Dir=Out
+      Pin: Combos_82_44865D1A41DAFD226ABD2283F99764C6 (struct) Dir=Out
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Break F Boss Ability.Modifier_68_9F6259774C70A5FB7DE538BB3C951747
+      Pin: X (real) Dir=Out
+        -> Truncate.A
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+    Node: Set SpawnCount (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set SpawnRadius.execute
+      Pin: SpawnCount (int) Dir=In
+        -> Truncate.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Truncate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector.X
+      Pin: ReturnValue (int) Dir=Out
+        -> Set SpawnCount.SpawnCount
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Event OnExecute.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> SpawnActor.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get SpawnCount (K2Node_VariableGet)
+      Pin: SpawnCount (int) Dir=Out
+        -> int - int.A
+      Pin: self (object) Dir=In
+    Node: int - int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get SpawnCount.SpawnCount
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> For Loop.LastIndex
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> GetRandomPointInNavigableRadius.RandomLocation
+      Pin: Rotation (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor.SpawnTransform
+    Node: GetRandomPointInNavigableRadius (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: RandomLocation (struct) Dir=Out
+        -> Make Transform.Location
+      Pin: Radius (real) Dir=In
+        -> Get SpawnRadius.SpawnRadius
+      Pin: NavData (object) Dir=In
+      Pin: FilterClass (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> GetRandomPointInNavigableRadius.Origin
+    Node: Set SpawnRadius (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SpawnCount.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SpawnRadius (real) Dir=In
+        -> Break F Boss Ability Targeting.MaxDistance_10_DB850DAD4E3F0E316EDA76876616FD4B
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get SpawnRadius (K2Node_VariableGet)
+      Pin: SpawnRadius (real) Dir=Out
+        -> GetRandomPointInNavigableRadius.Radius
+      Pin: self (object) Dir=In
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Transform.Rotation
+    Node: Get SpawnClass (K2Node_VariableGet)
+      Pin: SpawnClass (class) Dir=Out
+        -> SpawnActor.Class
+      Pin: self (object) Dir=In
+    Node: Break F Boss Ability Targeting (K2Node_BreakStruct)
+      Pin: F_BossAbilityTargeting (struct) Dir=In
+        -> Break F Boss Ability.Targeting_80_C3E0562A42DA13AB69A88191173DAD2E
+      Pin: TargetType_16_04AE2B1D4742EF8254D46E8C3AEA2DD6 (byte) Dir=Out
+      Pin: MinDistance_8_DAE771AB4DFCEB9E0A67F6B38122A2F7 (real) Dir=Out
+      Pin: MaxDistance_10_DB850DAD4E3F0E316EDA76876616FD4B (real) Dir=Out
+        -> Set SpawnRadius.SpawnRadius
+      Pin: DirectionCondition_17_33469FD442F27F57C4A0BB9876A5FDA1 (byte) Dir=Out
+    Node: Set SpawnClass (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: SpawnClass (class) Dir=In
+        -> Break F Boss Ability Visuals.SpawnClass_14_4671425042CD20F3CE2355876162A651
+      Pin: Output_Get (class) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break F Boss Ability Visuals (K2Node_BreakStruct)
+      Pin: F_BossAbilityVisuals (struct) Dir=In
+        -> Break F Boss Ability.Visuals_81_5964BD6B4A908F26C2F56A918B7FB6A2
+      Pin: AnimMontage_3_3B26B7D846F25A9024EDA285CB478199 (object) Dir=Out
+      Pin: ParticleEffects_6_A4AB9FCB47E0A9A624E3B29928C53D9E (object) Dir=Out
+      Pin: EffectDelay_9_EE087AE346883F71EB0109B50FDF901C (real) Dir=Out
+      Pin: SpawnClass_14_4671425042CD20F3CE2355876162A651 (class) Dir=Out
+        -> Set SpawnClass.SpawnClass
+        -> Not Equal (Class).A
+    Node: Not Equal (Class) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (class) Dir=In
+        -> Break F Boss Ability Visuals.SpawnClass_14_4671425042CD20F3CE2355876162A651
+      Pin: B (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set SpawnRadius.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Class).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set SpawnClass.execute
+      Pin: else (exec) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> SpawnActor.Owner
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

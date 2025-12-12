@@ -1,0 +1,157 @@
+Blueprint: BTT_SetAttackTarget (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_SetAttackTarget.BTT_SetAttackTarget)
+  Graph: EventGraph
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Find Attack Target
+Target is BP Behavior Component.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Find Attack Target
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+        -> Get Current Attack Target
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Find Attack Target
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: Success (bool) Dir=Out
+        -> Branch.Condition
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetFocus
+Target is AIController.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Change Behavior
+Target is BP Behavior Component.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Find Attack Target
+Target is BP Behavior Component.then
+      Pin: Condition (bool) Dir=In
+        -> Find Attack Target
+Target is BP Behavior Component.Success
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.execute
+    Node: Change Behavior
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewBehaviorType (byte) Dir=In
+        -> Get InitialBehavior.InitialBehavior
+      Pin: StopAnimations (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.self
+        -> Get InitialBehavior.self
+    Node: Get InitialBehavior (K2Node_VariableGet)
+      Pin: InitialBehavior (byte) Dir=Out
+        -> Change Behavior
+Target is BP Behavior Component.NewBehaviorType
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Current Attack Target
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: TargetRef (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: SetFocus
+Target is AIController (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewFocus (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: OutputPin (object) Dir=Out
+        -> SetFocus
+Target is AIController.self
+    Node: Get FocusOnTarget (K2Node_VariableGet)
+      Pin: FocusOnTarget (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Current Attack Target
+Target is BP Behavior Component.TargetRef
+      Pin: OutputPin (object) Dir=Out
+        -> SetFocus
+Target is AIController.NewFocus
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get FocusOnTarget.FocusOnTarget
+      Pin: then (exec) Dir=Out
+        -> SetFocus
+Target is AIController.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute

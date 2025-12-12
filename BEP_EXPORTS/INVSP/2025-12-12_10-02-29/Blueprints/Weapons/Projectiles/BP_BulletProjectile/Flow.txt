@@ -1,0 +1,343 @@
+Blueprint: BP_BulletProjectile (/Game/InventorySystemPro/Blueprints/Weapons/Projectiles/BP_BulletProjectile.BP_BulletProjectile)
+  Graph: EventGraph
+    Node: SpawnActor FS Master Field (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Add Impulse at Location
+Target is Primitive Component.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set ActivationType.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Break Transform.Location
+      Pin: Rotation (struct) Dir=In
+        -> Break Transform.Rotation
+      Pin: Scale (struct) Dir=In
+        -> Get MasterFieldScale.MasterFieldScale
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor FS Master Field.SpawnTransform
+    Node: Set ActivationType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor FS Master Field.then
+      Pin: then (exec) Dir=Out
+        -> Set StrainFalloffType.execute
+      Pin: ActivationType (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: CE Trigger
+Target is FS Master Field (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Radial Magnitude.then
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Impulse at Location
+Target is Primitive Component.Location
+    Node: Add Impulse at Location
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> SpawnActor FS Master Field.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Impulse (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: BoneName (name) Dir=In
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Impulse at Location
+Target is Primitive Component.Impulse
+    Node: Is Simulating Physics
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: BoneName (name) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Hit.then
+      Pin: Condition (bool) Dir=In
+        -> Is Simulating Physics
+Target is Scene Component.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add Impulse at Location
+Target is Primitive Component.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Impulse at Location
+Target is Primitive Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Event Hit.OtherComp
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Is Simulating Physics
+Target is Scene Component.self
+    Node: Impulse on simulated actors (EdGraphNode_Comment)
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+        -> To Transform (Vector).InLocation
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: To Transform (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InLocation (struct) Dir=In
+        -> Break Hit Result.ImpactPoint
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Transform.InTransform
+    Node: Break Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InTransform (struct) Dir=In
+        -> To Transform (Vector).ReturnValue
+      Pin: Location (struct) Dir=Out
+        -> Make Transform.Location
+      Pin: Rotation (struct) Dir=Out
+        -> Make Transform.Rotation
+      Pin: Scale (struct) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Break Hit Result.Hit
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Event Hit.Hit
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set FieldLifespan (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set NumStrainHits.then
+      Pin: then (exec) Dir=Out
+        -> Set Radial Magnitude.execute
+      Pin: FieldLifespan (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Radial Magnitude (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FieldLifespan.then
+      Pin: then (exec) Dir=Out
+        -> CE Trigger
+Target is FS Master Field.execute
+      Pin: Radial Magnitude (real) Dir=In
+        -> Get MasterFieldRadialMagnitude.MasterFieldRadialMagnitude
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Spawn Chaos Impact Field (EdGraphNode_Comment)
+    Node: Set StrainFalloffType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ActivationType.then
+      Pin: then (exec) Dir=Out
+        -> Set StrainFalloffMinMax.execute
+      Pin: StrainFalloffType (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set StrainFalloffMinMax (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set StrainFalloffType.then
+      Pin: then (exec) Dir=Out
+        -> Set NumStrainHits.execute
+      Pin: StrainFalloffMinMax (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set NumStrainHits (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set StrainFalloffMinMax.then
+      Pin: then (exec) Dir=Out
+        -> Set FieldLifespan.execute
+      Pin: NumStrainHits (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get MasterFieldScale (K2Node_VariableGet)
+      Pin: MasterFieldScale (struct) Dir=Out
+        -> Make Transform.Scale
+      Pin: self (object) Dir=In
+    Node: Get MasterFieldRadialMagnitude (K2Node_VariableGet)
+      Pin: MasterFieldRadialMagnitude (real) Dir=Out
+        -> Set Radial Magnitude.Radial Magnitude
+      Pin: self (object) Dir=In
+    Node: Event Hit (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MyComp (object) Dir=Out
+      Pin: Other (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: bSelfMoved (bool) Dir=Out
+      Pin: HitLocation (struct) Dir=Out
+      Pin: HitNormal (struct) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Destroy Projectile after short delay (EdGraphNode_Comment)
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CE Trigger
+Target is FS Master Field.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get ImpactSound.ImpactSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+        -> Get AttenuationSettings.AttenuationSettings
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get ImpactSound (K2Node_VariableGet)
+      Pin: ImpactSound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Play Impact Sound Effect (EdGraphNode_Comment)
+    Node: Get AttenuationSettings (K2Node_VariableGet)
+      Pin: AttenuationSettings (object) Dir=Out
+        -> Play Sound at Location.AttenuationSettings
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SpawnActor FS Master Field.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set ActivationType.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set StrainFalloffType.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set StrainFalloffMinMax.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set NumStrainHits.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set FieldLifespan.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Radial Magnitude.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> CE Trigger
+Target is FS Master Field.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> SpawnActor FS Master Field.execute
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

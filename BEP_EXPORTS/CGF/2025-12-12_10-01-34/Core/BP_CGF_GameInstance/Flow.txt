@@ -1,0 +1,3010 @@
+Blueprint: BP_CGF_GameInstance (/Game/CoreGameFramework/Core/BP_CGF_GameInstance.BP_CGF_GameInstance)
+  Graph: EventGraph
+    Node: Event Init (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Load Game Settings
+Target is BP CGF Game Instance.execute
+    Node: OnInit Try To Load GameSettings and Create The Player Save Object. (EdGraphNode_Comment)
+    Node: Load Game Settings
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Init.then
+      Pin: then (exec) Dir=Out
+        -> Create Save Game File
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+    Node: Create Save Game File
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Load Game Settings
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+    Node: Event SetUsingGamepad?
+From BPI CGF Persistence (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set UsingGamepad?.execute
+      Pin: UsingGamepad? (bool) Dir=Out
+        -> Set UsingGamepad?.UsingGamepad?
+    Node: Set UsingGamepad? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event SetUsingGamepad?
+From BPI CGF Persistence.then
+      Pin: then (exec) Dir=Out
+      Pin: UsingGamepad? (bool) Dir=In
+        -> Event SetUsingGamepad?
+From BPI CGF Persistence.UsingGamepad?
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: This is set from the player controller, letting any loading screens be able to access gamepad info when the player controller isnt available example during level transitions (EdGraphNode_Comment)
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+      Pin: CGF Game State (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: OnGameStateChanged_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then (exec) Dir=Out
+        -> Set GameState.execute
+      Pin: GameState (byte) Dir=Out
+        -> Set GameState.GameState
+    Node: Bind Event to On Game State Changed (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Delegate (delegate) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set GameState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OnGameStateChanged_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: GameState (byte) Dir=In
+        -> OnGameStateChanged_Event
+Custom Event.GameState
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create Save Game File
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: InputObject (object) Dir=In
+        -> Get GS.CGF Game State
+      Pin: Is Valid (exec) Dir=Out
+        -> Bind Event to On Game State Changed.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get GS.CGF Game State
+      Pin: OutputPin (object) Dir=Out
+        -> Bind Event to On Game State Changed.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (delegate) Dir=In
+        -> OnGameStateChanged_Event
+Custom Event.OutputDelegate
+      Pin: OutputPin (delegate) Dir=Out
+        -> Bind Event to On Game State Changed.Delegate
+    Node: Save Systems
+Collapsed Graph (K2Node_Composite)
+    Node: Sound Systems
+Collapsed Graph (K2Node_Composite)
+    Node: System (EdGraphNode_Comment)
+  Graph: HandleFirstLoad
+    Node: HandleFirstLoad (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sync Game Settings with Settings Datatable on First Load
+Target is BP CGF Game Instance.execute
+    Node: Sync Game Settings with Settings Datatable on First Load
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> HandleFirstLoad.then
+      Pin: then (exec) Dir=Out
+        -> Save Game Settings
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+    Node: Save Game Settings
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sync Game Settings with Settings Datatable on First Load
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get DT_CGF_GameMenuSettings (K2Node_VariableGet)
+      Pin: DT_CGF_GameMenuSettings (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: SyncGameSettingsWithSettingsDatatableOnFirstLoad
+    Node: SyncGameSettingsWithSettingsDatatableOnFirstLoad (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Data Table Row Names.execute
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Set members in F CGF Game Settings.StructRef
+      Pin: self (object) Dir=In
+    Node: Get DT_CGF_GameMenuSettings (K2Node_VariableGet)
+      Pin: DT_CGF_GameMenuSettings (object) Dir=Out
+        -> Get Data Table Row Names.Table
+      Pin: self (object) Dir=In
+    Node: Get Data Table Row (K2Node_GetDataTableRow)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: RowNotFound (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: DataTable (object) Dir=In
+        -> Get DT_CGF_GameMenuSettings.DT_CGF_GameMenuSettings
+      Pin: RowName (name) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Data.F_CGF_GameSettings_MenuData
+    Node: Set members in F CGF Game Settings (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Game Settings Data
+Target is BP CGF Game Instance.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: StructOut (struct) Dir=Out
+        -> Set Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=In
+        -> Get LocalSettingsMenuData.LocalSettingsMenuData
+    Node: Get Data Table Row Names (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SyncGameSettingsWithSettingsDatatableOnFirstLoad.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: Table (object) Dir=In
+        -> Get DT_CGF_GameMenuSettings.DT_CGF_GameMenuSettings
+      Pin: OutRowNames (name) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Data Table Row Names.then
+      Pin: Array (name) Dir=In
+        -> Get Data Table Row Names.OutRowNames
+      Pin: LoopBody (exec) Dir=Out
+        -> Get Data Table Row.execute
+      Pin: Array Element (name) Dir=Out
+        -> Get Data Table Row.RowName
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Break F CGF Game Settings Menu Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuData (struct) Dir=In
+        -> Get Data Table Row.ReturnValue
+      Pin: SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Data Table Row.then
+      Pin: Array (struct) Dir=In
+        -> Break F CGF Game Settings Menu Data.SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get LocalMenuDataArray (K2Node_VariableGet)
+      Pin: LocalMenuDataArray (struct) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get LocalMenuDataArray.LocalMenuDataArray
+      Pin: NewItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get LocalMenuDataArray (K2Node_VariableGet)
+      Pin: LocalMenuDataArray (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Array (struct) Dir=In
+        -> Get LocalMenuDataArray.LocalMenuDataArray
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Set members in F CGF Game Settings.execute
+    Node: Get LocalSettingsMenuData (K2Node_VariableGet)
+      Pin: LocalSettingsMenuData (struct) Dir=Out
+        -> Set members in F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+    Node: Get LocalSettingsMenuData (K2Node_VariableGet)
+      Pin: LocalSettingsMenuData (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Data.F_CGF_GameSettings_MenuData
+    Node: Break F CGF Game Settings Menu Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuData (struct) Dir=In
+        -> Get LocalSettingsMenuData.LocalSettingsMenuData
+      Pin: SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A (struct) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Break F CGF Game Settings Menu Data.SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: NewItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (int) Dir=Out
+    Node: Always Keep Track Of  Anywhere This Is Called ! (EdGraphNode_Comment)
+    Node: Set Game Settings Data
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Game Settings.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: CGFGameSettings (struct) Dir=In
+        -> Set members in F CGF Game Settings.StructOut
+    Node: Get DT_CGF_GameMenuSettings (K2Node_VariableGet)
+      Pin: DT_CGF_GameMenuSettings (object) Dir=Out
+        -> Get Data Table Row.DataTable
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Data Table Row.RowNotFound
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+  Graph: CheckSaveGameSettingsRequest
+    Node: CheckSaveGameSettingsRequest (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Is Not Empty.TargetMap
+        -> Find.TargetMap
+    Node: Is Not Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Save Game Settings
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Break F CGF Game Profiles (K2Node_BreakStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> Find.Value
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=Out
+        -> Length.TargetArray
+      Pin: TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21 (string) Dir=Out
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (string) Dir=In
+        -> Break F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: ReturnValue (int) Dir=Out
+        -> integer >= integer.A
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Save Game Settings
+Target is BP CGF Game Instance.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: Value (struct) Dir=Out
+        -> Break F CGF Game Profiles.F_CGF_GameProfiles
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Provides Some Generic Checks Against Saving Invalid Data. (EdGraphNode_Comment)
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Is Empty.InString
+      Pin: self (object) Dir=In
+    Node: Is Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> CheckSaveGameSettingsRequest.then
+      Pin: Condition (bool) Dir=In
+        -> Get HasProfileBeenMade?.HasProfileBeenMade?
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Save Game Settings
+Target is BP CGF Game Instance.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get HasProfileBeenMade? (K2Node_VariableGet)
+      Pin: HasProfileBeenMade? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+  Graph: Try Make Player Profile
+    Node: Try Make Player Profile (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: NameToTest (string) Dir=Out
+        -> Contains.Key
+        -> Reroute Node.InputPin
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Contains.TargetMap
+    Node: Set SelectedPlayerProfileName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.execute
+      Pin: SelectedPlayerProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Try Make Player Profile.NameToTest
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Try Make Player Profile.then
+      Pin: Condition (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Set SelectedPlayerProfileName.execute
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Current Level Name.then
+      Pin: then (exec) Dir=Out
+        -> Request Save Game Settings
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: Value (struct) Dir=In
+        -> Make F CGF Game Profiles.F_CGF_GameProfiles
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Add.Key
+      Pin: self (object) Dir=In
+    Node: Make F CGF Game Profiles (K2Node_MakeStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=Out
+        -> Add.Value
+      Pin: ProfileName_18_97EFD06444B60172F55B0E8950257FCF (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ProfileImage_46_6394245B4ADB9CCDEE550282849E7B77 (softobject) Dir=In
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=In
+        -> Make Default Auto Save Slots.Array
+      Pin: ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318 (string) Dir=In
+        -> Make Map.Map
+      Pin: SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49 (int) Dir=In
+      Pin: AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017 (int) Dir=In
+      Pin: TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21 (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: PlayedTime_29_1560B78245ED515763D610BBA10F14C2 (string) Dir=In
+      Pin: GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: PlayerLevel_30_1B6ECE4E4C611573496BD8AA8B19E45C (int) Dir=In
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Make F CGF Game Profiles.ProfileName_18_97EFD06444B60172F55B0E8950257FCF
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Succes? (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set CGF_GameInstanceCopy_GameSettings.then
+      Pin: Succes? (bool) Dir=In
+        -> Get ProfileCreationSuccess?.ProfileCreationSuccess?
+    Node: Request Save Game Settings
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Make Save Game Screen Shot
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+    Node: Make Map (K2Node_MakeMap)
+      Pin: Map (string) Dir=Out
+        -> Make F CGF Game Profiles.ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318
+      Pin: Key 0 (string) Dir=In
+      Pin: Value 0 (string) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.Path
+    Node: Make Default Auto Save Slots (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Array (string) Dir=Out
+        -> Make F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+    Node: Make Save Game Screen Shot
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Request Save Game Settings
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: Path (string) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Make Save Game Screen Shot
+Target is BP CGF Game Instance.Path
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.Path
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Make Save Game Screen Shot
+Target is BP CGF Game Instance.then
+      Pin: Array (string) Dir=In
+        -> Make Default Auto Save Slots.Array
+      Pin: LoopBody (exec) Dir=Out
+        -> Save Game to Slot.execute
+      Pin: Array Element (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Set members in F CGF Game Settings.execute
+    Node: Make Default Auto Save Slots (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Array (string) Dir=Out
+        -> For Each Loop.Array
+    Node: Save Game to Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Set ProfileCreationSuccess?.execute
+      Pin: self (object) Dir=In
+      Pin: SaveGameObject (object) Dir=In
+        -> Get SaveGameREF.SaveGameREF
+      Pin: SlotName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: UserIndex (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set ProfileCreationSuccess?.ProfileCreationSuccess?
+    Node: Set ProfileCreationSuccess? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Save Game to Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: ProfileCreationSuccess? (bool) Dir=In
+        -> Save Game to Slot.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get ProfileCreationSuccess? (K2Node_VariableGet)
+      Pin: ProfileCreationSuccess? (bool) Dir=Out
+        -> Return Node.Succes?
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (string) Dir=Out
+        -> Save Game to Slot.SlotName
+    Node: Make Screen Shot Path Name
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set SelectedPlayerProfileName.then
+      Pin: then (exec) Dir=Out
+        -> Make Time Date Map for Auto Save Creation
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: DateAndTime (string) Dir=Out
+        -> Make Time Date Map for Auto Save Creation
+Target is BP CGF Game Instance.Time
+      Pin: Path (string) Dir=Out
+        -> Make Map.Value 0
+        -> Reroute Node.InputPin
+    Node: Get SaveGameREF (K2Node_VariableGet)
+      Pin: SaveGameREF (object) Dir=Out
+        -> Save Game to Slot.SaveGameObject
+      Pin: self (object) Dir=In
+    Node: Make Time Date Map for Auto Save Creation
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Get Current Level Name.execute
+      Pin: self (object) Dir=In
+      Pin: Time (string) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.DateAndTime
+      Pin: TimeMap (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Current Level Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Make Time Date Map for Auto Save Creation
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bRemovePrefixString (bool) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Get Current Level Name.ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Make F CGF Game Profiles.GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Make Time Date Map for Auto Save Creation
+Target is BP CGF Game Instance.TimeMap
+      Pin: OutputPin (string) Dir=Out
+        -> Make F CGF Game Profiles.TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Try Make Player Profile.NameToTest
+      Pin: OutputPin (string) Dir=Out
+        -> Set SelectedPlayerProfileName.SelectedPlayerProfileName
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Set members in F CGF Game Settings.StructRef
+      Pin: self (object) Dir=In
+    Node: Set members in F CGF Game Settings (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+        -> Set CGF_GameInstanceCopy_GameSettings.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: StructOut (struct) Dir=Out
+        -> Set CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6 (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Set members in F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: self (object) Dir=In
+    Node: Set CGF_GameInstanceCopy_GameSettings (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Game Settings.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=In
+        -> Set members in F CGF Game Settings.StructOut
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: MakeDefaultAutoSaveSlots
+    Node: MakeDefaultAutoSaveSlots (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> MakeDefaultAutoSaveSlots.then
+      Pin: Array (string) Dir=In
+        -> Make Array.Array
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Make Array.[0]
+      Pin: C (string) Dir=In
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Append.B
+        -> Append.B
+        -> Append.B
+      Pin: self (object) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Make Array.[1]
+      Pin: C (string) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Make Array.[2]
+      Pin: C (string) Dir=In
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (string) Dir=Out
+        -> Return Node.Array
+      Pin: [0] (string) Dir=In
+        -> Append.ReturnValue
+      Pin: [1] (string) Dir=In
+        -> Append.ReturnValue
+      Pin: [2] (string) Dir=In
+        -> Append.ReturnValue
+  Graph: MakeSaveGameScreenShot
+    Node: MakeSaveGameScreenShot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: Path (string) Dir=Out
+        -> Append.B
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> MakeSaveGameScreenShot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+        -> Append.ReturnValue
+      Pin: SpecificPlayer (object) Dir=In
+        -> Get PC.PlayerController
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> MakeSaveGameScreenShot.Path
+      Pin: ReturnValue (string) Dir=Out
+        -> Execute Console Command.Command
+      Pin: C (string) Dir=In
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Execute Console Command.SpecificPlayer
+  Graph: MakeScreenShotPathName
+    Node: MakeScreenShotPathName (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> MakeScreenShotPathName.then
+      Pin: DateAndTime (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Path (string) Dir=In
+        -> Append.ReturnValue
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+      Pin: C (string) Dir=In
+      Pin: D (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: E (string) Dir=In
+      Pin: F (string) Dir=In
+        -> Replace.ReturnValue
+      Pin: G (string) Dir=In
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Append.B
+        -> Append.D
+      Pin: self (object) Dir=In
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Get Formated Date Time.Formated DateTime
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Replace.SourceString
+    Node: Get Project Saved Directory (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Project Saved Directory.ReturnValue
+      Pin: B (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.Path
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Replace.ReturnValue
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.F
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Get Formated Date Time.Formated DateTime
+      Pin: OutputPin (string) Dir=Out
+        -> Return Node.DateAndTime
+    Node: Get Formated Date Time (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDateTime (struct) Dir=In
+        -> Now.ReturnValue
+      Pin: __WorldContext (object) Dir=In
+      Pin: Formated DateTime (string) Dir=Out
+        -> Replace.SourceString
+        -> Reroute Node.InputPin
+    Node: Now (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Formated Date Time.InDateTime
+  Graph: AddSaveSlotToData
+    Node: AddSaveSlotToData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Local_ProfilesMap.execute
+      Pin: NewSlot (string) Dir=Out
+      Pin: IsAutoSave?? (bool) Dir=Out
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Find.TargetMap
+        -> Set Local_ProfilesMap.Local_ProfilesMap
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: Value (struct) Dir=Out
+        -> CollapsedGraph_AddSaveSlotToData
+Collapsed Graph.F_CGF_GameProfiles
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Set CGF_GameInstanceCopy_GameSettings (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=In
+        -> Make F CGF Game Settings.F_CGF_GameSettings
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make F CGF Game Settings (K2Node_MakeStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=Out
+        -> Set CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=In
+        -> Get Local_ProfilesMap.Local_ProfilesMap
+      Pin: LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6 (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (string) Dir=In
+        -> Get Local_Used Slot Names.Local_Used Slot Names
+      Pin: NewItem (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+    Node: Set Local_Used Slot Names (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Local_ProfilesMap.then
+      Pin: then (exec) Dir=Out
+        -> Set Local_ScreenShotPaths.execute
+      Pin: Local_Used Slot Names (string) Dir=In
+        -> CollapsedGraph_AddSaveSlotToData
+Collapsed Graph.UsedSlotNames
+      Pin: Output_Get (string) Dir=Out
+    Node: Get NewSlot (K2Node_VariableGet)
+      Pin: NewSlot (string) Dir=Out
+        -> Add.Key
+        -> Reroute Node.InputPin
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Make Save Game Screen Shot
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Get Local_ScreenShotPaths.Local_ScreenShotPaths
+      Pin: Key (string) Dir=In
+        -> Get NewSlot.NewSlot
+      Pin: Value (string) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Make Screen Shot Path Name
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: DateAndTime (string) Dir=Out
+        -> Add.Value
+      Pin: Path (string) Dir=Out
+        -> Make Save Game Screen Shot
+Target is BP CGF Game Instance.Path
+        -> Reroute Node.InputPin
+    Node: Set Local_ScreenShotPaths (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Local_Used Slot Names.then
+      Pin: then (exec) Dir=Out
+        -> Set Local_DateTimeMap.execute
+      Pin: Local_ScreenShotPaths (string) Dir=In
+        -> CollapsedGraph_AddSaveSlotToData
+Collapsed Graph.ScreenShotSlotPaths
+      Pin: Output_Get (string) Dir=Out
+    Node: Make Save Game Screen Shot
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: Path (string) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.Path
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Add.Key
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Unique.then
+      Pin: then (exec) Dir=Out
+        -> Set CGF_GameInstanceCopy_GameSettings.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Get Local_ProfilesMap.Local_ProfilesMap
+      Pin: Key (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: Value (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Local_ProfilesMap (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> AddSaveSlotToData.then
+      Pin: then (exec) Dir=Out
+        -> Set Local_Used Slot Names.execute
+      Pin: Local_ProfilesMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Output_Get (string) Dir=Out
+    Node: Get Local_ProfilesMap (K2Node_VariableGet)
+      Pin: Local_ProfilesMap (string) Dir=Out
+        -> Add.TargetMap
+    Node: Get Local_ProfilesMap (K2Node_VariableGet)
+      Pin: Local_ProfilesMap (string) Dir=Out
+        -> Make F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Add.Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.Path
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Get NewSlot.NewSlot
+      Pin: OutputPin (string) Dir=Out
+        -> Add Unique.NewItem
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> CollapsedGraph_AddSaveSlotToData
+Collapsed Graph.F_CGF_GameProfilesOut
+      Pin: OutputPin (struct) Dir=Out
+        -> Add.Value
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Make F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set LocalLevelName.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsAutoSave??.IsAutoSave??
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.execute
+    Node: Get IsAutoSave?? (K2Node_VariableGet)
+      Pin: IsAutoSave?? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Add Unique.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Make Save Game Screen Shot
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Get Local_DateTimeMap.Local_DateTimeMap
+      Pin: Key (string) Dir=In
+        -> Get NewSlot.NewSlot
+      Pin: Value (string) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.DateAndTime
+    Node: Get NewSlot (K2Node_VariableGet)
+      Pin: NewSlot (string) Dir=Out
+        -> Add.Key
+    Node: Set Local_DateTimeMap (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Local_ScreenShotPaths.then
+      Pin: then (exec) Dir=Out
+        -> Get Current Level Name.execute
+      Pin: Local_DateTimeMap (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+    Node: Get Local_DateTimeMap (K2Node_VariableGet)
+      Pin: Local_DateTimeMap (string) Dir=Out
+        -> Add.TargetMap
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Make Screen Shot Path Name
+Target is BP CGF Game Instance.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Add.execute
+    Node: CollapsedGraph_AddSaveSlotToData
+Collapsed Graph (K2Node_Composite)
+      Pin: UsedSlotNames (string) Dir=Out
+        -> Set Local_Used Slot Names.Local_Used Slot Names
+      Pin: ScreenShotSlotPaths (string) Dir=Out
+        -> Set Local_ScreenShotPaths.Local_ScreenShotPaths
+      Pin: TimeOfDay (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: F_CGF_GameProfilesOut (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> Find.Value
+    Node: Get Data From Struct (EdGraphNode_Comment)
+    Node: Add Created Temp Local Data To Struct (EdGraphNode_Comment)
+    Node: SET STRUCT DATA (EdGraphNode_Comment)
+    Node: One Of The Only Locations Game Instance Copy Game Settings Is Set Out Of The Main Game Instance Event Graph (Other Location ProfileManager/ListViewEntry) (EdGraphNode_Comment)
+    Node: AutoSave Check (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> CollapsedGraph_AddSaveSlotToData
+Collapsed Graph.TimeOfDay
+      Pin: OutputPin (string) Dir=Out
+        -> Set Local_DateTimeMap.Local_DateTimeMap
+    Node: Get Current Level Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Local_DateTimeMap.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalLevelName.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bRemovePrefixString (bool) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Set LocalLevelName.LocalLevelName
+    Node: Set LocalLevelName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Current Level Name.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: LocalLevelName (string) Dir=In
+        -> Get Current Level Name.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+    Node: Get Local_Used Slot Names (K2Node_VariableGet)
+      Pin: Local_Used Slot Names (string) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Get Local_ScreenShotPaths (K2Node_VariableGet)
+      Pin: Local_ScreenShotPaths (string) Dir=Out
+        -> Add.TargetMap
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Make F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+  Graph: FormulateSlotName
+    Node: FormulateSlotName (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: IsAutoSave? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ProfileName (string) Dir=Out
+        -> Append.B
+        -> Append.D
+        -> Reroute Node.InputPin
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> FormulateSlotName.ProfileName
+      Pin: ReturnValue (string) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: C (string) Dir=In
+      Pin: D (string) Dir=In
+        -> FormulateSlotName.ProfileName
+      Pin: E (string) Dir=In
+      Pin: F (string) Dir=In
+        -> Replace.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> FormulateSlotName.then
+      Pin: Condition (bool) Dir=In
+        -> FormulateSlotName.IsAutoSave?
+      Pin: then (exec) Dir=Out
+        -> Switch on Int.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get CurrentAutoSaveIndex (K2Node_VariableGet)
+      Pin: CurrentAutoSaveIndex (int) Dir=Out
+        -> Switch on Int.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (int) Dir=In
+        -> Get CurrentAutoSaveIndex.CurrentAutoSaveIndex
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+        -> Set Rtnr.execute
+      Pin: 1 (exec) Dir=Out
+        -> Set Rtnr.execute
+      Pin: 2 (exec) Dir=Out
+        -> Set Rtnr.execute
+      Pin: 3 (exec) Dir=Out
+        -> Set Rtnr.execute
+    Node: Set Rtnr (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.execute
+      Pin: Rtnr (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Make Literal String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Make Literal String.ReturnValue
+      Pin: B (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.D
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.then
+      Pin: Value (int) Dir=In
+        -> Get CurrentAutoSaveIndex.CurrentAutoSaveIndex
+      Pin:    (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Result (int) Dir=Out
+    Node: Set CurrentAutoSaveIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CurrentAutoSaveIndex (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CurrentAutoSaveIndex (K2Node_VariableGet)
+      Pin: CurrentAutoSaveIndex (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: self (object) Dir=In
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get CurrentAutoSaveIndex.CurrentAutoSaveIndex
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Set Rtnr (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.3
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.execute
+      Pin: Rtnr (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Rtnr (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.1
+        -> Switch on Int.2
+        -> Switch on Int.0
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Rtnr (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get CurrentAutoSaveIndex (K2Node_VariableGet)
+      Pin: CurrentAutoSaveIndex (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentAutoSaveIndex.then
+        -> Increment Int.  
+        -> Reroute Node.OutputPin
+      Pin: ReturnedSlotPath (string) Dir=In
+        -> Get Rtnr.Rtnr
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Rtnr.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Rtnr (K2Node_VariableGet)
+      Pin: Rtnr (string) Dir=Out
+        -> Return Node.ReturnedSlotPath
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> FormulateSlotName.ProfileName
+      Pin: OutputPin (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Set Rtnr.Rtnr
+        -> Set Rtnr.Rtnr
+      Pin: C (string) Dir=In
+      Pin: D (string) Dir=In
+        -> Append.ReturnValue
+    Node: Format Time (EdGraphNode_Comment)
+    Node: Autosave (EdGraphNode_Comment)
+    Node: If Its A New Save Use The Last Index + 1 Of The Used Slot Names Array , if autosave use autosaveindex to set selected slot index. (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Append.ReturnValue
+      Pin: OutputPin (string) Dir=Out
+        -> Set Rtnr.Rtnr
+    Node: Set Selected Slot Path
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: self (object) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DirectSet? (bool) Dir=In
+    Node: Set Selected Slot Index
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: SaveAfterSettingIndex? (bool) Dir=In
+    Node: Set Selected Slot Path
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentAutoSaveIndex.execute
+      Pin: self (object) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DirectSet? (bool) Dir=In
+    Node: Set Selected Slot Index
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Rtnr.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: SaveAfterSettingIndex? (bool) Dir=In
+    Node: Get CurrentAutoSaveIndex (K2Node_VariableGet)
+      Pin: CurrentAutoSaveIndex (int) Dir=Out
+        -> Clamp (Integer).Value
+      Pin: self (object) Dir=In
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Clamp (Integer).ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.Index
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Set Rtnr.Output_Get
+      Pin: OutputPin (string) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.SlotPath
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Rtnr.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.execute
+    Node: Clamp (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Get CurrentAutoSaveIndex.CurrentAutoSaveIndex
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> int - int.A
+    Node: Set Selected Slot Path
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DirectSet? (bool) Dir=In
+    Node: Set Selected Slot Index
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Rtnr.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: SaveAfterSettingIndex? (bool) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Get ProfileName.ProfileName
+      Pin: Value (struct) Dir=Out
+        -> Break F CGF Game Profiles.F_CGF_GameProfiles
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Break F CGF Game Profiles (K2Node_BreakStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> Find.Value
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=Out
+        -> Last Index.TargetArray
+      Pin: TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21 (string) Dir=Out
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (string) Dir=In
+        -> Break F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Find.TargetMap
+    Node: Get ProfileName (K2Node_VariableGet)
+      Pin: ProfileName (string) Dir=Out
+        -> Find.Key
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Set Rtnr.Output_Get
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.SlotPath
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.SlotPath
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Set Rtnr.Output_Get
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.Index
+    Node: Now (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Date.A
+        -> Get Time Of Day.A
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Replace.SourceString
+    Node: Get Date (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Now.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Date Time.InDateTime
+    Node: Break Date Time (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDateTime (struct) Dir=In
+        -> Get Date.ReturnValue
+      Pin: Year (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Month (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Day (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Hour (int) Dir=Out
+      Pin: Minute (int) Dir=Out
+      Pin: Second (int) Dir=Out
+      Pin: Millisecond (int) Dir=Out
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Replace.SourceString
+      Pin: C (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: D (string) Dir=In
+      Pin: E (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: F (string) Dir=In
+      Pin: G (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: H (string) Dir=In
+      Pin: I (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: J (string) Dir=In
+      Pin: K (string) Dir=In
+        -> To String (Integer).ReturnValue
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Timespan 2.Hours
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Timespan 2.Minutes
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Timespan 2.Seconds
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.E
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Day
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.I
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Month
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.G
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Break Date Time.Year
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.K
+    Node: Replace (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Replace.ReturnValue
+      Pin: From (string) Dir=In
+      Pin: To (string) Dir=In
+      Pin: SearchCase (byte) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.F
+    Node: Get Time Of Day (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Now.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Timespan 2.InTimespan
+    Node: Break Timespan 2 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InTimespan (struct) Dir=In
+        -> Get Time Of Day.ReturnValue
+      Pin: Days (int) Dir=Out
+      Pin: Hours (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Minutes (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: Seconds (int) Dir=Out
+        -> To String (Integer).InInt
+      Pin: FractionNano (int) Dir=Out
+  Graph: SetLastProfileNameAndSlotPath
+    Node: SetLastProfileNameAndSlotPath (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Find.TargetMap
+      Pin: LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6 (string) Dir=Out
+        -> Is Empty.InString
+        -> Reroute Node.InputPin
+    Node: Is Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Break F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetLastProfileNameAndSlotPath.then
+      Pin: Condition (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Set HasProfileBeenMade?.execute
+    Node: Set SelectedPlayerProfileName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.execute
+      Pin: SelectedPlayerProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (struct) Dir=Out
+        -> Break F CGF Game Profiles.F_CGF_GameProfiles
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set HasProfileBeenMade?.HasProfileBeenMade?
+    Node: Break F CGF Game Profiles (K2Node_BreakStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> Find.Value
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=Out
+        -> GET.Array
+      Pin: SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49 (int) Dir=Out
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.Index
+        -> GET.Dimension 1
+      Pin: AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017 (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Break F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: OutputPin (string) Dir=Out
+        -> Find.Key
+        -> Reroute Node.InputPin
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Set Selected Slot Index
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set SelectedPlayerProfileName.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Break F CGF Game Profiles.SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49
+      Pin: SaveAfterSettingIndex? (bool) Dir=In
+    Node: Get IsFirstLoad? (K2Node_VariableGet)
+      Pin: IsFirstLoad? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsFirstLoad?.IsFirstLoad?
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Set Selected Slot Path
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Index
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set CurrentAutoSaveIndex.execute
+      Pin: self (object) Dir=In
+      Pin: SlotPath (string) Dir=In
+        -> GET.Output
+      Pin: DirectSet? (bool) Dir=In
+    Node: This Is where we set the last profile used and last slot path used on load. (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set CurrentAutoSaveIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: CurrentAutoSaveIndex (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break F CGF Game Profiles.AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017
+      Pin: OutputPin (int) Dir=Out
+        -> Set CurrentAutoSaveIndex.CurrentAutoSaveIndex
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (string) Dir=In
+        -> Break F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: Dimension 1 (int) Dir=In
+        -> Break F CGF Game Profiles.SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49
+      Pin: Output (string) Dir=Out
+        -> Set Selected Slot Path
+Target is BP CGF Game Instance.SlotPath
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set HasProfileBeenMade?.then
+      Pin: Condition (bool) Dir=In
+        -> Set HasProfileBeenMade?.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Set SelectedPlayerProfileName.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set SelectedPlayerProfileName.SelectedPlayerProfileName
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Set HasProfileBeenMade? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: HasProfileBeenMade? (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+  Graph: Updated Game Setting Struct With New Selected Save Slot Index
+    Node: Updated Game Setting Struct With New Selected Save Slot Index (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Find.TargetMap
+        -> Reroute Node.InputPin
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Key (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: Value (struct) Dir=Out
+        -> Break F CGF Game Profiles.F_CGF_GameProfiles
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Profiles (K2Node_BreakStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=In
+        -> Find.Value
+      Pin: ProfileName_18_97EFD06444B60172F55B0E8950257FCF (string) Dir=Out
+        -> Make F CGF Game Profiles.ProfileName_18_97EFD06444B60172F55B0E8950257FCF
+      Pin: ProfileImage_46_6394245B4ADB9CCDEE550282849E7B77 (softobject) Dir=Out
+        -> Make F CGF Game Profiles.ProfileImage_46_6394245B4ADB9CCDEE550282849E7B77
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=Out
+        -> Make F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318 (string) Dir=Out
+        -> Make F CGF Game Profiles.ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318
+      Pin: SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49 (int) Dir=Out
+      Pin: AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017 (int) Dir=Out
+      Pin: TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21 (string) Dir=Out
+        -> Make F CGF Game Profiles.TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21
+      Pin: PlayedTime_29_1560B78245ED515763D610BBA10F14C2 (string) Dir=Out
+        -> Make F CGF Game Profiles.PlayedTime_29_1560B78245ED515763D610BBA10F14C2
+      Pin: GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C (string) Dir=Out
+        -> Make F CGF Game Profiles.GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C
+      Pin: PlayerLevel_30_1B6ECE4E4C611573496BD8AA8B19E45C (int) Dir=Out
+        -> Make F CGF Game Profiles.PlayerLevel_30_1B6ECE4E4C611573496BD8AA8B19E45C
+    Node: Make F CGF Game Profiles (K2Node_MakeStruct)
+      Pin: F_CGF_GameProfiles (struct) Dir=Out
+        -> Add.Value
+      Pin: ProfileName_18_97EFD06444B60172F55B0E8950257FCF (string) Dir=In
+        -> Break F CGF Game Profiles.ProfileName_18_97EFD06444B60172F55B0E8950257FCF
+      Pin: ProfileImage_46_6394245B4ADB9CCDEE550282849E7B77 (softobject) Dir=In
+        -> Break F CGF Game Profiles.ProfileImage_46_6394245B4ADB9CCDEE550282849E7B77
+      Pin: UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C (string) Dir=In
+        -> Break F CGF Game Profiles.UsedSlotNames_42_AAE868924BDA3B238B45FDA5747F328C
+      Pin: ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318 (string) Dir=In
+        -> Break F CGF Game Profiles.ScreenShotSlotPaths_39_A6CBCB154A7D36C887CA32A03FEC4318
+      Pin: SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49 (int) Dir=In
+        -> Get SelectedSlotIndex.SelectedSlotIndex
+      Pin: AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017 (int) Dir=In
+        -> Get CurrentAutoSaveIndex.CurrentAutoSaveIndex
+      Pin: TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21 (string) Dir=In
+        -> Break F CGF Game Profiles.TimeOfDay_48_997841AA4DCEFFCF50F6E6B2761BCA21
+      Pin: PlayedTime_29_1560B78245ED515763D610BBA10F14C2 (string) Dir=In
+        -> Break F CGF Game Profiles.PlayedTime_29_1560B78245ED515763D610BBA10F14C2
+      Pin: GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C (string) Dir=In
+        -> Break F CGF Game Profiles.GameLevel_28_F2F7F5734E8E631F6A6803A7DB4E212C
+      Pin: PlayerLevel_30_1B6ECE4E4C611573496BD8AA8B19E45C (int) Dir=In
+        -> Break F CGF Game Profiles.PlayerLevel_30_1B6ECE4E4C611573496BD8AA8B19E45C
+    Node: Get SelectedSlotIndex (K2Node_VariableGet)
+      Pin: SelectedSlotIndex (int) Dir=Out
+        -> Make F CGF Game Profiles.SelectedSlotIndex_17_A5E14EEE41D51604C74064B770E97D49
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Key (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: Value (struct) Dir=In
+        -> Make F CGF Game Profiles.F_CGF_GameProfiles
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Add.Key
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Updated Game Setting Struct With New Selected Save Slot Index.then
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Get CurrentAutoSaveIndex (K2Node_VariableGet)
+      Pin: CurrentAutoSaveIndex (int) Dir=Out
+        -> Make F CGF Game Profiles.AutoSaveSlotIndex_32_4EABA6DF4FF006ADDB6140B56554B017
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: OutputPin (string) Dir=Out
+        -> Add.TargetMap
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+  Graph: DeleteAutoSave
+    Node: DeleteAutoSave (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Delete Game in Slot.execute
+    Node: Delete Game in Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> DeleteAutoSave.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: SlotName (string) Dir=In
+        -> Get SelectedSlotPath.SelectedSlotPath
+      Pin: UserIndex (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get SelectedSlotPath (K2Node_VariableGet)
+      Pin: SelectedSlotPath (string) Dir=Out
+        -> Delete Game in Slot.SlotName
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Delete Game in Slot.then
+      Pin: ReturnValue (bool) Dir=In
+        -> Delete Game in Slot.ReturnValue
+  Graph: Getnewgameclicked
+    Node: Getnewgameclicked (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Getnewgameclicked.then
+      Pin: NewParam (bool) Dir=In
+  Graph: GetIsNewGame
+    Node: GetIsNewGame (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetIsNewGame.then
+      Pin: NewGame? (bool) Dir=In
+        -> Get IsFirstLoad?.IsFirstLoad?
+    Node: Get IsFirstLoad? (K2Node_VariableGet)
+      Pin: IsFirstLoad? (bool) Dir=Out
+        -> Return Node.NewGame?
+      Pin: self (object) Dir=In
+  Graph: SetNextLevelToLoad
+    Node: SetNextLevelToLoad (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set LevelToOpenNext.execute
+      Pin: LevelToOpenNext (softobject) Dir=Out
+        -> Set LevelToOpenNext.LevelToOpenNext
+    Node: Set LevelToOpenNext (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetNextLevelToLoad.then
+      Pin: then (exec) Dir=Out
+      Pin: LevelToOpenNext (softobject) Dir=In
+        -> SetNextLevelToLoad.LevelToOpenNext
+      Pin: Output_Get (softobject) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetNextLevelToLoad
+    Node: GetNextLevelToLoad (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetNextLevelToLoad.then
+      Pin: LevelToOpenNext (softobject) Dir=In
+        -> Get LevelToOpenNext.LevelToOpenNext
+    Node: Get LevelToOpenNext (K2Node_VariableGet)
+      Pin: LevelToOpenNext (softobject) Dir=Out
+        -> Return Node.LevelToOpenNext
+      Pin: self (object) Dir=In
+  Graph: MakeTimeDateMapForAutoSaveCreation
+    Node: MakeTimeDateMapForAutoSaveCreation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: Time (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Make Default Auto Save Slots (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Array (string) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> MakeTimeDateMapForAutoSaveCreation.then
+      Pin: Array (string) Dir=In
+        -> Make Default Auto Save Slots.Array
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (string) Dir=Out
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> MakeTimeDateMapForAutoSaveCreation.Time
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Add.Value
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: TimeMap (string) Dir=In
+        -> Get localmap.localmap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Get localmap.localmap
+      Pin: Key (string) Dir=In
+      Pin: Value (string) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get localmap (K2Node_VariableGet)
+      Pin: localmap (string) Dir=Out
+        -> Return Node.TimeMap
+    Node: Get localmap (K2Node_VariableGet)
+      Pin: localmap (string) Dir=Out
+        -> Add.TargetMap
+  Graph: CheckForProfiles
+    Node: CheckForProfiles (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Is Empty.TargetMap
+    Node: Is Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.NoProfiles
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> CheckForProfiles.then
+      Pin: NoProfiles (bool) Dir=In
+        -> Is Empty.ReturnValue
+  Graph: UpdateGameSettingsStructWithIndexAndProfileName
+    Node: UpdateGameSettingsStructWithIndexAndProfileName (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+      Pin: TempIndex (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set SelectedPlayerProfileName.then
+        -> Reroute Node.OutputPin
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Make F CGF Game Settings.F_CGF_GameSettings
+    Node: Set SelectedPlayerProfileIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set SelectedPlayerProfileName.execute
+      Pin: SelectedPlayerProfileIndex (int) Dir=In
+        -> Get TempIndex.TempIndex
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set SelectedPlayerProfileName (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SelectedPlayerProfileIndex.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: SelectedPlayerProfileName (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (string) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Not Equal, Case Insenstive (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> GET.Output
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal, Case Insenstive (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set SelectedPlayerProfileIndex.execute
+      Pin: else (exec) Dir=Out
+        -> Set HasProfileBeenMade?.execute
+    Node: Make F CGF Game Settings (K2Node_MakeStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=Out
+        -> Return Node.F_CGF_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6 (string) Dir=In
+        -> Get SelectedPlayerProfileName.SelectedPlayerProfileName
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get SelectedPlayerProfileName (K2Node_VariableGet)
+      Pin: SelectedPlayerProfileName (string) Dir=Out
+        -> Make F CGF Game Settings.LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> GET.Output
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Set SelectedPlayerProfileName.SelectedPlayerProfileName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Make F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+    Node: Get CGF_GameInstanceCopy_GameSettings (K2Node_VariableGet)
+      Pin: CGF_GameInstanceCopy_GameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get CGF_GameInstanceCopy_GameSettings.CGF_GameInstanceCopy_GameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+        -> Keys.TargetMap
+        -> Make F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateGameSettingsStructWithIndexAndProfileName.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (string) Dir=In
+        -> Break F CGF Game Settings.Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E
+      Pin: Keys (string) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (string) Dir=In
+        -> Keys.Keys
+      Pin: Dimension 1 (int) Dir=In
+        -> UpdateGameSettingsStructWithIndexAndProfileName.TempIndex
+      Pin: Output (string) Dir=Out
+        -> Not Equal, Case Insenstive (String).A
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get TempIndex (K2Node_VariableGet)
+      Pin: TempIndex (int) Dir=Out
+        -> Set SelectedPlayerProfileIndex.SelectedPlayerProfileIndex
+    Node: Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: Index (int) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Active Widget Switcher Index Profile Manager
+Target is BPI CGF User Interface.then
+        -> Set HasProfileBeenMade?.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Used To Bypass The Save Game Validity Check When Deleting Profiles. (EdGraphNode_Comment)
+    Node: Set HasProfileBeenMade? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: HasProfileBeenMade? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetAudioComp_CUE
+    Node: GetAudioComp_CUE (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetAudioComp_CUE.then
+      Pin: AudioComp (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+    Node: Get SoundCUE_AudioComp (K2Node_VariableGet)
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Return Node.AudioComp
+      Pin: self (object) Dir=In
+  Graph: DoPlay_CUE
+    Node: DoPlay_CUE (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: SoundFile (object) Dir=Out
+      Pin: SFXCUENameFromDTrow (name) Dir=Out
+      Pin: IsUISound? (bool) Dir=Out
+      Pin: SFXLocation (struct) Dir=Out
+      Pin: SFXRotation (struct) Dir=Out
+      Pin: SFXAttenuationSettings (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: UseAttenuation? (bool) Dir=Out
+      Pin: CanRestart (bool) Dir=Out
+      Pin: Persist Across Level Transition (bool) Dir=Out
+      Pin: Auto Destroy (bool) Dir=Out
+      Pin: Fade (bool) Dir=Out
+      Pin: FadeOutLength (real) Dir=Out
+      Pin: FadeInLength (real) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Get UseAttenuation?.UseAttenuation?
+      Pin: then (exec) Dir=Out
+        -> Set members in Sound Attenuation Settings.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Sound Attenuation Settings (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: StructRef (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StructOut (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set Attenuation.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: AttenuationSettings (object) Dir=Out
+        -> Set Attenuation.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get.SoundCUE_AudioComp
+    Node: Set Attenuation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set Attenuation Settings.execute
+      Pin: Attenuation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.AttenuationSettings
+    Node: Get SFXLocation (K2Node_VariableGet)
+      Pin: SFXLocation (struct) Dir=Out
+        -> Spawn Sound at Location.Location
+    Node: Get SFXRotation (K2Node_VariableGet)
+      Pin: SFXRotation (struct) Dir=Out
+        -> Spawn Sound at Location.Rotation
+    Node: Get UseAttenuation? (K2Node_VariableGet)
+      Pin: UseAttenuation? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Spawn Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+        -> Set SoundCUE_AudioComp.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get SoundCue.SoundCue
+      Pin: Location (struct) Dir=In
+        -> Get SFXLocation.SFXLocation
+      Pin: Rotation (struct) Dir=In
+        -> Get SFXRotation.SFXRotation
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+        -> Get Attenuation Settings.Attenuation Settings
+      Pin: ConcurrencySettings (object) Dir=In
+        -> Get Concurrency Settings.Concurrency Settings
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set SoundCUE_AudioComp.SoundCUE_AudioComp
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Attenuation Settings.then
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get IsUISound?.IsUISound?
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+        -> Get.execute
+    Node: Get IsUISound? (K2Node_VariableGet)
+      Pin: IsUISound? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get SoundCue (K2Node_VariableGet)
+      Pin: SoundCue (object) Dir=Out
+        -> Spawn Sound at Location.Sound
+      Pin: self (object) Dir=In
+    Node: Play
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+      Pin: StartTime (real) Dir=In
+    Node: Set SoundCUE_AudioComp (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Spawn Sound at Location.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SoundCUE_AudioComp (object) Dir=In
+        -> Spawn Sound at Location.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Sound Attenuation Settings.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Get.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Create Sound 2D.execute
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Spawn Sound at Location.execute
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Attenuation Settings (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Attenuation.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Attenuation Settings (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Attenuation Settings (K2Node_VariableGet)
+      Pin: Attenuation Settings (object) Dir=Out
+        -> Spawn Sound at Location.AttenuationSettings
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+        -> Get.then
+      Pin: Condition (bool) Dir=In
+        -> Get CanRestart.CanRestart
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Destroy Component
+Target is Actor Component.execute
+    Node: Get CanRestart (K2Node_VariableGet)
+      Pin: CanRestart (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Get.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.AttenuationSettings
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Attenuation Settings.Attenuation Settings
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Get.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Set members in Sound Attenuation Settings.StructOut
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Attenuation.Attenuation
+    Node: Destroy Component
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+      Pin: Object (object) Dir=In
+    Node: Get SoundCUE_AudioComp (K2Node_VariableGet)
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Destroy Component
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Create Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+        -> Set SoundCUE_AudioComp.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get SoundCue.SoundCue
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: bPersistAcrossLevelTransition (bool) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set SoundCUE_AudioComp.SoundCUE_AudioComp
+    Node: Set SoundCUE_AudioComp (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Sound 2D.then
+      Pin: then (exec) Dir=Out
+        -> Set Sound
+Target is Audio Component.execute
+      Pin: SoundCUE_AudioComp (object) Dir=In
+        -> Create Sound 2D.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set Sound
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Get SoundCue (K2Node_VariableGet)
+      Pin: SoundCue (object) Dir=Out
+        -> Create Sound 2D.Sound
+      Pin: self (object) Dir=In
+    Node: Play
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+      Pin: StartTime (real) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> DoPlay_CUE.SFXAttenuationSettings
+      Pin: OutputPin (struct) Dir=Out
+        -> Set members in Sound Attenuation Settings.StructRef
+    Node: Set Sound
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set SoundCUE_AudioComp.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Set SoundCUE_AudioComp.Output_Get
+      Pin: NewSound (object) Dir=In
+        -> Get SoundCue.SoundCue
+    Node: Get SoundCue (K2Node_VariableGet)
+      Pin: SoundCue (object) Dir=Out
+        -> Set Sound
+Target is Audio Component.NewSound
+      Pin: self (object) Dir=In
+    Node: Create UI sound And Play (EdGraphNode_Comment)
+    Node: Audio Comp Is Valid And Can Restart-Fade False (EdGraphNode_Comment)
+    Node: Audio Comp Needs to be created and sound is world based (EdGraphNode_Comment)
+    Node: Get Concurrency Settings (K2Node_VariableGet)
+      Pin: Concurrency Settings (object) Dir=Out
+        -> Spawn Sound at Location.ConcurrencySettings
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set SoundCUE_AudioComp.then
+      Pin: Condition (bool) Dir=In
+        -> Get Fade.Fade
+      Pin: then (exec) Dir=Out
+        -> Do Fade in CUE
+Target is BP CGF Game Instance.execute
+      Pin: else (exec) Dir=Out
+        -> Get.execute
+    Node: Get Fade (K2Node_VariableGet)
+      Pin: Fade (bool) Dir=Out
+        -> Branch.Condition
+    Node: Stop
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Sound
+Target is Audio Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get Fade.Fade
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Play
+Target is Audio Component.execute
+    Node: Get Fade (K2Node_VariableGet)
+      Pin: Fade (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get SoundCUE_AudioComp (K2Node_VariableGet)
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Stop
+Target is Audio Component.self
+        -> Is Playing
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Stop
+Target is Audio Component.then
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get Fade.Fade
+      Pin: then (exec) Dir=Out
+        -> Do Fade in CUE
+Target is BP CGF Game Instance.execute
+      Pin: else (exec) Dir=Out
+    Node: Get SoundCUE_AudioComp (K2Node_VariableGet)
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Play
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Is Playing
+Target is Audio Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Playing
+Target is Audio Component.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Stop
+Target is Audio Component.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get Fade.Fade
+      Pin: then (exec) Dir=Out
+        -> Do Fade in CUE
+Target is BP CGF Game Instance.execute
+      Pin: else (exec) Dir=Out
+        -> Play
+Target is Audio Component.execute
+    Node: Get Fade (K2Node_VariableGet)
+      Pin: Fade (bool) Dir=Out
+        -> Branch.Condition
+    Node: Audio Is Valid And Can Restart, Swap To Fade Comp And Do Fade (EdGraphNode_Comment)
+    Node: Get SoundCUE_AudioComp (K2Node_VariableGet)
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Play
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Do Fade in CUE
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Do Fade in CUE
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Do Fade in CUE
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Play
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.SoundCUE_AudioComp
+      Pin: StartTime (real) Dir=In
+    Node: Play World Sound (EdGraphNode_Comment)
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Play
+Target is Audio Component.execute
+      Pin: else (exec) Dir=Out
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Play
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Get SoundCue (K2Node_VariableGet)
+      Pin: SoundCue (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> DoPlay_CUE.then
+      Pin: InputObject (object) Dir=In
+        -> Get SoundCue.SoundCue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Fade (K2Node_VariableGet)
+      Pin: Fade (bool) Dir=Out
+        -> Branch.Condition
+  Graph: IsSoundPlaying?_CUE
+    Node: IsSoundPlaying?_CUE (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Valid?.execute
+    Node: Is Playing
+Target is Audio Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get.SoundCUE_AudioComp
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Playing?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: Playing? (bool) Dir=In
+        -> Is Playing
+Target is Audio Component.ReturnValue
+      Pin: AudioCompIsValid? (bool) Dir=In
+        -> Get Valid?.Valid?
+    Node: Get Valid? (K2Node_VariableGet)
+      Pin: Valid? (bool) Dir=Out
+        -> Return Node.AudioCompIsValid?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Playing? (bool) Dir=In
+      Pin: AudioCompIsValid? (bool) Dir=In
+        -> Get Valid?.Valid?
+    Node: Get Valid? (K2Node_VariableGet)
+      Pin: Valid? (bool) Dir=Out
+        -> Return Node.AudioCompIsValid?
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Valid?.then
+      Pin: Condition (bool) Dir=In
+        -> Set Valid?.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Audio Comp Valid? CUE (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Valid? (bool) Dir=Out
+        -> Set Valid?.Valid?
+    Node: Set Valid? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> IsSoundPlaying?_CUE.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Valid? (bool) Dir=In
+        -> Is Audio Comp Valid? CUE.Valid?
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Is Playing
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Get.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+  Graph: IsAudioCompValid?_CUE
+    Node: IsAudioCompValid?_CUE (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+        -> Get.then
+      Pin: Valid? (bool) Dir=In
+        -> Is Valid.ReturnValue
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> IsAudioCompValid?_CUE.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Is Valid.Object
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get.SoundCUE_AudioComp
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Valid?
+  Graph: StopAudioNow_CUE
+    Node: StopAudioNow_CUE (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> StopAudioNow_CUE.then
+      Pin: then (exec) Dir=Out
+        -> Stop
+Target is Audio Component.execute
+      Pin: else (exec) Dir=Out
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Stop
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Stop
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.SoundCUE_AudioComp
+  Graph: Set Paused State_CUE
+    Node: Set Paused State_CUE (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Paused
+Target is Audio Component.execute
+      Pin: Paused? (bool) Dir=Out
+        -> Set Paused
+Target is Audio Component.bPause
+    Node: Get SoundCUE_AudioComp (K2Node_VariableGet)
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Set Paused
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Set Paused
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Paused State_CUE.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SoundCUE_AudioComp.SoundCUE_AudioComp
+      Pin: bPause (bool) Dir=In
+        -> Set Paused State_CUE.Paused?
+  Graph: FadeOutCurrentlyPlayingMusic
+    Node: FadeOutCurrentlyPlayingMusic (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MetaSound? (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: All? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+        -> Get.execute
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Fade Out
+Target is Audio Component.execute
+      Pin: else (exec) Dir=Out
+      Pin: SoundCUE_AudioComp (object) Dir=Out
+        -> Fade Out
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Fade Out
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.SoundCUE_AudioComp
+      Pin: FadeOutDuration (real) Dir=In
+        -> Break F CGF Sound Cue Data.FadeOutLength_35_009C12DC436021C8344A5FB1456C4732
+      Pin: FadeVolumeLevel (real) Dir=In
+      Pin: FadeCurve (byte) Dir=In
+    Node: Get Sound Cue Data (K2Node_VariableGet)
+      Pin: Sound Cue Data (struct) Dir=Out
+        -> Break F CGF Sound Cue Data.F_CGF_SoundCueData
+      Pin: self (object) Dir=In
+    Node: Break F CGF Sound Cue Data (K2Node_BreakStruct)
+      Pin: F_CGF_SoundCueData (struct) Dir=In
+        -> Get Sound Cue Data.Sound Cue Data
+      Pin: FadeOutLength_35_009C12DC436021C8344A5FB1456C4732 (real) Dir=Out
+        -> Fade Out
+Target is Audio Component.FadeOutDuration
+    Node: Get MetaSoundData (K2Node_VariableGet)
+      Pin: MetaSoundData (struct) Dir=Out
+        -> Break F CGF Meta Sound Data.F_CGF_MetaSound_Data
+      Pin: self (object) Dir=In
+    Node: Break F CGF Meta Sound Data (K2Node_BreakStruct)
+      Pin: F_CGF_MetaSound_Data (struct) Dir=In
+        -> Get MetaSoundData.MetaSoundData
+      Pin: FadeOutLength_35_009C12DC436021C8344A5FB1456C4732 (real) Dir=Out
+        -> Fade Out
+Target is Audio Component.FadeOutDuration
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Fade Out
+Target is Audio Component.execute
+      Pin: else (exec) Dir=Out
+      Pin: MetaSound_AudioComp (object) Dir=Out
+        -> Fade Out
+Target is Audio Component.self
+      Pin: self (object) Dir=In
+    Node: Fade Out
+Target is Audio Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.MetaSound_AudioComp
+      Pin: FadeOutDuration (real) Dir=In
+        -> Break F CGF Meta Sound Data.FadeOutLength_35_009C12DC436021C8344A5FB1456C4732
+      Pin: FadeVolumeLevel (real) Dir=In
+      Pin: FadeCurve (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> FadeOutCurrentlyPlayingMusic.then
+      Pin: Condition (bool) Dir=In
+        -> FadeOutCurrentlyPlayingMusic.All?
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Get.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Get.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> FadeOutCurrentlyPlayingMusic.MetaSound?
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+  Graph: GameFileSaved
+    Node: GameFileSaved (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: SaveGameREF (object) Dir=Out
+      Pin: PlaySaveAnimation? (bool) Dir=Out
+  Graph: GameFileLoaded
+    Node: GameFileLoaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: SaveGameRef (object) Dir=Out
+  Graph: GameSettingsLoaded
+    Node: GameSettingsLoaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: GameSettingsREF (object) Dir=Out
+  Graph: GameSettingsSaved
+    Node: GameSettingsSaved (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: GameSettingsREF (object) Dir=Out

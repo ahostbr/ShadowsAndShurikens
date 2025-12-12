@@ -1,0 +1,139 @@
+Blueprint: BP_VideoPlayerAudio (/Game/CoreGameFramework/UI/Widgets/Elements/VideoPlayer/BP_VideoPlayerAudio.BP_VideoPlayerAudio)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.execute
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.self
+    Node: Get Game Settings Data
+Target is BPI CGF Data Management (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (interface) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: CGFGameSettings (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.CGFGameSettings
+      Pin: Profiles_16_FFB7C12D4FB77AC0C87B75AB2C267C7E (string) Dir=Out
+      Pin: LastSelectedProfileName_19_CBF1267C4EEE9B734487CAA123181ED6 (string) Dir=Out
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Data.F_CGF_GameSettings_MenuData
+    Node: Break F CGF Game Settings Menu Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuData (struct) Dir=In
+        -> Break F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+      Pin: SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.then
+      Pin: Array (struct) Dir=In
+        -> Break F CGF Game Settings Menu Data.SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: LoopBody (exec) Dir=Out
+        -> Switch on E_CGF_GameSettingsSlotType.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: SlotType_32_E4EBDA564F637C0AF58FBF8FA930F3A5 (byte) Dir=Out
+        -> Switch on E_CGF_GameSettingsSlotType.Selection
+      Pin: SettingCategory_35_985ADBD94317A6D7F74ABFA610223A36 (byte) Dir=Out
+        -> Switch on E_CGF_GameSettingsCategorys.Selection
+      Pin: SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A (bool) Dir=Out
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> Equal Exactly (Text).A
+      Pin: SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601 (text) Dir=Out
+      Pin: SettingsOptions_18_BBB8446E45D866949245FDB33271A340 (text) Dir=Out
+      Pin: SelectedOption_38_C002D2F04261F0CB9A0269B76A949853 (text) Dir=Out
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=Out
+        -> float / float.A
+    Node: Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Equal Exactly (Text).B
+    Node: Switch on E_CGF_GameSettingsSlotType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Selection (byte) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SlotType_32_E4EBDA564F637C0AF58FBF8FA930F3A5
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator8 (exec) Dir=Out
+      Pin: NewEnumerator9 (exec) Dir=Out
+      Pin: NewEnumerator7 (exec) Dir=Out
+      Pin: NewEnumerator6 (exec) Dir=Out
+        -> Switch on E_CGF_GameSettingsCategorys.execute
+      Pin: NewEnumerator10 (exec) Dir=Out
+    Node: Switch on E_CGF_GameSettingsCategorys (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_GameSettingsSlotType.NewEnumerator6
+      Pin: Selection (byte) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingCategory_35_985ADBD94317A6D7F74ABFA610223A36
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator6 (exec) Dir=Out
+      Pin: NewEnumerator12 (exec) Dir=Out
+      Pin: NewEnumerator13 (exec) Dir=Out
+      Pin: NewEnumerator10 (exec) Dir=Out
+      Pin: NewEnumerator11 (exec) Dir=Out
+        -> Branch.execute
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Actor
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_CGF_GameSettingsCategorys.NewEnumerator11
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (Text).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Volume Multiplier
+Target is Synth Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get MediaSound (K2Node_VariableGet)
+      Pin: MediaSound (object) Dir=Out
+        -> Set Volume Multiplier
+Target is Synth Component.self
+      Pin: self (object) Dir=In
+    Node: Set Volume Multiplier
+Target is Synth Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get MediaSound.MediaSound
+      Pin: VolumeMultiplier (real) Dir=In
+        -> float / float.ReturnValue
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Volume Multiplier
+Target is Synth Component.VolumeMultiplier
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

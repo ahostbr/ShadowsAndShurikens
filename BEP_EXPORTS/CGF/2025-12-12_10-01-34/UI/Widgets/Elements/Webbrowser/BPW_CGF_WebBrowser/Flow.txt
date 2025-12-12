@@ -1,0 +1,225 @@
+Blueprint: BPW_CGF_WebBrowser (/Game/CoreGameFramework/UI/Widgets/Elements/Webbrowser/BPW_CGF_WebBrowser.BPW_CGF_WebBrowser)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+    Node: Get WebBrowser (K2Node_VariableGet)
+      Pin: WebBrowser (object) Dir=Out
+        -> Load URL
+Target is Web Browser.self
+        -> Load URL
+Target is Web Browser.self
+        -> Load String
+Target is Web Browser.self
+        -> Load String
+Target is Web Browser.self
+      Pin: self (object) Dir=In
+    Node: Load URL
+Target is Web Browser (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WebBrowser.WebBrowser
+      Pin: NewURL (string) Dir=In
+        -> Get URL To Nav To.URL To Nav To
+    Node: Get URL To Nav To (K2Node_VariableGet)
+      Pin: URL To Nav To (string) Dir=Out
+        -> Load URL
+Target is Web Browser.NewURL
+      Pin: self (object) Dir=In
+    Node: NavigateToURL
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: NewURLToNavTo (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Load URL
+Target is Web Browser (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WebBrowser.WebBrowser
+      Pin: NewURL (string) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get ManualDelayBeforeLoading.ManualDelayBeforeLoading
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get ManualDelayBeforeLoading (K2Node_VariableGet)
+      Pin: ManualDelayBeforeLoading (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Get NetworkFetchEnabled? (K2Node_VariableGet)
+      Pin: NetworkFetchEnabled? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Set BP CGF Game Instance.Output_Get
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: Condition (bool) Dir=In
+        -> Get NetworkFetchEnabled?.NetworkFetchEnabled?
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: else (exec) Dir=Out
+    Node: Get NetworkFetchEnabled? (K2Node_VariableGet)
+      Pin: NetworkFetchEnabled? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> NavigateToURL
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Get NetworkFetchEnabled?.NetworkFetchEnabled?
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+        -> Get NetworkFetchEnabled?.self
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get NetworkFetchEnabled?.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> NavigateToURL
+Custom Event.NewURLToNavTo
+      Pin: OutputPin (string) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (string) Dir=Out
+        -> Load URL
+Target is Web Browser.NewURL
+    Node: Get HTML String To Load (K2Node_VariableGet)
+      Pin: HTML String To Load (string) Dir=Out
+        -> Equal Exactly (String).A
+        -> Load String
+Target is Web Browser.Contents
+      Pin: self (object) Dir=In
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get HTML String To Load.HTML String To Load
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Load URL
+Target is Web Browser.execute
+      Pin: else (exec) Dir=Out
+        -> Load String
+Target is Web Browser.execute
+    Node: Get HTML String To Load (K2Node_VariableGet)
+      Pin: HTML String To Load (string) Dir=Out
+        -> Equal Exactly (String).A
+        -> Load String
+Target is Web Browser.Contents
+      Pin: self (object) Dir=In
+    Node: Equal Exactly (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get HTML String To Load.HTML String To Load
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (String).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Load URL
+Target is Web Browser.execute
+      Pin: else (exec) Dir=Out
+        -> Load String
+Target is Web Browser.execute
+    Node: Load String
+Target is Web Browser (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WebBrowser.WebBrowser
+      Pin: Contents (string) Dir=In
+        -> Get HTML String To Load.HTML String To Load
+      Pin: DummyURL (string) Dir=In
+    Node: Load String
+Target is Web Browser (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WebBrowser.WebBrowser
+      Pin: Contents (string) Dir=In
+        -> Get HTML String To Load.HTML String To Load
+      Pin: DummyURL (string) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: On Clicked (WebBrowserCloseButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self
+        -> Get Parent
+Target is Widget.self
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (WebBrowserCloseButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+        -> Get Parent
+Target is Widget.ReturnValue
+    Node: Get Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self

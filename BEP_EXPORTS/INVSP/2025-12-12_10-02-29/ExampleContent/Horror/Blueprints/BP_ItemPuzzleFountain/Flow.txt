@@ -1,0 +1,388 @@
+Blueprint: BP_ItemPuzzleFountain (/Game/InventorySystemPro/ExampleContent/Horror/Blueprints/BP_ItemPuzzleFountain.BP_ItemPuzzleFountain)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Solve Puzzle - Color Water red and start blood particle system (EdGraphNode_Comment)
+    Node: Event OnSolvePuzzle (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnSolvePuzzle.execute
+    Node: Parent: OnSolvePuzzle (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnSolvePuzzle.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+    Node: Get WaterMaterial (K2Node_VariableGet)
+      Pin: WaterMaterial (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FillWithBlood.Update
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get WaterMaterial.WaterMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Lerp (LinearColor).ReturnValue
+    Node: Event OnInteract
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnInteract.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Parent: OnInteract.PlayerController
+    Node: Parent: OnInteract (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnInteract
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnInteract
+From BPI Interaction.PlayerController
+    Node: Overlap events (EdGraphNode_Comment)
+    Node: Open the inventory, so the player can pick the required item to solve the puzzle (EdGraphNode_Comment)
+    Node: Solve the puzzle if the right key item is used in the inventory (EdGraphNode_Comment)
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: ActorBeginOverlap.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Parent: ActorBeginOverlap.OtherActor
+    Node: Event ActorEndOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: ActorEndOverlap.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Parent: ActorEndOverlap.OtherActor
+    Node: Parent: ActorBeginOverlap (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+    Node: Parent: ActorEndOverlap (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorEndOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorEndOverlap.OtherActor
+    Node: Event OnPuzzleInteract (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnPuzzleInteract.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Parent: OnPuzzleInteract.PlayerController
+    Node: Parent: OnPuzzleInteract (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnPuzzleInteract.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnPuzzleInteract.PlayerController
+    Node: Event OnAttemptUseRequiredItem (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnAttemptUseRequiredItem.execute
+      Pin: InventoryComponent (object) Dir=Out
+        -> Parent: OnAttemptUseRequiredItem.InventoryComponent
+    Node: Parent: OnAttemptUseRequiredItem (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnAttemptUseRequiredItem.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InventoryComponent (object) Dir=In
+        -> Event OnAttemptUseRequiredItem.InventoryComponent
+    Node: Event OnEndChooseItem
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnEndChooseItem.execute
+      Pin: bItemMatches (bool) Dir=Out
+        -> Parent: OnEndChooseItem.bItemMatches
+      Pin: bAllItemsCompleted (bool) Dir=Out
+        -> Parent: OnEndChooseItem.bAllItemsCompleted
+      Pin: Items (struct) Dir=Out
+        -> Parent: OnEndChooseItem.Items
+    Node: Parent: OnEndChooseItem (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bItemMatches (bool) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.bItemMatches
+      Pin: bAllItemsCompleted (bool) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.bAllItemsCompleted
+      Pin: Items (struct) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.Items
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WaterMaterial.WaterMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Lerp (LinearColor).ReturnValue
+    Node: Get PuzzleItemMedallion (K2Node_VariableGet)
+      Pin: PuzzleItemMedallion (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: OnSolvePuzzle.then
+      Pin: then (exec) Dir=Out
+        -> Set Active
+Target is Actor Component.execute
+      Pin: self (object) Dir=In
+        -> Get PuzzleItemMedallion.PuzzleItemMedallion
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Event OnEndChooseItem_Server (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: OnEndChooseItem_Server.execute
+      Pin: ItemMatches (bool) Dir=Out
+        -> Parent: OnEndChooseItem_Server.ItemMatches
+      Pin: AllItemsCompleted (bool) Dir=Out
+        -> Parent: OnEndChooseItem_Server.AllItemsCompleted
+      Pin: Items (struct) Dir=Out
+        -> Parent: OnEndChooseItem_Server.Items
+    Node: Parent: OnEndChooseItem_Server (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndChooseItem_Server.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemMatches (bool) Dir=In
+        -> Event OnEndChooseItem_Server.ItemMatches
+      Pin: AllItemsCompleted (bool) Dir=In
+        -> Event OnEndChooseItem_Server.AllItemsCompleted
+      Pin: Items (struct) Dir=In
+        -> Event OnEndChooseItem_Server.Items
+    Node: FillWithBlood (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Delay.then
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Finished (exec) Dir=Out
+        -> Set Active
+Target is Actor Component.execute
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Progress (real) Dir=Out
+        -> Lerp (LinearColor).Alpha
+        -> Lerp (LinearColor).Alpha
+    Node: Lerp (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get ColorSteepInitial.ColorSteepInitial
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> FillWithBlood.Progress
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Lerp (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get ColorFlatInitial.ColorFlatInitial
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> FillWithBlood.Progress
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Get ColorSteepInitial (K2Node_VariableGet)
+      Pin: ColorSteepInitial (struct) Dir=Out
+        -> Lerp (LinearColor).A
+      Pin: self (object) Dir=In
+    Node: Get ColorFlatInitial (K2Node_VariableGet)
+      Pin: ColorFlatInitial (struct) Dir=Out
+        -> Lerp (LinearColor).A
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Active
+Target is Actor Component.then
+      Pin: then (exec) Dir=Out
+        -> FillWithBlood.Play
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get NS_BloodPouring (K2Node_VariableGet)
+      Pin: NS_BloodPouring (object) Dir=Out
+        -> Set Active
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Set Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get NS_BloodPouring.NS_BloodPouring
+      Pin: bNewActive (bool) Dir=In
+      Pin: bReset (bool) Dir=In
+    Node: Get NS_BloodPouring (K2Node_VariableGet)
+      Pin: NS_BloodPouring (object) Dir=Out
+        -> Set Active
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Set Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FillWithBlood.Finished
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get NS_BloodPouring.NS_BloodPouring
+      Pin: bNewActive (bool) Dir=In
+      Pin: bReset (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set WaterMaterial.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set WaterMaterial.WaterMaterial
+    Node: Set WaterMaterial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Material
+Target is Primitive Component.execute
+      Pin: WaterMaterial (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.Material
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.self
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Get WaterMeshTop (K2Node_VariableGet)
+      Pin: WaterMeshTop (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Material
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WaterMaterial.then
+      Pin: then (exec) Dir=Out
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get WaterMeshTop.WaterMeshTop
+      Pin: ElementIndex (int) Dir=In
+      Pin: Material (object) Dir=In
+        -> Set WaterMaterial.Output_Get
+    Node: Get Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Material
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set ColorSteepInitial.execute
+      Pin: self (object) Dir=In
+        -> Set WaterMaterial.Output_Get
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ColorSteepInitial.ColorSteepInitial
+    Node: Get Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ColorSteepInitial.then
+      Pin: then (exec) Dir=Out
+        -> Set ColorFlatInitial.execute
+      Pin: self (object) Dir=In
+        -> Set WaterMaterial.Output_Get
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ColorFlatInitial.ColorFlatInitial
+    Node: Set ColorSteepInitial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: ColorSteepInitial (struct) Dir=In
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ColorFlatInitial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: ColorFlatInitial (struct) Dir=In
+        -> Get Vector Parameter Value
+Target is Material Instance Dynamic.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In

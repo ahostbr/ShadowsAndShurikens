@@ -1,0 +1,1220 @@
+Blueprint: BPW_CGF_SettingsMenu_BaseSlot (/Game/CoreGameFramework/UI/Widgets/Elements/Parents/SettingsMenu/BPW_CGF_SettingsMenu_BaseSlot.BPW_CGF_SettingsMenu_BaseSlot)
+  Graph: EventGraph
+    Node: On Hovered (ButtonToHookEvents) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CGF Do Once This Interval.execute
+    Node: On Unhovered (ButtonToHookEvents) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Slot Un Hover.execute
+    Node: Event On Added to Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Slot Focus Gained.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Event On Removed from Focus Path (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Slot Focus Removed.execute
+      Pin: InFocusEvent (struct) Dir=Out
+    Node: Call On Slot Focus Gained (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Added to Focus Path.then
+      Pin: then (exec) Dir=Out
+        -> Set Hovered?.execute
+      Pin: self (object) Dir=In
+      Pin: WidgetFocused (object) Dir=In
+        -> Self-Reference.self
+      Pin: WidgetsChildButton (object) Dir=In
+        -> Get Child At
+Target is Panel Widget.ReturnValue
+    Node: Call On Slot Focus Removed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Removed from Focus Path.then
+      Pin: then (exec) Dir=Out
+        -> Set Hovered?.execute
+      Pin: self (object) Dir=In
+    Node: Call On Slot Hover (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> CGF Do Once This Interval.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Hovered?.execute
+      Pin: self (object) Dir=In
+    Node: Call On Slot Un Hover (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Unhovered (ButtonToHookEvents).then
+      Pin: then (exec) Dir=Out
+        -> Set Hovered?.execute
+      Pin: self (object) Dir=In
+    Node: On Clicked (ButtonToHookEvents) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Slot Clicked.execute
+    Node: Call On Slot Clicked (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (ButtonToHookEvents).then
+        -> Event DoManualClickEvent
+From BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+    Node: Get SlotMainBorder (K2Node_VariableGet)
+      Pin: SlotMainBorder (object) Dir=Out
+        -> Set Brush from Texture
+Target is Border.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Slot Data
+Target is BPW CGF Settings Menu Base Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get SlotMainBorder.SlotMainBorder
+      Pin: Texture (object) Dir=In
+        -> Get BorderTexture.BorderTexture
+    Node: Get BorderTexture (K2Node_VariableGet)
+      Pin: BorderTexture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Border.Texture
+      Pin: self (object) Dir=In
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Width Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Set Text.execute
+      Pin: self (object) Dir=In
+        -> Get SizeBox.SizeBox
+      Pin: InHeightOverride (real) Dir=In
+        -> Get BorderHeight.BorderHeight
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Border.then
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get SizeBox.SizeBox
+      Pin: InWidthOverride (real) Dir=In
+        -> Get BorderWidth.BorderWidth
+    Node: Get BPW_CGF_SettingsMenu_TextBlock (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_TextBlock (object) Dir=Out
+        -> Get TextBlock.self
+      Pin: self (object) Dir=In
+    Node: Get TextBlock (K2Node_VariableGet)
+      Pin: TextBlock (object) Dir=Out
+        -> Set Text.self
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_TextBlock.BPW_CGF_SettingsMenu_TextBlock
+    Node: Get Left Text (K2Node_VariableGet)
+      Pin: Left Text (text) Dir=Out
+        -> Set Text.Text
+      Pin: self (object) Dir=In
+    Node: Get ChildButtonType (K2Node_VariableGet)
+      Pin: ChildButtonType (class) Dir=Out
+        -> Create User Widget Widget.Class
+      Pin: self (object) Dir=In
+    Node: Create User Widget Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Cast To BPW_CGF_SettingsMenu_Slot_BaseButton.execute
+      Pin: Class (class) Dir=In
+        -> Get ChildButtonType.ChildButtonType
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BPW_CGF_SettingsMenu_Slot_BaseButton.Object
+      Pin: OwningPlayer (object) Dir=In
+        -> Get PC.PlayerController
+    Node: Get ChildWidgetsHorizontalBox (K2Node_VariableGet)
+      Pin: ChildWidgetsHorizontalBox (object) Dir=Out
+        -> Add Child to Horizontal Box
+Target is Horizontal Box.self
+      Pin: self (object) Dir=In
+    Node: Add Child to Horizontal Box
+Target is Horizontal Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Base Slot REF
+Target is BPW CGF Settings Menu Slot Base Button.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ChildWidgetsHorizontalBox.ChildWidgetsHorizontalBox
+      Pin: Content (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_SlotBaseButtonREF.BPW_CGF_SettingsMenu_SlotBaseButtonREF
+      Pin: ReturnValue (object) Dir=Out
+    Node: Cast To BPW_CGF_SettingsMenu_Slot_BaseButton (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Create User Widget Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set BPW_CGF_SettingsMenu_SlotBaseButtonREF.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: Object (object) Dir=In
+        -> Create User Widget Widget.ReturnValue
+      Pin: AsBPW CGF Settings Menu Slot Base Button (object) Dir=Out
+        -> Set BPW_CGF_SettingsMenu_SlotBaseButtonREF.BPW_CGF_SettingsMenu_SlotBaseButtonREF
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set BPW_CGF_SettingsMenu_SlotBaseButtonREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_Slot_BaseButton.then
+      Pin: then (exec) Dir=Out
+        -> Set Base Slot REF
+Target is BPW CGF Settings Menu Slot Base Button.execute
+      Pin: BPW_CGF_SettingsMenu_SlotBaseButtonREF (object) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_Slot_BaseButton.AsBPW CGF Settings Menu Slot Base Button
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set BrushColor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Hovered?.then
+        -> Set Hovered?.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: BrushColor (struct) Dir=In
+        -> Get Hovered Brush.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SlotMainBorder.SlotMainBorder
+    Node: Set Hovered? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Call On Slot Hover.then
+        -> Call On Slot Focus Gained.then
+      Pin: then (exec) Dir=Out
+        -> Set BrushColor.execute
+      Pin: Hovered? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Hovered? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Call On Slot Un Hover.then
+        -> Call On Slot Focus Removed.then
+      Pin: then (exec) Dir=Out
+        -> Set BrushColor.execute
+      Pin: Hovered? (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Hovered Brush (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set BrushColor.BrushColor
+    Node: Get SlotMainBorder (K2Node_VariableGet)
+      Pin: SlotMainBorder (object) Dir=Out
+        -> Set BrushColor.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set BrushColor.then
+      Pin: then (exec) Dir=Out
+        -> Set ParentSlotRef.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: BPW_CGF_SettingsMenu_SlotBaseButtonREF (object) Dir=Out
+        -> Set ParentSlotRef.self
+      Pin: self (object) Dir=In
+    Node: Set ParentSlotRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set Settings Menu Slot Information Text
+Target is BPW CGF Settings Menu Base Slot.execute
+      Pin: ParentSlotRef (object) Dir=In
+        -> Self-Reference.self
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.BPW_CGF_SettingsMenu_SlotBaseButtonREF
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set ParentSlotRef.ParentSlotRef
+    Node: Set Base Slot REF
+Target is BPW CGF Settings Menu Slot Base Button (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set BPW_CGF_SettingsMenu_SlotBaseButtonREF.then
+      Pin: then (exec) Dir=Out
+        -> Add Child to Horizontal Box
+Target is Horizontal Box.execute
+      Pin: self (object) Dir=In
+        -> Get BPW_CGF_SettingsMenu_SlotBaseButtonREF.BPW_CGF_SettingsMenu_SlotBaseButtonREF
+      Pin: SlotRef (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Base Slot REF
+Target is BPW CGF Settings Menu Slot Base Button.SlotRef
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_Slot_BaseButton.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: SaveSlotData
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CGF Do Only After Game Time Elapsed.execute
+      Pin: SelectedOption (text) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Text (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+      Pin: Text (text) Dir=In
+        -> Get Left Text.Left Text
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextBlock.TextBlock
+    Node: Set Slot Data
+Target is BPW CGF Settings Menu Base Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Post Proccessing Volume
+Target is BPW CGF Settings Menu Base Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Border.execute
+      Pin: self (object) Dir=In
+    Node: Get BorderWidth (K2Node_VariableGet)
+      Pin: BorderWidth (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+      Pin: self (object) Dir=In
+    Node: Get BorderHeight (K2Node_VariableGet)
+      Pin: BorderHeight (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: self (object) Dir=In
+    Node: Get SizeBox (K2Node_VariableGet)
+      Pin: SizeBox (object) Dir=Out
+        -> Set Width Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Get SizeBox (K2Node_VariableGet)
+      Pin: SizeBox (object) Dir=Out
+        -> Set Height Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Slot Focus Gained.WidgetFocused
+    Node: Set Settings Menu Slot Information Text
+Target is BPW CGF Settings Menu Base Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ParentSlotRef.then
+      Pin: then (exec) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+    Node: Get BPW_CGF_SettingsMenu_SlotBaseButtonREF (K2Node_VariableGet)
+      Pin: BPW_CGF_SettingsMenu_SlotBaseButtonREF (object) Dir=Out
+        -> Set Base Slot REF
+Target is BPW CGF Settings Menu Slot Base Button.self
+        -> Add Child to Horizontal Box
+Target is Horizontal Box.Content
+      Pin: self (object) Dir=In
+    Node: Construct (EdGraphNode_Comment)
+    Node: Data Management (EdGraphNode_Comment)
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Create User Widget Widget.OwningPlayer
+    Node: Get GameSettingsData (K2Node_VariableGet)
+      Pin: GameSettingsData (struct) Dir=Out
+        -> Set Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: self (object) Dir=In
+    Node: Update Struct
+Target is BPW CGF Settings Menu Base Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CGF Do Only After Game Time Elapsed.True
+      Pin: then (exec) Dir=Out
+        -> Set Game Settings Data
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+      Pin: SelectedOption (text) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Last Focused Widget
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set Settings Menu Slot Information Text
+Target is BPW CGF Settings Menu Base Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: LastFocused (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.LastFocused
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Set Last Focused Widget
+Target is BPI CGF User Interface.self
+    Node: Event DoManualClickEvent
+From BPI CGF User Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Slot Clicked.execute
+    Node: Event On Initialized (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event On Initialized.then
+      Pin: then (exec) Dir=Out
+        -> Create User Widget Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set As BPW CGF Settings Menu (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get All Widgets Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Get Post Proccessing Volume
+Target is BPW CGF Settings Menu Base Slot.execute
+      Pin: As BPW CGF Settings Menu (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get All Widgets Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set As BPW CGF Settings Menu.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: FoundWidgets (object) Dir=Out
+        -> GET.Array
+      Pin: WidgetClass (class) Dir=In
+      Pin: TopLevelOnly (bool) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get All Widgets Of Class.FoundWidgets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set As BPW CGF Settings Menu.As BPW CGF Settings Menu
+    Node: OnInit (EdGraphNode_Comment)
+    Node: Hovers And Click Dispatchers (EdGraphNode_Comment)
+    Node: Set Game Settings Data
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Struct
+Target is BPW CGF Settings Menu Base Slot.then
+      Pin: then (exec) Dir=Out
+        -> Request Save Game Settings
+Target is BP CGF Game Instance.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: CGFGameSettings (struct) Dir=In
+        -> Get GameSettingsData.GameSettingsData
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: Actor (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Get All Widgets Of Class.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Widget
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set Game Settings Data
+Target is BP CGF Game Instance.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Request Save Game Settings
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Game Settings Data
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Post Proccessing Volume
+Target is BPW CGF Settings Menu Base Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set As BPW CGF Settings Menu.then
+      Pin: then (exec) Dir=Out
+        -> Set Slot Data
+Target is BPW CGF Settings Menu Base Slot.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: CGF Do Only After Game Time Elapsed (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> SaveSlotData
+Custom Event.then
+      Pin: Time (real) Dir=In
+      Pin: True (exec) Dir=Out
+        -> Update Struct
+Target is BPW CGF Settings Menu Base Slot.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: OutputPin (object) Dir=Out
+        -> Request Save Game Settings
+Target is BP CGF Game Instance.self
+    Node: Settings Menu Base Slot That Holds Base Navigation, Focus, Data And UI/Child Button Setup Events. Children Can Be Created Based Off This To Make More Unique Categorys and Matching Slots. (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> SaveSlotData
+Custom Event.SelectedOption
+      Pin: OutputPin (text) Dir=Out
+        -> Update Struct
+Target is BPW CGF Settings Menu Base Slot.SelectedOption
+    Node: Get ChildWidgetsHorizontalBox (K2Node_VariableGet)
+      Pin: ChildWidgetsHorizontalBox (object) Dir=Out
+        -> Get Child At
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Child At
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ChildWidgetsHorizontalBox.ChildWidgetsHorizontalBox
+      Pin: Index (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Call On Slot Focus Gained.WidgetsChildButton
+    Node: CGF Do Once This Interval (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> On Hovered (ButtonToHookEvents).then
+      Pin: Interval (real) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Call On Slot Hover.execute
+  Graph: GetHoveredBrush
+    Node: GetHoveredBrush (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetHoveredBrush.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 0
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Make Color.ReturnValue
+      Pin: Option 1 (struct) Dir=In
+        -> Make Color.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Get Hovered?.Hovered?
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Hovered? (K2Node_VariableGet)
+      Pin: Hovered? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+  Graph: GetThisSlotsIndex
+    Node: GetThisSlotsIndex (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Child Index
+Target is Panel Widget.self
+    Node: Get Child Index
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Parent
+Target is Widget.ReturnValue
+      Pin: Content (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (int) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Child Index
+Target is Panel Widget.Content
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetThisSlotsIndex.then
+      Pin: ReturnValue (int) Dir=In
+        -> Get Child Index
+Target is Panel Widget.ReturnValue
+    Node: Get SlotType (K2Node_VariableGet)
+      Pin: SlotType (byte) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator8 (wildcard) Dir=In
+      Pin: NewEnumerator9 (wildcard) Dir=In
+      Pin: NewEnumerator7 (wildcard) Dir=In
+      Pin: NewEnumerator6 (wildcard) Dir=In
+      Pin: NewEnumerator10 (wildcard) Dir=In
+      Pin: Index (byte) Dir=In
+        -> Get SlotType.SlotType
+      Pin: ReturnValue (wildcard) Dir=Out
+  Graph: DoCustomNavigation
+    Node: DoCustomNavigation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EUINavigation.execute
+      Pin: Navigation (byte) Dir=Out
+        -> Switch on EUINavigation.Selection
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.then
+      Pin: ReturnValue (object) Dir=In
+        -> Get ButtonToHookEvents.ButtonToHookEvents
+    Node: Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EUINavigation.Down
+      Pin: then (exec) Dir=Out
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: Switch on EUINavigation (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> DoCustomNavigation.then
+      Pin: Selection (byte) Dir=In
+        -> DoCustomNavigation.Navigation
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: Left (exec) Dir=Out
+      Pin: Right (exec) Dir=Out
+      Pin: Up (exec) Dir=Out
+        -> Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot.execute
+      Pin: Down (exec) Dir=Out
+        -> Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot.execute
+      Pin: Next (exec) Dir=Out
+      Pin: Previous (exec) Dir=Out
+      Pin: Invalid (exec) Dir=Out
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Get Child At
+Target is Panel Widget.Index
+    Node: Get Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Child At
+Target is Panel Widget.self
+    Node: Get Child At
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Parent
+Target is Widget.ReturnValue
+      Pin: Index (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.Object
+    Node: Cast To BPW_CGF_SettingsMenu_BaseSlot (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Get Child At
+Target is Panel Widget.ReturnValue
+      Pin: AsBPW CGF Settings Menu Base Slot (object) Dir=Out
+        -> Get ButtonToHookEvents.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ButtonToHookEvents (K2Node_VariableGet)
+      Pin: ButtonToHookEvents (object) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: self (object) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.AsBPW CGF Settings Menu Base Slot
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.then
+      Pin: ReturnValue (object) Dir=In
+        -> Get ButtonToHookEvents.ButtonToHookEvents
+    Node: Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on EUINavigation.Up
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Get Child At
+Target is Panel Widget.Index
+    Node: Get Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Child At
+Target is Panel Widget.self
+    Node: Get Child At
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Parent
+Target is Widget.ReturnValue
+      Pin: Index (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.Object
+    Node: Cast To BPW_CGF_SettingsMenu_BaseSlot (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Get Child At
+Target is Panel Widget.ReturnValue
+      Pin: AsBPW CGF Settings Menu Base Slot (object) Dir=Out
+        -> Get ButtonToHookEvents.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ButtonToHookEvents (K2Node_VariableGet)
+      Pin: ButtonToHookEvents (object) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: self (object) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.AsBPW CGF Settings Menu Base Slot
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.execute
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=In
+        -> Get ButtonToHookEvents.ButtonToHookEvents
+    Node: Get ButtonToHookEvents (K2Node_VariableGet)
+      Pin: ButtonToHookEvents (object) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.CastFailed
+        -> Cast To BPW_CGF_SettingsMenu_BaseSlot.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Get This Slots Index
+Target is BPW CGF Settings Menu Base Slot.ReturnValue
+      Pin: OutputPin (int) Dir=Out
+        -> Equal (Integer).A
+        -> int + int.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+  Graph: SetSlotData
+    Node: SetSlotData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.execute
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> GET.Output
+      Pin: SlotType_32_E4EBDA564F637C0AF58FBF8FA930F3A5 (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SettingCategory_35_985ADBD94317A6D7F74ABFA610223A36 (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A (bool) Dir=Out
+        -> Set SettingIsOn?.SettingIsOn?
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=Out
+        -> Set Left Text.Left Text
+      Pin: SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601 (text) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SettingsOptions_18_BBB8446E45D866949245FDB33271A340 (text) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SelectedOption_38_C002D2F04261F0CB9A0269B76A949853 (text) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=Out
+        -> Set Slider Data.Slider Data
+    Node: Set SlotType (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Setting Category.then
+      Pin: then (exec) Dir=Out
+      Pin: SlotType (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Left Text (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Setting Description.execute
+      Pin: Left Text (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Setting Description (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Left Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Settings Options.execute
+      Pin: Setting Description (text) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Settings Options (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Setting Description.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Option.execute
+      Pin: Settings Options (text) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Slider Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+      Pin: Slider Data (real) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Setting Category (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SettingIsOn?.then
+      Pin: then (exec) Dir=Out
+        -> Set SlotType.execute
+      Pin: Setting Category (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set GameSettingsData.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set SettingIsOn?.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set Left Text.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Set Slider Data.execute
+    Node: Set Selected Option (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Settings Options.then
+      Pin: then (exec) Dir=Out
+      Pin: Selected Option (text) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Set GameSettingsData.Output_Get
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Data.F_CGF_GameSettings_MenuData
+    Node: Break F CGF Game Settings Menu Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuData (struct) Dir=In
+        -> Break F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+      Pin: SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A (struct) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Break F CGF Game Settings Menu Data.SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: Dimension 1 (int) Dir=In
+        -> Get SettingsIndex.SettingsIndex
+      Pin: Output (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+    Node: Get SettingsIndex (K2Node_VariableGet)
+      Pin: SettingsIndex (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Set SettingIsOn? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Setting Category.execute
+      Pin: SettingIsOn? (bool) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set GameSettingsData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: GameSettingsData (struct) Dir=In
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.CGFGameSettings
+      Pin: Output_Get (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SelectedOption_38_C002D2F04261F0CB9A0269B76A949853
+      Pin: OutputPin (text) Dir=Out
+        -> Set Selected Option.Selected Option
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingsOptions_18_BBB8446E45D866949245FDB33271A340
+      Pin: OutputPin (text) Dir=Out
+        -> Set Settings Options.Settings Options
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601
+      Pin: OutputPin (text) Dir=Out
+        -> Set Setting Description.Setting Description
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingCategory_35_985ADBD94317A6D7F74ABFA610223A36
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Set Setting Category.Setting Category
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SlotType_32_E4EBDA564F637C0AF58FBF8FA930F3A5
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Set SlotType.SlotType
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Get Game Settings Data
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Get Game Settings Data
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetSlotData.then
+      Pin: then (exec) Dir=Out
+        -> Set GameSettingsData.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: CGFGameSettings (struct) Dir=Out
+        -> Set GameSettingsData.GameSettingsData
+  Graph: SetSettingsMenuSlotInformationText
+    Node: SetSettingsMenuSlotInformationText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.execute
+    Node: Get Hovered? (K2Node_VariableGet)
+      Pin: Hovered? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.self
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (text) Dir=In
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.DefaultInfoText
+      Pin: Option 1 (text) Dir=In
+        -> Break F CGF Game Settings Menu Slot Data.SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601
+      Pin: Index (bool) Dir=In
+        -> Get Hovered?.Hovered?
+      Pin: ReturnValue (text) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface.InfoText
+    Node: Get SlotData (K2Node_VariableGet)
+      Pin: SlotData (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings Menu Slot Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=In
+        -> Get SlotData.SlotData
+      Pin: SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601 (text) Dir=Out
+        -> Select.Option 1
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=Out
+    Node: Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> SetSettingsMenuSlotInformationText.then
+      Pin: then (exec) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface.execute
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: DefaultInfoText (text) Dir=Out
+        -> Select.Option 0
+    Node: Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Get Settings Menu Hover Slot Information Text Default
+Target is BPI CGF User Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get HUD.HUD
+      Pin: InfoText (text) Dir=In
+        -> Select.ReturnValue
+    Node: Get HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD (object) Dir=Out
+        -> Get Settings Menu Hover Slot Information Text
+Target is BPI CGF User Interface.self
+  Graph: UpdateStruct
+    Node: UpdateStruct (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Selected Option.execute
+      Pin: SelectedOption (text) Dir=Out
+        -> Set Selected Option.Selected Option
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set SlotData.then
+    Node: Make F CGF Game Settings Menu Slot Data (K2Node_MakeStruct)
+      Pin: F_CGF_GameSettings_MenuSlotData (struct) Dir=Out
+        -> Set Array Elem.Item
+        -> Set SlotData.SlotData
+      Pin: SlotType_32_E4EBDA564F637C0AF58FBF8FA930F3A5 (byte) Dir=In
+        -> Get SlotType.SlotType
+      Pin: SettingCategory_35_985ADBD94317A6D7F74ABFA610223A36 (byte) Dir=In
+        -> Get Setting Category.Setting Category
+      Pin: SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A (bool) Dir=In
+        -> Get SettingIsOn?.SettingIsOn?
+      Pin: SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855 (text) Dir=In
+        -> Get Left Text.Left Text
+      Pin: SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601 (text) Dir=In
+        -> Get Setting Description.Setting Description
+      Pin: SettingsOptions_18_BBB8446E45D866949245FDB33271A340 (text) Dir=In
+        -> Get Settings Options.Settings Options
+      Pin: SelectedOption_38_C002D2F04261F0CB9A0269B76A949853 (text) Dir=In
+        -> Get Selected Option.Selected Option
+      Pin: SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A (real) Dir=In
+        -> Get Slider Data.Slider Data
+    Node: Get SettingIsOn? (K2Node_VariableGet)
+      Pin: SettingIsOn? (bool) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SettingOn?_8_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: self (object) Dir=In
+    Node: Get SlotType (K2Node_VariableGet)
+      Pin: SlotType (byte) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SlotType_32_E4EBDA564F637C0AF58FBF8FA930F3A5
+      Pin: self (object) Dir=In
+    Node: Get Setting Category (K2Node_VariableGet)
+      Pin: Setting Category (byte) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SettingCategory_35_985ADBD94317A6D7F74ABFA610223A36
+      Pin: self (object) Dir=In
+    Node: Get Setting Description (K2Node_VariableGet)
+      Pin: Setting Description (text) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SettingDescription_15_43B55A314C0CC9BEAEA29AAB4B448601
+      Pin: self (object) Dir=In
+    Node: Get Settings Options (K2Node_VariableGet)
+      Pin: Settings Options (text) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SettingsOptions_18_BBB8446E45D866949245FDB33271A340
+      Pin: self (object) Dir=In
+    Node: Get Selected Option (K2Node_VariableGet)
+      Pin: Selected Option (text) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SelectedOption_38_C002D2F04261F0CB9A0269B76A949853
+      Pin: self (object) Dir=In
+    Node: Get Slider Data (K2Node_VariableGet)
+      Pin: Slider Data (real) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SliderValue_39_F10D3A1B43BB67583945D08E1D7F159A
+      Pin: self (object) Dir=In
+    Node: Get Left Text (K2Node_VariableGet)
+      Pin: Left Text (text) Dir=Out
+        -> Make F CGF Game Settings Menu Slot Data.SettingName_11_FDEAC06A4AE4D1A780BE58BFF747D855
+      Pin: self (object) Dir=In
+    Node: Break F CGF Game Settings (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings (struct) Dir=In
+        -> Set GameSettingsData.Output_Get
+      Pin: SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6 (struct) Dir=Out
+        -> Break F CGF Game Settings Menu Data.F_CGF_GameSettings_MenuData
+    Node: Break F CGF Game Settings Menu Data (K2Node_BreakStruct)
+      Pin: F_CGF_GameSettings_MenuData (struct) Dir=In
+        -> Break F CGF Game Settings.SettingsMenuData_33_D9E22A8D488F7395B0A6B1865851A8E6
+      Pin: SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A (struct) Dir=Out
+        -> Set Array Elem.TargetArray
+    Node: Get SettingsIndex (K2Node_VariableGet)
+      Pin: SettingsIndex (int) Dir=Out
+        -> Set Array Elem.Index
+      Pin: self (object) Dir=In
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set GameSettingsData.then
+      Pin: then (exec) Dir=Out
+        -> Set SlotData.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Break F CGF Game Settings Menu Data.SettingsMenuDataArray_16_74F21AE647D8AB1CDDD4D4ADEFFEA25A
+      Pin: Index (int) Dir=In
+        -> Get SettingsIndex.SettingsIndex
+      Pin: Item (struct) Dir=In
+        -> Make F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get Game Settings Data
+Target is BPI CGF Data Management (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Option.then
+      Pin: then (exec) Dir=Out
+        -> Set GameSettingsData.execute
+      Pin: self (object) Dir=In
+        -> Get Game Instance.ReturnValue
+      Pin: CGFGameSettings (struct) Dir=Out
+        -> Set GameSettingsData.GameSettingsData
+    Node: Set GameSettingsData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.then
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: GameSettingsData (struct) Dir=In
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.CGFGameSettings
+      Pin: Output_Get (struct) Dir=Out
+        -> Break F CGF Game Settings.F_CGF_GameSettings
+      Pin: self (object) Dir=In
+    Node: Get Game Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.self
+    Node: Set SlotData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Array Elem.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: SlotData (struct) Dir=In
+        -> Make F CGF Game Settings Menu Slot Data.F_CGF_GameSettings_MenuSlotData
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Selected Option (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateStruct.then
+      Pin: then (exec) Dir=Out
+        -> Get Game Settings Data
+Target is BPI CGF Data Management.execute
+      Pin: Selected Option (text) Dir=In
+        -> UpdateStruct.SelectedOption
+      Pin: Output_Get (text) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetPostProccessingVolume
+    Node: GetPostProccessingVolume (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> GetPostProccessingVolume.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: ReturnValue (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+  Graph: OnSlotClicked
+    Node: OnSlotClicked (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnSlotHover
+    Node: OnSlotHover (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnSlotUnHover
+    Node: OnSlotUnHover (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnSlotFocusGained
+    Node: OnSlotFocusGained (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: WidgetFocused (object) Dir=Out
+      Pin: WidgetsChildButton (object) Dir=Out
+  Graph: OnSlotFocusRemoved
+    Node: OnSlotFocusRemoved (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

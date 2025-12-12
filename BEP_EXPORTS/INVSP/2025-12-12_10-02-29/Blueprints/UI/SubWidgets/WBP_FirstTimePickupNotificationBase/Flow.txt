@@ -1,0 +1,461 @@
+Blueprint: WBP_FirstTimePickupNotificationBase (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_FirstTimePickupNotificationBase.WBP_FirstTimePickupNotificationBase)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> On Open First Time Pickup
+Target is BPI Inventory.then
+      Pin: then (exec) Dir=Out
+        -> Set bCanBeSkipped.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get SecondsToSkip.SecondsToSkip
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get SecondsToSkip (K2Node_VariableGet)
+      Pin: SecondsToSkip (real) Dir=Out
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Set bCanBeSkipped (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: bCanBeSkipped (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Remove Player IMC
+Target is BP Inventory Controller Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is Rich Text Block.execute
+      Pin: self (object) Dir=In
+        -> Get ItemNameRef.ItemNameRef
+      Pin: InText (text) Dir=In
+        -> Get ItemNameText.ItemNameText
+    Node: Get ItemNameText (K2Node_VariableGet)
+      Pin: ItemNameText (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+      Pin: self (object) Dir=In
+    Node: Get ItemDescriptionText (K2Node_VariableGet)
+      Pin: ItemDescriptionText (text) Dir=Out
+        -> Set Text
+Target is Rich Text Block.InText
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Text
+Target is Rich Text Block.then
+      Pin: then (exec) Dir=Out
+        -> Cast To BPI_Inventory.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Texture (object) Dir=In
+        -> Get ItemTexture.ItemTexture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get ItemTexture (K2Node_VariableGet)
+      Pin: ItemTexture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Initial state (EdGraphNode_Comment)
+    Node: Get ItemNameRef (K2Node_VariableGet)
+      Pin: ItemNameRef (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Get ItemDescriptionRef (K2Node_VariableGet)
+      Pin: ItemDescriptionRef (object) Dir=Out
+        -> Set Text
+Target is Rich Text Block.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Set Text
+Target is Rich Text Block (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get ItemDescriptionRef.ItemDescriptionRef
+      Pin: InText (text) Dir=In
+        -> Get ItemDescriptionText.ItemDescriptionText
+    Node: Close First Time Pickup Notification
+Target is WBP First Time Pickup Notification Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Inventory Input - Interact (EdGraphNode_Comment)
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Activate Widget
+Target is Common Activatable Widget.execute
+      Pin: self (object) Dir=In
+    Node: EnhancedInputAction IA_InventoryCloseNotification (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+      Pin: Started (exec) Dir=Out
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove Player IMC
+Target is BP Inventory Controller Component.self
+        -> Add First Time Pickup IMC
+Target is BP Inventory Controller Component.self
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Remove Player IMC
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Is Activated
+Target is Common Activatable Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_InventoryCloseNotification.Completed
+      Pin: Condition (bool) Dir=In
+        -> Is Activated
+Target is Common Activatable Widget.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Close First Time Pickup Notification
+Target is WBP First Time Pickup Notification Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Activate Widget
+Target is Common Activatable Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+        -> Add First Time Pickup IMC
+Target is BP Inventory Controller Component.execute
+      Pin: self (object) Dir=In
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get bInventoryMenuOpen.self
+    Node: Get bInventoryMenuOpen (K2Node_VariableGet)
+      Pin: bInventoryMenuOpen (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Add First Time Pickup IMC
+Target is BP Inventory Controller Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get bInventoryMenuOpen.bInventoryMenuOpen
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: else (exec) Dir=Out
+        -> Remove Player IMC
+Target is BP Inventory Controller Component.execute
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Add First Time Pickup IMC
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Activate Widget
+Target is Common Activatable Widget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Cast To BPI_Inventory (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> On Open First Time Pickup
+Target is BPI Inventory.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsBPI Inventory (interface) Dir=Out
+        -> On Open First Time Pickup
+Target is BPI Inventory.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BPI_Inventory.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Delay.execute
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BPI_Inventory.Object
+    Node: On Open First Time Pickup
+Target is BPI Inventory (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPI_Inventory.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (interface) Dir=In
+        -> Cast To BPI_Inventory.AsBPI Inventory
+  Graph: CloseFirstTimePickupNotification
+    Node: CloseFirstTimePickupNotification (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> CloseFirstTimePickupNotification.then
+      Pin: Condition (bool) Dir=In
+        -> Get bCanBeSkipped.bCanBeSkipped
+      Pin: then (exec) Dir=Out
+        -> Remove First Time Pickup IMC
+Target is BP Inventory Controller Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get bCanBeSkipped (K2Node_VariableGet)
+      Pin: bCanBeSkipped (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Close First Time Pickup
+Target is BPI Inventory.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call On First Time Pickup Notification Closed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Deactivate Widget
+Target is Common Activatable Widget.then
+      Pin: then (exec) Dir=Out
+        -> Cast To BPI_Inventory.execute
+      Pin: self (object) Dir=In
+    Node: Close First Time Item Popup (EdGraphNode_Comment)
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Player IMC
+Target is BP Inventory Controller Component.self
+        -> Remove First Time Pickup IMC
+Target is BP Inventory Controller Component.self
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Add Player IMC
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Deactivate Widget
+Target is Common Activatable Widget.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Deactivate Widget
+Target is Common Activatable Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Player IMC
+Target is BP Inventory Controller Component.then
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Call On First Time Pickup Notification Closed.execute
+      Pin: self (object) Dir=In
+    Node: Get bInventoryMenuOpen (K2Node_VariableGet)
+      Pin: bInventoryMenuOpen (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Remove First Time Pickup IMC
+Target is BP Inventory Controller Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get bInventoryMenuOpen.bInventoryMenuOpen
+      Pin: then (exec) Dir=Out
+        -> Deactivate Widget
+Target is Common Activatable Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Add Player IMC
+Target is BP Inventory Controller Component.execute
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get bInventoryMenuOpen.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Remove First Time Pickup IMC
+Target is BP Inventory Controller Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BPI_Inventory.Object
+    Node: Cast To BPI_Inventory (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Call On First Time Pickup Notification Closed.then
+      Pin: then (exec) Dir=Out
+        -> On Close First Time Pickup
+Target is BPI Inventory.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: AsBPI Inventory (interface) Dir=Out
+        -> On Close First Time Pickup
+Target is BPI Inventory.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Close First Time Pickup
+Target is BPI Inventory (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPI_Inventory.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: self (interface) Dir=In
+        -> Cast To BPI_Inventory.AsBPI Inventory
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BPI_Inventory.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+  Graph: BP_GetDesiredInputConfig
+    Node: Get Desired Input Config (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Desired Input Config.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make UIInput Config.UIInputConfig
+    Node: Make UIInput Config (K2Node_MakeStruct)
+      Pin: UIInputConfig (struct) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: bIgnoreMoveInput (bool) Dir=In
+      Pin: bIgnoreLookInput (bool) Dir=In
+      Pin: InputMode (byte) Dir=In
+      Pin: MouseCaptureMode (byte) Dir=In
+      Pin: MouseLockMode (byte) Dir=In
+      Pin: bHideCursorDuringViewportCapture (bool) Dir=In
+  Graph: OnFirstTimePickupNotificationClosed
+    Node: OnFirstTimePickupNotificationClosed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

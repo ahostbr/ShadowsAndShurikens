@@ -1,0 +1,203 @@
+Blueprint: AC_SOTS_PlayerTags (/Game/SOTS/Player/Systems/Components/AC_SOTS_PlayerTags.AC_SOTS_PlayerTags)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+  Graph: AddTag
+    Node: AddTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Add Gameplay Tag.execute
+      Pin: Tag (struct) Dir=Out
+        -> Add Gameplay Tag.Tag
+        -> Call On Tag Container Changed.Tag
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Add Gameplay Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Add Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AddTag.then
+      Pin: then (exec) Dir=Out
+        -> Call On Tag Container Changed.execute
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+      Pin: Tag (struct) Dir=In
+        -> AddTag.Tag
+    Node: Call On Tag Container Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Add Gameplay Tag.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Add? (bool) Dir=In
+      Pin: Tag (struct) Dir=In
+        -> AddTag.Tag
+  Graph: RemoveTag
+    Node: RemoveTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Remove Gameplay Tag.execute
+      Pin: Tag (struct) Dir=Out
+        -> Remove Gameplay Tag.Tag
+        -> Call On Tag Container Changed.Tag
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Remove Gameplay Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Remove Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> RemoveTag.then
+      Pin: then (exec) Dir=Out
+        -> Call On Tag Container Changed.execute
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+      Pin: Tag (struct) Dir=In
+        -> RemoveTag.Tag
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Call On Tag Container Changed.then
+      Pin: Success (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Call On Tag Container Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Remove Gameplay Tag.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: Add? (bool) Dir=In
+      Pin: Tag (struct) Dir=In
+        -> RemoveTag.Tag
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Remove Gameplay Tag.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Return Node.Success
+  Graph: HasTag?
+    Node: HasTag? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Tag (struct) Dir=Out
+        -> Has Tag.Tag
+      Pin: ExactMatch (bool) Dir=Out
+        -> Has Tag.bExactMatch
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Has Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+      Pin: Tag (struct) Dir=In
+        -> HasTag?.Tag
+      Pin: bExactMatch (bool) Dir=In
+        -> HasTag?.ExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Found?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasTag?.then
+      Pin: Found? (bool) Dir=In
+        -> Has Tag.ReturnValue
+  Graph: HasAnyTag?
+    Node: HasAnyTag? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: OtherContainer (struct) Dir=Out
+        -> Has Any Tags.OtherContainer
+      Pin: bExactMatch (bool) Dir=Out
+        -> Has Any Tags.bExactMatch
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Has Any Tags.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has Any Tags (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+      Pin: OtherContainer (struct) Dir=In
+        -> HasAnyTag?.OtherContainer
+      Pin: bExactMatch (bool) Dir=In
+        -> HasAnyTag?.bExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.AnyTag?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasAnyTag?.then
+      Pin: AnyTag? (bool) Dir=In
+        -> Has Any Tags.ReturnValue
+  Graph: HasAllTags?
+    Node: HasAllTags? (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: OtherContainer (struct) Dir=Out
+        -> Has All Tags.OtherContainer
+      Pin: bExactMatch (bool) Dir=Out
+        -> Has All Tags.bExactMatch
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Has All Tags.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has All Tags (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+      Pin: OtherContainer (struct) Dir=In
+        -> HasAllTags?.OtherContainer
+      Pin: bExactMatch (bool) Dir=In
+        -> HasAllTags?.bExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.AllTags?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasAllTags?.then
+      Pin: AllTags? (bool) Dir=In
+        -> Has All Tags.ReturnValue
+  Graph: GetTagContainer
+    Node: GetTagContainer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetTagContainer.then
+      Pin: CurrentTags (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Return Node.CurrentTags
+      Pin: self (object) Dir=In
+  Graph: GetNumberOfTags
+    Node: GetNumberOfTags (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get PlayersGameplayerTagContainer (K2Node_VariableGet)
+      Pin: PlayersGameplayerTagContainer (struct) Dir=Out
+        -> Get Num Gameplay Tags in Container.TagContainer
+      Pin: self (object) Dir=In
+    Node: Get Num Gameplay Tags in Container (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get PlayersGameplayerTagContainer.PlayersGameplayerTagContainer
+      Pin: ReturnValue (int) Dir=Out
+        -> Return Node.NumberOfTags
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetNumberOfTags.then
+      Pin: NumberOfTags (int) Dir=In
+        -> Get Num Gameplay Tags in Container.ReturnValue
+  Graph: OnTagContainerChanged
+    Node: OnTagContainerChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Add? (bool) Dir=Out
+      Pin: Tag (struct) Dir=Out

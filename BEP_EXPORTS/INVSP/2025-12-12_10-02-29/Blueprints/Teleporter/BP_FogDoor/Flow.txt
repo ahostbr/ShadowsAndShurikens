@@ -1,0 +1,353 @@
+Blueprint: BP_FogDoor (/Game/InventorySystemPro/Blueprints/Teleporter/BP_FogDoor.BP_FogDoor)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Collision) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To Character.Object
+        -> Reroute Node.InputPin
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Get TargetFogDoor (K2Node_VariableGet)
+      Pin: TargetFogDoor (object) Dir=Out
+        -> Get SpawnPoint.self
+      Pin: self (object) Dir=In
+    Node: Get SpawnPoint (K2Node_VariableGet)
+      Pin: SpawnPoint (object) Dir=Out
+        -> Get World Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get TargetFogDoor.TargetFogDoor
+    Node: Get World Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get SpawnPoint.SpawnPoint
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Transform.InTransform
+    Node: Break Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InTransform (struct) Dir=In
+        -> Get World Transform
+Target is Scene Component.ReturnValue
+      Pin: Location (struct) Dir=Out
+        -> Break Vector.InVec
+      Pin: Rotation (struct) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.NewRotation
+      Pin: Scale (struct) Dir=Out
+    Node: Set Actor Location And Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get CharacterToTeleport.CharacterToTeleport
+      Pin: NewLocation (struct) Dir=In
+        -> Make Vector Net Quantize.ReturnValue
+      Pin: NewRotation (struct) Dir=In
+        -> Break Transform.Rotation
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Start Camera Fade
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound 2D.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get PlayerCameraManager.PlayerCameraManager
+      Pin: FromAlpha (real) Dir=In
+      Pin: ToAlpha (real) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get CameraBlackFadeDuration.CameraBlackFadeDuration
+      Pin: Color (struct) Dir=In
+      Pin: bShouldFadeAudio (bool) Dir=In
+      Pin: bHoldWhenFinished (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Start Camera Fade
+Target is Player Camera Manager.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get CameraBlackFadeDuration.CameraBlackFadeDuration
+      Pin: LatentInfo (struct) Dir=In
+    Node: Start Camera Fade
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set CharacterToTeleport.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: FromAlpha (real) Dir=In
+      Pin: ToAlpha (real) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get CameraBlackFadeDuration.CameraBlackFadeDuration
+      Pin: Color (struct) Dir=In
+      Pin: bShouldFadeAudio (bool) Dir=In
+      Pin: bHoldWhenFinished (bool) Dir=In
+    Node: Get CameraBlackFadeDuration (K2Node_VariableGet)
+      Pin: CameraBlackFadeDuration (real) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.Duration
+        -> Delay.Duration
+      Pin: self (object) Dir=In
+    Node: Get CameraBlackFadeDuration (K2Node_VariableGet)
+      Pin: CameraBlackFadeDuration (real) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.Duration
+      Pin: self (object) Dir=In
+    Node: When character overlaps, fade camera to black, teleport character to target and fade camera to normal (EdGraphNode_Comment)
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Location And Rotation
+Target is Actor.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Set CharacterToTeleport.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Cast To BPI_Equipment.execute
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Collision).OtherActor
+      Pin: AsCharacter (object) Dir=Out
+        -> Set CharacterToTeleport.CharacterToTeleport
+      Pin: bSuccess (bool) Dir=Out
+    Node: Play Sound 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get TransitionSound.TransitionSound
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: bIsUISound (bool) Dir=In
+    Node: Get TransitionSound (K2Node_VariableGet)
+      Pin: TransitionSound (object) Dir=Out
+        -> Play Sound 2D.Sound
+      Pin: self (object) Dir=In
+    Node: Get Scaled Capsule Half Height
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.self
+      Pin: self (object) Dir=In
+        -> Get CharacterToTeleport.CharacterToTeleport
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Break Transform.Location
+      Pin: X (real) Dir=Out
+        -> Make Vector Net Quantize.X
+      Pin: Y (real) Dir=Out
+        -> Make Vector Net Quantize.Y
+      Pin: Z (real) Dir=Out
+        -> float + float.A
+    Node: Make Vector Net Quantize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Vector.X
+      Pin: Y (real) Dir=In
+        -> Break Vector.Y
+      Pin: Z (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.NewLocation
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector Net Quantize.Z
+    Node: Get Controller
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterToTeleport.CharacterToTeleport
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Play Sound 2D.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Controller
+Target is Pawn.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get PlayerCameraManager.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get PlayerCameraManager (K2Node_VariableGet)
+      Pin: PlayerCameraManager (object) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get PlayerCameraManager.PlayerCameraManager
+      Pin: OutputPin (object) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Delay.then
+      Pin: InputObject (object) Dir=In
+        -> Get CharacterToTeleport.CharacterToTeleport
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Delay.execute
+    Node: Set CharacterToTeleport (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CharacterToTeleport (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set CharacterToTeleport (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CharacterToTeleport (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CharacterToTeleport (K2Node_VariableGet)
+      Pin: CharacterToTeleport (object) Dir=Out
+        -> Set Actor Location And Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterToTeleport (K2Node_VariableGet)
+      Pin: CharacterToTeleport (object) Dir=Out
+        -> Get CapsuleComponent.self
+      Pin: self (object) Dir=In
+    Node: Get CharacterToTeleport (K2Node_VariableGet)
+      Pin: CharacterToTeleport (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPI_Equipment.then
+      Pin: then (exec) Dir=Out
+        -> Set CharacterToTeleport.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Set CharacterToTeleport.CharacterToTeleport
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To BPI_Equipment (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.CastFailed
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AsBPI Equipment (interface) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> On Component Begin Overlap (Collision).OtherActor
+      Pin: OutputPin (object) Dir=Out
+        -> Cast To BPI_Equipment.Object
+        -> Get Owner
+Target is Actor.self
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Get CharacterToTeleport (K2Node_VariableGet)
+      Pin: CharacterToTeleport (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set CharacterToTeleport.then
+        -> Set CharacterToTeleport.then
+      Pin: InputObject (object) Dir=In
+        -> Get CharacterToTeleport.CharacterToTeleport
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get CharacterToTeleport (K2Node_VariableGet)
+      Pin: CharacterToTeleport (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> On Component Begin Overlap (Collision).then
+      Pin: InputObject (object) Dir=In
+        -> Get CharacterToTeleport.CharacterToTeleport
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Cast To Character.execute
+    Node: Set CharacterToTeleport (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Start Camera Fade
+Target is Player Camera Manager.then
+      Pin: then (exec) Dir=Out
+      Pin: CharacterToTeleport (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get CharacterToTeleport (K2Node_VariableGet)
+      Pin: CharacterToTeleport (object) Dir=Out
+        -> Get Controller
+Target is Pawn.self
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

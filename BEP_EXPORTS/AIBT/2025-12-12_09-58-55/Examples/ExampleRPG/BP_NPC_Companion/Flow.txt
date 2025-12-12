@@ -1,0 +1,223 @@
+Blueprint: BP_NPC_Companion (/Game/AIBehaviorToolkit/Examples/ExampleRPG/BP_NPC_Companion.BP_NPC_Companion)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Get BehaviorTriggerComponent (K2Node_VariableGet)
+      Pin: BehaviorTriggerComponent (object) Dir=Out
+        -> Send Area Message
+Target is BP Behavior Trigger Component
+Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: Send Area Message
+Target is BP Behavior Trigger Component
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BehaviorTriggerComponent.BehaviorTriggerComponent
+      Pin: Instigator (object) Dir=In
+        -> Self-Reference.self
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Radius (real) Dir=In
+      Pin: Message (byte) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Send Area Message
+Target is BP Behavior Trigger Component
+Replicated To Server (if owning client).Instigator
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Send Area Message
+Target is BP Behavior Trigger Component
+Replicated To Server (if owning client).Location
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Event OnMeleeAttack.then
+      Pin: then_0 (exec) Dir=Out
+        -> Send Area Message
+Target is BP Behavior Trigger Component
+Replicated To Server (if owning client).execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Event OnMeleeAttack.HitSuccess
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: else (exec) Dir=Out
+        -> Play Sound at Location.execute
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+        -> Play Sound at Location.Location
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: EquipWeaponReplicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+    Node: Get Weapon (K2Node_VariableGet)
+      Pin: Weapon (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> EquipWeaponReplicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Weapon.Weapon
+      Pin: Parent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+      Pin: self (object) Dir=In
+    Node: UnequipWeaponReplicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+    Node: Get Weapon (K2Node_VariableGet)
+      Pin: Weapon (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UnequipWeaponReplicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Weapon.Weapon
+      Pin: Parent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+      Pin: self (object) Dir=In
+    Node: Event OnMeleeAttack (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: HitSuccess (bool) Dir=Out
+        -> Branch.Condition
+    Node: Equip weapons on enter Defend state (Replicate this for multiplayer) (EdGraphNode_Comment)
+    Node: Unequip weapons on enter Idle state (Replicate this for multiplayer) (EdGraphNode_Comment)
+    Node: On Begin Defend (BehaviorComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Equip Weapon
+Target is BP NPC Companion
+Replicated To All (if server).execute
+    Node: Equip Weapon
+Target is BP NPC Companion
+Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Begin Defend (BehaviorComponent).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Begin Idle (BehaviorComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Unequip Weapon
+Target is BP NPC Companion
+Replicated To All (if server).execute
+    Node: Unequip Weapon
+Target is BP NPC Companion
+Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Begin Idle (BehaviorComponent).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

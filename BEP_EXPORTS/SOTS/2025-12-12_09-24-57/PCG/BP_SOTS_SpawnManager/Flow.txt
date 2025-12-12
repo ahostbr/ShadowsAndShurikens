@@ -1,0 +1,413 @@
+Blueprint: BP_SOTS_SpawnManager (/Game/SOTS/PCG/BP_SOTS_SpawnManager.BP_SOTS_SpawnManager)
+  Graph: EventGraph
+    Node: SpawnActor (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: Class (class) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Add.NewItem
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+        -> Self-Reference.self
+      Pin: Instigator (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> SpawnActor.Owner
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActors
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (class) Dir=In
+        -> Get ActorsToSpawn.ActorsToSpawn
+      Pin: Values (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (struct) Dir=In
+        -> Values.Values
+      Pin: Break (exec) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> For Loop.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break F SOTS Building Data.F_SOTS_Building_Data
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break F SOTS Building Data (K2Node_BreakStruct)
+      Pin: F_SOTS_Building_Data (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: AmountToSpawn_4_3F529D8F4E5F34BC41B3C78E4FB3F842 (int) Dir=Out
+        -> int - int.A
+      Pin: Class_11_9B14AFD5498689A1047FC7A40B201223 (class) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Offset_14_D5B825B746AF721FF767048AC791A740 (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Get Random Spawnable Location
+Target is BP SOTS Spawn Manager.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Random Point in Bounding Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Center (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: HalfSize (struct) Dir=In
+        -> vector / vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Box (K2Node_VariableGet)
+      Pin: Box (object) Dir=Out
+        -> Get Scaled Box Extent
+Target is Box Collision.self
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get Scaled Box Extent
+Target is Box Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Box.Box
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector / vector.A
+    Node: vector / vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Scaled Box Extent
+Target is Box Collision.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Random Point in Bounding Box.HalfSize
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Box.Box
+      Pin: ReturnValue (struct) Dir=Out
+        -> Random Point in Bounding Box.Center
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (struct) Dir=In
+        -> Get Random Spawnable Location
+Target is BP SOTS Spawn Manager.Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor.SpawnTransform_Location
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: SpawnActors
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Values.execute
+    Node: Get ActorsToSpawn (K2Node_VariableGet)
+      Pin: ActorsToSpawn (class) Dir=Out
+        -> Values.TargetMap
+      Pin: self (object) Dir=In
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Spawn Actors
+Target is BP SOTS Spawn Manager.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: For each spawn point get a random point (EdGraphNode_Comment)
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Unique.NewItem
+        -> Not Equal (Vector).A
+    Node: Get SpawnableLocations (K2Node_VariableGet)
+      Pin: SpawnableLocations (struct) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SpawnableLocations.SpawnableLocations
+      Pin: NewItem (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Random Spawnable Location
+Target is BP SOTS Spawn Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=Out
+        -> vector + vector.B
+      Pin: Succesful (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Random Spawnable Location
+Target is BP SOTS Spawn Manager.then
+      Pin: Condition (bool) Dir=In
+        -> Get Random Spawnable Location
+Target is BP SOTS Spawn Manager.Succesful
+      Pin: then (exec) Dir=Out
+        -> SpawnActor.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (class) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (class) Dir=Out
+        -> SpawnActor.Class
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (class) Dir=In
+        -> Break F SOTS Building Data.Class_11_9B14AFD5498689A1047FC7A40B201223
+      Pin: OutputPin (class) Dir=Out
+        -> Reroute Node.InputPin
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break F SOTS Building Data.AmountToSpawn_4_3F529D8F4E5F34BC41B3C78E4FB3F842
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> For Loop.LastIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F SOTS Building Data.Offset_14_D5B825B746AF721FF767048AC791A740
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> vector + vector.A
+    Node: Spawn Actors
+Target is BP SOTS Spawn Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ActorsThatHaveSpawned (K2Node_VariableGet)
+      Pin: ActorsThatHaveSpawned (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ActorsThatHaveSpawned.ActorsThatHaveSpawned
+      Pin: NewItem (object) Dir=In
+        -> SpawnActor.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Not Equal (Vector) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (real) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Vector).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Enabled? (K2Node_VariableGet)
+      Pin: Enabled? (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Get Enabled?.Enabled?
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Spawn Actors
+Target is BP SOTS Spawn Manager.execute
+    Node: Spawn Actors
+Target is BP SOTS Spawn Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetRandomSpawnableLocation
+    Node: GetRandomSpawnableLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Remove Index.then
+      Pin: Location (struct) Dir=In
+        -> Get CurrentLocation.CurrentLocation
+      Pin: Succesful (bool) Dir=In
+    Node: Get SpawnableLocations (K2Node_VariableGet)
+      Pin: SpawnableLocations (struct) Dir=Out
+        -> GET.Array
+        -> Last Index.TargetArray
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get SpawnableLocations.SpawnableLocations
+      Pin: Dimension 1 (int) Dir=In
+        -> Random Integer in Range from Stream.ReturnValue
+      Pin: Output (struct) Dir=Out
+        -> Set CurrentLocation.CurrentLocation
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SpawnableLocations.SpawnableLocations
+      Pin: ReturnValue (int) Dir=Out
+        -> Random Integer in Range from Stream.Max
+    Node: Remove Index (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TempIndex.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SpawnableLocations.SpawnableLocations
+      Pin: IndexToRemove (int) Dir=In
+        -> Get TempIndex.TempIndex
+    Node: Get TempIndex (K2Node_VariableGet)
+      Pin: TempIndex (int) Dir=Out
+        -> Remove Index.IndexToRemove
+    Node: Get SpawnableLocations (K2Node_VariableGet)
+      Pin: SpawnableLocations (struct) Dir=Out
+        -> Remove Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: Set CurrentLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set TempIndex.execute
+      Pin: CurrentLocation (struct) Dir=In
+        -> GET.Output
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TempIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set CurrentLocation.then
+      Pin: then (exec) Dir=Out
+        -> Remove Index.execute
+      Pin: TempIndex (int) Dir=In
+        -> Random Integer in Range from Stream.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+    Node: Get CurrentLocation (K2Node_VariableGet)
+      Pin: CurrentLocation (struct) Dir=Out
+        -> Return Node.Location
+      Pin: self (object) Dir=In
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SpawnableLocations.SpawnableLocations
+      Pin: ReturnValue (int) Dir=Out
+        -> integer > integer.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetRandomSpawnableLocation.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set CurrentLocation.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Location (struct) Dir=In
+      Pin: Succesful (bool) Dir=In
+    Node: Random Integer in Range from Stream (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Stream (struct) Dir=In
+        -> Make Random Stream.ReturnValue
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Set TempIndex.TempIndex
+        -> GET.Dimension 1
+    Node: Make Random Stream (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InitialSeed (int) Dir=In
+        -> Get Initial Seed.Initial Seed
+      Pin: ReturnValue (struct) Dir=Out
+        -> Random Integer in Range from Stream.Stream
+    Node: Get Initial Seed (K2Node_VariableGet)
+      Pin: Initial Seed (int) Dir=Out
+        -> Make Random Stream.InitialSeed
+      Pin: self (object) Dir=In

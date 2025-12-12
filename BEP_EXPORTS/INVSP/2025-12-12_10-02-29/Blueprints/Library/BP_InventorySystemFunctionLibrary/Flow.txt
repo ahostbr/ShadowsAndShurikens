@@ -1,0 +1,758 @@
+Blueprint: BP_InventorySystemFunctionLibrary (/Game/InventorySystemPro/Blueprints/Library/BP_InventorySystemFunctionLibrary.BP_InventorySystemFunctionLibrary)
+  Graph: GetGlobalInventoryConfig
+    Node: GetGlobalInventoryConfig (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetGlobalInventoryConfig.then
+      Pin: InventorySystemConfig (object) Dir=In
+        -> Get GlobalInventoryConfig.GlobalInventoryConfig
+    Node: Get GlobalInventoryConfig (K2Node_VariableGet)
+      Pin: GlobalInventoryConfig (object) Dir=Out
+        -> Return Node.InventorySystemConfig
+  Graph: GetInventoryUILayer
+    Node: GetInventoryUILayer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetInventoryUILayer.then
+      Pin: FInventoryUILayer (struct) Dir=In
+        -> Make FInventory UILayer.FInventoryUILayer
+    Node: Returns global Z-Order values that are used to maintain the correct order. 
+By default UI elements are added to Z-Order 0 (behind Game, Menu and Loading Screen) (EdGraphNode_Comment)
+    Node: Make FInventory UILayer (K2Node_MakeStruct)
+      Pin: FInventoryUILayer (struct) Dir=Out
+        -> Return Node.FInventoryUILayer
+      Pin: Game_4_311923A448EAC97BCDB7E9AA87D1DE0C (int) Dir=In
+      Pin: Menu_5_5DCEF40F46DBE1D9A54D2A8B1D705FEF (int) Dir=In
+  Graph: LogInventorySystemError
+    Node: LogInventorySystemError (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: Error Message (string) Dir=Out
+        -> Print String.InString
+      Pin: bPrintToScreen (bool) Dir=Out
+        -> Print String.bPrintToScreen
+      Pin: __WorldContext (object) Dir=Out
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> LogInventorySystemError.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> Get __WorldContext.__WorldContext
+      Pin: InString (string) Dir=In
+        -> LogInventorySystemError.Error Message
+      Pin: bPrintToScreen (bool) Dir=In
+        -> LogInventorySystemError.bPrintToScreen
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Log error (EdGraphNode_Comment)
+    Node: Get __WorldContext (K2Node_VariableGet)
+      Pin: __WorldContext (object) Dir=Out
+        -> Print String.WorldContextObject
+  Graph: IsKeyPressed
+    Node: IsKeyPressed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: PressedKey (struct) Dir=Out
+        -> Equal (Key).A
+      Pin: InputAction (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: InputMappingContext (object) Dir=Out
+        -> Get Mappings.self
+        -> Is Valid.InputObject
+      Pin: __WorldContext (object) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Equal (Key) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> IsKeyPressed.PressedKey
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Mappings (K2Node_VariableGet)
+      Pin: Mappings (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> IsKeyPressed.InputMappingContext
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.else
+      Pin: Array (struct) Dir=In
+        -> Get Mappings.Mappings
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Enhanced Action Key Mapping.EnhancedActionKeyMapping
+        -> Return Node.EnhancedActionKeyMapping
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break Enhanced Action Key Mapping (K2Node_BreakStruct)
+      Pin: EnhancedActionKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Triggers (object) Dir=Out
+      Pin: Modifiers (object) Dir=Out
+      Pin: Action (object) Dir=Out
+        -> Equal (Object).A
+      Pin: Key (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Break Enhanced Action Key Mapping.Action
+      Pin: B (object) Dir=In
+        -> Get InputAction.InputAction
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Break Enhanced Action Key Mapping.Key
+      Pin: B (struct) Dir=In
+        -> Get PressedKey.PressedKey
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+    Node: Filter out invalid keys (EdGraphNode_Comment)
+    Node: Get InputAction (K2Node_VariableGet)
+      Pin: InputAction (object) Dir=Out
+        -> Equal (Object).B
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: bIsKeyPressed (bool) Dir=In
+      Pin: EnhancedActionKeyMapping (struct) Dir=In
+        -> For Each Loop.Array Element
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: bIsKeyPressed (bool) Dir=In
+      Pin: EnhancedActionKeyMapping (struct) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: bIsKeyPressed (bool) Dir=In
+      Pin: EnhancedActionKeyMapping (struct) Dir=In
+    Node: Iterate over all mappings in the given input mapping context, search for matching input action and then check if it includes the pressed key (EdGraphNode_Comment)
+    Node: Get PressedKey (K2Node_VariableGet)
+      Pin: PressedKey (struct) Dir=Out
+        -> Equal (Key).B
+    Node: Get __WorldContext (K2Node_VariableGet)
+      Pin: __WorldContext (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> IsKeyPressed.then
+      Pin: InputObject (object) Dir=In
+        -> Get __WorldContext.__WorldContext
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> IsKeyPressed.InputAction
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> IsKeyPressed.InputMappingContext
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Determine if the PressedKey exists in a given Input Action and Input Mapping Context (EdGraphNode_Comment)
+  Graph: GetInputActionData
+    Node: GetInputActionData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PressedKey (struct) Dir=Out
+        -> Is Gamepad Key.Key
+      Pin: Platform (string) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: Maps Input Names to shorter versions using a data table (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetInputActionData.then
+      Pin: Condition (bool) Dir=In
+        -> Is Gamepad Key.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: InputNameData (struct) Dir=In
+        -> Find.Value
+    Node: Keyboard and Mouse (EdGraphNode_Comment)
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: InputNameData (struct) Dir=In
+        -> Make FInput Action Data Element.FInputActionDataElement
+    Node: Get PressedKey (K2Node_VariableGet)
+      Pin: PressedKey (struct) Dir=Out
+        -> Get Key Display Name.Key
+    Node: Get Key Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get PressedKey.PressedKey
+      Pin: bLongDisplayName (bool) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> To String (Text).InText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Get Key Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Name.InString
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Make FInput Action Data Element.ShortInputName_18_8B0796264B009B5856275CB0B3A45CDA
+    Node: Get PressedKey (K2Node_VariableGet)
+      Pin: PressedKey (struct) Dir=Out
+        -> Find.Key
+    Node: Is Gamepad Key (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> GetInputActionData.PressedKey
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Get InputActionDataElementMap.InputActionDataElementMap
+      Pin: Key (struct) Dir=In
+        -> Get PressedKey.PressedKey
+      Pin: Value (struct) Dir=Out
+        -> Return Node.InputNameData
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get GlobalInventoryConfig (K2Node_VariableGet)
+      Pin: GlobalInventoryConfig (object) Dir=Out
+        -> Get KeyboardAndMouseActionData.self
+    Node: Get InputActionDataElementMap (K2Node_VariableGet)
+      Pin: InputActionDataElementMap (struct) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+        -> Get KeyboardAndMouseActionData.KeyboardAndMouseActionData
+    Node: Make FInput Action Data Element (K2Node_MakeStruct)
+      Pin: FInputActionDataElement (struct) Dir=Out
+        -> Return Node.InputNameData
+      Pin: ShortInputName_18_8B0796264B009B5856275CB0B3A45CDA (name) Dir=In
+        -> String To Name.ReturnValue
+      Pin: CombineBrushWithKeyBackground_12_68DF261448D0AACA1944EC88EFC9C284 (bool) Dir=In
+      Pin: Brush_9_B30DAABA401047292BC562A8240B33DC (struct) Dir=In
+    Node: Get KeyboardAndMouseActionData (K2Node_VariableGet)
+      Pin: KeyboardAndMouseActionData (object) Dir=Out
+        -> Get InputActionDataElementMap.self
+      Pin: self (object) Dir=In
+        -> Get GlobalInventoryConfig.GlobalInventoryConfig
+  Graph: GetRandomDropLocation
+    Node: GetRandomDropLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set CharacterGroundLocation.execute
+      Pin: Character (object) Dir=Out
+        -> Get CapsuleComponent.self
+        -> Get Actor Location
+Target is Actor.self
+        -> Get Actor Location
+Target is Actor.self
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Scaled Capsule Half Height
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.self
+      Pin: self (object) Dir=In
+        -> GetRandomDropLocation.Character
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GetRandomDropLocation.Character
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector.InVec
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: X (real) Dir=Out
+        -> Make Vector.X
+      Pin: Y (real) Dir=Out
+        -> Make Vector.Y
+      Pin: Z (real) Dir=Out
+        -> float - float.A
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Vector.X
+      Pin: Y (real) Dir=In
+        -> Break Vector.Y
+      Pin: Z (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set CharacterGroundLocation.CharacterGroundLocation
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.Z
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Set CharacterGroundLocation.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Set CharacterGroundLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> GetRandomDropLocation.then
+      Pin: then (exec) Dir=Out
+        -> For Loop.execute
+      Pin: CharacterGroundLocation (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Return Node.DropLocation
+    Node: Get (K2Node_VariableGet)
+      Pin: CharacterGroundLocation (struct) Dir=Out
+      Pin: CharacterGroundLocation_X (real) Dir=Out
+        -> float + float.A
+      Pin: CharacterGroundLocation_Y (real) Dir=Out
+        -> float + float.A
+      Pin: CharacterGroundLocation_Z (real) Dir=Out
+        -> Make Vector.Z
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get.CharacterGroundLocation_X
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.X
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Y (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Z (real) Dir=In
+        -> Get.CharacterGroundLocation_Z
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Loop.Completed
+      Pin: DropLocation (struct) Dir=In
+        -> Set CharacterGroundLocation.Output_Get
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get.CharacterGroundLocation_Y
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.Y
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Cos (Radians).A
+        -> Sin (Radians).A
+    Node: Get PI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Get PI.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Float in Range.Max
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+        -> Get RandomDropMinRadius.RandomDropMinRadius
+      Pin: Max (real) Dir=In
+        -> Get RandomDropMaxRadius.RandomDropMaxRadius
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+        -> float * float.A
+    Node: Get RandomDropMaxRadius (K2Node_VariableGet)
+      Pin: RandomDropMaxRadius (real) Dir=Out
+        -> Random Float in Range.Max
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: B (real) Dir=In
+        -> Cos (Radians).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Cos (Radians) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: B (real) Dir=In
+        -> Sin (Radians).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Sin (Radians) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GetRandomDropLocation.Character
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: End (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: DropLocation (struct) Dir=In
+        -> Break Hit Result.TraceEnd
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+        -> Return Node.DropLocation
+        -> vector + vector.A
+        -> Line Trace By Channel.Start
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Break Hit Result.bBlockingHit
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Line Trace By Channel.execute
+    Node: Calculate random location around character within bounds (EdGraphNode_Comment)
+    Node: Get RandomDropMinRadius (K2Node_VariableGet)
+      Pin: RandomDropMinRadius (real) Dir=Out
+        -> Random Float in Range.Min
+    Node: Get character ground location (feet location) (EdGraphNode_Comment)
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Break Hit Result.TraceEnd
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Hit Result.TraceEnd
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Break Hit Result.bBlockingHit
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+  Graph: GetEquipmentGameplayTag
+    Node: GetEquipmentGameplayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: GameplayTagContainer (struct) Dir=Out
+        -> Break Gameplay Tag Container.GameplayTagContainer
+      Pin: __WorldContext (object) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Matches Tag.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+    Node: Break Gameplay Tag Container (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: GameplayTagContainer (struct) Dir=In
+        -> GetEquipmentGameplayTag.GameplayTagContainer
+      Pin: GameplayTags (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> GetEquipmentGameplayTag.then
+      Pin: Array (struct) Dir=In
+        -> Break Gameplay Tag Container.GameplayTags
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Return Node.EquipmentTag
+        -> Matches Tag.TagOne
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: HasEquipmentTag (bool) Dir=In
+      Pin: EquipmentTag (struct) Dir=In
+        -> For Each Loop.Array Element
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: HasEquipmentTag (bool) Dir=In
+      Pin: EquipmentTag (struct) Dir=In
+    Node: Matches Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagOne (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: TagTwo (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+  Graph: GetEquipmentBlockerGameplayTags
+    Node: GetEquipmentBlockerGameplayTags (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: GameplayTagContainer (struct) Dir=Out
+        -> Break Gameplay Tag Container.GameplayTagContainer
+      Pin: __WorldContext (object) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Matches Tag.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Break Gameplay Tag Container (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: GameplayTagContainer (struct) Dir=In
+        -> GetEquipmentBlockerGameplayTags.GameplayTagContainer
+      Pin: GameplayTags (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> GetEquipmentBlockerGameplayTags.then
+      Pin: Array (struct) Dir=In
+        -> Break Gameplay Tag Container.GameplayTags
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Matches Tag.TagOne
+        -> Add.NewItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: HasBlockerTags (bool) Dir=In
+      Pin: BlockerTags (struct) Dir=In
+    Node: Matches Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagOne (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: TagTwo (struct) Dir=In
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BlockerGameplayTags (K2Node_VariableGet)
+      Pin: BlockerGameplayTags (struct) Dir=Out
+        -> Return Node.BlockerTags
+        -> Is Not Empty.TargetArray
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: HasBlockerTags (bool) Dir=In
+      Pin: BlockerTags (struct) Dir=In
+        -> Get BlockerGameplayTags.BlockerGameplayTags
+    Node: Get BlockerGameplayTags (K2Node_VariableGet)
+      Pin: BlockerGameplayTags (struct) Dir=Out
+        -> Add.TargetArray
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get BlockerGameplayTags.BlockerGameplayTags
+      Pin: NewItem (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (int) Dir=Out
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get BlockerGameplayTags.BlockerGameplayTags
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition

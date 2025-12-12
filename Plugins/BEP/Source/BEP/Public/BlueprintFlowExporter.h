@@ -25,7 +25,15 @@ class FBlueprintFlowExporter
 {
 public:
 	/** Export all Blueprint graphs (flows) under the given root (default /Game). */
-	static void ExportAllBlueprintFlows(const FString& OutputDirectory, const FString& RootPath, EBEPExportFormat Format, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun = 0);
+	static void ExportAllBlueprintFlows(
+		const FString& OutputDirectory,
+		const FString& RootPath,
+		EBEPExportFormat Format,
+		const TArray<FString>& ExcludedClassPatterns,
+		int32 MaxAssetsPerRun = 0,
+		bool bOrganizeBlueprintFlowsByPackagePath = true,
+		bool bUseTimestampRunFolder = true,
+		bool bUseLegacyFlatBlueprintFlowsLayout = false);
 
 	/** Export all Input Mapping Contexts (IMCs) under the given root. */
 	static void ExportAllInputMappingContexts(const FString& OutputDirectory, const FString& RootPath, EBEPExportFormat Format, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun = 0);
@@ -37,7 +45,16 @@ public:
 	static void ExportAllStructSchemas(const FString& OutputFilePath);
 
 	/** Convenience function to export everything to Saved/BEPExport with given root and format. */
-	static void ExportAll(const FString& OutputRoot, const FString& RootPath, EBEPExportFormat Format, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun = 0);
+	static void ExportAll(
+		const FString& OutputRoot,
+		const FString& RootPath,
+		EBEPExportFormat Format,
+		const TArray<FString>& ExcludedClassPatterns,
+		int32 MaxAssetsPerRun = 0,
+		bool bOrganizeBlueprintFlowsByPackagePath = true,
+		bool bUseTimestampRunFolder = true,
+		bool bUseLegacyFlatBlueprintFlowsLayout = false,
+		const FString& TimestampFolderName = FString());
 
 	/** High-level export entrypoint driven by UI settings. */
 	static void ExportWithSettings(const FBEPExportSettings& Settings);
@@ -55,10 +72,18 @@ public:
 	static FString DescribePinResolvedValue(UEdGraphPin* Pin);
 
 	/** Export a UE-style copy/paste snippet for a given graph into the Snippets directory. */
-	static void ExportGraphSnippet(UBlueprint* Blueprint, UEdGraph* Graph, const FString& SnippetDirectory);
+	static void ExportGraphSnippet(UBlueprint* Blueprint, UEdGraph* Graph, const FString& SnippetDirectory, bool bUseLegacyFlatLayout);
 
 	/** High-level export entrypoint driven by UI settings. */
-	static void ExportAllForFormat(const FString& OutputRoot, const FString& RootPath, EBEPExportOutputFormat OutputFormat, const TArray<FString>& ExcludedClassPatterns, int32 MaxAssetsPerRun);
+	static void ExportAllForFormat(
+		const FString& OutputRoot,
+		const FString& RootPath,
+		EBEPExportOutputFormat OutputFormat,
+		const TArray<FString>& ExcludedClassPatterns,
+		int32 MaxAssetsPerRun,
+		bool bOrganizeBlueprintFlowsByPackagePath,
+		bool bUseTimestampRunFolder,
+		bool bUseLegacyFlatBlueprintFlowsLayout);
 
 	/** Returns true if the asset should be skipped based on defaults and user patterns. */
 	static bool ShouldSkipAsset(const FAssetData& AssetData, const TArray<FString>& UserExcludedClassPatterns);

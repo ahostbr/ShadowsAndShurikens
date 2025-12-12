@@ -1,0 +1,3679 @@
+Blueprint: WBP_ItemBase (/Game/InventorySystemPro/Blueprints/UI/InventoryWidgets/WBP_ItemBase.WBP_ItemBase)
+  Graph: EventGraph
+    Node: Hover effect (EdGraphNode_Comment)
+    Node: Item Modifier Press Events (Shift + Click, Alt + Click, Ctrl + Click) (EdGraphNode_Comment)
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Update Shortcut Image
+Target is WBP Item Base.execute
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Event On Drag Cancelled (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.execute
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.Object
+        -> Reroute Node.InputPin
+    Node: Drag and Drop Events (EdGraphNode_Comment)
+    Node: OnPressedButtonWithSplitModifier
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pressed Button with Split Modifier
+Target is WBP Item Base.execute
+    Node: Event On Drag Leave (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+    Node: OnDragEnded
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set bIsBeingDragged.execute
+      Pin: SourceInventoryComponent (object) Dir=Out
+        -> Call On Item Drag End.SourceInventoryComponent
+      Pin: TargetInventoryComponent (object) Dir=Out
+        -> Call On Item Drag End.TargetInventoryComponent
+      Pin: ToPosition (struct) Dir=Out
+        -> Call On Item Drag End.ToPosition
+      Pin: DragSource (byte) Dir=Out
+        -> Call On Item Drag End.DragSource
+    Node: Set bIsBeingDragged (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OnDragEnded
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set DragOperaton.execute
+      Pin: bIsBeingDragged (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call On Item Drag End (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set DragOperaton.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: SourceInventoryComponent (object) Dir=In
+        -> OnDragEnded
+Custom Event.SourceInventoryComponent
+      Pin: TargetInventoryComponent (object) Dir=In
+        -> OnDragEnded
+Custom Event.TargetInventoryComponent
+      Pin: ToPosition (struct) Dir=In
+        -> OnDragEnded
+Custom Event.ToPosition
+      Pin: DragSource (byte) Dir=In
+        -> OnDragEnded
+Custom Event.DragSource
+    Node: End Item Drag
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DragDropOperation (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set DragOperaton (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set bIsBeingDragged.then
+      Pin: then (exec) Dir=Out
+        -> Call On Item Drag End.execute
+      Pin: DragOperaton (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To BP_ItemDragDropOperation (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event On Drag Cancelled.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event On Drag Cancelled.Operation
+      Pin: AsBP Item Drag Drop Operation (object) Dir=Out
+        -> Get CurrentSlot.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get CurrentSlot (K2Node_VariableGet)
+      Pin: CurrentSlot (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+    Node: On Item Drag and Drop
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> End Item Drag
+Target is WBP Item Base.execute
+      Pin: self (object) Dir=In
+        -> Get CurrentSlot.CurrentSlot
+      Pin: ItemWidget (object) Dir=In
+        -> Self-Reference.self
+      Pin: DragOperation (object) Dir=In
+      Pin: DragSource (byte) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.ItemWidget
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To BP_ItemDragDropOperation.then
+      Pin: InputObject (object) Dir=In
+        -> Get CurrentSlot.CurrentSlot
+      Pin: Is Valid (exec) Dir=Out
+        -> On Item Drag and Drop
+Target is WBP Inventory Slot Base.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: OnPressedButtonWithTransferModifier
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pressed Button with Transfer Modifier
+Target is WBP Item Base.execute
+    Node: OnPressedButtonWithDropModifier
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pressed Button with Drop Modifier
+Target is WBP Item Base.execute
+    Node: Event On Clicked (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Item Pressed.execute
+    Node: Call On Item Pressed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event On Clicked.then
+        -> Event On Selected.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemWidget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Item Pressed.ItemWidget
+    Node: Event On Hovered (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Event On Unhovered (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Event On Selected (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call On Item Pressed.execute
+    Node: Set User Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set User Focus
+Target is Widget.PlayerController
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event On Unhovered.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event On Hovered.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+        -> Set User Focus
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Pressed Button with Transfer Modifier
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnPressedButtonWithTransferModifier
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Pressed Button with Drop Modifier
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnPressedButtonWithDropModifier
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Pressed Button with Split Modifier
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnPressedButtonWithSplitModifier
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Item Widget selected with button press or mouse click (EdGraphNode_Comment)
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Bind Event to On Input Method Changed.self
+        -> Is Valid.InputObject
+    Node: Bind Event to On Input Method Changed (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Input Method Changed.Delegate
+    Node: OnInputTypeChanged
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Shortcut Image
+Target is WBP Item Base.execute
+      Pin: InputType (byte) Dir=Out
+    Node: Input Type change (EdGraphNode_Comment)
+    Node: Update Shortcut Image
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnInputTypeChanged
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Shortcut Image
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construct.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> End Item Drag
+Target is WBP Item Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> End Item Drag
+Target is WBP Item Base.DragDropOperation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Event On Drag Cancelled.Operation
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Update Shortcut Image
+Target is WBP Item Base.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Bind Event to On Input Method Changed.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: SetItemReference
+    Node: SetItemReference (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set ItemSlot.execute
+      Pin: ItemSlot (struct) Dir=Out
+        -> Set ItemSlot.ItemSlot
+        -> Break FItem Slot.FItemSlot
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+        -> Is Valid.exec
+    Node: To Text (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Break FItem Slot.Amount_5_93873189485FCC0525EAD39BD80340CF
+      Pin: bAlwaysSign (bool) Dir=In
+      Pin: bUseGrouping (bool) Dir=In
+      Pin: MinimumIntegralDigits (int) Dir=In
+      Pin: MaximumIntegralDigits (int) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text
+Target is Rich Text Block.InText
+    Node: integer > integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Break FItem Slot.Amount_5_93873189485FCC0525EAD39BD80340CF
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Counter (EdGraphNode_Comment)
+    Node: Set Image (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Set bIsRotated.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get AmountBackgroundImageRef.AmountBackgroundImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Sequence.then_0
+      Pin: InputObject (object) Dir=In
+        -> Get ThumbnailImage.ThumbnailImage
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Item Image
+Target is WBP Item Base.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set ItemSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetItemReference.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ItemSlot (struct) Dir=In
+        -> SetItemReference.ItemSlot
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get AmountBackgroundImageRef.AmountBackgroundImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Item Image
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Texture (object) Dir=In
+        -> Get ThumbnailImage.ThumbnailImage
+      Pin: bAllowRotatedImage (bool) Dir=In
+    Node: Set bIsRotated (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+      Pin: bIsRotated (bool) Dir=In
+        -> Break FItem Slot.bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Item rotated? (EdGraphNode_Comment)
+    Node: Setter for the item that is referenced by this item widget (EdGraphNode_Comment)
+    Node: Get ItemAmountRef (K2Node_VariableGet)
+      Pin: ItemAmountRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set Visibility
+Target is Widget.self
+        -> Set Text
+Target is Rich Text Block.self
+      Pin: self (object) Dir=In
+    Node: Get AmountBackgroundImageRef (K2Node_VariableGet)
+      Pin: AmountBackgroundImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Text
+Target is Rich Text Block.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ItemAmountRef.ItemAmountRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> SetItemReference.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Get ThumbnailImage.self
+        -> Get Name.self
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+        -> integer > integer.A
+        -> To Text (Integer).Value
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+        -> Set bIsRotated.bIsRotated
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Not Equal Exactly (Text).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set ItemSlot.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal Exactly (Text).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+    Node: Not Equal Exactly (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (text) Dir=In
+        -> Get Name.Name
+      Pin: B (text) Dir=In
+        -> Make Literal Text.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemAmountRef.ItemAmountRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Text
+Target is Rich Text Block.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> Get AmountBackgroundImageRef.AmountBackgroundImageRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get ItemAmountRef (K2Node_VariableGet)
+      Pin: ItemAmountRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.else
+      Pin: InputObject (object) Dir=In
+        -> Get ItemAmountRef.ItemAmountRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> Get AmountBackgroundImageRef.AmountBackgroundImageRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get AmountBackgroundImageRef (K2Node_VariableGet)
+      Pin: AmountBackgroundImageRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Text
+Target is Rich Text Block (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ItemAmountRef.ItemAmountRef
+      Pin: InText (text) Dir=In
+        -> To Text (Integer).ReturnValue
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ItemAmountRef.ItemAmountRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ThumbnailImage (K2Node_VariableGet)
+      Pin: ThumbnailImage (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set Item Image
+Target is WBP Item Base.Texture
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Get Name (K2Node_VariableGet)
+      Pin: Name (text) Dir=Out
+        -> Not Equal Exactly (Text).A
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+  Graph: ClearItemReference
+    Node: ClearItemReference (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set ItemSlot.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get AmountBackgroundImageRef.AmountBackgroundImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set ItemSlot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ClearItemReference.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: ItemSlot (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ItemImageTexture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: ItemImageTexture (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Null item slot reference (EdGraphNode_Comment)
+    Node: Sets the item image to empty slot image (EdGraphNode_Comment)
+    Node: Null the item image (EdGraphNode_Comment)
+    Node: Hide Item Amount visuals (EdGraphNode_Comment)
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get AmountBackgroundImageRef (K2Node_VariableGet)
+      Pin: AmountBackgroundImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ItemAmountRef (K2Node_VariableGet)
+      Pin: ItemAmountRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ItemSlot.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Texture (object) Dir=In
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set ItemImageTexture.execute
+      Pin: self (object) Dir=In
+        -> Get ItemAmountRef.ItemAmountRef
+      Pin: InVisibility (byte) Dir=In
+  Graph: SetItemWidgetReadOnly
+    Node: SetItemWidgetReadOnly (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bIsReadOnly.execute
+      Pin: bReadOnly (bool) Dir=Out
+        -> Set bIsReadOnly.bIsReadOnly
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Is Enabled
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: InVisibility (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set bIsReadOnly.then
+      Pin: Condition (bool) Dir=In
+        -> Set bIsReadOnly.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Is Enabled
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: InVisibility (byte) Dir=In
+    Node: Set bIsReadOnly (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetItemWidgetReadOnly.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bIsReadOnly (bool) Dir=In
+        -> SetItemWidgetReadOnly.bReadOnly
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+    Node: Default, interactable state (EdGraphNode_Comment)
+    Node: Read-Only state, interactions disabled (EdGraphNode_Comment)
+    Node: Sets an item widget to read-only (EdGraphNode_Comment)
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Set Is Enabled
+Target is Widget.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+        -> Set Is Enabled
+Target is Widget.self
+    Node: Set Is Enabled
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: bInIsEnabled (bool) Dir=In
+    Node: Set Is Enabled
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Self-Reference.self
+      Pin: bInIsEnabled (bool) Dir=In
+  Graph: OnDragDetected
+    Node: On Drag Detected (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Start Item Drag
+Target is WBP Item Base.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: PointerEvent (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Start Item Drag
+Target is WBP Item Base.then
+      Pin: Operation (object) Dir=In
+        -> Start Item Drag
+Target is WBP Item Base.Operation
+    Node: Start Item Drag
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Drag Detected.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: bIsGamepadDrag (bool) Dir=In
+      Pin: Operation (object) Dir=Out
+        -> Return Node.Operation
+    Node: Start a Mouse based Drag & Drop (EdGraphNode_Comment)
+  Graph: OnPreviewMouseButtonDown
+    Node: On Preview Mouse Button Down (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Detect Drag if Pressed.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+        -> Detect Drag if Pressed.PointerEvent
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Detect Drag if Pressed.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Detect Drag if Pressed.ReturnValue
+    Node: Detect Drag if Pressed (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Preview Mouse Button Down.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: PointerEvent (struct) Dir=In
+        -> On Preview Mouse Button Down.MouseEvent
+      Pin: WidgetDetectingDrag (object) Dir=In
+      Pin: DragKey (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Detect a Mouse Drag & Drop (EdGraphNode_Comment)
+  Graph: OnMouseButtonUp
+    Node: On Mouse Button Up (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+        -> Get Effecting Button.Input
+        -> Reroute Node.InputPin
+        -> Get Effecting Button.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Pressed Button with Split Modifier
+Target is WBP Item Base.then
+        -> On Pressed Button with Transfer Modifier
+Target is WBP Item Base.then
+        -> On Pressed Button with Drop Modifier
+Target is WBP Item Base.then
+        -> Call On Item Pressed.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Handled.ReturnValue
+    Node: Handled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Input Event from Pointer Event (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Event (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Is Shift Down.Input
+    Node: Is Shift Down (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> Get Input Event from Pointer Event.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Shift Down.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Pressed Button with Split Modifier
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: On Pressed Button with Split Modifier
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: Get Effecting Button (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Equal (Key) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Effecting Button.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Mouse Button Up.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Input Event from Pointer Event (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Event (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Is Alt Down.Input
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Is Alt Down.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Pressed Button with Transfer Modifier
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Is Alt Down (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> Get Input Event from Pointer Event.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: On Pressed Button with Transfer Modifier
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Is Control Down.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Pressed Button with Drop Modifier
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+        -> Call On Item Pressed.execute
+    Node: Get Input Event from Pointer Event (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Event (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Is Control Down.Input
+    Node: Is Control Down (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> Get Input Event from Pointer Event.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: On Pressed Button with Drop Modifier
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+    Node: Item Clicked (EdGraphNode_Comment)
+    Node: Drop Item to the ground (EdGraphNode_Comment)
+    Node: Transfer Item to other inventory (e.g. Container or Equipment Slot) (EdGraphNode_Comment)
+    Node: Split Item Stack (EdGraphNode_Comment)
+    Node: Was left mouse button pressed? (EdGraphNode_Comment)
+    Node: Determine if any modifier keys were pressed (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Get Input Event from Pointer Event.Event
+        -> Get Input Event from Pointer Event.Event
+        -> Get Input Event from Pointer Event.Event
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Call On Item Pressed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: ItemWidget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Item Pressed.ItemWidget
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+        -> On Back Key Pressed
+Target is WBP Inventory Menu.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Unhandled.ReturnValue
+    Node: Get Effecting Button (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On Mouse Button Up.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Equal (Key).A
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Effecting Button.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> On Back Key Pressed
+Target is WBP Inventory Menu.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Unhandled (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get InventoryMenu (K2Node_VariableGet)
+      Pin: InventoryMenu (object) Dir=Out
+        -> On Back Key Pressed
+Target is WBP Inventory Menu.self
+      Pin: self (object) Dir=In
+    Node: Navigate Back (EdGraphNode_Comment)
+    Node: On Back Key Pressed
+Target is WBP Inventory Menu (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get InventoryMenu.InventoryMenu
+  Graph: PressedRotateItem
+    Node: PressedRotateItem (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+      Pin: Is Valid (exec) Dir=Out
+        -> Set bIsRotated.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get bIsBeingDragged (K2Node_VariableGet)
+      Pin: bIsBeingDragged (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsBeingDragged.bIsBeingDragged
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get CurrentSlot (K2Node_VariableGet)
+      Pin: CurrentSlot (object) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.self
+      Pin: self (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+    Node: Create and Update Drag Widget
+Target is WBP Inventory Slot Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CurrentSlot.CurrentSlot
+      Pin: DragAndDropOperation (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+      Pin: Success (bool) Dir=Out
+    Node: Rotate Drag Item
+Target is BP Item Drag Drop Operation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bIsRotated.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+      Pin: bIsItemRotated (bool) Dir=In
+        -> Set bIsRotated.Output_Get
+    Node: Get bIsRotated (K2Node_VariableGet)
+      Pin: bIsRotated (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bIsRotated.bIsRotated
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set bIsRotated.bIsRotated
+    Node: Set bIsRotated (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Rotate Drag Item
+Target is BP Item Drag Drop Operation.execute
+      Pin: bIsRotated (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> Rotate Drag Item
+Target is BP Item Drag Drop Operation.bIsItemRotated
+      Pin: self (object) Dir=In
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Is Item Size Uneven
+Target is BP Inventory Component.self
+      Pin: self (object) Dir=In
+    Node: Is Item Size Uneven
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: bIsUneven (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Item Size Uneven
+Target is BP Inventory Component.bIsUneven
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Is Item Size Uneven
+Target is BP Inventory Component.ItemSlot
+      Pin: self (object) Dir=In
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Get CurrentSlot.self
+      Pin: self (object) Dir=In
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Rotate Drag Item
+Target is BP Item Drag Drop Operation.self
+      Pin: self (object) Dir=In
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.DragAndDropOperation
+      Pin: self (object) Dir=In
+    Node: Is the item in drag state? (EdGraphNode_Comment)
+    Node: Is the item size uneven? (e.g. 1x2 or 3x2) (EdGraphNode_Comment)
+    Node: Does a drag operation exist? (EdGraphNode_Comment)
+    Node: Invert item rotation (EdGraphNode_Comment)
+    Node: Rotate drag item size and image (EdGraphNode_Comment)
+    Node: Update drag item size/position (when inventory snapping is active) (EdGraphNode_Comment)
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Get DragItemWidget.self
+        -> Get CurrentSlot.self
+      Pin: self (object) Dir=In
+    Node: Get DragItemWidget (K2Node_VariableGet)
+      Pin: DragItemWidget (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: InputObject (object) Dir=In
+        -> Get DragItemWidget.DragItemWidget
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get CurrentSlot (K2Node_VariableGet)
+      Pin: CurrentSlot (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get CurrentSlot.CurrentSlot
+      Pin: Is Valid (exec) Dir=Out
+        -> Create and Update Drag Widget
+Target is WBP Inventory Slot Base.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Rotate Drag Item
+Target is BP Item Drag Drop Operation.then
+      Pin: InputObject (object) Dir=In
+        -> Get DefaultDragVisual.DefaultDragVisual
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Does the drag operation have a valid drag widget? (EdGraphNode_Comment)
+    Node: Get DefaultDragVisual (K2Node_VariableGet)
+      Pin: DefaultDragVisual (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+        -> Get DragOperaton.DragOperaton
+    Node: Get DragOperaton (K2Node_VariableGet)
+      Pin: DragOperaton (object) Dir=Out
+        -> Get DefaultDragVisual.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> PressedRotateItem.then
+      Pin: Condition (bool) Dir=In
+        -> Get bItemRotationAllowed.bItemRotationAllowed
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Is item rotation enabled in inventory config? (EdGraphNode_Comment)
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Get InventoryConfig.self
+      Pin: self (object) Dir=In
+    Node: Get InventoryConfig (K2Node_VariableGet)
+      Pin: InventoryConfig (object) Dir=Out
+        -> Get bItemRotationAllowed.self
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+    Node: Get bItemRotationAllowed (K2Node_VariableGet)
+      Pin: bItemRotationAllowed (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get InventoryConfig.InventoryConfig
+  Graph: GetDragItemSize
+    Node: GetDragItemSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: InventoryItem (object) Dir=Out
+        -> Get Desired Size
+Target is Widget.self
+      Pin: FItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: __WorldContext (object) Dir=Out
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> GetDragItemSize.FItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+        -> vector2d * vector2d.B
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> vector2d * vector2d.ReturnValue
+      Pin: X (real) Dir=Out
+        -> Return Node.X
+      Pin: Y (real) Dir=Out
+        -> Return Node.Y
+    Node: Get Desired Size
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GetDragItemSize.InventoryItem
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d * vector2d.A
+    Node: vector2d * vector2d (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Desired Size
+Target is Widget.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Break FItem Slot.SlotSize_42_1F35824846B91FAC2386BAB7772FE683
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetDragItemSize.then
+      Pin: X (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Y (real) Dir=In
+        -> Break Vector 2D.Y
+    Node: Get size from inventory slot, otherwise just take own item widget size (EdGraphNode_Comment)
+  Graph: PressedItemDrag
+    Node: PressedItemDrag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Start Item Drag
+Target is WBP Item Base.execute
+    Node: Start Item Drag
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> PressedItemDrag.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: bIsGamepadDrag (bool) Dir=In
+      Pin: Operation (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Start Item Drag
+Target is WBP Item Base.then
+      Pin: InputObject (object) Dir=In
+        -> Start Item Drag
+Target is WBP Item Base.Operation
+      Pin: Is Valid (exec) Dir=Out
+        -> Set User Focus
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get InventorySlot (K2Node_VariableGet)
+      Pin: InventorySlot (object) Dir=Out
+        -> Set User Focus
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Start a Gamepad based Drag (EdGraphNode_Comment)
+    Node: Set User Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InventorySlot.InventorySlot
+      Pin: PlayerController (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set User Focus
+Target is Widget.PlayerController
+  Graph: StartItemDrag
+    Node: StartItemDrag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bIsGamepadDrag (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set DragOperaton.then
+      Pin: Operation (object) Dir=In
+        -> Set DragOperaton.Output_Get
+    Node: Create BP Item Drag Drop Operation (K2Node_CreateDragDropOperation)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set DragOperaton.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set DragOperaton.DragOperaton
+      Pin: Tag (string) Dir=In
+      Pin: Payload (object) Dir=In
+        -> Self-Reference.self
+      Pin: DefaultDragVisual (object) Dir=In
+        -> Create WBP Drag Item Base Widget.ReturnValue
+      Pin: Pivot (byte) Dir=In
+      Pin: Offset (struct) Dir=In
+      Pin: ItemImageTexture (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: Width (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Height (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: bIsGamepadDrag (bool) Dir=In
+        -> Get bIsGamepadDrag.bIsGamepadDrag
+      Pin: SourceInventory (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: DragSourceGroup (byte) Dir=In
+        -> Get DragSourceGroup.DragSourceGroup
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Size.Size
+      Pin: X (real) Dir=Out
+        -> Create BP Item Drag Drop Operation.Width
+      Pin: Y (real) Dir=Out
+        -> Create BP Item Drag Drop Operation.Height
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Create BP Item Drag Drop Operation.Payload
+    Node: Set bIsBeingDragged (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Call On Item Drag Begin.execute
+      Pin: bIsBeingDragged (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get bIsBeingDragged (K2Node_VariableGet)
+      Pin: bIsBeingDragged (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set bIsBeingDragged.execute
+      Pin: else (exec) Dir=Out
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bIsBeingDragged.bIsBeingDragged
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Call On Item Drag Begin (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set bIsBeingDragged.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ItemWidget (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Call On Item Drag Begin.ItemWidget
+    Node: Set DragOperaton (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create BP Item Drag Drop Operation.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: DragOperaton (object) Dir=In
+        -> Create BP Item Drag Drop Operation.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Return Node.Operation
+      Pin: self (object) Dir=In
+    Node: Get ItemImageTexture (K2Node_VariableGet)
+      Pin: ItemImageTexture (object) Dir=Out
+        -> Create BP Item Drag Drop Operation.ItemImageTexture
+      Pin: self (object) Dir=In
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Create BP Item Drag Drop Operation.SourceInventory
+      Pin: self (object) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> Not Equal (Guid).A
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> StartItemDrag.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Not Equal (Guid).B
+    Node: Not Equal (Guid) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Get DragSourceGroup (K2Node_VariableGet)
+      Pin: DragSourceGroup (byte) Dir=Out
+        -> Create BP Item Drag Drop Operation.DragSourceGroup
+      Pin: self (object) Dir=In
+    Node: Create and return the Drag & Drop Operation (EdGraphNode_Comment)
+    Node: Call Begin Drag Event (EdGraphNode_Comment)
+    Node: Is not already dragging? (EdGraphNode_Comment)
+    Node: Start dragging (EdGraphNode_Comment)
+    Node: Is valid item slot? (EdGraphNode_Comment)
+    Node: Get bIsGamepadDrag (K2Node_VariableGet)
+      Pin: bIsGamepadDrag (bool) Dir=Out
+        -> Create BP Item Drag Drop Operation.bIsGamepadDrag
+    Node: Create WBP Drag Item Base Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Load Class Asset Blocking.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Class (class) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: ReturnValue (object) Dir=Out
+        -> Create BP Item Drag Drop Operation.DefaultDragVisual
+      Pin: OwningPlayer (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+      Pin: ItemImageTexture (object) Dir=In
+        -> Get ItemImageTexture.ItemImageTexture
+      Pin: Height (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Width (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: bIsRotated (bool) Dir=In
+        -> Get bIsRotated.bIsRotated
+      Pin: DragAndDropOperation (object) Dir=In
+    Node: Get ItemImageTexture (K2Node_VariableGet)
+      Pin: ItemImageTexture (object) Dir=Out
+        -> Create WBP Drag Item Base Widget.ItemImageTexture
+      Pin: self (object) Dir=In
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Create WBP Drag Item Base Widget.OwningPlayer
+    Node: Get bIsRotated (K2Node_VariableGet)
+      Pin: bIsRotated (bool) Dir=Out
+        -> Create WBP Drag Item Base Widget.bIsRotated
+      Pin: self (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Drag Item Size.InventoryItem
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Get Drag Item Size.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Create Drag Visual for free floating drag (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Call On Item Drag Begin.then
+      Pin: Condition (bool) Dir=In
+        -> Get bItemDragSnapsToSlot.bItemDragSnapsToSlot
+      Pin: then (exec) Dir=Out
+        -> Create BP Item Drag Drop Operation.execute
+      Pin: else (exec) Dir=Out
+        -> Get Drag Item Size.execute
+    Node: Set Size (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Drag Item Size.then
+      Pin: then (exec) Dir=Out
+        -> Load Class Asset Blocking.execute
+      Pin: Size (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get Drag Item Size.X
+      Pin: Y (real) Dir=In
+        -> Get Drag Item Size.Y
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Size.Size
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Size.Size
+      Pin: X (real) Dir=Out
+        -> Create WBP Drag Item Base Widget.Width
+      Pin: Y (real) Dir=Out
+        -> Create WBP Drag Item Base Widget.Height
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: self (object) Dir=In
+    Node: Item drag snapping or free floating? (EdGraphNode_Comment)
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Get InventoryConfig.self
+      Pin: self (object) Dir=In
+    Node: Get InventoryConfig (K2Node_VariableGet)
+      Pin: InventoryConfig (object) Dir=Out
+        -> Get DragItemWidgetClass.self
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+    Node: Get DragItemWidgetClass (K2Node_VariableGet)
+      Pin: DragItemWidgetClass (softclass) Dir=Out
+        -> Resolve Soft Reference.Input
+        -> Load Class Asset Blocking.AssetClass
+      Pin: self (object) Dir=In
+        -> Get InventoryConfig.InventoryConfig
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softclass) Dir=In
+        -> Get DragItemWidgetClass.DragItemWidgetClass
+      Pin: Output (class) Dir=Out
+        -> Create WBP Drag Item Base Widget.Class
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Get InventoryConfig.self
+      Pin: self (object) Dir=In
+    Node: Get InventoryConfig (K2Node_VariableGet)
+      Pin: InventoryConfig (object) Dir=Out
+        -> Get bItemDragSnapsToSlot.self
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+    Node: Get bItemDragSnapsToSlot (K2Node_VariableGet)
+      Pin: bItemDragSnapsToSlot (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get InventoryConfig.InventoryConfig
+    Node: Get Drag Item Size (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Size.execute
+      Pin: self (object) Dir=In
+      Pin: InventoryItem (object) Dir=In
+        -> Self-Reference.self
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: __WorldContext (object) Dir=In
+      Pin: X (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: Y (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Load Class Asset Blocking (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Size.then
+      Pin: then (exec) Dir=Out
+        -> Create WBP Drag Item Base Widget.execute
+      Pin: self (object) Dir=In
+      Pin: AssetClass (softclass) Dir=In
+        -> Get DragItemWidgetClass.DragItemWidgetClass
+      Pin: ReturnValue (class) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Create WBP Drag Item Base Widget.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Create BP Item Drag Drop Operation.execute
+  Graph: EndItemDrag
+    Node: EndItemDrag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: DragDropOperation (object) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.Object
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Cast To BP_ItemDragDropOperation.then
+      Pin: InputObject (object) Dir=In
+        -> Get DragItemWidget.DragItemWidget
+      Pin: Is Valid (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set DragItemWidget.execute
+      Pin: self (object) Dir=In
+        -> Get DragItemWidget.DragItemWidget
+    Node: Get DragItemWidget (K2Node_VariableGet)
+      Pin: DragItemWidget (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Remove from Parent
+Target is Widget.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+    Node: Set DragItemWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Remove from Parent
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: DragItemWidget (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+    Node: Cast To BP_ItemDragDropOperation (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> EndItemDrag.DragDropOperation
+      Pin: AsBP Item Drag Drop Operation (object) Dir=Out
+        -> Get DragItemWidget.self
+        -> Set DragItemWidget.self
+        -> Get SourceInventory.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Remove Drag Widget (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> EndItemDrag.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: On Drag Ended
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: SourceInventoryComponent (object) Dir=In
+        -> Get SourceInventory.SourceInventory
+      Pin: TargetInventoryComponent (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ToPosition (struct) Dir=In
+      Pin: DragSource (byte) Dir=In
+    Node: Call On Drag Ended event (EdGraphNode_Comment)
+    Node: Get SourceInventory (K2Node_VariableGet)
+      Pin: SourceInventory (object) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.SourceInventoryComponent
+      Pin: self (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.execute
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.TargetInventoryComponent
+      Pin: self (object) Dir=In
+  Graph: SetItemImage
+    Node: SetItemImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set ItemImageTexture.execute
+      Pin: Texture (object) Dir=Out
+        -> Set ItemImageTexture.ItemImageTexture
+      Pin: bAllowRotatedImage (bool) Dir=Out
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: else (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Item Image Material
+Target is WBP Item Base.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageDynMaterial.ItemImageDynMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> Set ItemImageTexture.Output_Get
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ItemImageDynMaterial.ItemImageDynMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ItemImageDynMaterial.ItemImageDynMaterial
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Material (object) Dir=In
+        -> Get ItemImageDynMaterial.ItemImageDynMaterial
+    Node: Set ItemImageTexture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetItemImage.then
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Item Image Material
+Target is WBP Item Base.execute
+      Pin: ItemImageTexture (object) Dir=In
+        -> SetItemImage.Texture
+      Pin: Output_Get (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Sets the image based on a material to allow for rotation of the image (EdGraphNode_Comment)
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Material
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Y (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+    Node: Get Texture (K2Node_VariableGet)
+      Pin: Texture (object) Dir=Out
+        -> GetSizeX
+Target is Texture 2D.self
+        -> GetSizeY
+Target is Texture 2D.self
+    Node: GetSizeX
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Texture.Texture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeX
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: GetSizeY
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Texture.Texture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeY
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Material (object) Dir=In
+        -> Get ItemImageDynMaterial.ItemImageDynMaterial
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Material
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Y (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+    Node: Get Texture (K2Node_VariableGet)
+      Pin: Texture (object) Dir=Out
+        -> GetSizeX
+Target is Texture 2D.self
+        -> GetSizeY
+Target is Texture 2D.self
+    Node: GetSizeX
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Texture.Texture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeX
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: GetSizeY
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Texture.Texture
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeY
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Match image size to texture size (EdGraphNode_Comment)
+    Node: Get ItemImageDynMaterial (K2Node_VariableGet)
+      Pin: ItemImageDynMaterial (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageDynMaterial (K2Node_VariableGet)
+      Pin: ItemImageDynMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageDynMaterial (K2Node_VariableGet)
+      Pin: ItemImageDynMaterial (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageDynMaterial (K2Node_VariableGet)
+      Pin: ItemImageDynMaterial (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.Material
+      Pin: self (object) Dir=In
+    Node: Get ItemImageDynMaterial (K2Node_VariableGet)
+      Pin: ItemImageDynMaterial (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.Material
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Item Image Material
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ItemImageTexture.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ItemImageRef (K2Node_VariableGet)
+      Pin: ItemImageRef (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get bAllowRotatedImage (K2Node_VariableGet)
+      Pin: bAllowRotatedImage (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Break FItem Slot.bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909
+      Pin: B (bool) Dir=In
+        -> Get bAllowRotatedImage.bAllowRotatedImage
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemImageRef.ItemImageRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: SetShortcutImage
+    Node: SetShortcutImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: ShortcutIndex (int) Dir=Out
+        -> Switch on Int.Selection
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.0
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.1
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.2
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.3
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (int) Dir=In
+        -> SetShortcutImage.ShortcutIndex
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: -2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: -1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 0 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 1 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 2 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 3 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 4 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 5 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 6 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 7 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 8 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: 9 (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.4
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.5
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.6
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.7
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Count
+        -> Switch on ECommonInputType.Touch
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.8
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.MouseAndKeyboard
+        -> Switch on ECommonInputType.Touch
+        -> Switch on ECommonInputType.Count
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Texture (object) Dir=In
+        -> GET.Output
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.9
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: -1: Nothing is equipped, -2: Short explicitly unset by user (EdGraphNode_Comment)
+    Node: 1 (EdGraphNode_Comment)
+    Node: 2 (EdGraphNode_Comment)
+    Node: 3 (EdGraphNode_Comment)
+    Node: 0 (EdGraphNode_Comment)
+    Node: 9 (EdGraphNode_Comment)
+    Node: 8 (EdGraphNode_Comment)
+    Node: 7 (EdGraphNode_Comment)
+    Node: 6 (EdGraphNode_Comment)
+    Node: 5 (EdGraphNode_Comment)
+    Node: 4 (EdGraphNode_Comment)
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutGamepadIcons (K2Node_VariableGet)
+      Pin: ShortcutGamepadIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutGamepadIcons.ShortcutGamepadIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutGamepadIcons (K2Node_VariableGet)
+      Pin: ShortcutGamepadIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutGamepadIcons.ShortcutGamepadIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutGamepadIcons (K2Node_VariableGet)
+      Pin: ShortcutGamepadIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutGamepadIcons.ShortcutGamepadIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutGamepadIcons (K2Node_VariableGet)
+      Pin: ShortcutGamepadIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutGamepadIcons.ShortcutGamepadIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Get ShortcutKeyboardIcons (K2Node_VariableGet)
+      Pin: ShortcutKeyboardIcons (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get ShortcutKeyboardIcons.ShortcutKeyboardIcons
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on Int.-1
+        -> Switch on Int.-2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on Int.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> SetShortcutImage.then
+      Pin: InputObject (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: CommonInput (K2Node_GetSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Current Input Type
+Target is CommonInput.self
+        -> Is Valid.InputObject
+    Node: Get Current Input Type
+Target is CommonInput (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Switch on ECommonInputType.Selection
+    Node: Switch on ECommonInputType (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Selection (byte) Dir=In
+        -> Get Current Input Type
+Target is CommonInput.ReturnValue
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MouseAndKeyboard (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Gamepad (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Touch (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Count (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageRef.ShortcutSlotImageRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on ECommonInputType.Gamepad
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get ShortcutSlotImageBackgroundRef.ShortcutSlotImageBackgroundRef
+      Pin: InVisibility (byte) Dir=In
+    Node: Get ShortcutSlotImageBackgroundRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageBackgroundRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get ShortcutSlotImageRef (K2Node_VariableGet)
+      Pin: ShortcutSlotImageRef (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: InputObject (object) Dir=In
+        -> CommonInput.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Switch on ECommonInputType.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: CreateDynamicItemImageMaterial
+    Node: CreateDynamicItemImageMaterial (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Set ItemImageDynMaterial.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+        -> Get ItemImageMaterialInterface.ItemImageMaterialInterface
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set ItemImageDynMaterial.ItemImageDynMaterial
+    Node: Get ItemImageMaterialInterface (K2Node_VariableGet)
+      Pin: ItemImageMaterialInterface (object) Dir=Out
+        -> Create Dynamic Material Instance.Parent
+      Pin: self (object) Dir=In
+    Node: Set ItemImageDynMaterial (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+      Pin: ItemImageDynMaterial (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ItemImageDynMaterial (K2Node_VariableGet)
+      Pin: ItemImageDynMaterial (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> CreateDynamicItemImageMaterial.then
+      Pin: InputObject (object) Dir=In
+        -> Get ItemImageDynMaterial.ItemImageDynMaterial
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+    Node: Creates a dynamic material to use as item image (EdGraphNode_Comment)
+  Graph: PressedButtonWithTransferModifier
+    Node: PressedButtonWithTransferModifier (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> PressedButtonWithTransferModifier.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Transfer Item Server
+Target is BP Inventory Component
+Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Get OtherInventory.self
+      Pin: self (object) Dir=In
+    Node: Get OtherInventory (K2Node_VariableGet)
+      Pin: OtherInventory (object) Dir=Out
+        -> Is Valid.InputObject
+        -> On Transfer Item Server
+Target is BP Inventory Component
+Replicated To Server (if owning client).TargetInventory
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get OtherInventory.OtherInventory
+      Pin: Is Valid (exec) Dir=Out
+        -> On Transfer Item Server
+Target is BP Inventory Component
+Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Transfer Item Server
+Target is BP Inventory Component
+Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: Transfer Item Modifier pressed + Click on Item (EdGraphNode_Comment)
+    Node: On Transfer Item Server
+Target is BP Inventory Component
+Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+      Pin: TargetInventory (object) Dir=In
+        -> Get OtherInventory.OtherInventory
+  Graph: PressedButtonWithDropModifier
+    Node: PressedButtonWithDropModifier (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> PressedButtonWithDropModifier.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: else (exec) Dir=Out
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+    Node: Drop Item Modifier pressed + Click on Item (EdGraphNode_Comment)
+  Graph: PressedButtonWithSplitModifier
+    Node: PressedButtonWithSplitModifier (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get bIsEnabled (K2Node_VariableGet)
+      Pin: bIsEnabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> PressedButtonWithSplitModifier.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsEnabled.bIsEnabled
+      Pin: then (exec) Dir=Out
+        -> On Item Split
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: else (exec) Dir=Out
+    Node: Get Owning Player Pawn
+Target is User Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Player Pawn
+Target is User Widget.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Item Split
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).self
+    Node: On Item Split
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Item Split
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Split Item Modifier pressed + Click on Item (EdGraphNode_Comment)
+  Graph: UpdateShortcutImage
+    Node: UpdateShortcutImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Shortcut Image
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+        -> Get DefaultShortcutIndex.DefaultShortcutIndex
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> Not Equal (Guid).A
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+        -> Set Shortcut Image
+Target is WBP Item Base.ShortcutIndex
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Shortcut Image
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+    Node: Get DefaultShortcutIndex (K2Node_VariableGet)
+      Pin: DefaultShortcutIndex (int) Dir=Out
+        -> integer >= integer.A
+      Pin: self (object) Dir=In
+    Node: Get DefaultShortcutIndex (K2Node_VariableGet)
+      Pin: DefaultShortcutIndex (int) Dir=Out
+        -> Set Shortcut Image
+Target is WBP Item Base.ShortcutIndex
+      Pin: self (object) Dir=In
+    Node: Not Equal (Guid) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Not Equal (Guid).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> UpdateShortcutImage.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Shortcut Image
+Target is WBP Item Base.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Shortcut Image
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ShortcutIndex (int) Dir=In
+        -> Break FItem Slot.ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+    Node: Has Default assigned Shortcut Index that should be used, this should always be set for Hotbar Items (EdGraphNode_Comment)
+    Node: Is Item on this slot? This may be false for empty Hot Bar slots, so this is almost always for Items in the inventory itself (EdGraphNode_Comment)
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get DefaultShortcutIndex.DefaultShortcutIndex
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+  Graph: OnItemPressed
+    Node: OnItemPressed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ItemWidget (object) Dir=Out
+  Graph: OnItemDragBegin
+    Node: OnItemDragBegin (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: ItemWidget (object) Dir=Out
+  Graph: OnItemDragEnd
+    Node: OnItemDragEnd (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: SourceInventoryComponent (object) Dir=Out
+      Pin: TargetInventoryComponent (object) Dir=Out
+      Pin: ToPosition (struct) Dir=Out
+      Pin: DragSource (byte) Dir=Out

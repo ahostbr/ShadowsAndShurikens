@@ -1,0 +1,1111 @@
+Blueprint: BP_Workspace (/Game/AIBehaviorToolkit/Blueprints/BP_Workspace.BP_Workspace)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Resize.TargetArray
+      Pin: self (object) Dir=In
+    Node: Resize (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Resize.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: Size (int) Dir=In
+        -> Get WorkerLimit.WorkerLimit
+    Node: Get WorkerLimit (K2Node_VariableGet)
+      Pin: WorkerLimit (int) Dir=Out
+        -> Resize.Size
+      Pin: self (object) Dir=In
+    Node: Add Capsule Collision
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Unique.NewItem
+        -> Reroute Node.InputPin
+    Node: Get DefaultSceneRoot (K2Node_VariableGet)
+      Pin: DefaultSceneRoot (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Add Arrow Component
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Attach Component To Component
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+    Node: Get SlotTransforms (K2Node_VariableGet)
+      Pin: SlotTransforms (struct) Dir=Out
+        -> Resize.TargetArray
+      Pin: self (object) Dir=In
+    Node: Resize (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Resize.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SlotTransforms.SlotTransforms
+      Pin: Size (int) Dir=In
+        -> Get WorkerLimit.WorkerLimit
+    Node: Get WorkerLimit (K2Node_VariableGet)
+      Pin: WorkerLimit (int) Dir=Out
+        -> Resize.Size
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Array (struct) Dir=In
+        -> Get SlotTransforms.SlotTransforms
+      Pin: LoopBody (exec) Dir=Out
+        -> Add Capsule Collision
+.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Unique.then
+      Pin: then (exec) Dir=Out
+        -> Add Arrow Component
+.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Parent (object) Dir=In
+        -> Get DefaultSceneRoot.DefaultSceneRoot
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Arrow Component
+.then
+      Pin: then (exec) Dir=Out
+        -> Add Billboard Component
+.execute
+      Pin: self (object) Dir=In
+        -> Add Arrow Component
+.ReturnValue
+      Pin: Parent (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Capsule Collision
+.then
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get SlotsArray.SlotsArray
+      Pin: NewItem (object) Dir=In
+        -> Add Capsule Collision
+.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get SlotsArray (K2Node_VariableGet)
+      Pin: SlotsArray (object) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (struct) Dir=Out
+        -> Add Capsule Collision
+.RelativeTransform
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Add Arrow Component
+.RelativeTransform
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Add Capsule Collision
+.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get DefaultSceneRoot.DefaultSceneRoot
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+        -> Reroute Node.InputPin
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Unique.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Add Billboard Component
+.ReturnValue
+      Pin: Parent (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+    Node: Get SlotEntranceOffsets (K2Node_VariableGet)
+      Pin: SlotEntranceOffsets (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: OutputPin (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Get SlotEntranceOffsets (K2Node_VariableGet)
+      Pin: SlotEntranceOffsets (struct) Dir=Out
+        -> Resize.TargetArray
+      Pin: self (object) Dir=In
+    Node: Resize (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Resize.then
+      Pin: then (exec) Dir=Out
+        -> Resize.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get SlotEntranceOffsets.SlotEntranceOffsets
+      Pin: Size (int) Dir=In
+        -> Get WorkerLimit.WorkerLimit
+    Node: Get WorkerLimit (K2Node_VariableGet)
+      Pin: WorkerLimit (int) Dir=Out
+        -> Resize.Size
+      Pin: self (object) Dir=In
+    Node: Get SlotEntrancesArray (K2Node_VariableGet)
+      Pin: SlotEntrancesArray (object) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add Billboard Component
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Attach Component To Component
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Unique.NewItem
+        -> Attach Component To Component
+Target is Scene Component.self
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Billboard Component
+.then
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get SlotEntrancesArray.SlotEntrancesArray
+      Pin: NewItem (object) Dir=In
+        -> Add Billboard Component
+.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> GET.Output
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Billboard Component
+.RelativeTransform
+    Node: Get SlotsArray (K2Node_VariableGet)
+      Pin: SlotsArray (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get SlotsArray.SlotsArray
+    Node: Get SlotEntrancesArray (K2Node_VariableGet)
+      Pin: SlotEntrancesArray (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Resize.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get SlotEntrancesArray.SlotEntrancesArray
+    Node: Get SlotEntranceOffsets (K2Node_VariableGet)
+      Pin: SlotEntranceOffsets (struct) Dir=Out
+        -> For Each Loop.Array
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Resize.then
+      Pin: Array (struct) Dir=In
+        -> Get SlotEntranceOffsets.SlotEntranceOffsets
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Equal (Vector).A
+      Pin: Array Index (int) Dir=Out
+        -> Set Array Elem.Index
+        -> GET.Dimension 1
+      Pin: Completed (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Index (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Item (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get SlotTransforms (K2Node_VariableGet)
+      Pin: SlotTransforms (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Break Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InTransform (struct) Dir=In
+        -> GET.Output
+      Pin: Location (struct) Dir=Out
+        -> vector - vector.A
+      Pin: Rotation (struct) Dir=Out
+      Pin: Scale (struct) Dir=Out
+    Node: Get SlotTransforms (K2Node_VariableGet)
+      Pin: SlotTransforms (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get SlotEntranceOffsets.SlotEntranceOffsets
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Array Elem.TargetArray
+    Node: Equal (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (struct) Dir=In
+      Pin: ErrorTolerance (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Vector).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: else (exec) Dir=Out
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Transform.Location
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Array Elem.Item
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get SlotEntranceOffsets.SlotEntranceOffsets
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (struct) Dir=Out
+        -> Make Transform.Location
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get SlotTransforms.SlotTransforms
+      Pin: Dimension 1 (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output (struct) Dir=Out
+        -> Break Transform.InTransform
+  Graph: HasAvailableSlot
+    Node: HasAvailableSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasAvailableSlot.then
+      Pin: Available (bool) Dir=In
+        -> integer > integer.ReturnValue
+    Node: Get CurrentWorkers (K2Node_VariableGet)
+      Pin: CurrentWorkers (int) Dir=Out
+        -> int - int.B
+      Pin: self (object) Dir=In
+    Node: Get WorkerLimit (K2Node_VariableGet)
+      Pin: WorkerLimit (int) Dir=Out
+        -> int - int.A
+      Pin: self (object) Dir=In
+    Node: int - int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get WorkerLimit.WorkerLimit
+      Pin: B (int) Dir=In
+        -> Get CurrentWorkers.CurrentWorkers
+      Pin: ReturnValue (int) Dir=Out
+        -> integer > integer.A
+    Node: integer > integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Available
+  Graph: TakeSlot
+    Node: TakeSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: WorkerRef (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: LoopBody (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Array Element (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: Array Index (int) Dir=Out
+        -> Set Array Elem.Index
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: Index (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Item (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Set Array Elem.TargetArray
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+      Pin: SlotLocation (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Duration (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Get CurrentWorkers (K2Node_VariableGet)
+      Pin: CurrentWorkers (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Set Array Elem.then
+      Pin: Value (int) Dir=In
+        -> Get CurrentWorkers.CurrentWorkers
+      Pin:    (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Result (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SlotLocation (struct) Dir=In
+      Pin: Duration (real) Dir=In
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get WorkDuration.WorkDuration
+      Pin: B (real) Dir=In
+        -> Get RandomDeviation.RandomDeviation
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Float in Range.Min
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Max (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get WorkDuration.WorkDuration
+      Pin: B (real) Dir=In
+        -> Get RandomDeviation.RandomDeviation
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Float in Range.Max
+        -> Clamp (Float).Max
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Duration
+    Node: Get WorkDuration (K2Node_VariableGet)
+      Pin: WorkDuration (real) Dir=Out
+        -> float - float.A
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: Get RandomDeviation (K2Node_VariableGet)
+      Pin: RandomDeviation (real) Dir=Out
+        -> float + float.B
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.SlotLocation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> TakeSlot.WorkerRef
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Find Item.ItemToFind
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Array Elem.Item
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get SlotEntrancesArray (K2Node_VariableGet)
+      Pin: SlotEntrancesArray (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get SlotEntrancesArray.SlotEntrancesArray
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: InputObject (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Is Valid (exec) Dir=Out
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set Array Elem.execute
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Find Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: ItemToFind (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> integer < integer.A
+        -> GET.Dimension 1
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> TakeSlot.then
+      Pin: Condition (bool) Dir=In
+        -> integer < integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: integer < integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: SlotLocation (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Duration (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.SlotLocation
+    Node: Get SlotEntrancesArray (K2Node_VariableGet)
+      Pin: SlotEntrancesArray (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get SlotEntrancesArray.SlotEntrancesArray
+      Pin: Dimension 1 (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get WorkDuration.WorkDuration
+      Pin: B (real) Dir=In
+        -> Get RandomDeviation.RandomDeviation
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Float in Range.Min
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Max (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get WorkDuration.WorkDuration
+      Pin: B (real) Dir=In
+        -> Get RandomDeviation.RandomDeviation
+      Pin: ReturnValue (real) Dir=Out
+        -> Random Float in Range.Max
+        -> Clamp (Float).Max
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Duration
+    Node: Get WorkDuration (K2Node_VariableGet)
+      Pin: WorkDuration (real) Dir=Out
+        -> float - float.A
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: Get RandomDeviation (K2Node_VariableGet)
+      Pin: RandomDeviation (real) Dir=Out
+        -> float + float.B
+        -> float - float.B
+      Pin: self (object) Dir=In
+  Graph: PlayWorkerInSlot
+    Node: PlayWorkerInSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set SlotIndex.execute
+      Pin: WorkerRef (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Find Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: ItemToFind (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> Set SlotIndex.SlotIndex
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Set SlotIndex.Output_Get
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set SlotIndex.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Can Affect Navigation Generation
+Target is Pawn.then
+      Pin: WorkSuccess (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Is Valid.Is Not Valid
+      Pin: WorkSuccess (bool) Dir=In
+    Node: Get Random Animation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RandAnim (object) Dir=Out
+        -> Replicated Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).Anim
+    Node: Set SlotIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> PlayWorkerInSlot.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SlotIndex (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+        -> integer >= integer.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> PlayWorkerInSlot.WorkerRef
+      Pin: OutputPin (object) Dir=Out
+        -> Find Item.ItemToFind
+        -> Get Components By Class
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Components By Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> GET.Output
+      Pin: Is Valid (exec) Dir=Out
+        -> Replicated Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Replicated Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Can Affect Navigation Generation
+Target is Pawn.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Anim (object) Dir=In
+        -> Get Random Animation.RandAnim
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GET.Output
+      Pin: OutputPin (object) Dir=Out
+        -> Replicated Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).self
+    Node: Set Can Affect Navigation Generation
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Replicated Animation
+Target is BP Behavior Component
+RELIABLE Replicated To All (if server).then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bNewValue (bool) Dir=In
+      Pin: bForceUpdate (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Can Affect Navigation Generation
+Target is Pawn.self
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Components By Class
+Target is Actor.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+  Graph: GetRandomAnimation
+    Node: GetRandomAnimation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetRandomAnimation.then
+      Pin: RandAnim (object) Dir=In
+        -> GET.Output
+    Node: Get Animations (K2Node_VariableGet)
+      Pin: Animations (object) Dir=Out
+        -> Length.TargetArray
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Animations.Animations
+      Pin: ReturnValue (int) Dir=Out
+        -> int - int.A
+    Node: int - int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Random Integer in Range.Max
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Animations.Animations
+      Pin: Dimension 1 (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Return Node.RandAnim
+  Graph: RemoveFromSlot
+    Node: RemoveFromSlot (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: WorkerRef (object) Dir=Out
+        -> Find Item.ItemToFind
+        -> Set Can Affect Navigation Generation
+Target is Pawn.self
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Find Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: ItemToFind (object) Dir=In
+        -> RemoveFromSlot.WorkerRef
+      Pin: ReturnValue (int) Dir=Out
+        -> integer >= integer.A
+        -> Reroute Node.InputPin
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> RemoveFromSlot.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Decrement Int. 
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Item (object) Dir=In
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Set Array Elem.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get CurrentWorkers (K2Node_VariableGet)
+      Pin: CurrentWorkers (int) Dir=Out
+        -> Decrement Int.Value
+      Pin: self (object) Dir=In
+    Node: Decrement Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Set Array Elem.then
+      Pin: Value (int) Dir=In
+        -> Get CurrentWorkers.CurrentWorkers
+      Pin:    (exec) Dir=Out
+        -> Set Can Affect Navigation Generation
+Target is Pawn.execute
+      Pin: Result (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set Can Affect Navigation Generation
+Target is Pawn.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Set Array Elem.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Set Can Affect Navigation Generation
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Decrement Int.  
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> RemoveFromSlot.WorkerRef
+      Pin: bNewValue (bool) Dir=In
+      Pin: bForceUpdate (bool) Dir=In
+  Graph: GetSlotTransform
+    Node: GetSlotTransform (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set SlotIndex.execute
+      Pin: WorkerRef (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: SlotTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+    Node: Get SlotsArray (K2Node_VariableGet)
+      Pin: SlotsArray (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Get SlotIndex (K2Node_VariableGet)
+      Pin: SlotIndex (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Transform.Location
+    Node: Get SlotTransforms (K2Node_VariableGet)
+      Pin: SlotTransforms (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Get SlotIndex (K2Node_VariableGet)
+      Pin: SlotIndex (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Break Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InTransform (struct) Dir=In
+        -> GET.Output
+      Pin: Location (struct) Dir=Out
+      Pin: Rotation (struct) Dir=Out
+        -> Combine Rotators.A
+      Pin: Scale (struct) Dir=Out
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Combine Rotators.B
+    Node: Combine Rotators (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Transform.Rotation
+      Pin: B (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Transform.Rotation
+    Node: Get WorkersArray (K2Node_VariableGet)
+      Pin: WorkersArray (object) Dir=Out
+        -> Find Item.TargetArray
+      Pin: self (object) Dir=In
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get WorkersArray.WorkersArray
+      Pin: ItemToFind (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> Set SlotIndex.SlotIndex
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Set SlotIndex.Output_Get
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set SlotIndex.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Set SlotIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> GetSlotTransform.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SlotIndex (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+        -> integer >= integer.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GetSlotTransform.WorkerRef
+      Pin: OutputPin (object) Dir=Out
+        -> Find Item.ItemToFind
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: SlotTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Rotation (struct) Dir=In
+        -> Combine Rotators.ReturnValue
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.SlotTransform
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.SlotTransform
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get SlotsArray.SlotsArray
+      Pin: Dimension 1 (int) Dir=In
+        -> Get SlotIndex.SlotIndex
+      Pin: Output (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get SlotTransforms.SlotTransforms
+      Pin: Dimension 1 (int) Dir=In
+        -> Get SlotIndex.SlotIndex
+      Pin: Output (struct) Dir=Out
+        -> Break Transform.InTransform

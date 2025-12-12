@@ -1,0 +1,758 @@
+Blueprint: AnimBP_Boss_Sevarog (/Game/BossAIToolkit/Demo/Sevarog/Meshes/AnimBP_Boss_Sevarog.AnimBP_Boss_Sevarog)
+  Graph: EventGraph
+    Node: See if PawnOwner is valid (will not be in Persona) (EdGraphNode_Comment)
+    Node: Event Blueprint Update Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: DeltaTimeX (real) Dir=Out
+    Node: Set Speed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Action.then
+        -> Set BehaviorRef.then
+      Pin: then (exec) Dir=Out
+        -> Set FromStationary.execute
+      Pin: Speed (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+    Node: Set IsInAir? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To CharacterMovementComponent.then
+      Pin: then (exec) Dir=Out
+        -> Set MovementMode.execute
+      Pin: IsInAir? (bool) Dir=In
+        -> Is Falling
+Target is Nav Movement Component.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Movement Component
+Target is Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To CharacterMovementComponent.Object
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Blueprint Update Animation.then
+      Pin: InputObject (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To CharacterMovementComponent.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set 'IsInAir' (used in state machine) (EdGraphNode_Comment)
+    Node: Is Crouching
+Target is Nav Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set IsCrouching.IsCrouching
+    Node: Set IsCrouching (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set MovementMode.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: IsCrouching (bool) Dir=In
+        -> Is Crouching
+Target is Nav Movement Component.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Blueprint Initialize Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set OwningActor.execute
+    Node: Try Get Pawn Owner
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set OwningActor.OwningActor
+    Node: Set OwningActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Blueprint Initialize Animation.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: OwningActor (object) Dir=In
+        -> Try Get Pawn Owner
+Target is Anim Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Get Movement Component
+Target is Pawn.self
+      Pin: self (object) Dir=In
+    Node: Set IsCrouching (used in state machine) (EdGraphNode_Comment)
+    Node: Calculate Direction
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Velocity (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: BaseRotation (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Direction.Direction
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Calculate Direction
+Target is Anim Instance.BaseRotation
+    Node: Set Direction (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsMoving.then
+      Pin: then (exec) Dir=Out
+        -> Set RotationPlayRate.execute
+      Pin: Direction (real) Dir=In
+        -> Calculate Direction
+Target is Anim Instance.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Get Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Set OwningActor.Output_Get
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set OwningActor.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set BehaviorRef.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set BehaviorRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: BehaviorRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set BehaviorRef.BehaviorRef
+    Node: Set IsMoving (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FromStationary.then
+      Pin: then (exec) Dir=Out
+        -> Set Direction.execute
+      Pin: IsMoving (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FromStationary (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Speed.then
+      Pin: then (exec) Dir=Out
+        -> Set IsMoving.execute
+      Pin: FromStationary (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get IsMoving (K2Node_VariableGet)
+      Pin: IsMoving (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get IsMoving.IsMoving
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set FromStationary.FromStationary
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Set Speed.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Set IsMoving.IsMoving
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+        -> Calculate Direction
+Target is Anim Instance.Velocity
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Speed.Speed
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Get Velocity
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get BehaviorRef (K2Node_VariableGet)
+      Pin: BehaviorRef (object) Dir=Out
+        -> Get CurrentAction.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get CurrentAction (K2Node_VariableGet)
+      Pin: CurrentAction (byte) Dir=Out
+        -> Set Current Action.Current Action
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+    Node: Set Current Action (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Speed.execute
+      Pin: Current Action (byte) Dir=In
+        -> Get CurrentAction.CurrentAction
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Delta (Rotator).B
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Get Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get BehaviorRef (K2Node_VariableGet)
+      Pin: BehaviorRef (object) Dir=Out
+        -> Get Control Rotation
+Target is BPC Boss Behavior.self
+      Pin: self (object) Dir=In
+    Node: Delta (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Control Rotation
+Target is BPC Boss Behavior.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Absolute (Float).A
+        -> Reroute Node.InputPin
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Delta (Rotator).ReturnValue_Yaw
+      Pin: ReturnValue (real) Dir=Out
+        -> Set RotDiff.RotDiff
+    Node: Set RotDiff (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: RotDiff (real) Dir=In
+        -> Absolute (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float >= float.A
+      Pin: self (object) Dir=In
+    Node: float >= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Set RotDiff.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set RotDiff.then
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: else (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Reset (exec) Dir=In
+        -> Branch.else
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set TargetRot.execute
+    Node: Set TargetRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: TargetRot (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Control Rotation
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Delta (Rotator).A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Delta (Rotator).ReturnValue_Yaw
+      Pin: OutputPin (real) Dir=Out
+        -> Set TargetRot.TargetRot
+    Node: Get BehaviorRef (K2Node_VariableGet)
+      Pin: BehaviorRef (object) Dir=Out
+        -> Get Real Rotation Rate
+Target is BPC Boss Behavior.self
+        -> Get CombatRotationRate.self
+      Pin: self (object) Dir=In
+    Node: Get Real Rotation Rate
+Target is BPC Boss Behavior (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: Get CombatRotationRate (K2Node_VariableGet)
+      Pin: CombatRotationRate (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Real Rotation Rate
+Target is BPC Boss Behavior.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get CombatRotationRate.CombatRotationRate
+      Pin: ReturnValue (real) Dir=Out
+        -> Set RotationPlayRate.RotationPlayRate
+    Node: Set RotationPlayRate (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Direction.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: RotationPlayRate (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set IsCrouching.then
+      Pin: InputObject (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Current Action.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set BehaviorRef.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set BehaviorRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Speed.execute
+      Pin: BehaviorRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set BehaviorRef.BehaviorRef
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set RotationPlayRate.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set RotDiff.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set AO_Yaw (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AO_Pitch.then
+      Pin: then (exec) Dir=Out
+      Pin: AO_Yaw (real) Dir=In
+        -> RInterp to Constant.ReturnValue_Yaw
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set AO_Pitch (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set AO_Yaw.execute
+      Pin: AO_Pitch (real) Dir=In
+        -> RInterp to Constant.ReturnValue_Pitch
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Delta (Rotator).A
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Delta (Rotator).B
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwningActor.OwningActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Delta (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> RInterp to Constant.Target
+    Node: RInterp to Constant (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Delta (Rotator).ReturnValue
+      Pin: DeltaTime (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+        -> Set AO_Pitch.AO_Pitch
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Set AO_Yaw.AO_Yaw
+    Node: Get AO_Yaw (K2Node_VariableGet)
+      Pin: AO_Yaw (real) Dir=Out
+        -> Make Rotator.Yaw
+      Pin: self (object) Dir=In
+    Node: Get AO_Pitch (K2Node_VariableGet)
+      Pin: AO_Pitch (real) Dir=Out
+        -> Make Rotator.Pitch
+      Pin: self (object) Dir=In
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+        -> Get AO_Pitch.AO_Pitch
+      Pin: Yaw (real) Dir=In
+        -> Get AO_Yaw.AO_Yaw
+      Pin: ReturnValue (struct) Dir=Out
+        -> RInterp to Constant.Current
+    Node: Set AO_Yaw (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AO_Pitch.then
+      Pin: then (exec) Dir=Out
+      Pin: AO_Yaw (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set AO_Pitch (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set AO_Yaw.execute
+      Pin: AO_Pitch (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: If the current Behavior State is included in the "BehaviorsAimOffset", then rotate the AI towards its current target. (EdGraphNode_Comment)
+    Node: Get BehaviorRef (K2Node_VariableGet)
+      Pin: BehaviorRef (object) Dir=Out
+        -> Get TargetActor.self
+        -> Get InCombat.self
+        -> Get UseAimOffset.self
+      Pin: self (object) Dir=In
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Get OwningActor (K2Node_VariableGet)
+      Pin: OwningActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Get Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> RInterp to Constant.DeltaTime
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get InCombat (K2Node_VariableGet)
+      Pin: InCombat (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set AO_Pitch.execute
+      Pin: else (exec) Dir=Out
+        -> Set AO_Pitch.execute
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set MovementMode (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsInAir?.then
+      Pin: then (exec) Dir=Out
+        -> Set IsCrouching.execute
+      Pin: MovementMode (byte) Dir=In
+        -> Get MovementMode.MovementMode
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To CharacterMovementComponent (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set IsInAir?.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Movement Component
+Target is Pawn.ReturnValue
+      Pin: AsCharacter Movement Component (object) Dir=Out
+        -> Is Falling
+Target is Nav Movement Component.self
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get MovementMode (K2Node_VariableGet)
+      Pin: MovementMode (byte) Dir=Out
+        -> Set MovementMode.MovementMode
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Is Falling
+Target is Nav Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To CharacterMovementComponent.AsCharacter Movement Component
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set IsInAir?.IsInAir?
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To CharacterMovementComponent.AsCharacter Movement Component
+      Pin: OutputPin (object) Dir=Out
+        -> Is Crouching
+Target is Nav Movement Component.self
+        -> Get MovementMode.self
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get InCombat.InCombat
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get UseAimOffset (K2Node_VariableGet)
+      Pin: UseAimOffset (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get BehaviorRef.BehaviorRef
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get UseAimOffset.UseAimOffset
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+  Graph: AnimGraph
+    Node: Output Pose
+AnimGraph (AnimGraphNode_Root)
+      Pin: Result (struct) Dir=In
+        -> AO_Sevarog
+AimOffset Player.Pose
+    Node: Default
+State Machine (AnimGraphNode_StateMachine)
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'Locomotion'.Pose
+    Node: Slot 'DefaultSlot'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> Layered blend per bone.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BlendPoses_0
+    Node: Layered blend per bone (AnimGraphNode_LayeredBoneBlend)
+      Pin: BasePose (struct) Dir=In
+        -> Use cached pose 'Locomotion'.Pose
+      Pin: BlendPoses_0 (struct) Dir=In
+        -> Slot 'UpperBody'
+Group 'DefaultGroup'.Pose
+      Pin: BlendWeights_0 (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Source
+    Node: Save cached pose 'Locomotion' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Default
+State Machine.Pose
+    Node: Slot 'UpperBody'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> Use cached pose 'Locomotion'.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BlendPoses_0
+    Node: Layered blend per bone (AnimGraphNode_LayeredBoneBlend)
+      Pin: BasePose (struct) Dir=In
+        -> Use cached pose 'Locomotion'.Pose
+      Pin: BlendPoses_0 (struct) Dir=In
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Pose
+      Pin: BlendWeights_0 (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Apply Mesh Space Additive.Base
+    Node: Apply Mesh Space Additive (AnimGraphNode_ApplyMeshSpaceAdditive)
+      Pin: Base (struct) Dir=In
+        -> Layered blend per bone.Pose
+      Pin: Additive (struct) Dir=In
+        -> Use cached pose 'BlockPose'.Pose
+      Pin: Alpha (real) Dir=In
+      Pin: bAlphaBoolEnabled (bool) Dir=In
+      Pin: AlphaCurveName (name) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'FinalPose'.Pose
+    Node: Blocking
+State Machine (AnimGraphNode_StateMachine)
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'BlockPose'.Pose
+    Node: Save cached pose 'BlockPose' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Blocking
+State Machine.Pose
+    Node: Use cached pose 'BlockPose' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Apply Mesh Space Additive.Additive
+    Node: Save cached pose 'FinalPose' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Apply Mesh Space Additive.Pose
+    Node: Use cached pose 'FinalPose' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Blend Poses by bool.BlendPose_1
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Blend Poses by bool.bActiveValue
+      Pin: A (byte) Dir=In
+        -> Get Current Action.Current Action
+      Pin: B (byte) Dir=In
+    Node: Get Current Action (K2Node_VariableGet)
+      Pin: Current Action (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: self (object) Dir=In
+    Node: Blend Poses by bool (AnimGraphNode_BlendListByBool)
+      Pin: BlendPose_0 (struct) Dir=In
+        -> Stun_Loop
+Sequence Player.Pose
+      Pin: BlendPose_1 (struct) Dir=In
+        -> Use cached pose 'FinalPose'.Pose
+      Pin: BlendTime_0 (real) Dir=In
+      Pin: BlendTime_1 (real) Dir=In
+      Pin: bActiveValue (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: Pose (struct) Dir=Out
+        -> AO_Sevarog
+AimOffset Player.BasePose
+    Node: Stun_Loop
+Sequence Player (AnimGraphNode_SequencePlayer)
+      Pin: Pose (struct) Dir=Out
+        -> Blend Poses by bool.BlendPose_0
+    Node: Use cached pose 'Locomotion' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'UpperBody'
+Group 'DefaultGroup'.Source
+    Node: Use cached pose 'Locomotion' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BasePose
+    Node: Use cached pose 'Locomotion' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BasePose
+    Node: AO_Sevarog
+AimOffset Player (AnimGraphNode_RotationOffsetBlendSpace)
+      Pin: X (real) Dir=In
+        -> Get AO_Yaw.AO_Yaw
+      Pin: Y (real) Dir=In
+        -> Get AO_Pitch.AO_Pitch
+      Pin: BasePose (struct) Dir=In
+        -> Blend Poses by bool.Pose
+      Pin: Alpha (real) Dir=In
+      Pin: AlphaCurveName (name) Dir=In
+      Pin: bAlphaBoolEnabled (bool) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Output Pose
+AnimGraph.Result
+    Node: Get AO_Pitch (K2Node_VariableGet)
+      Pin: AO_Pitch (real) Dir=Out
+        -> AO_Sevarog
+AimOffset Player.Y
+      Pin: self (object) Dir=In
+    Node: Get AO_Yaw (K2Node_VariableGet)
+      Pin: AO_Yaw (real) Dir=Out
+        -> AO_Sevarog
+AimOffset Player.X
+      Pin: self (object) Dir=In

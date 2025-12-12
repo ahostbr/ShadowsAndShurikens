@@ -1,0 +1,101 @@
+Blueprint: EQS_GetTargetActorContext (/Game/AIBehaviorToolkit/Blueprints/EQS/EQS_GetTargetActorContext.EQS_GetTargetActorContext)
+  Graph: EventGraph
+  Graph: ProvideSingleActor
+    Node: Provide Single Actor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: QuerierObject (object) Dir=Out
+      Pin: QuerierActor (object) Dir=Out
+        -> Get AIController.ControlledActor
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.then
+      Pin: ResultingActor (object) Dir=In
+        -> Cast To Actor.AsActor
+    Node: Get Blackboard (K2Node_VariableGet)
+      Pin: Blackboard (object) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.self
+        -> Is Valid.Object
+      Pin: self (object) Dir=In
+        -> Get AIController.ReturnValue
+    Node: Get Value as Object
+Target is Blackboard Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard.Blackboard
+      Pin: KeyName (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Actor.Object
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Get Value as Object
+Target is Blackboard Component.KeyName
+    Node: Cast To Actor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Object (object) Dir=In
+        -> Get Value as Object
+Target is Blackboard Component.ReturnValue
+      Pin: AsActor (object) Dir=Out
+        -> Return Node.ResultingActor
+      Pin: bSuccess (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To Actor.CastFailed
+        -> Reroute Node.OutputPin
+      Pin: ResultingActor (object) Dir=In
+    Node: Get AIController (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControlledActor (object) Dir=In
+        -> Provide Single Actor.QuerierActor
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Blackboard.self
+        -> Is Valid.Object
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get AIController.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Provide Single Actor.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Blackboard.Blackboard
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Cast To Actor.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute

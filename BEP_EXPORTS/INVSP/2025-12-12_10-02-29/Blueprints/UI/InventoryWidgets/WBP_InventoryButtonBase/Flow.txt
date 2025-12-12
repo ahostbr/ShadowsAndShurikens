@@ -1,0 +1,99 @@
+Blueprint: WBP_InventoryButtonBase (/Game/InventorySystemPro/Blueprints/UI/InventoryWidgets/WBP_InventoryButtonBase.WBP_InventoryButtonBase)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Setup (EdGraphNode_Comment)
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: SetupButton
+    Node: SetupButton (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Button Text
+Target is WBP Inventory Button Base.execute
+    Node: Get ButtonText (K2Node_VariableGet)
+      Pin: ButtonText (text) Dir=Out
+        -> Set Button Text
+Target is WBP Inventory Button Base.ButtonText
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Set Button Text
+Target is WBP Inventory Button Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetupButton.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ButtonText (text) Dir=In
+        -> Get ButtonText.ButtonText
+  Graph: SetButtonVisbility
+    Node: SetButtonVisbility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bIsVisible (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetButtonVisbility.then
+      Pin: Condition (bool) Dir=In
+        -> SetButtonVisbility.bIsVisible
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InVisibility (byte) Dir=In
+    Node: If true will hide the context button (EdGraphNode_Comment)
+  Graph: SetButtonText
+    Node: SetButtonText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: ButtonText (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get TextRef (K2Node_VariableGet)
+      Pin: TextRef (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetButtonText.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextRef.TextRef
+      Pin: InText (text) Dir=In
+        -> SetButtonText.ButtonText
+    Node: Set Button Text (EdGraphNode_Comment)

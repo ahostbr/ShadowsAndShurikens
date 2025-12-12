@@ -1,0 +1,558 @@
+Blueprint: BP_CGF_CeilingLight (/Game/CoreGameFramework/Blueprints/BP_CGF_CeilingLight.BP_CGF_CeilingLight)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get GI.Actor
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Game File Loaded.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event LoadActorData (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ActorSaveData.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Get CGF_SaveFileData.self
+    Node: Event SaveActorData (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Get CGF_SaveFileData.self
+        -> Reroute Node.InputPin
+    Node: Get CGF_SaveFileData (K2Node_VariableGet)
+      Pin: CGF_SaveFileData (struct) Dir=Out
+        -> Set ActorSaveData.ActorSaveData
+      Pin: self (object) Dir=In
+        -> Event LoadActorData.SaveGameREF
+    Node: Set CGF_SaveFileData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: CGF_SaveFileData (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break F CGF Actor Save Data (K2Node_BreakStruct)
+      Pin: F_CGF_ActorSaveData (struct) Dir=In
+        -> Set ActorSaveData.Output_Get
+      Pin: PlayerData_64_08F1F2A949F214D8A2E561A5D03F8F46 (struct) Dir=Out
+      Pin: ActorData_42_0D70142D4771969283DDE8B58E7C3F96 (struct) Dir=Out
+        -> Find.TargetMap
+      Pin: WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895 (struct) Dir=Out
+      Pin: Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23 (byte) Dir=Out
+    Node: Request Load
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> GameLoaded_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Requester (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Request Load
+Target is BP CGF Game Instance.Requester
+    Node: Get ActorGuid (K2Node_VariableGet)
+      Pin: ActorGuid (struct) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Break F CGF Actor Save Data.ActorData_42_0D70142D4771969283DDE8B58E7C3F96
+      Pin: Key (struct) Dir=In
+        -> Get ActorGuid.ActorGuid
+      Pin: Value (struct) Dir=Out
+        -> Break F CGF Actor Data.F_CGF_ActorData
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Break F CGF Actor Data (K2Node_BreakStruct)
+      Pin: F_CGF_ActorData (struct) Dir=In
+        -> Find.Value
+      Pin: IsOn?_3_F6FCF8D04DDDBB87933A868D56963628 (bool) Dir=Out
+        -> Set On?.On?
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set On?.then
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Get ActorGuid (K2Node_VariableGet)
+      Pin: ActorGuid (struct) Dir=Out
+        -> Add.Key
+      Pin: self (object) Dir=In
+    Node: Make F CGF Actor Data (K2Node_MakeStruct)
+      Pin: F_CGF_ActorData (struct) Dir=Out
+        -> Add.Value
+      Pin: ActorsName_4_A13D1CD74DE049389DA8F3AEC9441510 (name) Dir=In
+        -> String To Name.ReturnValue
+      Pin: IsOn?_3_F6FCF8D04DDDBB87933A868D56963628 (bool) Dir=In
+        -> Get On?.On?
+    Node: Get On? (K2Node_VariableGet)
+      Pin: On? (bool) Dir=Out
+        -> Make F CGF Actor Data.IsOn?_3_F6FCF8D04DDDBB87933A868D56963628
+      Pin: self (object) Dir=In
+    Node: Set ActorSaveData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event LoadActorData.then
+      Pin: then (exec) Dir=Out
+        -> Set On?.execute
+      Pin: ActorSaveData (struct) Dir=In
+        -> Get CGF_SaveFileData.CGF_SaveFileData
+      Pin: Output_Get (struct) Dir=Out
+        -> Break F CGF Actor Save Data.F_CGF_ActorSaveData
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Load Game File
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Load Game File
+Target is BP CGF Game Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Async? (bool) Dir=In
+    Node: Break F CGF Actor Save Data (K2Node_BreakStruct)
+      Pin: F_CGF_ActorSaveData (struct) Dir=In
+        -> Get CGF_SaveFileData.CGF_SaveFileData
+      Pin: PlayerData_64_08F1F2A949F214D8A2E561A5D03F8F46 (struct) Dir=Out
+      Pin: ActorData_42_0D70142D4771969283DDE8B58E7C3F96 (struct) Dir=Out
+        -> Add.TargetMap
+      Pin: WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895 (struct) Dir=Out
+      Pin: Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23 (byte) Dir=Out
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event SaveActorData.then
+      Pin: then (exec) Dir=Out
+        -> Set CGF_SaveFileData.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Break F CGF Actor Save Data.ActorData_42_0D70142D4771969283DDE8B58E7C3F96
+      Pin: Key (struct) Dir=In
+        -> Get ActorGuid.ActorGuid
+      Pin: Value (struct) Dir=In
+        -> Make F CGF Actor Data.F_CGF_ActorData
+    Node: Get CGF_SaveFileData (K2Node_VariableGet)
+      Pin: CGF_SaveFileData (struct) Dir=Out
+        -> Break F CGF Actor Save Data.F_CGF_ActorSaveData
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Event SaveActorData.SaveGameREF
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Name.InString
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Make F CGF Actor Data.ActorsName_4_A13D1CD74DE049389DA8F3AEC9441510
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get CGF_SaveFileData.CGF_SaveFileData
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set CGF_SaveFileData.CGF_SaveFileData
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Event SaveActorData.SaveGameREF
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set CGF_SaveFileData.self
+    Node: GameLoaded_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Game File Loaded.Delegate
+      Pin: then (exec) Dir=Out
+        -> Request Load
+Target is BP CGF Game Instance.execute
+      Pin: SaveGameRef (object) Dir=Out
+    Node: Bind Event to Game File Loaded (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Toggle Light
+Target is BP CGF Ceiling Light.execute
+      Pin: self (object) Dir=In
+        -> Get BP CGF Game Instance.BP CGF Game Instance
+      Pin: Delegate (delegate) Dir=In
+        -> GameLoaded_Event
+Custom Event.OutputDelegate
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Request Load
+Target is BP CGF Game Instance.self
+      Pin: self (object) Dir=In
+    Node: Get BP CGF Game Instance (K2Node_VariableGet)
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Bind Event to Game File Loaded.self
+      Pin: self (object) Dir=In
+    Node: Set On? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ActorSaveData.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: On? (bool) Dir=In
+        -> Break F CGF Actor Data.IsOn?_3_F6FCF8D04DDDBB87933A868D56963628
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PointLight1 (K2Node_VariableGet)
+      Pin: PointLight1 (object) Dir=Out
+        -> Set Intensity
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set On?.then
+      Pin: then (exec) Dir=Out
+        -> Set Brightness.execute
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: NewIntensity (real) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get On?.On?
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Intensity
+Target is Light Component.NewIntensity
+        -> Set Brightness.Brightness
+    Node: Set Brightness (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Intensity
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+      Pin: Brightness (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event DoInteraction
+From BPI CGF Interact (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Interaction Data.execute
+      Pin: InteractionData (struct) Dir=Out
+        -> Set Interaction Data.Interaction Data
+      Pin: HitData (struct) Dir=Out
+    Node: Set Interaction Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event DoInteraction
+From BPI CGF Interact.then
+      Pin: then (exec) Dir=Out
+        -> Set On?.execute
+      Pin: Interaction Data (struct) Dir=In
+        -> Event DoInteraction
+From BPI CGF Interact.InteractionData
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get On? (K2Node_VariableGet)
+      Pin: On? (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get On?.On?
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set On?.On?
+    Node: Set On? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Interaction Data.then
+        -> ToggleLight
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+      Pin: On? (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get On? (K2Node_VariableGet)
+      Pin: On? (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: ToggleLight
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set On?.execute
+    Node: Toggle Light
+Target is BP CGF Ceiling Light (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to Game File Loaded.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Light Color
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: NewIntensity (real) Dir=In
+        -> Get Brightness.Brightness
+    Node: Get PointLight1 (K2Node_VariableGet)
+      Pin: PointLight1 (object) Dir=Out
+        -> Set Intensity
+Target is Light Component.self
+        -> Reroute Node.InputPin
+        -> Set Light Color
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Get Brightness (K2Node_VariableGet)
+      Pin: Brightness (real) Dir=Out
+        -> Set Intensity
+Target is Light Component.NewIntensity
+      Pin: self (object) Dir=In
+    Node: Set Light Color
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Intensity
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Source Radius
+Target is Point Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: NewLightColor (struct) Dir=In
+        -> Get Color.Color
+      Pin: bSRGB (bool) Dir=In
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> Set Light Color
+Target is Light Component.NewLightColor
+      Pin: self (object) Dir=In
+    Node: Set Source Radius
+Target is Point Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Light Color
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bNewValue (real) Dir=In
+        -> Get Source Radius.Source Radius
+    Node: Get Source Radius (K2Node_VariableGet)
+      Pin: Source Radius (real) Dir=Out
+        -> Set Source Radius
+Target is Point Light Component.bNewValue
+      Pin: self (object) Dir=In
+    Node: Set StaticMaterials (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Static Material.then
+      Pin: then (exec) Dir=Out
+      Pin: StaticMaterials (struct) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get WidgetLocationSetter.WidgetLocationSetter
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (struct) Dir=Out
+        -> Set StaticMaterials.StaticMaterials
+      Pin: [0] (struct) Dir=In
+        -> Set members in Static Material.StructOut
+    Node: Set members in Static Material (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Rotation
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set StaticMaterials.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get MeshMaterial.MeshMaterial
+      Pin: StructOut (struct) Dir=Out
+        -> Make Array.[0]
+      Pin: MaterialInterface (object) Dir=In
+      Pin: MaterialSlotName (name) Dir=In
+    Node: Get MeshMaterial (K2Node_VariableGet)
+      Pin: MeshMaterial (struct) Dir=Out
+        -> Set members in Static Material.StructRef
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set WidgetsRelative Transform Location.then
+      Pin: then (exec) Dir=Out
+        -> Set members in Static Material.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: NewRotation (struct) Dir=In
+        -> Get RelativeRotation.RelativeRotation
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get WidgetLocationSetter (K2Node_VariableGet)
+      Pin: WidgetLocationSetter (object) Dir=Out
+        -> Set StaticMaterials.self
+      Pin: self (object) Dir=In
+        -> Get BP_CGF_InteractionComp.BP_CGF_InteractionComp
+    Node: Get BP_CGF_InteractionComp (K2Node_VariableGet)
+      Pin: BP_CGF_InteractionComp (object) Dir=Out
+        -> Get WidgetLocationSetter.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set Source Radius
+Target is Point Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+      Pin: BP_CGF_InteractionComp (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set WidgetsRelative Transform Location.execute
+      Pin: else (exec) Dir=Out
+      Pin: WidgetInteractionTargetLocationArrow (object) Dir=Out
+        -> Get RelativeLocation.self
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set WidgetsRelative Transform Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: WidgetsRelative Transform Location (struct) Dir=In
+        -> Get RelativeLocation.RelativeLocation
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: else (exec) Dir=Out
+      Pin: WidgetCompOnActor (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get.BP_CGF_InteractionComp
+    Node: Get RelativeLocation (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+        -> Set WidgetsRelative Transform Location.WidgetsRelative Transform Location
+      Pin: self (object) Dir=In
+        -> Get.WidgetInteractionTargetLocationArrow
+    Node: Get RelativeRotation (K2Node_VariableGet)
+      Pin: RelativeRotation (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.WidgetCompOnActor
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Source Radius
+Target is Point Light Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.BP_CGF_InteractionComp
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set WidgetsRelative Transform Location.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.WidgetInteractionTargetLocationArrow
+      Pin: OutputPin (object) Dir=Out
+        -> Get RelativeRotation.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get.WidgetInteractionTargetLocationArrow
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self

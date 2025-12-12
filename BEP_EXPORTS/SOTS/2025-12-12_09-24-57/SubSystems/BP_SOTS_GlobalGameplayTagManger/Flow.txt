@@ -1,0 +1,383 @@
+Blueprint: BP_SOTS_GlobalGameplayTagManger (/Game/SOTS/SubSystems/BP_SOTS_GlobalGameplayTagManger.BP_SOTS_GlobalGameplayTagManger)
+  Graph: EventGraph
+    Node: Event OnInit (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event OnTick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaTime (real) Dir=Out
+    Node: Event OnShutdown (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: ApplyTagWithDuration
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger.execute
+      Pin: Tag (struct) Dir=Out
+        -> Add Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger.Tag
+        -> Reroute Node.InputPin
+      Pin: AllowDuplicate? (bool) Dir=Out
+        -> Add Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger.AllowDuplicate?
+      Pin: Duration (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Add Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ApplyTagWithDuration
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: Tag (struct) Dir=In
+        -> ApplyTagWithDuration
+Custom Event.Tag
+      Pin: AllowDuplicate? (bool) Dir=In
+        -> ApplyTagWithDuration
+Custom Event.AllowDuplicate?
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger.then
+      Pin: then (exec) Dir=Out
+        -> Remove Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LatentInfo (struct) Dir=In
+    Node: Remove Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Tag (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: RemovalSuccess (bool) Dir=Out
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Delay.Duration
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> ApplyTagWithDuration
+Custom Event.Duration
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Remove Gameplay Tag
+Target is BP SOTS Global Gameplay Tag Manger.Tag
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> ApplyTagWithDuration
+Custom Event.Tag
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: GetGlobalGameplayTagContainer
+    Node: GetGlobalGameplayTagContainer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Return Node.GlobalGameplayTagContainer
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetGlobalGameplayTagContainer.then
+      Pin: GlobalGameplayTagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+  Graph: AppendTagContainer
+    Node: AppendTagContainer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Append Gameplay Tag Containers.execute
+      Pin: NewParam (struct) Dir=Out
+        -> Append Gameplay Tag Containers.InTagContainer
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Append Gameplay Tag Containers.InOutTagContainer
+      Pin: self (object) Dir=In
+    Node: Append Gameplay Tag Containers (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AppendTagContainer.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InOutTagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: InTagContainer (struct) Dir=In
+        -> AppendTagContainer.NewParam
+  Graph: AddGameplayTag
+    Node: AddGameplayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Tag (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: AllowDuplicate? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Add Gameplay Tag.TagContainer
+        -> Call On Global Tag Container Changed.FullGlobalGameplayTagContainer
+      Pin: self (object) Dir=In
+    Node: Add Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Call On Global Tag Container Changed.execute
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: Tag (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Call On Global Tag Container Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Add Gameplay Tag.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: FullGlobalGameplayTagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: SingleTagChanged (struct) Dir=In
+        -> Get Tag.Tag
+      Pin: Add/Remove? (bool) Dir=In
+    Node: Get Tag (K2Node_VariableGet)
+      Pin: Tag (struct) Dir=Out
+        -> Call On Global Tag Container Changed.SingleTagChanged
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> AddGameplayTag.then
+      Pin: Condition (bool) Dir=In
+        -> AddGameplayTag.AllowDuplicate?
+      Pin: then (exec) Dir=Out
+        -> Add Gameplay Tag.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: Tag (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> AddGameplayTag.Tag
+      Pin: OutputPin (struct) Dir=Out
+        -> Has Tag.Tag
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Has Tag.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: else (exec) Dir=Out
+        -> Add Gameplay Tag.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Add Gameplay Tag.Tag
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Has Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+        -> Append.ReturnValue
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Get Tag (K2Node_VariableGet)
+      Pin: Tag (struct) Dir=Out
+        -> Get Tag Name.GameplayTag
+    Node: Get Tag Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+        -> Get Tag.Tag
+      Pin: ReturnValue (name) Dir=Out
+        -> To String (Name).InName
+    Node: To String (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+        -> Get Tag Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> To String (Name).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Error Handling.In
+      Pin: C (string) Dir=In
+  Graph: RemoveGameplayTag
+    Node: RemoveGameplayTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Remove Gameplay Tag.execute
+      Pin: Tag (struct) Dir=Out
+        -> Remove Gameplay Tag.Tag
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Remove Gameplay Tag.TagContainer
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Remove Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> RemoveGameplayTag.then
+      Pin: then (exec) Dir=Out
+        -> Call On Global Tag Container Changed.execute
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: Tag (struct) Dir=In
+        -> RemoveGameplayTag.Tag
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Call On Global Tag Container Changed.then
+      Pin: RemovalSuccess (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: GlobalGameplayTagContainer (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: OutputPin (struct) Dir=Out
+        -> Return Node.GlobalGameplayTagContainer
+        -> Call On Global Tag Container Changed.FullGlobalGameplayTagContainer
+    Node: Call On Global Tag Container Changed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Remove Gameplay Tag.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: FullGlobalGameplayTagContainer (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SingleTagChanged (struct) Dir=In
+        -> Get Tag.Tag
+      Pin: Add/Remove? (bool) Dir=In
+    Node: Get Tag (K2Node_VariableGet)
+      Pin: Tag (struct) Dir=Out
+        -> Call On Global Tag Container Changed.SingleTagChanged
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Return Node.RemovalSuccess
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Remove Gameplay Tag.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: HasTag
+    Node: HasTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Tag (struct) Dir=Out
+        -> Has Tag.Tag
+      Pin: bExactMatch (bool) Dir=Out
+        -> Has Tag.bExactMatch
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Has Tag.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: Tag (struct) Dir=In
+        -> HasTag.Tag
+      Pin: bExactMatch (bool) Dir=In
+        -> HasTag.bExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.HasTag?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasTag.then
+      Pin: HasTag? (bool) Dir=In
+        -> Has Tag.ReturnValue
+  Graph: HasAnyTag
+    Node: HasAnyTag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: OtherContainer (struct) Dir=Out
+        -> Has Any Tags.OtherContainer
+      Pin: bExactMatch (bool) Dir=Out
+        -> Has Any Tags.bExactMatch
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Has Any Tags.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has Any Tags (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: OtherContainer (struct) Dir=In
+        -> HasAnyTag.OtherContainer
+      Pin: bExactMatch (bool) Dir=In
+        -> HasAnyTag.bExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.HasAnyTags?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasAnyTag.then
+      Pin: HasAnyTags? (bool) Dir=In
+        -> Has Any Tags.ReturnValue
+  Graph: HasAllTags
+    Node: HasAllTags (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: OtherContainer (struct) Dir=Out
+        -> Has All Tags.OtherContainer
+      Pin: bExactMatch (bool) Dir=Out
+        -> Has All Tags.bExactMatch
+    Node: Get GlobalGameplayTagContainer (K2Node_VariableGet)
+      Pin: GlobalGameplayTagContainer (struct) Dir=Out
+        -> Has All Tags.TagContainer
+      Pin: self (object) Dir=In
+    Node: Has All Tags (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Get GlobalGameplayTagContainer.GlobalGameplayTagContainer
+      Pin: OtherContainer (struct) Dir=In
+        -> HasAllTags.OtherContainer
+      Pin: bExactMatch (bool) Dir=In
+        -> HasAllTags.bExactMatch
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.HasAllTags?
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasAllTags.then
+      Pin: HasAllTags? (bool) Dir=In
+        -> Has All Tags.ReturnValue
+  Graph: OnGlobalTagContainerChanged
+    Node: OnGlobalTagContainerChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: FullGlobalGameplayTagContainer (struct) Dir=Out
+      Pin: SingleTagChanged (struct) Dir=Out
+      Pin: Add/Remove? (bool) Dir=Out

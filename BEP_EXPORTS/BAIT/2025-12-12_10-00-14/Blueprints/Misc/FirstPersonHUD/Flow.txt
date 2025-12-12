@@ -1,0 +1,94 @@
+Blueprint: FirstPersonHUD (/Game/BossAIToolkit/Blueprints/Misc/FirstPersonHUD.FirstPersonHUD)
+  Graph: EventGraph
+    Node: Event Receive Draw HUD (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SizeX (int) Dir=Out
+        -> int / int.A
+      Pin: SizeY (int) Dir=Out
+        -> int / int.A
+    Node: Draw Texture
+Target is HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Texture (object) Dir=In
+      Pin: ScreenX (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ScreenY (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ScreenW (real) Dir=In
+      Pin: ScreenH (real) Dir=In
+      Pin: TextureU (real) Dir=In
+      Pin: TextureV (real) Dir=In
+      Pin: TextureUWidth (real) Dir=In
+      Pin: TextureVHeight (real) Dir=In
+      Pin: TintColor (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: BlendMode (byte) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: bScalePosition (bool) Dir=In
+      Pin: Rotation (real) Dir=In
+      Pin: RotPivot (struct) Dir=In
+    Node: int / int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Event Receive Draw HUD.SizeX
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: int / int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Event Receive Draw HUD.SizeY
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> int / int.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Draw Texture
+Target is HUD.ScreenX
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Draw Texture
+Target is HUD.ScreenY
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Draw Texture
+Target is HUD.TintColor
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+    Node: Draw crosshair in center of screen (EdGraphNode_Comment)
+    Node: Is Head Mounted Display Enabled (K2Node_CallFunction)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Draw HUD.then
+      Pin: Condition (bool) Dir=In
+        -> Is Head Mounted Display Enabled.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Draw Texture
+Target is HUD.execute
+    Node: int + int (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> int / int.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: Don't draw if using VR headset (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,117 @@
+Blueprint: BP_Spinning_Logo_Dispatch (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Spinning_Logo_Dispatch.BP_Spinning_Logo_Dispatch)
+  Graph: EventGraph
+    Node: Get Logo (K2Node_VariableGet)
+      Pin: Logo (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Material
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Rotation.Play
+      Pin: self (object) Dir=In
+        -> Get Logo.Logo
+      Pin: ElementIndex (int) Dir=In
+      Pin: Material (object) Dir=In
+    Node: Set Material
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Rotation.Stop
+      Pin: self (object) Dir=In
+        -> Get Logo.Logo
+      Pin: ElementIndex (int) Dir=In
+      Pin: Material (object) Dir=In
+    Node: Rotation (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Set Material
+Target is Primitive Component.then
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+        -> Set Material
+Target is Primitive Component.then
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Yaw value (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Rotation.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Logo.Logo
+      Pin: NewRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> Rotation.Yaw value
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+    Node: Get Logo (K2Node_VariableGet)
+      Pin: Logo (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get Button Blueprint (K2Node_VariableGet)
+      Pin: Button Blueprint (object) Dir=Out
+        -> Bind Event to Button Toggled.self
+      Pin: self (object) Dir=In
+    Node: Bind Event to Button Toggled (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Button Blueprint.Button Blueprint
+      Pin: Delegate (delegate) Dir=In
+        -> Toggle spinning
+Custom Event.OutputDelegate
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Button Toggled.execute
+    Node: Toggle spinning
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Button Toggled.Delegate
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: On/off (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Toggle spinning
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Toggle spinning
+Custom Event.On/off
+      Pin: then (exec) Dir=Out
+        -> Set Material
+Target is Primitive Component.execute
+      Pin: else (exec) Dir=Out
+        -> Set Material
+Target is Primitive Component.execute
+    Node: Bind Event  (EdGraphNode_Comment)
+    Node: Toggle the spinning animation (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

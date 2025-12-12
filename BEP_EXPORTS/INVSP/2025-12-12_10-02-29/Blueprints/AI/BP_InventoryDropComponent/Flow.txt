@@ -1,0 +1,487 @@
+Blueprint: BP_InventoryDropComponent (/Game/InventorySystemPro/Blueprints/AI/BP_InventoryDropComponent.BP_InventoryDropComponent)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Begin Play.execute
+    Node: OnDropItems_ServerReplicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Drop Items Server
+Target is BP Inventory Drop Component.execute
+    Node: Drop items in drop inventory (EdGraphNode_Comment)
+    Node: Setup Items in Drop Inventory (EdGraphNode_Comment)
+    Node: OnCreateContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Create Contained Items Server
+Target is BP Inventory Drop Component.execute
+    Node: OnRandomizeContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Randomize Contained Items Server
+Target is BP Inventory Drop Component.execute
+    Node: Fills the drop inventory from the raw data in ContainedItems (EdGraphNode_Comment)
+    Node: Generates an array full of raw item data (EdGraphNode_Comment)
+    Node: Parent: Begin Play (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Setup Component
+Target is BP Inventory Drop Component.execute
+      Pin: self (object) Dir=In
+    Node: Setup Component
+Target is BP Inventory Drop Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> On Usage Error Check
+Target is BP Inventory Drop Component.execute
+      Pin: self (object) Dir=In
+    Node: Create Contained Items Server
+Target is BP Inventory Drop Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCreateContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Randomize Contained Items Server
+Target is BP Inventory Drop Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnRandomizeContainedItems_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Drop Items Server
+Target is BP Inventory Drop Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnDropItems_ServerReplicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: OnUsageErrorCheck
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Usage Error Check (EdGraphNode_Comment)
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+      Pin: C (string) Dir=In
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: CastFailed (exec) Dir=Out
+        -> Log Inventory System Error.execute
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Usage Error Check
+Target is BP Inventory Drop Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Setup Component
+Target is BP Inventory Drop Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Server (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnUsageErrorCheck
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Is Server.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: else (exec) Dir=Out
+  Graph: CreateContainedItems_Server
+    Node: CreateContainedItems_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Get ContainedItems (K2Node_VariableGet)
+      Pin: ContainedItems (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: NewItem (object) Dir=In
+        -> Break FItem with Amount.Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9
+      Pin: ReturnValue (int) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> CreateContainedItems_Server.then
+      Pin: Array (struct) Dir=In
+        -> Get ContainedItems.ContainedItems
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FItem with Amount.FItemWithAmount
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Create contained items (EdGraphNode_Comment)
+    Node: Break FItem with Amount (K2Node_BreakStruct)
+      Pin: FItemWithAmount (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=Out
+        -> Add.NewItem
+      Pin: Amount_5_539F23B243319119FCB1D7999F8E9388 (int) Dir=Out
+        -> Add.NewItem
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: NewItem (int) Dir=In
+        -> Break FItem with Amount.Amount_5_539F23B243319119FCB1D7999F8E9388
+      Pin: ReturnValue (int) Dir=Out
+  Graph: RandomizeContainedItems_Server
+    Node: RandomizeContainedItems_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+    Node: Get ItemDrops (K2Node_VariableGet)
+      Pin: ItemDrops (struct) Dir=Out
+        -> For Each Loop with Break.Array
+      Pin: self (object) Dir=In
+        -> Get RandomItemsLootTable.RandomItemsLootTable
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> RandomizeContainedItems_Server.then
+      Pin: Array (struct) Dir=In
+        -> Get ItemDrops.ItemDrops
+      Pin: Break (exec) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break FRandom Item.FRandomItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break FRandom Item (K2Node_BreakStruct)
+      Pin: FRandomItem (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: Item_16_5B7B9A344657783AAD32EEAD6E573BF3 (object) Dir=Out
+        -> Add.NewItem
+      Pin: MinAmount_10_05CB7F6F46AB38D8424770A7A8D856EC (int) Dir=Out
+        -> Random Integer in Range.Min
+      Pin: MaxAmount_11_8CED635A4E084D9C424767A12E127F49 (int) Dir=Out
+        -> Random Integer in Range.Max
+      Pin: ChanceToSpawn_15_DB25BF1E484BFA3EDBE439ADAFE803EC (real) Dir=Out
+        -> float >= float.A
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: NewItem (object) Dir=In
+        -> Break FRandom Item.Item_16_5B7B9A344657783AAD32EEAD6E573BF3
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: NewItem (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Random Float in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float >= float.B
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break FRandom Item.ChanceToSpawn_15_DB25BF1E484BFA3EDBE439ADAFE803EC
+      Pin: B (real) Dir=In
+        -> Random Float in Range.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+        -> Break FRandom Item.MinAmount_10_05CB7F6F46AB38D8424770A7A8D856EC
+      Pin: Max (int) Dir=In
+        -> Break FRandom Item.MaxAmount_11_8CED635A4E084D9C424767A12E127F49
+      Pin: ReturnValue (int) Dir=Out
+        -> Add.NewItem
+        -> integer > integer.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get RandomItemsLootTable (K2Node_VariableGet)
+      Pin: RandomItemsLootTable (object) Dir=Out
+        -> Get ItemDrops.self
+      Pin: self (object) Dir=In
+    Node: Randomize contained items (EdGraphNode_Comment)
+  Graph: DropItems_Server
+    Node: DropItems_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Drop Item Server
+Target is BP Inventory Drop Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Item (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Amount (int) Dir=In
+        -> GET.Output
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> DropItems_Server.then
+      Pin: Array (object) Dir=In
+        -> Get ItemsToAdd.ItemsToAdd
+      Pin: LoopBody (exec) Dir=Out
+        -> Drop Item Server
+Target is BP Inventory Drop Component.execute
+      Pin: Array Element (object) Dir=Out
+        -> Drop Item Server
+Target is BP Inventory Drop Component.Item
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: Completed (exec) Dir=Out
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (int) Dir=In
+        -> Get ItemsToAddAmount.ItemsToAddAmount
+      Pin: Dimension 1 (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output (int) Dir=Out
+        -> Drop Item Server
+Target is BP Inventory Drop Component.Amount
+    Node: Get ItemsToAdd (K2Node_VariableGet)
+      Pin: ItemsToAdd (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Get ItemsToAddAmount (K2Node_VariableGet)
+      Pin: ItemsToAddAmount (int) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Drop items (EdGraphNode_Comment)
+  Graph: DropItem_Server
+    Node: DropItem_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: Item (object) Dir=Out
+        -> Setup Item Pickup Server
+Target is BP Item Pickup.Item
+        -> Get MaxDurability.self
+      Pin: Amount (int) Dir=Out
+        -> Setup Item Pickup Server
+Target is BP Item Pickup.Amount
+    Node: SpawnActor BP Item Pickup (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Setup Item Pickup Server
+Target is BP Item Pickup.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Setup Item Pickup Server
+Target is BP Item Pickup.self
+        -> Get SecondsToDestroy.self
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: bDropped (bool) Dir=In
+      Pin: EnableItemGlow? (bool) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Random Drop Location.DropLocation
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor BP Item Pickup.SpawnTransform
+    Node: Spawn item pickup on ground (EdGraphNode_Comment)
+    Node: Setup Item Pickup Server
+Target is BP Item Pickup (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP Item Pickup.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor BP Item Pickup.ReturnValue
+      Pin: Item (object) Dir=In
+        -> DropItem_Server.Item
+      Pin: Amount (int) Dir=In
+        -> DropItem_Server.Amount
+      Pin: bDropped (bool) Dir=In
+      Pin: SecondsToDestroy (real) Dir=In
+        -> Get SecondsToDestroy.SecondsToDestroy
+      Pin: Durability (int) Dir=In
+        -> Get MaxDurability.MaxDurability
+      Pin: GenericCounter (int) Dir=In
+      Pin: CreationTimestamp (struct) Dir=In
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> DropItem_Server.then
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP Item Pickup.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Get Random Drop Location.Character
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get SecondsToDestroy (K2Node_VariableGet)
+      Pin: SecondsToDestroy (real) Dir=Out
+        -> Setup Item Pickup Server
+Target is BP Item Pickup.SecondsToDestroy
+      Pin: self (object) Dir=In
+        -> SpawnActor BP Item Pickup.ReturnValue
+    Node: Get Random Drop Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Character (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: __WorldContext (object) Dir=In
+      Pin: DropLocation (struct) Dir=Out
+        -> Make Transform.Location
+    Node: Get MaxDurability (K2Node_VariableGet)
+      Pin: MaxDurability (int) Dir=Out
+        -> Setup Item Pickup Server
+Target is BP Item Pickup.Durability
+      Pin: self (object) Dir=In
+        -> DropItem_Server.Item
+  Graph: SetupComponent
+    Node: SetupComponent (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch Has Authority.Execute
+    Node: On Create Contained Items Server
+Target is BP Inventory Drop Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get bRandomizeItems (K2Node_VariableGet)
+      Pin: bRandomizeItems (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: Condition (bool) Dir=In
+        -> Get bRandomizeItems.bRandomizeItems
+      Pin: then (exec) Dir=Out
+        -> On Randomize Contained Items Server
+Target is BP Inventory Drop Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: else (exec) Dir=Out
+        -> On Create Contained Items Server
+Target is BP Inventory Drop Component
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Randomize Contained Items Server
+Target is BP Inventory Drop Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> SetupComponent.then
+      Pin: Authority (exec) Dir=Out
+        -> Branch.execute
+      Pin: Remote (exec) Dir=Out
+    Node: Setup (EdGraphNode_Comment)

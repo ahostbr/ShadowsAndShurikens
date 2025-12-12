@@ -1,0 +1,404 @@
+Blueprint: BP_SAS_InventoryScroll (/Game/SOTS/Blueprints/Inventory/BP_SAS_InventoryScroll.BP_SAS_InventoryScroll)
+  Graph: EventGraph
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Get Hit Result Under Cursor for Objects
+Target is Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PC.PlayerController
+      Pin: ObjectTypes (byte) Dir=In
+        -> Make Array.Array
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: HitResult (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (byte) Dir=Out
+        -> Get Hit Result Under Cursor for Objects
+Target is Player Controller.ObjectTypes
+      Pin: [0] (byte) Dir=In
+      Pin: [1] (byte) Dir=In
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Get Hit Result Under Cursor for Objects
+Target is Player Controller.HitResult
+      Pin: bBlockingHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+        -> Inverse Transform Location.Location
+        -> Draw Debug Line.LineStart
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+        -> Get World Transform
+Target is Scene Component.self
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Get ItemMesh (K2Node_VariableGet)
+      Pin: ItemMesh (object) Dir=Out
+        -> Set World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Gate.Exit
+      Pin: Condition (bool) Dir=In
+        -> Break Hit Result.bBlockingHit
+      Pin: then (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Get Hit Result Under Cursor for Objects
+Target is Player Controller.self
+    Node: Event DoInteraction
+From BPI CGF Interact (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Gate.Open
+      Pin: InteractionData (struct) Dir=Out
+      Pin: HitData (struct) Dir=Out
+    Node: Set World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemMesh.ItemMesh
+      Pin: NewLocation (struct) Dir=In
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get ItemMesh (K2Node_VariableGet)
+      Pin: ItemMesh (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Draw Debug Line.execute
+      Pin: self (object) Dir=In
+        -> Get ItemMesh.ItemMesh
+      Pin: NewLocation (struct) Dir=In
+        -> Inverse Transform Location.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get World Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Break Hit Result.HitComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Inverse Transform Location.T
+    Node: Inverse Transform Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: T (struct) Dir=In
+        -> Get World Transform
+Target is Scene Component.ReturnValue
+      Pin: Location (struct) Dir=In
+        -> Break Hit Result.ImpactPoint
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation
+        -> Find Look at Rotation.Start
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Inverse Transform Location.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Target
+        -> Draw Debug Line.LineEnd
+    Node: Draw Debug Line (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Location
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LineStart (struct) Dir=In
+        -> Break Hit Result.ImpactPoint
+      Pin: LineEnd (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: LineColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Thickness (real) Dir=In
+      Pin: DepthPriority (byte) Dir=In
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Get CineCamera (K2Node_VariableGet)
+      Pin: CineCamera (object) Dir=Out
+        -> Set.self
+      Pin: self (object) Dir=In
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: FocusSettings (struct) Dir=In
+      Pin: FocusSettings_FocusMethod (byte) Dir=In
+      Pin: FocusSettings_ManualFocusDistance (real) Dir=In
+      Pin: FocusSettings_TrackingFocusSettings (struct) Dir=In
+        -> Make Camera Tracking Focus Settings.CameraTrackingFocusSettings
+      Pin: FocusSettings_bSmoothFocusChanges (bool) Dir=In
+      Pin: FocusSettings_FocusSmoothingInterpSpeed (real) Dir=In
+      Pin: FocusSettings_FocusOffset (real) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CineCamera.CineCamera
+    Node: Make Camera Tracking Focus Settings (K2Node_MakeStruct)
+      Pin: CameraTrackingFocusSettings (struct) Dir=Out
+        -> Set.FocusSettings_TrackingFocusSettings
+      Pin: ActorToTrack (softobject) Dir=In
+        -> Make Soft Reference.Output
+      Pin: RelativeOffset (struct) Dir=In
+      Pin: bDrawDebugTrackingFocusPoint (bool) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Make Soft Reference.Input
+    Node: Make Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (object) Dir=In
+        -> Self-Reference.self
+      Pin: Output (softobject) Dir=Out
+        -> Make Camera Tracking Focus Settings.ActorToTrack
+    Node: Get Bamboo (K2Node_VariableGet)
+      Pin: Bamboo (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Gate (K2Node_MacroInstance)
+      Pin: Enter (exec) Dir=In
+      Pin: Open (exec) Dir=In
+        -> Event DoInteraction
+From BPI CGF Interact.then
+      Pin: Close (exec) Dir=In
+      Pin: Toggle (exec) Dir=In
+      Pin: bStartClosed (bool) Dir=In
+      Pin: Exit (exec) Dir=Out
+        -> Branch.execute
+    Node: Cast To BP_SOTS_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Player Character.ReturnValue
+      Pin: AsBP SOTS Player (object) Dir=Out
+        -> Get BP_InventoryCharacterComponent.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Cast To BP_SOTS_Player.then
+      Pin: Array (struct) Dir=In
+        -> Get ItemSlots.ItemSlots
+      Pin: Break (exec) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.execute
+      Pin: Array Element (struct) Dir=Out
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Print String.execute
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Get StaticMesh.self
+        -> Get GroundRotation.self
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get StaticMesh (K2Node_VariableGet)
+      Pin: StaticMesh (object) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.NewMesh
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Get ItemMesh (K2Node_VariableGet)
+      Pin: ItemMesh (object) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.self
+        -> Set Relative Transform
+Target is Scene Component.self
+        -> Get RelativeLocation.self
+      Pin: self (object) Dir=In
+    Node: Set Static Mesh
+Target is Static Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get ItemMesh.ItemMesh
+      Pin: NewMesh (object) Dir=In
+        -> Get StaticMesh.StaticMesh
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To BP_SOTS_Player.Object
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+      Pin: then (exec) Dir=Out
+        -> Get All Widgets Of Class.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get BP_InventoryCharacterComponent (K2Node_VariableGet)
+      Pin: BP_InventoryCharacterComponent (object) Dir=Out
+        -> Get ItemSlots.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_SOTS_Player.AsBP SOTS Player
+    Node: Get ItemSlots (K2Node_VariableGet)
+      Pin: ItemSlots (struct) Dir=Out
+        -> For Each Loop with Break.Array
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryCharacterComponent.BP_InventoryCharacterComponent
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Get GroundRotation (K2Node_VariableGet)
+      Pin: GroundRotation (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Set Relative Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Static Mesh
+Target is Static Mesh Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ItemMesh.ItemMesh
+      Pin: NewTransform (struct) Dir=In
+      Pin: NewTransform_Location (struct) Dir=In
+        -> Get RelativeLocation.RelativeLocation
+      Pin: NewTransform_Rotation (struct) Dir=In
+      Pin: NewTransform_Scale (struct) Dir=In
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get RelativeLocation (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+        -> Set Relative Transform
+Target is Scene Component.NewTransform_Location
+      Pin: self (object) Dir=In
+        -> Get ItemMesh.ItemMesh
+    Node: Get All Widgets Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set NewVar.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: FoundWidgets (object) Dir=Out
+        -> GET.Array
+      Pin: WidgetClass (class) Dir=In
+      Pin: TopLevelOnly (bool) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get All Widgets Of Class.FoundWidgets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set NewVar.NewVar
+    Node: Set NewVar (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get All Widgets Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Inventory Widget Hover.execute
+      Pin: NewVar (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+        -> Bind Event to On Inventory Widget Hover.self
+      Pin: self (object) Dir=In
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> OnInventoryWidgetHover_Event
+Custom Event.Item
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> OnInventoryWidgetHover_Event
+Custom Event.then
+      Pin: InputObject (object) Dir=In
+        -> OnInventoryWidgetHover_Event
+Custom Event.Item
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Static Mesh
+Target is Static Mesh Component.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: OnInventoryWidgetHover_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Inventory Widget Hover.Delegate
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Item (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get ItemSlot.self
+    Node: Bind Event to On Inventory Widget Hover (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set NewVar.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set NewVar.Output_Get
+      Pin: Delegate (delegate) Dir=In
+        -> OnInventoryWidgetHover_Event
+Custom Event.OutputDelegate
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

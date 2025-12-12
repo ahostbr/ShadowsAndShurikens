@@ -1,0 +1,1417 @@
+Blueprint: BTT_FlyTowardsBlackboard (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Tasks/BTT_FlyTowardsBlackboard.BTT_FlyTowardsBlackboard)
+  Graph: EventGraph
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Finish Execute
+Target is BTTask Blueprint Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceLoc.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bSuccess (bool) Dir=In
+    Node: Event Receive Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OwnerActor (object) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Event Receive Execute (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Set TargetRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetActor.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set AcceptableRadius.execute
+      Pin: TargetRotation (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Execute.then
+      Pin: then (exec) Dir=Out
+        -> Set MaxFlyHeight.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Object (object) Dir=In
+        -> Event Receive Execute.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: ReturnValue (object) Dir=Out
+        -> Set PawnRef.PawnRef
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Target Vector.RetVector
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set TargetRotation.TargetRotation
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Set PawnRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set MaxFlyHeight.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PawnRef (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get BlackboardKey (K2Node_VariableGet)
+      Pin: BlackboardKey (struct) Dir=Out
+        -> Get Blackboard Value.Key
+      Pin: self (object) Dir=In
+    Node: Set TargetLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: TargetLocation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Is at Location.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set IsAvoiding.execute
+      Pin: else (exec) Dir=Out
+        -> Check Avoidance
+Target is BTT Fly Towards Blackboard.execute
+    Node: Is at Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Target Vector.RetVector
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To BP_AIC.CastFailed
+      Pin: OutputPin (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Set PawnRef.Output_Get
+      Pin: OutputPin (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Get Blackboard Value (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get BlackboardKey.BlackboardKey
+      Pin: ActorValue (object) Dir=Out
+        -> Is Valid.Object
+        -> Reroute Node.InputPin
+      Pin: VectorValue (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Blackboard Value.ActorValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set PawnRef.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set TargetIsActor.execute
+      Pin: else (exec) Dir=Out
+        -> Set TargetLocation.execute
+    Node: Set TargetIsActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set TargetActor.execute
+      Pin: TargetIsActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TargetActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetIsActor.then
+      Pin: then (exec) Dir=Out
+        -> Set TargetRotation.execute
+      Pin: TargetActor (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Blackboard Value.ActorValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set TargetActor.TargetActor
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Blackboard Value.VectorValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Set TargetLocation.TargetLocation
+    Node: Get Target Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RetVector (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Set AcceptableRadius (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetRotation.then
+      Pin: then (exec) Dir=Out
+      Pin: AcceptableRadius (real) Dir=In
+        -> Get Blackboard Value as Float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AcceptableRadiusKey (K2Node_VariableGet)
+      Pin: AcceptableRadiusKey (struct) Dir=Out
+        -> Get Blackboard Value as Float.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get AcceptableRadiusKey.AcceptableRadiusKey
+      Pin: ReturnValue (real) Dir=Out
+        -> Set AcceptableRadius.AcceptableRadius
+    Node: If the given Blackboard key is an Actor or a Vector (EdGraphNode_Comment)
+    Node: Set the direction to our target location (EdGraphNode_Comment)
+    Node: Get Target Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RetVector (struct) Dir=Out
+        -> Is at Location.Location
+    Node: Get TargetRotation (K2Node_VariableGet)
+      Pin: TargetRotation (struct) Dir=Out
+        -> Get Forward Vector.InRot
+      Pin: self (object) Dir=In
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get TargetRotation.TargetRotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Movement Input
+Target is Pawn.WorldDirection
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Add Movement Input
+Target is Pawn.self
+      Pin: self (object) Dir=In
+    Node: Add Movement Input
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set TargetRotation.execute
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: WorldDirection (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: ScaleValue (real) Dir=In
+      Pin: bForce (bool) Dir=In
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Target Vector.RetVector
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set TargetRotation.TargetRotation
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Set TargetRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Movement Input
+Target is Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceRot.execute
+      Pin: TargetRotation (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Set AvoidanceRot.AvoidanceRot
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Target Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RetVector (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Check Avoidance
+Target is BTT Fly Towards Blackboard (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Check Avoidance
+Target is BTT Fly Towards Blackboard.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsAvoiding.IsAvoiding
+      Pin: then (exec) Dir=Out
+        -> Add Movement Input
+Target is Pawn.execute
+      Pin: else (exec) Dir=Out
+        -> Add Movement Input
+Target is Pawn.execute
+    Node: Get IsAvoiding (K2Node_VariableGet)
+      Pin: IsAvoiding (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get AvoidanceRot.AvoidanceRot
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Movement Input
+Target is Pawn.WorldDirection
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Add Movement Input
+Target is Pawn.self
+      Pin: self (object) Dir=In
+    Node: Add Movement Input
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceRot.execute
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: WorldDirection (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: ScaleValue (real) Dir=In
+      Pin: bForce (bool) Dir=In
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get AvoidanceLoc.AvoidanceLoc
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set AvoidanceRot.AvoidanceRot
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceRot (K2Node_VariableGet)
+      Pin: AvoidanceRot (struct) Dir=Out
+        -> Get Forward Vector.InRot
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceLoc (K2Node_VariableGet)
+      Pin: AvoidanceLoc (struct) Dir=Out
+        -> Find Look at Rotation.Target
+      Pin: self (object) Dir=In
+    Node: Set AvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Movement Input
+Target is Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: AvoidanceRot (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceRot.then
+      Pin: Condition (bool) Dir=In
+        -> Is at Location.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set IsAvoiding.execute
+      Pin: else (exec) Dir=Out
+    Node: Is at Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get AvoidanceLoc.AvoidanceLoc
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get AvoidanceLoc (K2Node_VariableGet)
+      Pin: AvoidanceLoc (struct) Dir=Out
+        -> Is at Location.Location
+      Pin: self (object) Dir=In
+    Node: Set IsAvoiding (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set TargetRotation.execute
+      Pin: IsAvoiding (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set AvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetRotation.then
+      Pin: then (exec) Dir=Out
+      Pin: AvoidanceRot (struct) Dir=In
+        -> Set TargetRotation.Output_Get
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Target Vector.RetVector
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set TargetRotation.TargetRotation
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Set TargetRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsAvoiding.then
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceRot.execute
+      Pin: TargetRotation (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Set AvoidanceRot.AvoidanceRot
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Target Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RetVector (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Set AvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetRotation.then
+      Pin: then (exec) Dir=Out
+      Pin: AvoidanceRot (struct) Dir=In
+        -> Set TargetRotation.Output_Get
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Move to the avoidance location (EdGraphNode_Comment)
+    Node: Move to the original target location (EdGraphNode_Comment)
+    Node: Check if it needs to avoid something (EdGraphNode_Comment)
+    Node: Reached the target location? (EdGraphNode_Comment)
+    Node: Set IsAvoiding (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceRot.execute
+      Pin: IsAvoiding (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set AvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set IsAvoiding.then
+      Pin: then (exec) Dir=Out
+        -> Set TargetRotation.execute
+      Pin: AvoidanceRot (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TargetRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceRot.then
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceLoc.execute
+      Pin: TargetRotation (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set AvoidanceLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetRotation.then
+      Pin: then (exec) Dir=Out
+        -> Finish Execute
+Target is BTTask Blueprint Base.execute
+      Pin: AvoidanceLoc (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set MaxFlyHeight (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Set PawnRef.execute
+      Pin: MaxFlyHeight (real) Dir=In
+        -> Get MaxFlyHeight.MaxFlyHeight
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Get MaxFlyHeight.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Get MaxFlyHeight (K2Node_VariableGet)
+      Pin: MaxFlyHeight (real) Dir=Out
+        -> Set MaxFlyHeight.MaxFlyHeight
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set TargetLocation.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set TargetRotation.execute
+  Graph: GetBlackboardValue
+    Node: GetBlackboardValue (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Key (struct) Dir=Out
+        -> Get Blackboard Value as Actor.Key
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ActorValue (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: VectorValue (struct) Dir=In
+    Node: Get Blackboard Value as Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.VectorValue
+    Node: Get Blackboard Value as Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.ActorValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetBlackboardValue.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ActorValue (object) Dir=In
+      Pin: VectorValue (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> GetBlackboardValue.Key
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Get Blackboard Value as Vector.Key
+        -> Get Blackboard Value as Actor.Key
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Blackboard Value as Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> GetBlackboardValue.Key
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.Object
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Blackboard value as either Actor or Vector (EdGraphNode_Comment)
+  Graph: IsAtLocation
+    Node: IsAtLocation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Location (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> IsAtLocation.then
+      Pin: ReturnValue (bool) Dir=In
+        -> float <= float.ReturnValue
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float <= float.A
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get AcceptableRadius.AcceptableRadius
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get AcceptableRadius (K2Node_VariableGet)
+      Pin: AcceptableRadius (real) Dir=Out
+        -> float <= float.B
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> IsAtLocation.Location
+      Pin: OutputPin (struct) Dir=Out
+        -> vector - vector.B
+  Graph: GetTargetVector
+    Node: GetTargetVector (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: RetVector (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetTargetVector.then
+      Pin: Condition (bool) Dir=In
+        -> Get TargetIsActor.TargetIsActor
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get TargetIsActor (K2Node_VariableGet)
+      Pin: TargetIsActor (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get TargetActor (K2Node_VariableGet)
+      Pin: TargetActor (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TargetActor.TargetActor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector.InVec
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: RetVector (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get TargetLocation (K2Node_VariableGet)
+      Pin: TargetLocation (struct) Dir=Out
+        -> Break Vector.InVec
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get the vector to fly towards, depending if Target is Actor or Vector (EdGraphNode_Comment)
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: X (real) Dir=Out
+        -> Make Vector.X
+      Pin: Y (real) Dir=Out
+        -> Make Vector.Y
+      Pin: Z (real) Dir=Out
+        -> float > float.A
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Vector.X
+      Pin: Y (real) Dir=In
+        -> Break Vector.Y
+      Pin: Z (real) Dir=In
+        -> Get MaxFlyHeight.MaxFlyHeight
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+        -> Get MaxFlyHeight.MaxFlyHeight
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get MaxFlyHeight (K2Node_VariableGet)
+      Pin: MaxFlyHeight (real) Dir=Out
+        -> float > float.B
+        -> Make Vector.Z
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Option 1 (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.RetVector
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Select.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Select.Option 0
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get TargetLocation.TargetLocation
+      Pin: X (real) Dir=Out
+        -> Make Vector.X
+      Pin: Y (real) Dir=Out
+        -> Make Vector.Y
+      Pin: Z (real) Dir=Out
+        -> float > float.A
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Vector.X
+      Pin: Y (real) Dir=In
+        -> Break Vector.Y
+      Pin: Z (real) Dir=In
+        -> Get MaxFlyHeight.MaxFlyHeight
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+        -> Get MaxFlyHeight.MaxFlyHeight
+      Pin: ReturnValue (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get MaxFlyHeight (K2Node_VariableGet)
+      Pin: MaxFlyHeight (real) Dir=Out
+        -> float > float.B
+        -> Make Vector.Z
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Option 1 (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.RetVector
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: OutputPin (bool) Dir=Out
+        -> Select.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get TargetLocation.TargetLocation
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Select.Option 0
+  Graph: CheckAvoidance
+    Node: CheckAvoidance (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector + vector.A
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Combine Rotators.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get AvoidanceCheckDistance.AvoidanceCheckDistance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Combine Rotators (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get AvoidanceRot.AvoidanceRot
+      Pin: B (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Forward Vector.InRot
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> int * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Combine Rotators.B
+    Node: % (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> For Loop with Break.Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> % (Integer).ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: For Loop with Break (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Branch.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Index (int) Dir=Out
+        -> % (Integer).A
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Incrementer (K2Node_VariableGet)
+      Pin: Incrementer (int) Dir=Out
+        -> Increment Int.Value
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Branch.then
+      Pin: Value (int) Dir=In
+        -> Get Incrementer.Incrementer
+      Pin:    (exec) Dir=Out
+        -> Set Multiplier.execute
+      Pin: Result (int) Dir=Out
+    Node: Set Multiplier (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Multiplier (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Multiplier (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Multiplier (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Multiplier.execute
+    Node: Get Incrementer (K2Node_VariableGet)
+      Pin: Incrementer (int) Dir=Out
+        -> int * float.A
+    Node: Get Multiplier (K2Node_VariableGet)
+      Pin: Multiplier (real) Dir=Out
+        -> int * float.B
+    Node: int * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get Incrementer.Incrementer
+      Pin: B (real) Dir=In
+        -> Get Multiplier.Multiplier
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Multiplier.then
+        -> Set Multiplier.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Line Trace By Channel.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Loop with Break.Break
+    Node: Set AvoidanceLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceRot.execute
+      Pin: AvoidanceLoc (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Combine Rotators.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get AvoidanceCheckDistance.AvoidanceCheckDistance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: Combine Rotators (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get AvoidanceRot.AvoidanceRot
+      Pin: B (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Forward Vector.InRot
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> int * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Combine Rotators.B
+    Node: Get Incrementer (K2Node_VariableGet)
+      Pin: Incrementer (int) Dir=Out
+        -> int * float.A
+    Node: Get Multiplier (K2Node_VariableGet)
+      Pin: Multiplier (real) Dir=Out
+        -> int * float.B
+    Node: int * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get Incrementer.Incrementer
+      Pin: B (real) Dir=In
+        -> Get Multiplier.Multiplier
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get AvoidanceLoc.AvoidanceLoc
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set AvoidanceRot.AvoidanceRot
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Set AvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceLoc.then
+      Pin: then (exec) Dir=Out
+        -> Set PrevAvoidanceRot.execute
+      Pin: AvoidanceRot (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Set PrevAvoidanceRot.PrevAvoidanceRot
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceLoc (K2Node_VariableGet)
+      Pin: AvoidanceLoc (struct) Dir=Out
+        -> Find Look at Rotation.Target
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set PrevAvoidanceRot.then
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CheckAvoidance.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: End (struct) Dir=In
+        -> Select Vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector + vector.A
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get TargetRotation.TargetRotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get AvoidanceCheckDistance.AvoidanceCheckDistance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set IsAvoiding.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set IsAvoiding (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: IsAvoiding (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Set PrevAvoidanceRot.then
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select Vector.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Get AvoidanceRot (K2Node_VariableGet)
+      Pin: AvoidanceRot (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceRot (K2Node_VariableGet)
+      Pin: AvoidanceRot (struct) Dir=Out
+        -> Combine Rotators.A
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceRot (K2Node_VariableGet)
+      Pin: AvoidanceRot (struct) Dir=Out
+        -> Combine Rotators.A
+      Pin: self (object) Dir=In
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set AvoidanceLoc.AvoidanceLoc
+    Node: Get IsAvoiding (K2Node_VariableGet)
+      Pin: IsAvoiding (bool) Dir=Out
+        -> Select Vector.bPickA
+      Pin: self (object) Dir=In
+    Node: Select Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get AvoidanceLoc.AvoidanceLoc
+      Pin: B (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get IsAvoiding.IsAvoiding
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Get AvoidanceLoc (K2Node_VariableGet)
+      Pin: AvoidanceLoc (struct) Dir=Out
+        -> Select Vector.A
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceCheckDistance (K2Node_VariableGet)
+      Pin: AvoidanceCheckDistance (real) Dir=Out
+        -> vector * float.B
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceCheckDistance (K2Node_VariableGet)
+      Pin: AvoidanceCheckDistance (real) Dir=Out
+        -> vector * float.B
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceCheckDistance (K2Node_VariableGet)
+      Pin: AvoidanceCheckDistance (real) Dir=Out
+        -> vector * float.B
+      Pin: self (object) Dir=In
+    Node: Set PrevAvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceRot.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: PrevAvoidanceRot (struct) Dir=In
+        -> Set AvoidanceRot.Output_Get
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set IsAvoiding.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector + vector.B
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get PrevAvoidanceRot.PrevAvoidanceRot
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get AvoidanceCheckDistance.AvoidanceCheckDistance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Get AvoidanceCheckDistance (K2Node_VariableGet)
+      Pin: AvoidanceCheckDistance (real) Dir=Out
+        -> vector * float.B
+      Pin: self (object) Dir=In
+    Node: Get PrevAvoidanceRot (K2Node_VariableGet)
+      Pin: PrevAvoidanceRot (struct) Dir=Out
+        -> Get Forward Vector.InRot
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Loop with Break.Execute
+      Pin: else (exec) Dir=Out
+        -> Set AvoidanceRot.execute
+    Node: Set AvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set AvoidanceLoc.execute
+      Pin: AvoidanceRot (struct) Dir=In
+        -> Get PrevAvoidanceRot.PrevAvoidanceRot
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PrevAvoidanceRot (K2Node_VariableGet)
+      Pin: PrevAvoidanceRot (struct) Dir=Out
+        -> Set AvoidanceRot.AvoidanceRot
+      Pin: self (object) Dir=In
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get PrevAvoidanceRot.PrevAvoidanceRot
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get AvoidanceCheckDistance.AvoidanceCheckDistance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set AvoidanceLoc.AvoidanceLoc
+    Node: Get AvoidanceCheckDistance (K2Node_VariableGet)
+      Pin: AvoidanceCheckDistance (real) Dir=Out
+        -> vector * float.B
+      Pin: self (object) Dir=In
+    Node: Get PrevAvoidanceRot (K2Node_VariableGet)
+      Pin: PrevAvoidanceRot (struct) Dir=Out
+        -> Get Forward Vector.InRot
+      Pin: self (object) Dir=In
+    Node: Set AvoidanceLoc (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceRot.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: AvoidanceLoc (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set AvoidanceLoc.then
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get IsAvoiding.IsAvoiding
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Set PrevAvoidanceRot.execute
+    Node: Get IsAvoiding (K2Node_VariableGet)
+      Pin: IsAvoiding (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set PrevAvoidanceRot (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: PrevAvoidanceRot (struct) Dir=In
+        -> Get AvoidanceRot.AvoidanceRot
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AvoidanceRot (K2Node_VariableGet)
+      Pin: AvoidanceRot (struct) Dir=Out
+        -> Set PrevAvoidanceRot.PrevAvoidanceRot
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Loop with Break.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> Set AvoidanceLoc.execute
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PawnRef.PawnRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: See if there is an obstacle towards our current MoveTo location (EdGraphNode_Comment)
+    Node: Update previous avoidance rotation if not avoiding (EdGraphNode_Comment)
+    Node: PrevAvoidanceRot is like a preferred direction. Trace if there is an obstacle in our preferred direction (EdGraphNode_Comment)
+    Node: If no obstacle in our preferred direction, then set it as our current MoveTo location (EdGraphNode_Comment)
+    Node: If there is an obstacle in our preferred direction, trace for other directions with no obstacle. Break loop when a direction is found (EdGraphNode_Comment)
+    Node: Trace left and right, every 30 degrees in the Yaw (EdGraphNode_Comment)
+    Node: Set the found direction as current MoveTo location (EdGraphNode_Comment)
+    Node: Get TargetRotation (K2Node_VariableGet)
+      Pin: TargetRotation (struct) Dir=Out
+        -> Get Forward Vector.InRot
+      Pin: self (object) Dir=In
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: [0] (object) Dir=In
+        -> Get PawnRef.PawnRef
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: [0] (object) Dir=In
+        -> Get PawnRef.PawnRef
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: [0] (object) Dir=In
+        -> Get PawnRef.PawnRef
+    Node: Get PawnRef (K2Node_VariableGet)
+      Pin: PawnRef (object) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In

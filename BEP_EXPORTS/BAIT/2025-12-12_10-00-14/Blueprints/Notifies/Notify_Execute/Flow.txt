@@ -1,0 +1,92 @@
+Blueprint: Notify_Execute (/Game/BossAIToolkit/Blueprints/Notifies/Notify_Execute.Notify_Execute)
+  Graph: Received_NotifyBegin
+    Node: Received Notify Begin (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: MeshComp (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+      Pin: Animation (object) Dir=Out
+      Pin: TotalDuration (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: EventReference (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> On Execute
+Target is BP Boss Ability Base
+RELIABLE Replicated To Server (if owning client).then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Received Notify Begin.MeshComp
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get CurrentAbility.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Received Notify Begin.then
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: On Execute
+Target is BP Boss Ability Base
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get CurrentAbility.CurrentAbility
+      Pin: Duration (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Received Notify Begin.TotalDuration
+      Pin: OutputPin (real) Dir=Out
+        -> On Execute
+Target is BP Boss Ability Base
+RELIABLE Replicated To Server (if owning client).Duration
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get CurrentAbility.CurrentAbility
+      Pin: Is Valid (exec) Dir=Out
+        -> On Execute
+Target is BP Boss Ability Base
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get CurrentAbility (K2Node_VariableGet)
+      Pin: CurrentAbility (object) Dir=Out
+        -> Is Valid.InputObject
+        -> On Execute
+Target is BP Boss Ability Base
+RELIABLE Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue

@@ -1,0 +1,183 @@
+Blueprint: BTS_PatrolSpline (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Services/BTS_PatrolSpline.BTS_PatrolSpline)
+  Graph: EventGraph
+    Node: Event Receive Activation AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerController (object) Dir=Out
+        -> Cast To BP_AIC.Object
+      Pin: ControlledPawn (object) Dir=Out
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Activation AI.then
+      Pin: then (exec) Dir=Out
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Activation AI.OwnerController
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: Find Patrol Location on Spline
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Set IsEndPoint.execute
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: IsEndPoint (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Event Receive Tick AI (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerController (object) Dir=Out
+        -> Cast To BP_AIC.Object
+      Pin: ControlledPawn (object) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Tick AI.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Tick AI.OwnerController
+      Pin: AsBP AIC (object) Dir=Out
+        -> Get Personality.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Personality.Personality
+      Pin: RetCharacter (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Find Patrol Location on Spline
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set IsEndPoint.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: IsEndPoint (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Personality.Personality
+      Pin: OutputPin (object) Dir=Out
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.self
+    Node: Get Blackboard Value as Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get BBKeyTargetLoc.BBKeyTargetLoc
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: Get BBKeyTargetLoc (K2Node_VariableGet)
+      Pin: BBKeyTargetLoc (struct) Dir=Out
+        -> Get Blackboard Value as Vector.Key
+      Pin: self (object) Dir=In
+    Node: Get IsEndPoint (K2Node_VariableGet)
+      Pin: IsEndPoint (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get IsEndPoint.IsEndPoint
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Set IsEndPoint (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+      Pin: IsEndPoint (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.IsEndPoint
+      Pin: OutputPin (bool) Dir=Out
+        -> Set IsEndPoint.IsEndPoint
+    Node: Set IsEndPoint (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.then
+      Pin: then (exec) Dir=Out
+      Pin: IsEndPoint (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Find Patrol Location on Spline
+Target is BP Behavior Component.IsEndPoint
+      Pin: OutputPin (bool) Dir=Out
+        -> Set IsEndPoint.IsEndPoint

@@ -1,0 +1,94 @@
+Blueprint: Blueprint_CeilingLight (/Game/CoreGameFramework/EpicExampleContent/StarterContent/Blueprints/Blueprint_CeilingLight.Blueprint_CeilingLight)
+  Graph: EventGraph
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Light Color
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: NewIntensity (real) Dir=In
+        -> Get Brightness.Brightness
+    Node: Get PointLight1 (K2Node_VariableGet)
+      Pin: PointLight1 (object) Dir=Out
+        -> Set Light Color
+Target is Light Component.self
+        -> Set Source Radius
+Target is Point Light Component.self
+        -> Set Intensity
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Get Brightness (K2Node_VariableGet)
+      Pin: Brightness (real) Dir=Out
+        -> Set Intensity
+Target is Light Component.NewIntensity
+      Pin: self (object) Dir=In
+    Node: Set Light Color
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Intensity
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Source Radius
+Target is Point Light Component.execute
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: NewLightColor (struct) Dir=In
+        -> Get Color.Color
+      Pin: bSRGB (bool) Dir=In
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> Set Light Color
+Target is Light Component.NewLightColor
+      Pin: self (object) Dir=In
+    Node: Set Source Radius
+Target is Point Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Light Color
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: bNewValue (real) Dir=In
+        -> Get Source Radius.Source Radius
+    Node: Get Source Radius (K2Node_VariableGet)
+      Pin: Source Radius (real) Dir=Out
+        -> Set Source Radius
+Target is Point Light Component.bNewValue
+      Pin: self (object) Dir=In
+  Graph: ToggleLight
+    Node: ToggleLight (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+      Pin: Index (bool) Dir=Out
+        -> Select.Index
+    Node: Get PointLight1 (K2Node_VariableGet)
+      Pin: PointLight1 (object) Dir=Out
+        -> Set Intensity
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ToggleLight.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PointLight1.PointLight1
+      Pin: NewIntensity (real) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> ToggleLight.Index
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Intensity
+Target is Light Component.NewIntensity

@@ -1,0 +1,66 @@
+Blueprint: BPW_CGF_ToDoList_DroppableButton (/Game/CoreGameFramework/Blueprints/Editor_Only/ToDoListSystem/System/BPW_CGF_ToDoList_DroppableButton.BPW_CGF_ToDoList_DroppableButton)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Branch.Condition
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+    Node: Get Image_10 (K2Node_VariableGet)
+      Pin: Image_10 (object) Dir=Out
+        -> Set Brush
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Image_10.Image_10
+      Pin: InBrush (struct) Dir=In
+        -> Get In Brush.In Brush
+    Node: Get In Brush (K2Node_VariableGet)
+      Pin: In Brush (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: Condition (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+      Pin: else (exec) Dir=Out
+  Graph: OnDrop
+    Node: On Drop (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Call On Dropped.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+        -> Call On Dropped.Operation
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Call On Dropped.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Call On Dropped (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Drop.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: Operation (object) Dir=In
+        -> On Drop.Operation
+  Graph: OnDropped
+    Node: OnDropped (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Operation (object) Dir=Out

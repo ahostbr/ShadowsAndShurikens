@@ -12,11 +12,13 @@ public class SOTS_UI : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"StructUtils",
 				"UMG",
 				"Slate",
 				"SlateCore",
 				"GameplayTags",
-				"SOTS_TagManager"
+				"SOTS_TagManager",
+				"DeveloperSettings"
 			}
 		);
 

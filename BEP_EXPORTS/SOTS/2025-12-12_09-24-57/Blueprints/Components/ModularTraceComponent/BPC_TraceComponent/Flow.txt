@@ -1,0 +1,1104 @@
+Blueprint: BPC_TraceComponent (/Game/SOTS/Blueprints/Components/ModularTraceComponent/BPC_TraceComponent.BPC_TraceComponent)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Pawn.execute
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Pawn.Object
+    Node: Cast To Pawn (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPawn (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Set OwnerREF.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Cast To Pawn.AsPawn
+      Pin: AsCharacter (object) Dir=Out
+        -> Set OwnerREF.OwnerREF
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set OwnerREF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+      Pin: OwnerREF (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear.then
+      Pin: Array (struct) Dir=In
+        -> Get TraceData.TraceData
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Array Index.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Parse Trace Data
+Target is BPC Trace Component.F_TraceData
+        -> Break F Trace Data.F_TraceData
+      Pin: Array Index (int) Dir=Out
+        -> Set Array Index.Array Index
+      Pin: Completed (exec) Dir=Out
+    Node: Parse Trace Data
+Target is BPC Trace Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Array Index.then
+      Pin: then (exec) Dir=Out
+        -> Set StartLocation.execute
+      Pin: self (object) Dir=In
+      Pin: F_TraceData (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: TraceIndex (int) Dir=In
+        -> Get Array Index.Array Index
+      Pin: Start (struct) Dir=Out
+        -> Set StartLocation.StartLocation
+      Pin: End (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set StartLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parse Trace Data
+Target is BPC Trace Component.then
+      Pin: then (exec) Dir=Out
+        -> Set EndLocation.execute
+      Pin: StartLocation (struct) Dir=In
+        -> Parse Trace Data
+Target is BPC Trace Component.Start
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set EndLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set StartLocation.then
+      Pin: then (exec) Dir=Out
+        -> Set Trace Type.execute
+      Pin: EndLocation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Trace Complex (K2Node_VariableGet)
+      Pin: Trace Complex (bool) Dir=Out
+        -> Line Trace By Channel.bTraceComplex
+      Pin: self (object) Dir=In
+    Node: Get Actors to Ignore (K2Node_VariableGet)
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Draw Debug Type (K2Node_VariableGet)
+      Pin: Draw Debug Type (byte) Dir=Out
+        -> Line Trace By Channel.DrawDebugType
+      Pin: self (object) Dir=In
+    Node: Get Ignore Self (K2Node_VariableGet)
+      Pin: Ignore Self (bool) Dir=Out
+        -> Line Trace By Channel.bIgnoreSelf
+      Pin: self (object) Dir=In
+    Node: Get Trace Color (K2Node_VariableGet)
+      Pin: Trace Color (struct) Dir=Out
+        -> Line Trace By Channel.TraceColor
+      Pin: self (object) Dir=In
+    Node: Get Trace Hit Color (K2Node_VariableGet)
+      Pin: Trace Hit Color (struct) Dir=Out
+        -> Line Trace By Channel.TraceHitColor
+      Pin: self (object) Dir=In
+    Node: Get Draw Time (K2Node_VariableGet)
+      Pin: Draw Time (real) Dir=Out
+        -> Line Trace By Channel.DrawTime
+      Pin: self (object) Dir=In
+    Node: Get Trace_DA (K2Node_VariableGet)
+      Pin: Trace_DA (object) Dir=Out
+        -> Get TraceData.self
+      Pin: self (object) Dir=In
+    Node: Get TraceData (K2Node_VariableGet)
+      Pin: TraceData (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+        -> Get Trace_DA.Trace_DA
+    Node: Get Traces (K2Node_VariableGet)
+      Pin: Traces (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Trace_DA.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Traces.Traces
+    Node: Set Trace_DA (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> DoTrace
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: Trace_DA (object) Dir=In
+        -> DoTrace
+Custom Event.Trace_DA
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: DoTrace
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Trace_DA.execute
+      Pin: Trace_DA (object) Dir=Out
+        -> Set Trace_DA.Trace_DA
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get TraceData.TraceData
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Array Index.Array Index
+      Pin: Output (struct) Dir=Out
+        -> Set members in F Trace Data.StructRef
+    Node: Get Trace_DA (K2Node_VariableGet)
+      Pin: Trace_DA (object) Dir=Out
+        -> Get TraceData.self
+      Pin: self (object) Dir=In
+    Node: Get TraceData (K2Node_VariableGet)
+      Pin: TraceData (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get Trace_DA.Trace_DA
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.TraceTypes.LineTrace.ByChannel
+      Pin: then (exec) Dir=Out
+        -> Set members in F Trace Data.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get StartLocation.StartLocation
+      Pin: End (struct) Dir=In
+        -> Get EndLocation.EndLocation
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+        -> Get Trace Complex.Trace Complex
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actors to Ignore.Actors to Ignore
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get Draw Debug Type.Draw Debug Type
+      Pin: OutHit (struct) Dir=Out
+        -> Set members in F Trace Data.HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1
+      Pin: bIgnoreSelf (bool) Dir=In
+        -> Get Ignore Self.Ignore Self
+      Pin: TraceColor (struct) Dir=In
+        -> Get Trace Color.Trace Color
+      Pin: TraceHitColor (struct) Dir=In
+        -> Get Trace Hit Color.Trace Hit Color
+      Pin: DrawTime (real) Dir=In
+        -> Get Draw Time.Draw Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set members in F Trace Data.TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set members in F Trace Data.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Traces.Traces
+      Pin: NewItem (struct) Dir=In
+        -> Set members in F Trace Data.StructOut
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Traces (K2Node_VariableGet)
+      Pin: Traces (struct) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Line Trace By Profile (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set members in F Trace Data.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get StartLocation.StartLocation
+      Pin: End (struct) Dir=In
+        -> Get EndLocation.EndLocation
+      Pin: ProfileName (name) Dir=In
+        -> Get Profile Name.Profile Name
+      Pin: bTraceComplex (bool) Dir=In
+        -> Get Trace Complex.Trace Complex
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actors to Ignore.Actors to Ignore
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get Draw Debug Type.Draw Debug Type
+      Pin: OutHit (struct) Dir=Out
+        -> Set members in F Trace Data.HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1
+      Pin: bIgnoreSelf (bool) Dir=In
+        -> Get Ignore Self.Ignore Self
+      Pin: TraceColor (struct) Dir=In
+        -> Get Trace Color.Trace Color
+      Pin: TraceHitColor (struct) Dir=In
+        -> Get Trace Hit Color.Trace Hit Color
+      Pin: DrawTime (real) Dir=In
+        -> Get Draw Time.Draw Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set members in F Trace Data.TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854
+    Node: Line Trace For Objects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set members in F Trace Data.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get StartLocation.StartLocation
+      Pin: End (struct) Dir=In
+        -> Get EndLocation.EndLocation
+      Pin: ObjectTypes (byte) Dir=In
+        -> Get Object Types.Object Types
+      Pin: bTraceComplex (bool) Dir=In
+        -> Get Trace Complex.Trace Complex
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actors to Ignore.Actors to Ignore
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get Draw Debug Type.Draw Debug Type
+      Pin: OutHit (struct) Dir=Out
+        -> Set members in F Trace Data.HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1
+      Pin: bIgnoreSelf (bool) Dir=In
+        -> Get Ignore Self.Ignore Self
+      Pin: TraceColor (struct) Dir=In
+        -> Get Trace Color.Trace Color
+      Pin: TraceHitColor (struct) Dir=In
+        -> Get Trace Hit Color.Trace Hit Color
+      Pin: DrawTime (real) Dir=In
+        -> Get Draw Time.Draw Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set members in F Trace Data.TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854
+    Node: Get StartLocation (K2Node_VariableGet)
+      Pin: StartLocation (struct) Dir=Out
+        -> Line Trace By Channel.Start
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Parse Trace Data
+Target is BPC Trace Component.End
+      Pin: OutputPin (struct) Dir=Out
+        -> Set EndLocation.EndLocation
+    Node: Get EndLocation (K2Node_VariableGet)
+      Pin: EndLocation (struct) Dir=Out
+        -> Line Trace By Channel.End
+      Pin: self (object) Dir=In
+    Node: Break F Trace Data (K2Node_BreakStruct)
+      Pin: F_TraceData (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=Out
+      Pin: OverallTraceType_33_CF0BF9F34F2B3D3FF3DB0F99AF8ADF0A (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Radius_37_260F371A408011841B4E5EBCCA7E644E (real) Dir=Out
+        -> Set Radius.Radius
+      Pin: HalfHeight_39_F1C5B21846E9B2A5F2F124B7EA31CA0F (real) Dir=Out
+        -> Set Half Height.Half Height
+      Pin: UsePlayerCapsuleSizeForCapsuleTraces?_42_0678C62543B1C14B17C2CF892E2B27A2 (bool) Dir=Out
+        -> Set Use Player Capsule Size for Capsule Traces?.Use Player Capsule Size for Capsule Traces?
+    Node: Switch on Gameplay Tag (GameplayTagsK2Node_SwitchGameplayTag)
+      Pin: execute (exec) Dir=In
+        -> Set Trace Type.then
+      Pin: Selection (struct) Dir=In
+        -> Set Trace Type.Output_Get
+      Pin: NotEqual_TagTag (object) Dir=In
+      Pin: SAS.Traces.TraceTypes.LineTrace.ByChannel (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: SAS.Traces.TraceTypes.LineTrace.ByProfile (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SAS.Traces.TraceTypes.LineTrace.ForObjects (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SAS.Traces.TraceTypes.CapsuleTrace (exec) Dir=Out
+        -> Set Radius.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F Trace Data.OverallTraceType_33_CF0BF9F34F2B3D3FF3DB0F99AF8ADF0A
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Trace Type.Trace Type
+    Node: Set Trace Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set EndLocation.then
+      Pin: then (exec) Dir=Out
+        -> Switch on Gameplay Tag.execute
+      Pin: Trace Type (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+        -> Switch on Gameplay Tag.Selection
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.TraceTypes.LineTrace.ByProfile
+      Pin: OutputPin (exec) Dir=Out
+        -> Line Trace By Profile.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.TraceTypes.LineTrace.ForObjects
+      Pin: OutputPin (exec) Dir=Out
+        -> Line Trace For Objects.execute
+    Node: Get Object Types (K2Node_VariableGet)
+      Pin: Object Types (byte) Dir=Out
+        -> Line Trace For Objects.ObjectTypes
+      Pin: self (object) Dir=In
+    Node: Get StartLocation (K2Node_VariableGet)
+      Pin: StartLocation (struct) Dir=Out
+        -> Line Trace By Profile.Start
+      Pin: self (object) Dir=In
+    Node: Get EndLocation (K2Node_VariableGet)
+      Pin: EndLocation (struct) Dir=Out
+        -> Line Trace By Profile.End
+      Pin: self (object) Dir=In
+    Node: Get Actors to Ignore (K2Node_VariableGet)
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Line Trace By Profile.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Draw Debug Type (K2Node_VariableGet)
+      Pin: Draw Debug Type (byte) Dir=Out
+        -> Line Trace By Profile.DrawDebugType
+      Pin: self (object) Dir=In
+    Node: Get Ignore Self (K2Node_VariableGet)
+      Pin: Ignore Self (bool) Dir=Out
+        -> Line Trace By Profile.bIgnoreSelf
+      Pin: self (object) Dir=In
+    Node: Get Trace Color (K2Node_VariableGet)
+      Pin: Trace Color (struct) Dir=Out
+        -> Line Trace By Profile.TraceColor
+      Pin: self (object) Dir=In
+    Node: Get Trace Hit Color (K2Node_VariableGet)
+      Pin: Trace Hit Color (struct) Dir=Out
+        -> Line Trace By Profile.TraceHitColor
+      Pin: self (object) Dir=In
+    Node: Get Draw Time (K2Node_VariableGet)
+      Pin: Draw Time (real) Dir=Out
+        -> Line Trace By Profile.DrawTime
+      Pin: self (object) Dir=In
+    Node: Get Trace Complex (K2Node_VariableGet)
+      Pin: Trace Complex (bool) Dir=Out
+        -> Line Trace By Profile.bTraceComplex
+      Pin: self (object) Dir=In
+    Node: Get StartLocation (K2Node_VariableGet)
+      Pin: StartLocation (struct) Dir=Out
+        -> Line Trace For Objects.Start
+      Pin: self (object) Dir=In
+    Node: Get EndLocation (K2Node_VariableGet)
+      Pin: EndLocation (struct) Dir=Out
+        -> Line Trace For Objects.End
+      Pin: self (object) Dir=In
+    Node: Get Actors to Ignore (K2Node_VariableGet)
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Line Trace For Objects.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Trace Complex (K2Node_VariableGet)
+      Pin: Trace Complex (bool) Dir=Out
+        -> Line Trace For Objects.bTraceComplex
+      Pin: self (object) Dir=In
+    Node: Get Draw Debug Type (K2Node_VariableGet)
+      Pin: Draw Debug Type (byte) Dir=Out
+        -> Line Trace For Objects.DrawDebugType
+      Pin: self (object) Dir=In
+    Node: Get Ignore Self (K2Node_VariableGet)
+      Pin: Ignore Self (bool) Dir=Out
+        -> Line Trace For Objects.bIgnoreSelf
+      Pin: self (object) Dir=In
+    Node: Get Trace Color (K2Node_VariableGet)
+      Pin: Trace Color (struct) Dir=Out
+        -> Line Trace For Objects.TraceColor
+      Pin: self (object) Dir=In
+    Node: Get Trace Hit Color (K2Node_VariableGet)
+      Pin: Trace Hit Color (struct) Dir=Out
+        -> Line Trace For Objects.TraceHitColor
+      Pin: self (object) Dir=In
+    Node: Get Draw Time (K2Node_VariableGet)
+      Pin: Draw Time (real) Dir=Out
+        -> Line Trace For Objects.DrawTime
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get TraceData.TraceData
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Array Index.Array Index
+      Pin: Output (struct) Dir=Out
+        -> Set members in F Trace Data.StructRef
+    Node: Get Trace_DA (K2Node_VariableGet)
+      Pin: Trace_DA (object) Dir=Out
+        -> Get TraceData.self
+      Pin: self (object) Dir=In
+    Node: Get TraceData (K2Node_VariableGet)
+      Pin: TraceData (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get Trace_DA.Trace_DA
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set members in F Trace Data.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Traces.Traces
+      Pin: NewItem (struct) Dir=In
+        -> Set members in F Trace Data.StructOut
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Traces (K2Node_VariableGet)
+      Pin: Traces (struct) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get TraceData.TraceData
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Array Index.Array Index
+      Pin: Output (struct) Dir=Out
+        -> Set members in F Trace Data.StructRef
+    Node: Get Trace_DA (K2Node_VariableGet)
+      Pin: Trace_DA (object) Dir=Out
+        -> Get TraceData.self
+      Pin: self (object) Dir=In
+    Node: Get TraceData (K2Node_VariableGet)
+      Pin: TraceData (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get Trace_DA.Trace_DA
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set members in F Trace Data.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Traces.Traces
+      Pin: NewItem (struct) Dir=In
+        -> Set members in F Trace Data.StructOut
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Traces (K2Node_VariableGet)
+      Pin: Traces (struct) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Set Array Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Parse Trace Data
+Target is BPC Trace Component.execute
+      Pin: Array Index (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Array Index (K2Node_VariableGet)
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Get Array Index (K2Node_VariableGet)
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Get Array Index (K2Node_VariableGet)
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Get Array Index (K2Node_VariableGet)
+      Pin: Array Index (int) Dir=Out
+        -> Parse Trace Data
+Target is BPC Trace Component.TraceIndex
+      Pin: self (object) Dir=In
+    Node: Get Profile Name (K2Node_VariableGet)
+      Pin: Profile Name (name) Dir=Out
+        -> Line Trace By Profile.ProfileName
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Line Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+    Node: Capsule Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Use Player Capsule Size for Capsule Traces?.then
+      Pin: then (exec) Dir=Out
+        -> Set members in F Trace Data.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get StartLocation.StartLocation
+      Pin: End (struct) Dir=In
+        -> Get EndLocation.EndLocation
+      Pin: Radius (real) Dir=In
+        -> Select Float.ReturnValue
+      Pin: HalfHeight (real) Dir=In
+        -> Select Float.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+        -> Get Trace Complex.Trace Complex
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Actors to Ignore.Actors to Ignore
+      Pin: DrawDebugType (byte) Dir=In
+        -> Get Draw Debug Type.Draw Debug Type
+      Pin: OutHit (struct) Dir=Out
+        -> Set members in F Trace Data.HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1
+      Pin: bIgnoreSelf (bool) Dir=In
+        -> Get Ignore Self.Ignore Self
+      Pin: TraceColor (struct) Dir=In
+        -> Get Trace Color.Trace Color
+      Pin: TraceHitColor (struct) Dir=In
+        -> Get Trace Hit Color.Trace Hit Color
+      Pin: DrawTime (real) Dir=In
+        -> Get Draw Time.Draw Time
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set members in F Trace Data.TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854
+    Node: Get Trace Complex (K2Node_VariableGet)
+      Pin: Trace Complex (bool) Dir=Out
+        -> Capsule Trace By Channel.bTraceComplex
+      Pin: self (object) Dir=In
+    Node: Get Actors to Ignore (K2Node_VariableGet)
+      Pin: Actors to Ignore (object) Dir=Out
+        -> Capsule Trace By Channel.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Draw Debug Type (K2Node_VariableGet)
+      Pin: Draw Debug Type (byte) Dir=Out
+        -> Capsule Trace By Channel.DrawDebugType
+      Pin: self (object) Dir=In
+    Node: Get Ignore Self (K2Node_VariableGet)
+      Pin: Ignore Self (bool) Dir=Out
+        -> Capsule Trace By Channel.bIgnoreSelf
+      Pin: self (object) Dir=In
+    Node: Get Trace Color (K2Node_VariableGet)
+      Pin: Trace Color (struct) Dir=Out
+        -> Capsule Trace By Channel.TraceColor
+      Pin: self (object) Dir=In
+    Node: Get Trace Hit Color (K2Node_VariableGet)
+      Pin: Trace Hit Color (struct) Dir=Out
+        -> Capsule Trace By Channel.TraceHitColor
+      Pin: self (object) Dir=In
+    Node: Get Draw Time (K2Node_VariableGet)
+      Pin: Draw Time (real) Dir=Out
+        -> Capsule Trace By Channel.DrawTime
+      Pin: self (object) Dir=In
+    Node: Get StartLocation (K2Node_VariableGet)
+      Pin: StartLocation (struct) Dir=Out
+        -> Capsule Trace By Channel.Start
+      Pin: self (object) Dir=In
+    Node: Get EndLocation (K2Node_VariableGet)
+      Pin: EndLocation (struct) Dir=Out
+        -> Capsule Trace By Channel.End
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Capsule Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+    Node: Get Player Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get CapsuleComponent.self
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get CapsuleRadius.self
+        -> Get CapsuleHalfHeight.self
+      Pin: self (object) Dir=In
+        -> Get Player Character.ReturnValue
+    Node: Get CapsuleRadius (K2Node_VariableGet)
+      Pin: CapsuleRadius (real) Dir=Out
+        -> Select Float.A
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+    Node: Get CapsuleHalfHeight (K2Node_VariableGet)
+      Pin: CapsuleHalfHeight (real) Dir=Out
+        -> Select Float.A
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get TraceData.TraceData
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Array Index.Array Index
+      Pin: Output (struct) Dir=Out
+        -> Set members in F Trace Data.StructRef
+    Node: Set members in F Trace Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Capsule Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: StructRef (struct) Dir=In
+        -> GET.Output
+      Pin: StructOut (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1 (struct) Dir=In
+        -> Capsule Trace By Channel.OutHit
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=In
+        -> Capsule Trace By Channel.ReturnValue
+    Node: Get Trace_DA (K2Node_VariableGet)
+      Pin: Trace_DA (object) Dir=Out
+        -> Get TraceData.self
+      Pin: self (object) Dir=In
+    Node: Get TraceData (K2Node_VariableGet)
+      Pin: TraceData (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get Trace_DA.Trace_DA
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set members in F Trace Data.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Traces.Traces
+      Pin: NewItem (struct) Dir=In
+        -> Set members in F Trace Data.StructOut
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Traces (K2Node_VariableGet)
+      Pin: Traces (struct) Dir=Out
+        -> Add Unique.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get Array Index (K2Node_VariableGet)
+      Pin: Array Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Set members in F Trace Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Line Trace For Objects.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: StructRef (struct) Dir=In
+        -> GET.Output
+      Pin: StructOut (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1 (struct) Dir=In
+        -> Line Trace For Objects.OutHit
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=In
+        -> Line Trace For Objects.ReturnValue
+    Node: Set members in F Trace Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Profile.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: StructRef (struct) Dir=In
+        -> GET.Output
+      Pin: StructOut (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1 (struct) Dir=In
+        -> Line Trace By Profile.OutHit
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=In
+        -> Line Trace By Profile.ReturnValue
+    Node: Set members in F Trace Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: StructRef (struct) Dir=In
+        -> GET.Output
+      Pin: StructOut (struct) Dir=Out
+        -> Add Unique.NewItem
+      Pin: HitResult_20_BE6219CE4CD97E3036725A9A3823FCB1 (struct) Dir=In
+        -> Line Trace By Channel.OutHit
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+    Node: Set Radius (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Gameplay Tag.SAS.Traces.TraceTypes.CapsuleTrace
+      Pin: then (exec) Dir=Out
+        -> Set Half Height.execute
+      Pin: Radius (real) Dir=In
+        -> Break F Trace Data.Radius_37_260F371A408011841B4E5EBCCA7E644E
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Half Height (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Radius.then
+      Pin: then (exec) Dir=Out
+        -> Set Use Player Capsule Size for Capsule Traces?.execute
+      Pin: Half Height (real) Dir=In
+        -> Break F Trace Data.HalfHeight_39_F1C5B21846E9B2A5F2F124B7EA31CA0F
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Use Player Capsule Size for Capsule Traces? (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Half Height.then
+      Pin: then (exec) Dir=Out
+        -> Capsule Trace By Channel.execute
+      Pin: Use Player Capsule Size for Capsule Traces? (bool) Dir=In
+        -> Break F Trace Data.UsePlayerCapsuleSizeForCapsuleTraces?_42_0678C62543B1C14B17C2CF892E2B27A2
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Select Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get CapsuleRadius.CapsuleRadius
+      Pin: B (real) Dir=In
+        -> Get Radius.Radius
+      Pin: bPickA (bool) Dir=In
+        -> Get Use Player Capsule Size for Capsule Traces?.Use Player Capsule Size for Capsule Traces?
+      Pin: ReturnValue (real) Dir=Out
+        -> Capsule Trace By Channel.Radius
+    Node: Get Radius (K2Node_VariableGet)
+      Pin: Radius (real) Dir=Out
+        -> Select Float.B
+      Pin: self (object) Dir=In
+    Node: Get Half Height (K2Node_VariableGet)
+      Pin: Half Height (real) Dir=Out
+        -> Select Float.B
+      Pin: self (object) Dir=In
+    Node: Select Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get CapsuleHalfHeight.CapsuleHalfHeight
+      Pin: B (real) Dir=In
+        -> Get Half Height.Half Height
+      Pin: bPickA (bool) Dir=In
+        -> Get Use Player Capsule Size for Capsule Traces?.Use Player Capsule Size for Capsule Traces?
+      Pin: ReturnValue (real) Dir=Out
+        -> Capsule Trace By Channel.HalfHeight
+    Node: Get Use Player Capsule Size for Capsule Traces? (K2Node_VariableGet)
+      Pin: Use Player Capsule Size for Capsule Traces? (bool) Dir=Out
+        -> Select Float.bPickA
+        -> Select Float.bPickA
+      Pin: self (object) Dir=In
+  Graph: ParseTraceData
+    Node: ParseTraceData (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set LocalTraceDistance.execute
+      Pin: F_TraceData (struct) Dir=Out
+        -> Break F Trace Data.F_TraceData
+      Pin: TraceIndex (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break F Trace Data (K2Node_BreakStruct)
+      Pin: F_TraceData (struct) Dir=In
+        -> ParseTraceData.F_TraceData
+      Pin: TraceType_23_FD9174714C5E97CB73D4AB9D03CDB582 (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Distance_16_E2F7D03E46E248E3E9525B99C8359571 (real) Dir=Out
+        -> Set LocalTraceDistance.LocalTraceDistance
+      Pin: TraceResult_43_24948B6148DC0F64F9F0A19E6D9C4854 (bool) Dir=Out
+      Pin: TraceUniqueID_30_A32B98F940423F655C853AB118BD21FE (struct) Dir=Out
+      Pin: OverallTraceType_33_CF0BF9F34F2B3D3FF3DB0F99AF8ADF0A (struct) Dir=Out
+      Pin: Radius_37_260F371A408011841B4E5EBCCA7E644E (real) Dir=Out
+      Pin: HalfHeight_39_F1C5B21846E9B2A5F2F124B7EA31CA0F (real) Dir=Out
+      Pin: UsePlayerCapsuleSizeForCapsuleTraces?_42_0678C62543B1C14B17C2CF892E2B27A2 (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Start (struct) Dir=In
+        -> Get LocalTraceStart.LocalTraceStart
+      Pin: End (struct) Dir=In
+        -> Get LocalTraceEnd.LocalTraceEnd
+    Node: Get OwnerREF (K2Node_VariableGet)
+      Pin: OwnerREF (object) Dir=Out
+        -> Get Actor Forward Vector
+Target is Actor.self
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwnerREF.OwnerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwnerREF.OwnerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+        -> Set LocalTraceStart.LocalTraceStart
+    Node: Set LocalTraceDistance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> ParseTraceData.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: LocalTraceDistance (real) Dir=In
+        -> Break F Trace Data.Distance_16_E2F7D03E46E248E3E9525B99C8359571
+      Pin: Output_Get (real) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set LocalTraceDistance.then
+      Pin: Condition (bool) Dir=In
+        -> integer < integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set LocalTraceStart.execute
+      Pin: else (exec) Dir=Out
+        -> Set LocalTraceStart.execute
+    Node: Set LocalTraceStart (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set LocalTraceEnd.execute
+      Pin: LocalTraceStart (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get LocalTraceDistance.LocalTraceDistance
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set LocalTraceEnd.LocalTraceEnd
+    Node: Set LocalTraceEnd (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LocalTraceStart.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: LocalTraceEnd (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get LocalTraceDistance (K2Node_VariableGet)
+      Pin: LocalTraceDistance (real) Dir=Out
+        -> float * float.A
+    Node: Get LocalTraceStart (K2Node_VariableGet)
+      Pin: LocalTraceStart (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get LocalTraceStart.LocalTraceStart
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set LocalTraceEnd.LocalTraceEnd
+    Node: Set LocalTraceEnd (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: LocalTraceEnd (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Set EndLocation.EndLocation
+    Node: Get LocalTraceStart (K2Node_VariableGet)
+      Pin: LocalTraceStart (struct) Dir=Out
+        -> Return Node.Start
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set LocalTraceEnd.then
+        -> Reroute Node.OutputPin
+      Pin: then_0 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set EndLocation.execute
+    Node: Get LocalTraceEnd (K2Node_VariableGet)
+      Pin: LocalTraceEnd (struct) Dir=Out
+        -> Return Node.End
+    Node: Set LocalTraceStart (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: LocalTraceStart (struct) Dir=In
+        -> Get EndLocation.EndLocation
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set EndLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: EndLocation (struct) Dir=In
+        -> Set LocalTraceEnd.Output_Get
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get EndLocation (K2Node_VariableGet)
+      Pin: EndLocation (struct) Dir=Out
+        -> Set LocalTraceStart.LocalTraceStart
+      Pin: self (object) Dir=In
+    Node: integer < integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: NewEnumerator1 (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: NewEnumerator2 (struct) Dir=In
+        -> Get Actor Right Vector
+Target is Actor.ReturnValue
+      Pin: NewEnumerator3 (struct) Dir=In
+        -> Get Actor Right Vector
+Target is Actor.ReturnValue
+      Pin: NewEnumerator4 (struct) Dir=In
+        -> Get Actor Up Vector
+Target is Actor.ReturnValue
+      Pin: NewEnumerator5 (struct) Dir=In
+        -> Get Actor Up Vector
+Target is Actor.ReturnValue
+      Pin: NewEnumerator6 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator7 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator8 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator9 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator10 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator11 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator12 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator13 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator14 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator15 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator16 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: NewEnumerator17 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Index (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get LocalTraceDistance.LocalTraceDistance
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> vector * vector.B
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (real) Dir=In
+      Pin: NewEnumerator1 (real) Dir=In
+      Pin: NewEnumerator2 (real) Dir=In
+      Pin: NewEnumerator3 (real) Dir=In
+      Pin: NewEnumerator4 (real) Dir=In
+      Pin: NewEnumerator5 (real) Dir=In
+      Pin: NewEnumerator6 (real) Dir=In
+      Pin: NewEnumerator7 (real) Dir=In
+      Pin: NewEnumerator8 (real) Dir=In
+      Pin: NewEnumerator9 (real) Dir=In
+      Pin: NewEnumerator10 (real) Dir=In
+      Pin: NewEnumerator11 (real) Dir=In
+      Pin: NewEnumerator12 (real) Dir=In
+      Pin: NewEnumerator13 (real) Dir=In
+      Pin: NewEnumerator14 (real) Dir=In
+      Pin: NewEnumerator15 (real) Dir=In
+      Pin: NewEnumerator16 (real) Dir=In
+      Pin: NewEnumerator17 (real) Dir=In
+      Pin: Index (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Select.Index
+        -> Select.Index
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator0
+        -> Select.NewEnumerator1
+        -> vector + vector.A
+    Node: Get OwnerREF (K2Node_VariableGet)
+      Pin: OwnerREF (object) Dir=Out
+        -> Get Actor Rotation
+Target is Actor.self
+        -> Get Actor Right Vector
+Target is Actor.self
+        -> Get Actor Up Vector
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwnerREF.OwnerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Forward Vector.InRot
+    Node: Get Actor Right Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwnerREF.OwnerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator2
+        -> Select.NewEnumerator3
+        -> vector + vector.B
+    Node: Get Actor Up Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OwnerREF.OwnerREF
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator4
+        -> Select.NewEnumerator5
+        -> vector + vector.C
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Right Vector
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator17
+        -> Select.NewEnumerator16
+        -> Select.NewEnumerator15
+        -> Select.NewEnumerator14
+        -> Select.NewEnumerator13
+        -> Select.NewEnumerator12
+        -> Select.NewEnumerator11
+        -> Select.NewEnumerator10
+        -> Select.NewEnumerator9
+        -> Select.NewEnumerator8
+        -> Select.NewEnumerator7
+        -> Select.NewEnumerator6
+      Pin: C (struct) Dir=In
+        -> Get Actor Up Vector
+Target is Actor.ReturnValue
+    Node: Get LocalTraceDistance (K2Node_VariableGet)
+      Pin: LocalTraceDistance (real) Dir=Out
+        -> vector * vector.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> ParseTraceData.TraceIndex
+      Pin: OutputPin (int) Dir=Out
+        -> integer < integer.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Break F Trace Data.TraceType_23_FD9174714C5E97CB73D4AB9D03CDB582
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set LocalTraceStart.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set LocalTraceEnd.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set LocalTraceEnd.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Sequence.execute

@@ -1,0 +1,861 @@
+Blueprint: BP_ItemPuzzle (/Game/InventorySystemPro/Blueprints/Actors/Puzzle/BP_ItemPuzzle.BP_ItemPuzzle)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: OnAttemptUseRequiredItemRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Open Inventory Choose State
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Open Inventory Choose State
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).self
+    Node: Solve the puzzle if the right key item is used in the inventory (EdGraphNode_Comment)
+    Node: Open the inventory, so the player can pick the required item to solve the puzzle (EdGraphNode_Comment)
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> On Open Inventory Choose State
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ItemChooseActor
+    Node: OnPuzzleInteractRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Open Puzzle Server
+Target is BP Item Puzzle.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Open Puzzle Server
+Target is BP Item Puzzle.PlayerController
+    Node: On Open Inventory Choose State
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnAttemptUseRequiredItemRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> OnAttemptUseRequiredItemRELIABLE Replicated From Client
+Executes On Server
+Custom Event.InventoryComponent
+      Pin: ItemsToChoose (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: ItemChooseActor (object) Dir=In
+        -> Self-Reference.self
+      Pin: bRemoveItemAfterChoose (bool) Dir=In
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Setup Actor
+Target is BP Item Puzzle.execute
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.execute
+      Pin: OtherActor (object) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.OtherActor
+    Node: Event ActorEndOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.execute
+      Pin: OtherActor (object) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.OtherActor
+    Node: Overlap events (EdGraphNode_Comment)
+    Node: Begin Overlap
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorBeginOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorBeginOverlap.OtherActor
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Begin Overlap
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> End Overlap
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: End Overlap
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event ActorEndOverlap.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: OtherActor (object) Dir=In
+        -> Event ActorEndOverlap.OtherActor
+    Node: Event OnEndChooseItem
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On End Choose Item Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: bItemMatches (bool) Dir=Out
+        -> On End Choose Item Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).ItemMatches
+      Pin: bAllItemsCompleted (bool) Dir=Out
+        -> On End Choose Item Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).AllItemsCompleted
+      Pin: Items (struct) Dir=Out
+        -> On End Choose Item Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).Items
+    Node: Event OnInteract
+From BPI Interaction (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Interact Client
+Target is BP Item Puzzle.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Interact Client
+Target is BP Item Puzzle.PlayerController
+    Node: OnSolvePuzzle
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Solve Puzzle (EdGraphNode_Comment)
+    Node: Get CompletedItems (K2Node_VariableGet)
+      Pin: CompletedItems (struct) Dir=Out
+        -> On Open Inventory Choose State
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ItemsToChoose
+      Pin: self (object) Dir=In
+    Node: Event OnCloseInventory
+From BPI Inventory (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Close Inventory Client
+Target is BP Item Puzzle.execute
+    Node: Inventory logic (EdGraphNode_Comment)
+    Node: OnCloseInventory_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Close Inventory Server
+Target is BP Item Puzzle.execute
+    Node: Close Inventory Client
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnCloseInventory
+From BPI Inventory.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory Server
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnCloseInventory_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Open Puzzle Server
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnPuzzleInteractRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> OnPuzzleInteractRELIABLE Replicated From Client
+Executes On Server
+Custom Event.PlayerController
+    Node: Interact Client
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnInteract
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Event OnInteract
+From BPI Interaction.PlayerController
+    Node: Setup Actor
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: End Choose Item Server
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnEndChooseItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bItemMatches (bool) Dir=In
+        -> OnEndChooseItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.ItemMatches
+      Pin: bAllItemsCompleted (bool) Dir=In
+        -> OnEndChooseItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.AllItemsCompleted
+      Pin: Items (struct) Dir=In
+        -> OnEndChooseItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Items
+    Node: OnEndChooseItem_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> End Choose Item Server
+Target is BP Item Puzzle.execute
+      Pin: ItemMatches (bool) Dir=Out
+        -> End Choose Item Server
+Target is BP Item Puzzle.bItemMatches
+      Pin: AllItemsCompleted (bool) Dir=Out
+        -> End Choose Item Server
+Target is BP Item Puzzle.bAllItemsCompleted
+      Pin: Items (struct) Dir=Out
+        -> End Choose Item Server
+Target is BP Item Puzzle.Items
+    Node: On End Choose Item Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemMatches (bool) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.bItemMatches
+      Pin: AllItemsCompleted (bool) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.bAllItemsCompleted
+      Pin: Items (struct) Dir=In
+        -> Event OnEndChooseItem
+From BPI Interaction.Items
+    Node: SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: Sound (object) Dir=Out
+        -> Sound Play Multicast
+Target is BP Item Puzzle
+RELIABLE Replicated To All (if server).Sound
+      Pin: Location (struct) Dir=Out
+        -> Sound Play Multicast
+Target is BP Item Puzzle
+RELIABLE Replicated To All (if server).Location
+      Pin: Delay (real) Dir=Out
+        -> Delay.Duration
+    Node: Play Sound on all Clients (EdGraphNode_Comment)
+    Node: SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: Sound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: Location (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.Sound
+      Pin: Location (struct) Dir=In
+        -> SoundPlay_MulticastRELIABLE Replicated From Server
+Executes On All
+Custom Event.Location
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+      Pin: PitchMultiplier (real) Dir=In
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Sound Play Multicast
+Target is BP Item Puzzle
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Sound
+      Pin: Location (struct) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Location
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Sound Play Multicast
+Target is BP Item Puzzle
+RELIABLE Replicated To All (if server).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> SoundPlay_ServerRELIABLE Replicated From Client
+Executes On Server
+Custom Event.Delay
+      Pin: LatentInfo (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: New Guid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set UniqueID.UniqueID
+    Node: Equal (Guid) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get UniqueID.UniqueID
+      Pin: B (struct) Dir=In
+        -> Make Guid.Guid
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Guid (K2Node_MakeStruct)
+      Pin: Guid (struct) Dir=Out
+        -> Equal (Guid).B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Guid).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set UniqueID.execute
+      Pin: else (exec) Dir=Out
+    Node: Generate a unique GUID that is only set once (EdGraphNode_Comment)
+    Node: Get UniqueID (K2Node_VariableGet)
+      Pin: UniqueID (struct) Dir=Out
+        -> Equal (Guid).A
+      Pin: self (object) Dir=In
+    Node: Set UniqueID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: UniqueID (struct) Dir=In
+        -> New Guid.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: OnRep_bIsPuzzleSolved
+    Node: OnRep_bIsPuzzleSolved (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get InteractionArea (K2Node_VariableGet)
+      Pin: InteractionArea (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get InteractionCollision (K2Node_VariableGet)
+      Pin: InteractionCollision (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get InteractionArea.InteractionArea
+      Pin: NewType (byte) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> On Solve Puzzle
+Target is BP Item Puzzle.execute
+      Pin: self (object) Dir=In
+        -> Get InteractionCollision.InteractionCollision
+      Pin: NewType (byte) Dir=In
+    Node: Get bIsPuzzleSolved (K2Node_VariableGet)
+      Pin: bIsPuzzleSolved (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> OnRep_bIsPuzzleSolved.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsPuzzleSolved.bIsPuzzleSolved
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: else (exec) Dir=Out
+    Node: On Solve Puzzle
+Target is BP Item Puzzle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Enabled
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Called when bIsPuzzleSolved is changed (EdGraphNode_Comment)
+  Graph: CloseInventory_Client
+    Node: CloseInventory_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> On Close Inventory Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Close Inventory Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CloseInventory_Client.then
+      Pin: then (exec) Dir=Out
+        -> Cast To PlayerController.execute
+      Pin: self (object) Dir=In
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Cast To PlayerController.AsPlayer Controller
+      Pin: ReturnValue (object) Dir=Out
+        -> On Close Inventory
+Target is BPI Inventory.self
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To PlayerController.Object
+    Node: Cast To PlayerController (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Close Inventory Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).then
+      Pin: then (exec) Dir=Out
+        -> On Close Inventory
+Target is BPI Inventory.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: AsPlayer Controller (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Close Inventory
+Target is BPI Inventory (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Cast To PlayerController.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+    Node: Close inventory client (EdGraphNode_Comment)
+  Graph: CloseInventory_Server
+    Node: CloseInventory_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bPlayerIsUsingActor.execute
+    Node: Set bPlayerIsUsingActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> CloseInventory_Server.then
+      Pin: then (exec) Dir=Out
+      Pin: bPlayerIsUsingActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Close Inventory (EdGraphNode_Comment)
+  Graph: Interact_Client
+    Node: Interact_Client (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> On Puzzle Interact
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).PlayerController
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Interact_Client.then
+      Pin: Condition (bool) Dir=In
+        -> Get bPlayerIsUsingActor.bPlayerIsUsingActor
+      Pin: then (exec) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).execute
+      Pin: else (exec) Dir=Out
+        -> On Puzzle Interact
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).execute
+    Node: Get bPlayerIsUsingActor (K2Node_VariableGet)
+      Pin: bPlayerIsUsingActor (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Interaction (EdGraphNode_Comment)
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Interact_Client.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).self
+    Node: On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: On Puzzle Interact
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: PlayerController (object) Dir=In
+        -> Interact_Client.PlayerController
+  Graph: OpenPuzzle_Server
+    Node: OpenPuzzle_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set bPlayerIsUsingActor.execute
+      Pin: PlayerController (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> Set References
+Target is BP Inventory Actor Component.PlayerController
+    Node: Get bIsPuzzleSolved (K2Node_VariableGet)
+      Pin: bIsPuzzleSolved (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set References
+Target is BP Inventory Actor Component.then
+      Pin: Condition (bool) Dir=In
+        -> Get bIsPuzzleSolved.bIsPuzzleSolved
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> On Attempt Use Required Item
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).execute
+    Node: On Attempt Use Required Item
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InventoryComponent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Attempt Use Required Item
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).InventoryComponent
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> OpenPuzzle_Server.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Set bPlayerIsUsingActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> OpenPuzzle_Server.then
+      Pin: then (exec) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.execute
+      Pin: bPlayerIsUsingActor (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set References
+Target is BP Inventory Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bPlayerIsUsingActor.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+      Pin: PlayerController (object) Dir=In
+        -> OpenPuzzle_Server.PlayerController
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set References
+Target is BP Inventory Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Open Puzzle (EdGraphNode_Comment)
+  Graph: SetupActor
+    Node: SetupActor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set InteractionArea.execute
+    Node: Get InteractionArea (K2Node_VariableGet)
+      Pin: InteractionArea (object) Dir=Out
+        -> Set InteractionArea.InteractionArea
+      Pin: self (object) Dir=In
+    Node: Get InteractionCollision (K2Node_VariableGet)
+      Pin: InteractionCollision (object) Dir=Out
+        -> Set InteractionCollision.InteractionCollision
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionArea.self
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionCollision.self
+      Pin: self (object) Dir=In
+    Node: Set InteractionArea (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetupActor.then
+      Pin: then (exec) Dir=Out
+        -> Set InteractionCollision.execute
+      Pin: InteractionArea (object) Dir=In
+        -> Get InteractionArea.InteractionArea
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Set InteractionCollision (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionArea.then
+      Pin: then (exec) Dir=Out
+        -> Set InteractionPopupAnchor.execute
+      Pin: InteractionCollision (object) Dir=In
+        -> Get InteractionCollision.InteractionCollision
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Set InteractionPopupAnchor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionCollision.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: InteractionPopupAnchor (object) Dir=In
+        -> Get InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: Get InteractionPopupAnchor (K2Node_VariableGet)
+      Pin: InteractionPopupAnchor (object) Dir=Out
+        -> Set InteractionPopupAnchor.InteractionPopupAnchor
+      Pin: self (object) Dir=In
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Set InteractionPopupAnchor.self
+      Pin: self (object) Dir=In
+    Node: Get RequiredItems (K2Node_VariableGet)
+      Pin: RequiredItems (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set InteractionPopupAnchor.then
+      Pin: Array (object) Dir=In
+        -> Get RequiredItems.RequiredItems
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (object) Dir=Out
+        -> Make FItem with Bool.Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get CompletedItems (K2Node_VariableGet)
+      Pin: CompletedItems (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get CompletedItems.CompletedItems
+      Pin: NewItem (struct) Dir=In
+        -> Make FItem with Bool.FItemWithBool
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make FItem with Bool (K2Node_MakeStruct)
+      Pin: FItemWithBool (struct) Dir=Out
+        -> Add.NewItem
+      Pin: Item_4_B85FDFF246CA1B42EF01D5BD8C9A12F9 (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Bool_7_539F23B243319119FCB1D7999F8E9388 (bool) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+  Graph: EndChooseItem_Server
+    Node: EndChooseItem_Server (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set CompletedItems.execute
+      Pin: bItemMatches (bool) Dir=Out
+        -> Branch.Condition
+      Pin: bAllItemsCompleted (bool) Dir=Out
+        -> Branch.Condition
+      Pin: Items (struct) Dir=Out
+        -> Set CompletedItems.CompletedItems
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> EndChooseItem_Server.bAllItemsCompleted
+      Pin: then (exec) Dir=Out
+        -> Set with Notify bIsPuzzleSolved.execute
+      Pin: else (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set CompletedItems.then
+      Pin: Condition (bool) Dir=In
+        -> EndChooseItem_Server.bItemMatches
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).execute
+    Node: Set CompletedItems (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> EndChooseItem_Server.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CompletedItems (struct) Dir=In
+        -> EndChooseItem_Server.Items
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerCharacter.PlayerCharacter
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server).self
+    Node: On Interaction Failed Client
+Target is BP Interaction Component
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+    Node: Get BP_InventoryActorComponent (K2Node_VariableGet)
+      Pin: BP_InventoryActorComponent (object) Dir=Out
+        -> Get PlayerCharacter.self
+      Pin: self (object) Dir=In
+    Node: Get PlayerCharacter (K2Node_VariableGet)
+      Pin: PlayerCharacter (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: self (object) Dir=In
+        -> Get BP_InventoryActorComponent.BP_InventoryActorComponent
+    Node: End Choose Item (EdGraphNode_Comment)
+    Node: Set with Notify bIsPuzzleSolved (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Sound Play Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: bIsPuzzleSolved (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sound Play Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set with Notify bIsPuzzleSolved.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get PuzzleSolvedSound.PuzzleSolvedSound
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Delay (real) Dir=In
+        -> Get PuzzleSoundDelay.PuzzleSoundDelay
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Sound Play Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).Location
+    Node: Play Puzzle Solved Sound (EdGraphNode_Comment)
+    Node: Get PuzzleSoundDelay (K2Node_VariableGet)
+      Pin: PuzzleSoundDelay (real) Dir=Out
+        -> Sound Play Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).Delay
+      Pin: self (object) Dir=In
+    Node: Get PuzzleSolvedSound (K2Node_VariableGet)
+      Pin: PuzzleSolvedSound (object) Dir=Out
+        -> Sound Play Server
+Target is BP Item Puzzle
+RELIABLE Replicated To Server (if owning client).Sound
+      Pin: self (object) Dir=In
+  Graph: UpdatePuzzleState
+    Node: UpdatePuzzleState (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,309 @@
+Blueprint: BP_Projectile_Homing (/Game/BossAIToolkit/Blueprints/Misc/BP_Projectile_Homing.BP_Projectile_Homing)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Velocity.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get ProjectileMovement (K2Node_VariableGet)
+      Pin: ProjectileMovement (object) Dir=Out
+        -> Set Velocity.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Set bIsHomingProjectile (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Velocity.then
+      Pin: then (exec) Dir=Out
+      Pin: bIsHomingProjectile (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Velocity (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set bIsHomingProjectile.execute
+      Pin: Velocity (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get ProjectileMovement.ProjectileMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Set bIsHomingProjectile.self
+    Node: On Component Begin Overlap (Sphere) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Get bCanBeDamaged.self
+        -> Not Equal (Object).A
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Get bCanBeDamaged (K2Node_VariableGet)
+      Pin: bCanBeDamaged (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+        -> On Component Begin Overlap (Sphere).OtherActor
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Sphere).then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Apply Radial Damage.execute
+      Pin: else (exec) Dir=Out
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bCanBeDamaged.bCanBeDamaged
+      Pin: B (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Not Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> On Component Begin Overlap (Sphere).OtherActor
+      Pin: B (object) Dir=In
+        -> Get Instigator
+Target is Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Get Instigator
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Not Equal (Object).B
+    Node: Get Damage (K2Node_VariableGet)
+      Pin: Damage (real) Dir=Out
+        -> Apply Radial Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Radial Damage.Origin
+    Node: Get DamageType (K2Node_VariableGet)
+      Pin: DamageType (class) Dir=Out
+        -> Apply Radial Damage.DamageTypeClass
+      Pin: self (object) Dir=In
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Apply Radial Damage.DamageCauser
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get DestroyOnHit (K2Node_VariableGet)
+      Pin: DestroyOnHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Spawn Emitter
+Target is BP Projectile Homing
+RELIABLE Replicated To All (if server).then
+      Pin: Condition (bool) Dir=In
+        -> Get DestroyOnHit.DestroyOnHit
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+    Node: Apply Radial Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> On Spawn Emitter
+Target is BP Projectile Homing
+RELIABLE Replicated To All (if server).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: BaseDamage (real) Dir=In
+        -> Get Damage.Damage
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: DamageRadius (real) Dir=In
+      Pin: DamageTypeClass (class) Dir=In
+        -> Get DamageType.DamageType
+      Pin: IgnoreActors (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: InstigatedByController (object) Dir=In
+      Pin: bDoFullDamage (bool) Dir=In
+      Pin: DamagePreventionChannel (byte) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Component Hit (Sphere) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: HitComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Not Equal (Object).A
+      Pin: OtherComp (object) Dir=Out
+      Pin: NormalImpulse (struct) Dir=Out
+      Pin: Hit (struct) Dir=Out
+    Node: Not Equal (Object) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (object) Dir=In
+        -> On Component Hit (Sphere).OtherActor
+      Pin: B (object) Dir=In
+        -> Get Instigator
+Target is Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Component Hit (Sphere).then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Apply Radial Damage.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Instigator
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Not Equal (Object).B
+    Node: Get DestroyOnHit (K2Node_VariableGet)
+      Pin: DestroyOnHit (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Spawn Emitter
+Target is BP Projectile Homing
+RELIABLE Replicated To All (if server).then
+      Pin: Condition (bool) Dir=In
+        -> Get DestroyOnHit.DestroyOnHit
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Damage (K2Node_VariableGet)
+      Pin: Damage (real) Dir=Out
+        -> Apply Radial Damage.BaseDamage
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Apply Radial Damage.Origin
+    Node: Get DamageType (K2Node_VariableGet)
+      Pin: DamageType (class) Dir=Out
+        -> Apply Radial Damage.DamageTypeClass
+      Pin: self (object) Dir=In
+    Node: Get Owner
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Apply Radial Damage.DamageCauser
+    Node: Apply Radial Damage (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> On Spawn Emitter
+Target is BP Projectile Homing
+RELIABLE Replicated To All (if server).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: BaseDamage (real) Dir=In
+        -> Get Damage.Damage
+      Pin: Origin (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: DamageRadius (real) Dir=In
+      Pin: DamageTypeClass (class) Dir=In
+        -> Get DamageType.DamageType
+      Pin: IgnoreActors (object) Dir=In
+      Pin: DamageCauser (object) Dir=In
+        -> Get Owner
+Target is Actor.ReturnValue
+      Pin: InstigatedByController (object) Dir=In
+      Pin: bDoFullDamage (bool) Dir=In
+      Pin: DamagePreventionChannel (byte) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: OnSpawnEmitterRELIABLE Replicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn Emitter at Location.execute
+    Node: Spawn Emitter at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OnSpawnEmitterRELIABLE Replicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: EmitterTemplate (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: bAutoDestroy (bool) Dir=In
+      Pin: PoolingMethod (byte) Dir=In
+      Pin: bAutoActivateSystem (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Spawn Emitter at Location.Location
+    Node: On Spawn Emitter
+Target is BP Projectile Homing
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Radial Damage.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: On Spawn Emitter
+Target is BP Projectile Homing
+RELIABLE Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Apply Radial Damage.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

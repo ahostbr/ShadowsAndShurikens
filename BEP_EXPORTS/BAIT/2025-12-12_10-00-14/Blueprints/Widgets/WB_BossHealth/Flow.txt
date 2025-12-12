@@ -1,0 +1,418 @@
+Blueprint: WB_BossHealth (/Game/BossAIToolkit/Blueprints/Widgets/WB_BossHealth.WB_BossHealth)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Get EffectsContainer (K2Node_VariableGet)
+      Pin: EffectsContainer (object) Dir=Out
+        -> Add Child to Horizontal Box
+Target is Horizontal Box.self
+      Pin: self (object) Dir=In
+    Node: Create WB Status Effect Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Set EffectIcon.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: OwningPlayer (object) Dir=In
+        -> Get Owning Player
+Target is Widget.ReturnValue
+    Node: Set EffectIcon (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create WB Status Effect Widget.then
+      Pin: then (exec) Dir=Out
+        -> Add Child to Horizontal Box
+Target is Horizontal Box.execute
+      Pin: EffectIcon (object) Dir=In
+        -> Get Class Defaults.Icon_Texture
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Add Child to Horizontal Box
+Target is Horizontal Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set EffectIcon.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get EffectsContainer.EffectsContainer
+      Pin: Content (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (object) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> OnEffectApplied_Event
+Custom Event.then
+      Pin: Array (byte) Dir=In
+        -> Get CurrentDebuffTypes.CurrentDebuffTypes
+      Pin: LoopBody (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Array Element (byte) Dir=Out
+        -> Get Effect Class by Type.Type
+      Pin: Array Index (int) Dir=Out
+        -> Get Child At
+Target is Panel Widget.Index
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Get EffectsContainer (K2Node_VariableGet)
+      Pin: EffectsContainer (object) Dir=Out
+        -> Get Child At
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Child At
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get EffectsContainer.EffectsContainer
+      Pin: Index (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: InputObject (object) Dir=In
+        -> Get Child At
+Target is Panel Widget.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To WB_StatusEffect.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Create WB Status Effect Widget.execute
+    Node: Cast To WB_StatusEffect (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set EffectIcon.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: AsWB Status Effect (object) Dir=Out
+        -> Set EffectIcon.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Child At
+Target is Panel Widget.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Cast To WB_StatusEffect.Object
+    Node: Set EffectIcon (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To WB_StatusEffect.then
+      Pin: then (exec) Dir=Out
+      Pin: EffectIcon (object) Dir=In
+        -> Get Class Defaults.Icon_Texture
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To WB_StatusEffect.AsWB Status Effect
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Create WB Status Effect Widget.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set EffectIcon.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add Child to Horizontal Box
+Target is Horizontal Box.Content
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (byte) Dir=In
+        -> Get CurrentDebuffTypes.CurrentDebuffTypes
+      Pin: ReturnValue (int) Dir=Out
+        -> integer < integer.A
+        -> For Loop.FirstIndex
+    Node: integer < integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+        -> Get Children Count
+Target is Panel Widget.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get EffectsContainer (K2Node_VariableGet)
+      Pin: EffectsContainer (object) Dir=Out
+        -> Get Children Count
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Children Count
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get EffectsContainer.EffectsContainer
+      Pin: ReturnValue (int) Dir=Out
+        -> integer < integer.B
+        -> int - int.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Condition (bool) Dir=In
+        -> integer < integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Loop.execute
+      Pin: else (exec) Dir=Out
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: FirstIndex (int) Dir=In
+        -> Length.ReturnValue
+      Pin: LastIndex (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: Index (int) Dir=Out
+        -> Get Child At
+Target is Panel Widget.Index
+      Pin: Completed (exec) Dir=Out
+    Node: int - int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get Children Count
+Target is Panel Widget.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> For Loop.LastIndex
+    Node: Get EffectsContainer (K2Node_VariableGet)
+      Pin: EffectsContainer (object) Dir=Out
+        -> Get Child At
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Child At
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get EffectsContainer.EffectsContainer
+      Pin: Index (int) Dir=In
+        -> For Loop.Index
+      Pin: ReturnValue (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Child At
+Target is Panel Widget.ReturnValue
+    Node: Get CurrentDebuffTypes (K2Node_VariableGet)
+      Pin: CurrentDebuffTypes (byte) Dir=Out
+        -> For Each Loop.Array
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+        -> Get StatusEffectsRef.StatusEffectsRef
+    Node: Get Effect Class by Type (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Type (byte) Dir=In
+        -> For Each Loop.Array Element
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (class) Dir=Out
+        -> Get Class Defaults.Class
+    Node: Get Class Defaults (K2Node_GetClassDefaults)
+      Pin: Class (class) Dir=In
+        -> Get Effect Class by Type.ReturnValue
+      Pin: Icon_Texture (object) Dir=Out
+        -> Set EffectIcon.EffectIcon
+        -> Set EffectIcon.EffectIcon
+    Node: Bind Event to On Effects Changed (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set StatusEffectsRef.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set StatusEffectsRef.Output_Get
+      Pin: Delegate (delegate) Dir=In
+        -> OnEffectApplied_Event
+Custom Event.OutputDelegate
+    Node: OnEffectApplied_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Effects Changed.Delegate
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get CharacterRef.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InputObject (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Delay.execute
+    Node: Get CharacterRef (K2Node_VariableGet)
+      Pin: CharacterRef (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Delay.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterRef.CharacterRef
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set StatusEffectsRef.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Set StatusEffectsRef.StatusEffectsRef
+    Node: Set StatusEffectsRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Effects Changed.execute
+      Pin: StatusEffectsRef (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+        -> Bind Event to On Effects Changed.self
+      Pin: self (object) Dir=In
+    Node: Get StatusEffectsRef (K2Node_VariableGet)
+      Pin: StatusEffectsRef (object) Dir=Out
+        -> Get CurrentDebuffTypes.self
+      Pin: self (object) Dir=In
+    Node: Get Owning Player
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Create WB Status Effect Widget.OwningPlayer
+  Graph: Get_BossHealthBar_Percent_0
+    Node: Get_BossHealthBar_Percent_0 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: ReturnValue (real) Dir=In
+        -> float / float.ReturnValue
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Health.self
+        -> Get MaxHealth.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get_BossHealthBar_Percent_0.then
+      Pin: InputObject (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Health (K2Node_VariableGet)
+      Pin: Health (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Health.Health
+      Pin: B (real) Dir=In
+        -> Get MaxHealth.MaxHealth
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get MaxHealth (K2Node_VariableGet)
+      Pin: MaxHealth (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: ReturnValue (real) Dir=In
+  Graph: Get_BossNameText_Text_0
+    Node: Get_BossNameText_Text_0 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get_BossNameText_Text_0.then
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (Name).ReturnValue
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Get BossName.self
+      Pin: self (object) Dir=In
+    Node: Get BossName (K2Node_VariableGet)
+      Pin: BossName (name) Dir=Out
+        -> To Text (Name).InName
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: To Text (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+        -> Get BossName.BossName
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: GetVisibility_0
+    Node: GetVisibility_0 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: ReturnValue (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get ShowHealthBar.self
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> GetVisibility_0.then
+      Pin: InputObject (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+      Pin: Is Valid (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get ShowHealthBar (K2Node_VariableGet)
+      Pin: ShowHealthBar (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get ShowHealthBar.ShowHealthBar
+      Pin: ReturnValue (byte) Dir=Out
+        -> Return Node.ReturnValue

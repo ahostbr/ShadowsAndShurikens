@@ -1,0 +1,341 @@
+Blueprint: WBP_DropItemZone (/Game/InventorySystemPro/Blueprints/UI/SubWidgets/WBP_DropItemZone.WBP_DropItemZone)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Pre Construct.execute
+      Pin: IsDesignTime (bool) Dir=Out
+        -> Parent: Pre Construct.IsDesignTime
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Construct.execute
+    Node: Parent: Pre Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: IsDesignTime (bool) Dir=In
+        -> Event Pre Construct.IsDesignTime
+    Node: Parent: Construct (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Setup (EdGraphNode_Comment)
+  Graph: OnDrop
+    Node: On Drop (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: PointerEvent (struct) Dir=Out
+      Pin: Operation (object) Dir=Out
+        -> Cast To BP_ItemDragDropOperation.Object
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Cast To BP_ItemDragDropOperation (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Drop.then
+      Pin: then (exec) Dir=Out
+        -> Set DragDropOperation.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Drop.Operation
+      Pin: AsBP Item Drag Drop Operation (object) Dir=Out
+        -> Set DragDropOperation.DragDropOperation
+      Pin: bSuccess (bool) Dir=Out
+    Node: Remove Drag Widget
+Target is BP Item Drag Drop Operation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Drag Ended
+Target is WBP Item Base.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+    Node: Get Payload (K2Node_VariableGet)
+      Pin: Payload (object) Dir=Out
+        -> Cast To WBP_ItemBase.Object
+      Pin: self (object) Dir=In
+        -> Set DragDropOperation.Output_Get
+    Node: Cast To BP_InventoryCharacterComponent (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: AsBP Inventory Character Component (object) Dir=Out
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).self
+      Pin: bSuccess (bool) Dir=Out
+    Node: On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_InventoryCharacterComponent.then
+      Pin: then (exec) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_InventoryCharacterComponent.AsBP Inventory Character Component
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Is this Drag&Drop an item? (EdGraphNode_Comment)
+    Node: Is the Drag & Drop Payload an Item? (EdGraphNode_Comment)
+    Node: Set DragDropOperation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_ItemDragDropOperation.then
+      Pin: then (exec) Dir=Out
+        -> Cast To WBP_ItemBase.execute
+      Pin: DragDropOperation (object) Dir=In
+        -> Cast To BP_ItemDragDropOperation.AsBP Item Drag Drop Operation
+      Pin: Output_Get (object) Dir=Out
+        -> Get Payload.self
+    Node: Remove the Drag & Drop Widget (EdGraphNode_Comment)
+    Node: Drag Source: Main Item Grid Slot, Item Container Slot (EdGraphNode_Comment)
+    Node: Drag Source: Shortcut Slot (EdGraphNode_Comment)
+    Node: Determine Drag Source (EdGraphNode_Comment)
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.self
+    Node: Get DragDropOperation (K2Node_VariableGet)
+      Pin: DragDropOperation (object) Dir=Out
+        -> Get DragSourceGroup.self
+    Node: Get DragSourceGroup (K2Node_VariableGet)
+      Pin: DragSourceGroup (byte) Dir=Out
+        -> Switch on DragAndDropSourceGroup.Selection
+        -> On Drag Ended
+Target is WBP Item Base.DragSource
+      Pin: self (object) Dir=In
+        -> Get DragDropOperation.DragDropOperation
+    Node: Switch on DragAndDropSourceGroup (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Cast To WBP_ItemBase.then
+      Pin: Selection (byte) Dir=In
+        -> Get DragSourceGroup.DragSourceGroup
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Drag Source: Equipment Slot (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on DragAndDropSourceGroup.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_InventoryCharacterComponent.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Cast To WBP_ItemBase.AsWBP Item Base
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get ItemSlot.self
+        -> Get ItemSlot.self
+        -> On Drag Ended
+Target is WBP Item Base.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get ItemSlot.self
+    Node: Cast To WBP_ItemBase (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set DragDropOperation.then
+      Pin: then (exec) Dir=Out
+        -> Switch on DragAndDropSourceGroup.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Payload.Payload
+      Pin: AsWBP Item Base (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).ItemSlotGUID
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Cast To BP_InventoryCharacterComponent.Object
+      Pin: self (object) Dir=In
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> Cast To BP_InventoryCharacterComponent.Object
+      Pin: self (object) Dir=In
+    Node: Cast To BP_InventoryCharacterComponent (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Get Equipment Gameplay Tag.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: AsBP Inventory Character Component (object) Dir=Out
+        -> Unequip Item
+Target is BP Inventory Component.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get InventoryComponent (K2Node_VariableGet)
+      Pin: InventoryComponent (object) Dir=Out
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).self
+      Pin: self (object) Dir=In
+    Node: On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on DragAndDropSourceGroup.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.execute
+      Pin: self (object) Dir=In
+        -> Get InventoryComponent.InventoryComponent
+      Pin: ItemSlotGUID (struct) Dir=In
+        -> Break FItem Slot.GUID_8_861299354D38957D32AB2DAC2DC49EFD
+    Node: Unequip Item
+Target is BP Inventory Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> On Drag Ended
+Target is WBP Item Base.execute
+      Pin: self (object) Dir=In
+        -> Cast To BP_InventoryCharacterComponent.AsBP Inventory Character Component
+      Pin: EquipmentItemSlot (struct) Dir=In
+        -> Make FEquipment Item Slot.FEquipmentItemSlot
+      Pin: bAddItemBack (bool) Dir=In
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get ItemSlot (K2Node_VariableGet)
+      Pin: ItemSlot (struct) Dir=Out
+        -> Make FEquipment Item Slot.ItemSlot_6_C4895A6F41DDADAE6180248E94F2555A
+        -> Break FItem Slot.FItemSlot
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Make FEquipment Item Slot (K2Node_MakeStruct)
+      Pin: FEquipmentItemSlot (struct) Dir=Out
+        -> Unequip Item
+Target is BP Inventory Component.EquipmentItemSlot
+      Pin: Type_9_A70871774595F6B38A34FCA4B99E4433 (struct) Dir=In
+        -> Get Equipment Gameplay Tag.EquipmentTag
+      Pin: ItemSlot_6_C4895A6F41DDADAE6180248E94F2555A (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+    Node: On Drag Ended
+Target is WBP Item Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Item Drop
+Target is BP Inventory Component
+RELIABLE Replicated To Server (if owning client).then
+        -> On Remove Item Shortcut Server
+Target is BP Inventory Character Component
+RELIABLE Replicated To Server (if owning client).then
+        -> Unequip Item
+Target is BP Inventory Component.then
+      Pin: then (exec) Dir=Out
+        -> Remove Drag Widget
+Target is BP Item Drag Drop Operation.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SourceInventoryComponent (object) Dir=In
+      Pin: TargetInventoryComponent (object) Dir=In
+      Pin: ToPosition (struct) Dir=In
+      Pin: DragSource (byte) Dir=In
+        -> Get DragSourceGroup.DragSourceGroup
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on DragAndDropSourceGroup.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To BP_InventoryCharacterComponent.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Equipment Gameplay Tag.then
+      Pin: Condition (bool) Dir=In
+        -> Get Equipment Gameplay Tag.HasEquipmentTag
+      Pin: then (exec) Dir=Out
+        -> Unequip Item
+Target is BP Inventory Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Break FItem Slot (K2Node_BreakStruct)
+      Pin: FItemSlot (struct) Dir=In
+        -> Get ItemSlot.ItemSlot
+      Pin: GUID_8_861299354D38957D32AB2DAC2DC49EFD (struct) Dir=Out
+      Pin: Item_39_C53991664EAC93D1124B3D8F433D0012 (object) Dir=Out
+        -> Get GameplayTags.self
+      Pin: Amount_5_93873189485FCC0525EAD39BD80340CF (int) Dir=Out
+      Pin: Durability_38_FC5A84C24F49C2594E4F08BA133D05D4 (int) Dir=Out
+      Pin: InventoryPosition_11_0FBFDC024FD5657F4BB771A6F3F0340C (struct) Dir=Out
+      Pin: SlotSize_42_1F35824846B91FAC2386BAB7772FE683 (struct) Dir=Out
+      Pin: bIsRotated_16_34F0C2604BEC3CDB5978728EAEB39909 (bool) Dir=Out
+      Pin: ShortcutIndex_31_7226FB1E44CEC6754B7E18ACF9843852 (int) Dir=Out
+      Pin: bIsEquipped_28_7AEA07304F50202DD661469AE44CD97B (bool) Dir=Out
+      Pin: GenericCounter_35_419551A54C70FEBE009DC7967B3AA50F (int) Dir=Out
+      Pin: CreationTimestamp_45_A2C9649B4AF1E60C8B3248B2E1224BF9 (struct) Dir=Out
+    Node: Get GameplayTags (K2Node_VariableGet)
+      Pin: GameplayTags (struct) Dir=Out
+        -> Get Equipment Gameplay Tag.GameplayTagContainer
+      Pin: self (object) Dir=In
+        -> Break FItem Slot.Item_39_C53991664EAC93D1124B3D8F433D0012
+    Node: Get Equipment Gameplay Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_InventoryCharacterComponent.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: GameplayTagContainer (struct) Dir=In
+        -> Get GameplayTags.GameplayTags
+      Pin: __WorldContext (object) Dir=In
+      Pin: HasEquipmentTag (bool) Dir=Out
+        -> Branch.Condition
+      Pin: EquipmentTag (struct) Dir=Out
+        -> Make FEquipment Item Slot.Type_9_A70871774595F6B38A34FCA4B99E4433

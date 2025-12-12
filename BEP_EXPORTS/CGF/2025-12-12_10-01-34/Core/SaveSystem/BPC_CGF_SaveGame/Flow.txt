@@ -1,0 +1,974 @@
+Blueprint: BPC_CGF_SaveGame (/Game/CoreGameFramework/Core/SaveSystem/BPC_CGF_SaveGame.BPC_CGF_SaveGame)
+  Graph: EventGraph
+    Node: Comp_SaveActorData
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ThisActorsCompSaveFileData.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Get CGF_SaveFileData.self
+    Node: Comp_LoadActorData
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Save Game REF.execute
+      Pin: SaveGameREF (object) Dir=Out
+        -> Set Save Game REF.Save Game REF
+    Node: Set Save Game REF (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Comp_LoadActorData
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set ThisActorsCompSaveFileData.execute
+      Pin: Save Game REF (object) Dir=In
+        -> Comp_LoadActorData
+Custom Event.SaveGameREF
+      Pin: Output_Get (object) Dir=Out
+        -> Get CGF_SaveFileData.self
+      Pin: self (object) Dir=In
+    Node: Get CGF_SaveFileData (K2Node_VariableGet)
+      Pin: CGF_SaveFileData (struct) Dir=Out
+        -> Set ThisActorsCompSaveFileData.ThisActorsCompSaveFileData
+      Pin: self (object) Dir=In
+        -> Set Save Game REF.Output_Get
+    Node: Set ThisActorsCompSaveFileData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Save Game REF.then
+      Pin: then (exec) Dir=Out
+        -> Set World Data.execute
+      Pin: ThisActorsCompSaveFileData (struct) Dir=In
+        -> Get CGF_SaveFileData.CGF_SaveFileData
+      Pin: Output_Get (struct) Dir=Out
+        -> Break F CGF Actor Save Data.F_CGF_ActorSaveData
+      Pin: self (object) Dir=In
+    Node: Get CGF_SaveFileData (K2Node_VariableGet)
+      Pin: CGF_SaveFileData (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set ThisActorsCompSaveFileData.ThisActorsCompSaveFileData
+      Pin: self (object) Dir=In
+        -> Comp_SaveActorData
+Custom Event.SaveGameREF
+    Node: Set members in F CGF Actor Save Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Set ThisActorsCompSaveFileData.execute
+      Pin: StructRef (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StructOut (struct) Dir=Out
+        -> Set ThisActorsCompSaveFileData.ThisActorsCompSaveFileData
+      Pin: WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895 (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23 (byte) Dir=In
+        -> Get GS.GameState
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get ActorGuid.self
+    Node: Get ActorGuid (K2Node_VariableGet)
+      Pin: ActorGuid (struct) Dir=Out
+        -> Add.Key
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+    Node: Make F CGF Actor Data (K2Node_MakeStruct)
+      Pin: F_CGF_ActorData (struct) Dir=Out
+        -> Add.Value
+      Pin: ActorsName_4_A13D1CD74DE049389DA8F3AEC9441510 (name) Dir=In
+      Pin: IsOn?_3_F6FCF8D04DDDBB87933A868D56963628 (bool) Dir=In
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get ActorGuid.self
+        -> Set Player Data
+Target is BPI CGF Data Management.self
+    Node: Get ActorGuid (K2Node_VariableGet)
+      Pin: ActorGuid (struct) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+    Node: Break F CGF Actor Save Data (K2Node_BreakStruct)
+      Pin: F_CGF_ActorSaveData (struct) Dir=In
+        -> Set ThisActorsCompSaveFileData.Output_Get
+      Pin: PlayerData_64_08F1F2A949F214D8A2E561A5D03F8F46 (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: ActorData_42_0D70142D4771969283DDE8B58E7C3F96 (struct) Dir=Out
+        -> Find.TargetMap
+      Pin: WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895 (struct) Dir=Out
+        -> Set World Data.World Data
+      Pin: Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23 (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Break F CGF Actor Save Data.ActorData_42_0D70142D4771969283DDE8B58E7C3F96
+      Pin: Key (struct) Dir=In
+        -> Get ActorGuid.ActorGuid
+      Pin: Value (struct) Dir=Out
+        -> Set ThisActorData.ThisActorData
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set ThisActorData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ThisActorData (struct) Dir=In
+        -> Find.Value
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set ThisActorData.then
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Call On Comp Actor Data Loaded.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Actor Has Tag
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: Tag (name) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Gamestate.then
+      Pin: Condition (bool) Dir=In
+        -> Actor Has Tag
+Target is Actor.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Player Data.execute
+      Pin: else (exec) Dir=Out
+        -> Set ThisActorData.execute
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Actor Has Tag
+Target is Actor.self
+    Node: Set Player Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Player Data
+Target is BPI CGF Data Management.execute
+      Pin: Player Data (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Player Data
+Target is BPI CGF Data Management.PlayerData
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break F CGF Actor Save Data.PlayerData_64_08F1F2A949F214D8A2E561A5D03F8F46
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Player Data.Player Data
+    Node: Set World Data (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ThisActorsCompSaveFileData.then
+      Pin: then (exec) Dir=Out
+        -> Set Gamestate.execute
+      Pin: World Data (struct) Dir=In
+        -> Break F CGF Actor Save Data.WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Gamestate (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set World Data.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Gamestate (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Break F CGF Actor Save Data.Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23
+      Pin: OutputPin (byte) Dir=Out
+        -> Set Gamestate.Gamestate
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set BP CGF Game Instance.execute
+    Node: Sync World Data Via DT CGF LEVELS (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Set ThisActorsCompSaveFileData.then
+      Pin: ThisActorsCompSaveFileData (struct) Dir=In
+        -> Set ThisActorsCompSaveFileData.Output_Get
+      Pin: Succes (exec) Dir=Out
+        -> Branch.execute
+      Pin: Error (exec) Dir=Out
+        -> Error Handling.execute
+      Pin: StructOut (struct) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Set members in F CGF Actor Save Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ThisActorsCompSaveFileData.execute
+      Pin: StructRef (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StructOut (struct) Dir=Out
+        -> Set ThisActorsCompSaveFileData.ThisActorsCompSaveFileData
+      Pin: PlayerData_64_08F1F2A949F214D8A2E561A5D03F8F46 (struct) Dir=In
+        -> Update Player Data Struct For Save Game.PlayerData
+      Pin: Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23 (byte) Dir=In
+        -> Get GS.GameState
+    Node: Actor Has Tag
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: Tag (name) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sync World Data Via DT CGF LEVELS.Succes
+      Pin: Condition (bool) Dir=In
+        -> Actor Has Tag
+Target is Actor.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Actor Save Data.execute
+      Pin: else (exec) Dir=Out
+        -> Add.execute
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Actor Has Tag
+Target is Actor.self
+    Node: Player (EdGraphNode_Comment)
+    Node: Actor (EdGraphNode_Comment)
+    Node: Sync World Data Via DT_CGF_LEVELS (EdGraphNode_Comment)
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+        -> Set members in F CGF Actor Save Data.Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23
+      Pin: CGF Game State (object) Dir=Out
+    Node: Get GS (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: GameState (byte) Dir=Out
+        -> Set members in F CGF Actor Save Data.Gamestate_53_9039A4A3417860E5F81B4BA4DDEF2E23
+      Pin: CGF Game State (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get CGF_SaveFileData.CGF_SaveFileData
+      Pin: OutputPin (struct) Dir=Out
+        -> Break F CGF Actor Save Data.F_CGF_ActorSaveData
+        -> Reroute Node.InputPin
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sync World Data Via DT CGF LEVELS.Error
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Update Player Data Struct For Save Game (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: PlayerData (struct) Dir=Out
+        -> Set members in F CGF Actor Save Data.PlayerData_64_08F1F2A949F214D8A2E561A5D03F8F46
+    Node: Update World Data Struct For Save Game (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: F_CGF_ActorSaveData (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WorldData (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set members in F CGF Actor Save Data.StructRef
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set ThisActorsCompSaveFileData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Comp_SaveActorData
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Sync World Data Via DT CGF LEVELS.execute
+      Pin: ThisActorsCompSaveFileData (struct) Dir=In
+        -> Get CGF_SaveFileData.CGF_SaveFileData
+      Pin: Output_Get (struct) Dir=Out
+        -> Sync World Data Via DT CGF LEVELS.ThisActorsCompSaveFileData
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Sync World Data Via DT CGF LEVELS.StructOut
+      Pin: OutputPin (struct) Dir=Out
+        -> Update World Data Struct For Save Game.F_CGF_ActorSaveData
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Sync World Data Via DT CGF LEVELS.StructOut
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set ThisActorsCompSaveFileData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Actor Save Data.then
+      Pin: then (exec) Dir=Out
+      Pin: ThisActorsCompSaveFileData (struct) Dir=In
+        -> Set members in F CGF Actor Save Data.StructOut
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set ThisActorsCompSaveFileData (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Actor Save Data.then
+      Pin: then (exec) Dir=Out
+      Pin: ThisActorsCompSaveFileData (struct) Dir=In
+        -> Set members in F CGF Actor Save Data.StructOut
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Player Data
+Target is BPI CGF Data Management (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Set Player Data.then
+      Pin: then (exec) Dir=Out
+        -> Call On Comp Player Data Loaded.execute
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: PlayerData (struct) Dir=In
+        -> Set Player Data.Output_Get
+    Node: Break F CGF Actor Save Data (K2Node_BreakStruct)
+      Pin: F_CGF_ActorSaveData (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ActorData_42_0D70142D4771969283DDE8B58E7C3F96 (struct) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Actor Save Data.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Break F CGF Actor Save Data.ActorData_42_0D70142D4771969283DDE8B58E7C3F96
+      Pin: Key (struct) Dir=In
+        -> Get ActorGuid.ActorGuid
+      Pin: Value (struct) Dir=In
+        -> Make F CGF Actor Data.F_CGF_ActorData
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set members in F CGF Actor Save Data.StructRef
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set members in F CGF Actor Save Data.WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Update World Data Struct For Save Game.WorldData
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Save (EdGraphNode_Comment)
+    Node: Load (EdGraphNode_Comment)
+    Node: Call On Comp Player Data Loaded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set Player Data
+Target is BPI CGF Data Management.then
+      Pin: then (exec) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.execute
+      Pin: self (object) Dir=In
+    Node: Get GI (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+      Pin: Actor (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: __WorldContext (object) Dir=In
+      Pin: BP CGF Game Instance (object) Dir=Out
+        -> Set BP CGF Game Instance.BP CGF Game Instance
+    Node: Set BP CGF Game Instance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Game File Loaded.execute
+      Pin: BP CGF Game Instance (object) Dir=In
+        -> Get GI.BP CGF Game Instance
+      Pin: Output_Get (object) Dir=Out
+        -> Bind Event to Game File Loaded.self
+      Pin: self (object) Dir=In
+    Node: GameFileLoaded_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Game File Loaded.Delegate
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SaveGameRef (object) Dir=Out
+    Node: Bind Event to Game File Loaded (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set BP CGF Game Instance.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Set BP CGF Game Instance.Output_Get
+      Pin: Delegate (delegate) Dir=In
+        -> GameFileLoaded_Event
+Custom Event.OutputDelegate
+    Node: Start Camera Fade
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call On Comp Player Data Loaded.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: FromAlpha (real) Dir=In
+      Pin: ToAlpha (real) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Get FadeInDuration.FadeInDuration
+      Pin: Color (struct) Dir=In
+      Pin: bShouldFadeAudio (bool) Dir=In
+      Pin: bHoldWhenFinished (bool) Dir=In
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.self
+    Node: Get FadeInDuration (K2Node_VariableGet)
+      Pin: FadeInDuration (real) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.Duration
+      Pin: self (object) Dir=In
+    Node: Create BPW CGF Black Screen Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set BlackScreenWidget.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set BlackScreenWidget.BlackScreenWidget
+      Pin: OwningPlayer (object) Dir=In
+        -> Get PC.PlayerController
+    Node: Add to Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set BlackScreenWidget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set BlackScreenWidget.Output_Get
+      Pin: ZOrder (int) Dir=In
+    Node: Set BlackScreenWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create BPW CGF Black Screen Widget.then
+      Pin: then (exec) Dir=Out
+        -> Add to Viewport
+Target is User Widget.execute
+      Pin: BlackScreenWidget (object) Dir=In
+        -> Create BPW CGF Black Screen Widget.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Add to Viewport
+Target is User Widget.self
+      Pin: self (object) Dir=In
+    Node: Get PC (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: PlayerController (object) Dir=Out
+        -> Create BPW CGF Black Screen Widget.OwningPlayer
+    Node: Get BlackScreenWidget (K2Node_VariableGet)
+      Pin: BlackScreenWidget (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BlackScreenWidget.BlackScreenWidget
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to Game File Loaded.then
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> Create BPW CGF Black Screen Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Delay.then
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get BlackScreenWidget.BlackScreenWidget
+      Pin: Is Valid (exec) Dir=Out
+        -> Delay.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Get BlackScreenWidget (K2Node_VariableGet)
+      Pin: BlackScreenWidget (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Error Handling.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Game State Equals (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: State (byte) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Equal? (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GameFileLoaded_Event
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> Game State Equals.Equal?
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get GI.Actor
+    Node: Bind, And Create BlackScreen Widget To Hide Game While Objects Load And Set There Transforms Etc... (EdGraphNode_Comment)
+    Node: Call On Comp Actor Data Loaded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Get Current Level Name
+    Node: Get Current Level Name (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Current Level Name.execute
+      Pin: bRemovePrefixString (bool) Dir=Out
+        -> Get Current Level Name.bRemovePrefixString
+    Node: Get Current Level Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Current Level Name.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bRemovePrefixString (bool) Dir=In
+        -> Get Current Level Name.bRemovePrefixString
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Name.InString
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Current Level Name.then
+      Pin: LevelName (name) Dir=In
+        -> String To Name.ReturnValue
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Current Level Name.ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Return Node.LevelName
+  Graph: Update Player Data Struct for Save Game
+    Node: Update Player Data Struct for Save Game (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Player Data
+Target is BPI CGF Data Management.execute
+    Node: Get PlayerData (K2Node_VariableGet)
+      Pin: PlayerData (struct) Dir=Out
+        -> Set members in F CGF Player Data.StructRef
+      Pin: self (object) Dir=In
+    Node: Set members in F CGF Player Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Get Player Data
+Target is BPI CGF Data Management.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get PlayerData.PlayerData
+      Pin: StructOut (struct) Dir=Out
+        -> Return Node.PlayerData
+      Pin: PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A (string) Dir=In
+        -> Break F CGF Player Data.PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A
+      Pin: PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93 (real) Dir=In
+        -> Break F CGF Player Data.PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42 (struct) Dir=In
+        -> Break F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42
+      Pin: PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649 (struct) Dir=In
+        -> Break F CGF Player Data.PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649
+      Pin: PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB (struct) Dir=In
+        -> Break F CGF Player Data.PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF Player Data.then
+      Pin: PlayerData (struct) Dir=In
+        -> Set members in F CGF Player Data.StructOut
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Player Data
+Target is BPI CGF Data Management.self
+    Node: Get Player Data
+Target is BPI CGF Data Management (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Update Player Data Struct for Save Game.then
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Player Data.execute
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: PlayerData (struct) Dir=Out
+        -> Break F CGF Player Data.F_CGF_PlayerData
+    Node: Break F CGF Player Data (K2Node_BreakStruct)
+      Pin: F_CGF_PlayerData (struct) Dir=In
+        -> Get Player Data
+Target is BPI CGF Data Management.PlayerData
+      Pin: PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A (string) Dir=Out
+        -> Set members in F CGF Player Data.PlayerName_8_CF97DEFB41A93D515A9A4CBD82EB3E7A
+      Pin: PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93 (real) Dir=Out
+        -> Set members in F CGF Player Data.PlayerHealth_11_B638D56E47FC6A5BA3E7DA91F19C0F93
+      Pin: PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42 (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerTransform_23_C820D8354C4B0526D0DFCF802BD29A42
+      Pin: PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649 (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerCameraTransform_20_95C095DB45A7A4C5C4E7A78D10012649
+      Pin: PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB (struct) Dir=Out
+        -> Set members in F CGF Player Data.PlayerControlRotation_26_AF14917440A4E00A0F032C8459370DBB
+  Graph: Update World Data Struct for Save Game
+    Node: Update World Data Struct for Save Game (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Current Level Name.execute
+      Pin: F_CGF_ActorSaveData (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break F CGF Actor Save Data (K2Node_BreakStruct)
+      Pin: F_CGF_ActorSaveData (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895 (struct) Dir=Out
+        -> Set members in F CGF World Data.StructRef
+        -> Break F CGF World Data.F_CGF_WorldData
+    Node: Set members in F CGF World Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> Break F CGF Actor Save Data.WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895
+      Pin: StructOut (struct) Dir=Out
+        -> Return Node.WorldData
+      Pin: LevelName_12_7B75103F46432D4B6AA8E1A43B205267 (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SoftWorldRef_8_E2B2411E4B91DA95FAAF46BD99249DFA (struct) Dir=In
+        -> Find.Value
+      Pin: Absolute_5_3C03DF2A48EDCDFE8D7E2185D3F06A41 (bool) Dir=In
+        -> Break F CGF World Data.Absolute_5_3C03DF2A48EDCDFE8D7E2185D3F06A41
+      Pin: Options_11_0BC16CC94D7CD666C227E1A019B14E2E (string) Dir=In
+        -> Break F CGF World Data.Options_11_0BC16CC94D7CD666C227E1A019B14E2E
+    Node: Get Current Level Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update World Data Struct for Save Game.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: bRemovePrefixString (bool) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Name.InString
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Current Level Name.ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Find.Key
+        -> Reroute Node.InputPin
+    Node: Break F CGF World Data (K2Node_BreakStruct)
+      Pin: F_CGF_WorldData (struct) Dir=In
+        -> Break F CGF Actor Save Data.WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895
+      Pin: Absolute_5_3C03DF2A48EDCDFE8D7E2185D3F06A41 (bool) Dir=Out
+        -> Set members in F CGF World Data.Absolute_5_3C03DF2A48EDCDFE8D7E2185D3F06A41
+      Pin: Options_11_0BC16CC94D7CD666C227E1A019B14E2E (string) Dir=Out
+        -> Set members in F CGF World Data.Options_11_0BC16CC94D7CD666C227E1A019B14E2E
+    Node: Get GameLevels_Map (K2Node_VariableGet)
+      Pin: GameLevels_Map (name) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get GameLevels_Map.GameLevels_Map
+      Pin: Key (name) Dir=In
+        -> String To Name.ReturnValue
+      Pin: Value (struct) Dir=Out
+        -> Break Soft World Reference.SoftWorldReference
+        -> Set members in F CGF World Data.SoftWorldRef_8_E2B2411E4B91DA95FAAF46BD99249DFA
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Break Soft World Reference (K2Node_BreakStruct)
+      Pin: SoftWorldReference (struct) Dir=In
+        -> Find.Value
+      Pin: WorldAsset (softobject) Dir=Out
+        -> Make Soft World Reference.WorldAsset
+    Node: Make Soft World Reference (K2Node_MakeStruct)
+      Pin: SoftWorldReference (struct) Dir=Out
+      Pin: WorldAsset (softobject) Dir=In
+        -> Break Soft World Reference.WorldAsset
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in F CGF World Data.then
+        -> Error Handling.then
+      Pin: WorldData (struct) Dir=In
+        -> Set members in F CGF World Data.StructOut
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Current Level Name.then
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF World Data.execute
+      Pin: else (exec) Dir=Out
+        -> Error Handling.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> String To Name.ReturnValue
+      Pin: OutputPin (name) Dir=Out
+        -> Set members in F CGF World Data.LevelName_12_7B75103F46432D4B6AA8E1A43B205267
+    Node: Error Handling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: In (string) Dir=In
+      Pin: PrintToScreen? (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: __WorldContext (object) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Error Handling.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Update World Data Struct for Save Game.F_CGF_ActorSaveData
+      Pin: OutputPin (struct) Dir=Out
+        -> Break F CGF Actor Save Data.F_CGF_ActorSaveData
+  Graph: SyncWorldDataVia_DT_CGF_LEVELS
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Get Current Level Name
+Target is BPC CGF Save Game.execute
+      Pin: ThisActorsCompSaveFileData (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Outputs (K2Node_Tunnel)
+      Pin: Succes (exec) Dir=In
+        -> Set members in F CGF Actor Save Data.then
+      Pin: Error (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StructOut (struct) Dir=In
+        -> Set members in F CGF Actor Save Data.StructOut
+    Node: Get Current Level Name
+Target is BPC CGF Save Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then (exec) Dir=Out
+        -> Get Data Table Row Names.execute
+      Pin: self (object) Dir=In
+      Pin: bRemovePrefixString (bool) Dir=In
+      Pin: LevelName (name) Dir=Out
+        -> Reroute Node.InputPin
+        -> Reroute Node.InputPin
+    Node: Get Data Table Row Names (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Current Level Name
+Target is BPC CGF Save Game.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: Table (object) Dir=In
+      Pin: OutRowNames (name) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get Data Table Row Names.then
+      Pin: Array (name) Dir=In
+        -> Get Data Table Row Names.OutRowNames
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (name) Dir=Out
+        -> Equal (Name).A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Get Data Table Row DT_CGF_Levels.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Get Current Level Name
+Target is BPC CGF Save Game.LevelName
+      Pin: OutputPin (name) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (name) Dir=Out
+        -> Equal (Name).B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Get Current Level Name
+Target is BPC CGF Save Game.LevelName
+      Pin: OutputPin (name) Dir=Out
+        -> Get Data Table Row DT_CGF_Levels.RowName
+    Node: Get Data Table Row DT_CGF_Levels (K2Node_GetDataTableRow)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: then (exec) Dir=Out
+        -> Set members in F CGF Actor Save Data.execute
+      Pin: RowNotFound (exec) Dir=Out
+        -> Print String.execute
+      Pin: DataTable (object) Dir=In
+      Pin: RowName (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in F CGF Actor Save Data.WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895
+    Node: Equal (Name) (K2Node_PromotableOperator)
+      Pin: A (name) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: B (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Name).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in F CGF Actor Save Data (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Get Data Table Row DT_CGF_Levels.then
+      Pin: then (exec) Dir=Out
+        -> Outputs.Succes
+      Pin: StructRef (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: StructOut (struct) Dir=Out
+        -> Outputs.StructOut
+      Pin: WorldData_60_AD1078674E2C1CCEA33CF7B2254EC895 (struct) Dir=In
+        -> Get Data Table Row DT_CGF_Levels.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Print String.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Outputs.Error
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Data Table Row DT_CGF_Levels.RowNotFound
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set members in F CGF Actor Save Data.StructRef
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Inputs.ThisActorsCompSaveFileData
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: OnCompActorDataLoaded
+    Node: OnCompActorDataLoaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnCompActorDataSaved
+    Node: OnCompActorDataSaved (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnCompPlayerDataLoaded
+    Node: OnCompPlayerDataLoaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: OnCompPlayerDataSaved
+    Node: OnCompPlayerDataSaved (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

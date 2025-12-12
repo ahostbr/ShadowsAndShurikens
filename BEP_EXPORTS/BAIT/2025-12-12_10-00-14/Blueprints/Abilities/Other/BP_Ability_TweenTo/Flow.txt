@@ -1,0 +1,317 @@
+Blueprint: BP_Ability_TweenTo (/Game/BossAIToolkit/Blueprints/Abilities/Other/BP_Ability_TweenTo.BP_Ability_TweenTo)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: BeginPlay.execute
+    Node: Parent: BeginPlay (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: self (object) Dir=In
+    Node: Get AbilityInfo (K2Node_VariableGet)
+      Pin: AbilityInfo (struct) Dir=Out
+        -> Break F Boss Ability.F_BossAbility
+      Pin: self (object) Dir=In
+    Node: Break F Boss Ability (K2Node_BreakStruct)
+      Pin: F_BossAbility (struct) Dir=In
+        -> Get AbilityInfo.AbilityInfo
+      Pin: AbilityName_2_7BDF787B47DAA120ADD0FC99DDFBCE98 (name) Dir=Out
+      Pin: AbilityClass_78_20197BE848F023D46363D988148E8812 (class) Dir=Out
+      Pin: ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA (name) Dir=Out
+        -> Equal (Name).A
+        -> Boss Get Actor with Tag
+Target is BI AIStorage.ActorTag
+      Pin: Damage_79_045879CF4A32CEC479823994B9FB52C2 (struct) Dir=Out
+      Pin: Targeting_80_C3E0562A42DA13AB69A88191173DAD2E (struct) Dir=Out
+      Pin: Modifier_68_9F6259774C70A5FB7DE538BB3C951747 (struct) Dir=Out
+        -> Set.TargetLocation_Location
+      Pin: Visuals_81_5964BD6B4A908F26C2F56A918B7FB6A2 (struct) Dir=Out
+      Pin: Duration_34_815036DA4DADC4EB735F1FBEEAD1C940 (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Cooldown_23_7AB88B49472E7334AB17849F234AE205 (real) Dir=Out
+      Pin: Combos_82_44865D1A41DAFD226ABD2283F99764C6 (struct) Dir=Out
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Get Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Timeline_Tween (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Set Play Rate
+Target is Timeline Component.then
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Alpha (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Timeline_Tween (K2Node_VariableGet)
+      Pin: Timeline_Tween (object) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.self
+      Pin: self (object) Dir=In
+    Node: Set Play Rate
+Target is Timeline Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+        -> Set StartLocation.then
+      Pin: then (exec) Dir=Out
+        -> Timeline_Tween.PlayFromStart
+      Pin: self (object) Dir=In
+        -> Get Timeline_Tween.Timeline_Tween
+      Pin: NewRate (real) Dir=In
+        -> float / float.ReturnValue
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: StartLocation (struct) Dir=In
+      Pin: StartLocation_Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: StartLocation_Rotation (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: StartLocation_Scale (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set.StartLocation_Location
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.execute
+      Pin: TargetLocation (struct) Dir=In
+      Pin: TargetLocation_Location (struct) Dir=In
+        -> Break F Boss Ability.Modifier_68_9F6259774C70A5FB7DE538BB3C951747
+      Pin: TargetLocation_Rotation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: TargetLocation_Scale (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.NewRate
+    Node: Get BossRef (K2Node_VariableGet)
+      Pin: BossRef (object) Dir=Out
+        -> Set Actor Location
+Target is Actor.self
+        -> Set Actor Rotation
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_Tween.Update
+      Pin: then (exec) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.execute
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: NewLocation (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get.StartLocation_Location
+      Pin: B (struct) Dir=In
+        -> Get.TargetLocation_Location
+      Pin: Alpha (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation
+    Node: Get (K2Node_VariableGet)
+      Pin: StartLocation (struct) Dir=Out
+      Pin: StartLocation_Location (struct) Dir=Out
+        -> Lerp (Vector).A
+      Pin: StartLocation_Rotation (struct) Dir=Out
+        -> Lerp (Rotator).A
+      Pin: StartLocation_Scale (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: TargetLocation (struct) Dir=Out
+      Pin: TargetLocation_Location (struct) Dir=Out
+        -> Lerp (Vector).B
+      Pin: TargetLocation_Rotation (struct) Dir=Out
+        -> Lerp (Rotator).B
+      Pin: TargetLocation_Scale (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BossBehaviorRef (K2Node_VariableGet)
+      Pin: BossBehaviorRef (object) Dir=Out
+        -> Get AIStorageRef.self
+      Pin: self (object) Dir=In
+    Node: Get AIStorageRef (K2Node_VariableGet)
+      Pin: AIStorageRef (object) Dir=Out
+        -> Boss Get Actor with Tag
+Target is BI AIStorage.self
+      Pin: self (object) Dir=In
+        -> Get BossBehaviorRef.BossBehaviorRef
+    Node: Boss Get Actor with Tag
+Target is BI AIStorage (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+        -> Get AIStorageRef.AIStorageRef
+      Pin: ActorTag (name) Dir=In
+        -> Break F Boss Ability.ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Transform
+Target is Actor.self
+        -> Is Valid.InputObject
+    Node: Equal (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (name) Dir=In
+        -> Break F Boss Ability.ComponentTag_72_AD90F4E440C602572EFBE0B358BA0ABA
+      Pin: B (name) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Name).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: else (exec) Dir=Out
+        -> Boss Get Actor with Tag
+Target is BI AIStorage.execute
+    Node: Get Actor Transform
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Boss Get Actor with Tag
+Target is BI AIStorage.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set StartLocation.StartLocation
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set.StartLocation_Rotation
+        -> Reroute Node.InputPin
+    Node: Set StartLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.execute
+      Pin: StartLocation (struct) Dir=In
+        -> Get Actor Transform
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Set.TargetLocation_Rotation
+    Node: Set Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Location
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get BossRef.BossRef
+      Pin: NewRotation (struct) Dir=In
+        -> Lerp (Rotator).ReturnValue
+      Pin: bTeleportPhysics (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Lerp (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get.StartLocation_Rotation
+      Pin: B (struct) Dir=In
+        -> Get.TargetLocation_Rotation
+      Pin: Alpha (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: bShortestPath (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.NewRotation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Timeline_Tween.Alpha
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Lerp (Rotator).Alpha
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+        -> Lerp (Vector).Alpha
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Break F Boss Ability.Duration_34_815036DA4DADC4EB735F1FBEEAD1C940
+      Pin: OutputPin (real) Dir=Out
+        -> float / float.B
+    Node: Use the tag to find an Actor in the storage as a tween target. If tag is None, then use the Modifier instead. Duration controls how fast the tween is. (EdGraphNode_Comment)
+    Node: Smoothly lerp the location and rotation of the boss AI (EdGraphNode_Comment)
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Boss Get Actor with Tag
+Target is BI AIStorage.then
+      Pin: InputObject (object) Dir=In
+        -> Boss Get Actor with Tag
+Target is BI AIStorage.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set StartLocation.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Print String.execute
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

@@ -1,0 +1,255 @@
+Blueprint: BP_HUD_BP_Comms (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_HUD_BP_Comms.BP_HUD_BP_Comms)
+  Graph: EventGraph
+    Node: Event Receive Draw HUD (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Draw Material
+Target is HUD.execute
+      Pin: SizeX (int) Dir=Out
+        -> To Float (Integer).InInt
+        -> To Float (Integer).InInt
+      Pin: SizeY (int) Dir=Out
+        -> To Float (Integer).InInt
+        -> To Float (Integer).InInt
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Draw Material
+Target is HUD.then
+      Pin: Condition (bool) Dir=In
+        -> Get Powers enabled.Powers enabled
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Get Powers enabled (K2Node_VariableGet)
+      Pin: Powers enabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Draw Text
+Target is HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Draw Text
+Target is HUD.execute
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: TextColor (struct) Dir=In
+        -> Make Color.ReturnValue
+      Pin: ScreenX (real) Dir=In
+      Pin: ScreenY (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Font (object) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: bScalePosition (bool) Dir=In
+    Node: Draw Text
+Target is HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Draw Text
+Target is HUD.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: TextColor (struct) Dir=In
+        -> Make Color.ReturnValue
+      Pin: ScreenX (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ScreenY (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Font (object) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: bScalePosition (bool) Dir=In
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Text
+Target is HUD.TextColor
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Event Receive Draw HUD.SizeY
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Get Text Size
+Target is HUD (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: OutWidth (real) Dir=Out
+        -> float - float.B
+      Pin: OutHeight (real) Dir=Out
+      Pin: Font (object) Dir=In
+      Pin: Scale (real) Dir=In
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Event Receive Draw HUD.SizeX
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Text Size
+Target is HUD.OutWidth
+      Pin: ReturnValue (real) Dir=Out
+        -> Draw Text
+Target is HUD.ScreenX
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Text
+Target is HUD.TextColor
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Reset (exec) Dir=In
+        -> Branch.else
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Text pop.PlayFromStart
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Draw Text
+Target is HUD.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Do Once.execute
+    Node: Text pop (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Do Once.Completed
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: Vertical offset (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Text pop.Vertical offset
+      Pin: ReturnValue (real) Dir=Out
+        -> Draw Text
+Target is HUD.ScreenY
+        -> Draw Text
+Target is HUD.ScreenY
+    Node: Draw Crosshair in the center of the screen (EdGraphNode_Comment)
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Event Receive Draw HUD.SizeX
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Event Receive Draw HUD.SizeY
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Make Literal Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+        -> Draw Material
+Target is HUD.ScreenW
+        -> Draw Material
+Target is HUD.ScreenH
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+        -> float - float.B
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Draw Material
+Target is HUD.ScreenX
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Draw Material
+Target is HUD.ScreenY
+    Node: Draw Material
+Target is HUD (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Draw HUD.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Material (object) Dir=In
+      Pin: ScreenX (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ScreenY (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ScreenW (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: ScreenH (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: MaterialU (real) Dir=In
+      Pin: MaterialV (real) Dir=In
+      Pin: MaterialUWidth (real) Dir=In
+      Pin: MaterialVHeight (real) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: bScalePosition (bool) Dir=In
+      Pin: Rotation (real) Dir=In
+      Pin: RotPivot (struct) Dir=In
+    Node: Hud Elements for Shooting Projectiles (fade in and fade out) (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,211 @@
+Blueprint: BTD_CheckDistance (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Decorators/BTD_CheckDistance.BTD_CheckDistance)
+  Graph: EventGraph
+  Graph: PerformConditionCheck
+    Node: Perform Condition Check (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: OwnerActor (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (bool) Dir=In
+        -> Select.ReturnValue
+    Node: Get ActorA (K2Node_VariableGet)
+      Pin: ActorA (struct) Dir=Out
+        -> Get Blackboard Value as Actor.Key
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: Get ActorB (K2Node_VariableGet)
+      Pin: ActorB (struct) Dir=Out
+        -> Get Blackboard Value as Actor.Key
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Equal (Float).A
+        -> Not Equal (Float).A
+        -> float < float.A
+        -> float <= float.A
+        -> float > float.A
+        -> float >= float.A
+    Node: Get Distance (K2Node_VariableGet)
+      Pin: Distance (struct) Dir=Out
+        -> Get Blackboard Value as Float.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get Distance.Distance
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 0
+    Node: Get Blackboard Value as Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get ActorA.ActorA
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Is Valid.Object
+    Node: Get Blackboard Value as Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get ActorB.ActorB
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+        -> Is Valid.Object
+    Node: Get Operator (K2Node_VariableGet)
+      Pin: Operator (byte) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: NewEnumerator1 (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: NewEnumerator2 (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: NewEnumerator3 (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: NewEnumerator4 (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: NewEnumerator5 (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: Index (byte) Dir=In
+        -> Get Operator.Operator
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.NewEnumerator0
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.NewEnumerator1
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.NewEnumerator2
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.NewEnumerator3
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.NewEnumerator4
+    Node: float >= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.NewEnumerator5
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Perform Condition Check.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Blackboard Value as Actor.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get DistanceFloat (K2Node_VariableGet)
+      Pin: DistanceFloat (real) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: Get UseFloatDistance (K2Node_VariableGet)
+      Pin: UseFloatDistance (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> Get Blackboard Value as Float.ReturnValue
+      Pin: Option 1 (real) Dir=In
+        -> Get DistanceFloat.DistanceFloat
+      Pin: Index (bool) Dir=In
+        -> Get UseFloatDistance.UseFloatDistance
+      Pin: ReturnValue (real) Dir=Out
+        -> float >= float.B
+        -> float > float.B
+        -> float <= float.B
+        -> float < float.B
+        -> Not Equal (Float).B
+        -> Equal (Float).B

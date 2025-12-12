@@ -1,0 +1,231 @@
+Blueprint: BP_Button_Dispatch_Bomb (/Game/CoreGameFramework/EpicExampleContent/Blueprint_Communication/Blueprints/BP_Button_Dispatch_Bomb.BP_Button_Dispatch_Bomb)
+  Graph: EventGraph
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set Button enabled.execute
+      Pin: self (object) Dir=In
+        -> Get Button light material.Button light material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Button enabled.then
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP Bomb.execute
+      Pin: self (object) Dir=In
+        -> Get Button light material.Button light material
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+    Node: Get Button light material (K2Node_VariableGet)
+      Pin: Button light material (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Overlapping button.then
+      Pin: Condition (bool) Dir=In
+        -> Get Button enabled.Button enabled
+      Pin: then (exec) Dir=Out
+        -> Activate
+Target is BP Button Dispatch Bomb.execute
+      Pin: else (exec) Dir=Out
+    Node: On Component Begin Overlap (Trigger collision) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Overlapping button.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Spawn point.Spawn point
+      Pin: ReturnValue (struct) Dir=Out
+        -> To Transform (Vector).InLocation
+    Node: To Transform (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InLocation (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor BP Bomb.SpawnTransform
+    Node: Get Button enabled (K2Node_VariableGet)
+      Pin: Button enabled (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set Button enabled (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: Button enabled (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Spawn point (K2Node_VariableGet)
+      Pin: Spawn point (struct) Dir=Out
+        -> vector + vector.B
+      Pin: self (object) Dir=In
+    Node: Bind Event to Bomb Exploded (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP Bomb.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor BP Bomb.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> Bomb Exploded_Event
+Custom Event.OutputDelegate
+    Node: Bomb Exploded_Event
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Bomb Exploded.Delegate
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+    Node: SpawnActor BP Bomb (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Bomb Exploded.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Bind Event to Bomb Exploded.self
+      Pin: SpawnTransform (struct) Dir=In
+        -> To Transform (Vector).ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Bomb Exploded_Event
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Button enabled (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Activate
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Button enabled (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Component End Overlap (Trigger collision) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Overlapping button.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Set Overlapping button (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Trigger collision).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Overlapping button (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Overlapping button (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Component End Overlap (Trigger collision).then
+      Pin: then (exec) Dir=Out
+      Pin: Overlapping button (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Activate
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Button enabled.execute
+    Node: Activate
+Target is BP Button Dispatch Bomb (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: Condition (bool) Dir=In
+        -> Get Overlapping button.Overlapping button
+      Pin: then (exec) Dir=Out
+        -> Activate
+Target is BP Button Dispatch Bomb.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Overlapping button (K2Node_VariableGet)
+      Pin: Overlapping button (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Activate
+Target is BP Button Dispatch Bomb (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Button enabled.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.execute
+    Node: Get ButtonMesh (K2Node_VariableGet)
+      Pin: ButtonMesh (object) Dir=Out
+        -> Create Dynamic Material Instance
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Button light material (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: Button light material (object) Dir=In
+        -> Create Dynamic Material Instance
+Target is Primitive Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Create Dynamic Material Instance
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Button light material.execute
+      Pin: self (object) Dir=In
+        -> Get ButtonMesh.ButtonMesh
+      Pin: ElementIndex (int) Dir=In
+      Pin: SourceMaterial (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Button light material.Button light material

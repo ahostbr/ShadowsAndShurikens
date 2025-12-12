@@ -1,0 +1,341 @@
+Blueprint: BP_EquipmentComponent (/Game/InventorySystemPro/Blueprints/Equipment/BP_EquipmentComponent.BP_EquipmentComponent)
+  Graph: EventGraph
+    Node: OnUsageErrorCheck
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Pawn.execute
+    Node: Usage Error Check (EdGraphNode_Comment)
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Log Inventory System Error.Error Message
+      Pin: C (string) Dir=In
+    Node: Log Inventory System Error (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Pawn.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Error Message (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Pawn.Object
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> On Usage Error Check
+Target is BP Equipment Component.execute
+    Node: Setup (EdGraphNode_Comment)
+    Node: On Usage Error Check
+Target is BP Equipment Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Cast To Pawn (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> OnUsageErrorCheck
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Log Inventory System Error.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsPawn (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+  Graph: AttachEquipmentToCharacter
+    Node: AttachEquipmentToCharacter (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.execute
+      Pin: Character (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+      Pin: SocketName (name) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.SocketName
+    Node: Attach Actor To Component
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AttachEquipmentToCharacter.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: Parent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: SocketName (name) Dir=In
+        -> AttachEquipmentToCharacter.SocketName
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> AttachEquipmentToCharacter.Character
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.Parent
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.self
+    Node: Attach Equipment to Character (EdGraphNode_Comment)
+  Graph: AttachEquipmentToCharacterTwo
+    Node: AttachEquipmentToCharacterTwo (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.execute
+      Pin: Character (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: FirstComponent (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: FirstSocketName (name) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SecondComponent (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SecondSocketName (name) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Attach Actor To Component
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AttachEquipmentToCharacterTwo.then
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: Parent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.Parent
+        -> Reroute Node.InputPin
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.self
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Attach Actor To Component
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Parent (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SocketName (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Attach Component To Component
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Attach Component To Component
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Parent (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: SocketName (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> AttachEquipmentToCharacterTwo.SecondSocketName
+      Pin: OutputPin (name) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> AttachEquipmentToCharacterTwo.SecondComponent
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> AttachEquipmentToCharacterTwo.FirstSocketName
+      Pin: OutputPin (name) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> AttachEquipmentToCharacterTwo.FirstComponent
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> AttachEquipmentToCharacterTwo.Character
+      Pin: OutputPin (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+    Node: Attach Equipment to Character (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (name) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.SocketName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.Parent
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (name) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.SocketName
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Attach Component To Component
+Target is Scene Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Attach Component To Component
+Target is Scene Component.Parent
+  Graph: AttachClothesToCharacter
+    Node: AttachClothesToCharacter (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.execute
+      Pin: Character (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: SkeletalMesh (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Leader Pose Component
+Target is Skinned Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Attach Actor To Component
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewLeaderBoneComponent (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: bForceUpdate (bool) Dir=In
+      Pin: bInFollowerShouldTickPose (bool) Dir=In
+    Node: Attach Actor To Component
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AttachClothesToCharacter.then
+      Pin: then (exec) Dir=Out
+        -> Set Leader Pose Component
+Target is Skinned Mesh Component.execute
+      Pin: self (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: Parent (object) Dir=In
+        -> Get Component by Class
+Target is Actor.ReturnValue
+      Pin: SocketName (name) Dir=In
+      Pin: LocationRule (byte) Dir=In
+      Pin: RotationRule (byte) Dir=In
+      Pin: ScaleRule (byte) Dir=In
+      Pin: bWeldSimulatedBodies (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Component by Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.Parent
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Attach Actor To Component
+Target is Actor.self
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Set Leader Pose Component
+Target is Skinned Mesh Component.NewLeaderBoneComponent
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> AttachClothesToCharacter.Character
+      Pin: OutputPin (object) Dir=Out
+        -> Get Component by Class
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> AttachClothesToCharacter.SkeletalMesh
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Leader Pose Component
+Target is Skinned Mesh Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Get Mesh.self
+    Node: Attach Equipment to Character (EdGraphNode_Comment)

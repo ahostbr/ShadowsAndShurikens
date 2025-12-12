@@ -1,0 +1,79 @@
+Blueprint: BFL_Misc (/Game/BossAIToolkit/Blueprints/Misc/BFL_Misc.BFL_Misc)
+  Graph: GetShieldHitbox
+    Node: GetShieldHitbox (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: SourceActor (object) Dir=Out
+        -> Get Components by Tag
+Target is Actor.self
+      Pin: ShieldTag (name) Dir=Out
+        -> Get Components by Tag
+Target is Actor.Tag
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Components by Tag
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GetShieldHitbox.SourceActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: Tag (name) Dir=In
+        -> GetShieldHitbox.ShieldTag
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetShieldHitbox.then
+      Pin: RetHitbox (object) Dir=In
+        -> GET.Output
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Components by Tag
+Target is Actor.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Return Node.RetHitbox
+  Graph: GetEffectClassByType
+    Node: GetEffectClassByType (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Type (byte) Dir=Out
+        -> Select.Index
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetEffectClassByType.then
+      Pin: ReturnValue (class) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator1 (class) Dir=In
+      Pin: NewEnumerator0 (class) Dir=In
+      Pin: NewEnumerator4 (class) Dir=In
+      Pin: NewEnumerator2 (class) Dir=In
+      Pin: Index (byte) Dir=In
+        -> GetEffectClassByType.Type
+      Pin: ReturnValue (class) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: SendAttackMessage
+    Node: SendAttackMessage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Report Noise Event.execute
+      Pin: Origin (struct) Dir=Out
+        -> Report Noise Event.NoiseLocation
+      Pin: AttackerRef (object) Dir=Out
+        -> Report Noise Event.Instigator
+      Pin: MaxRange (real) Dir=Out
+        -> Report Noise Event.MaxRange
+      Pin: __WorldContext (object) Dir=Out
+    Node: Report Noise Event (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SendAttackMessage.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: NoiseLocation (struct) Dir=In
+        -> SendAttackMessage.Origin
+      Pin: Loudness (real) Dir=In
+      Pin: Instigator (object) Dir=In
+        -> SendAttackMessage.AttackerRef
+      Pin: MaxRange (real) Dir=In
+        -> SendAttackMessage.MaxRange
+      Pin: Tag (name) Dir=In

@@ -1,0 +1,817 @@
+Blueprint: BTS_MatchSpeed (/Game/AIBehaviorToolkit/Blueprints/BehaviorTree/Services/BTS_MatchSpeed.BTS_MatchSpeed)
+  Graph: EventGraph
+    Node: Event Receive Activation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_AIC.execute
+      Pin: OwnerActor (object) Dir=Out
+        -> Cast To BP_AIC.Object
+    Node: Cast To BP_AIC (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Activation.then
+      Pin: then (exec) Dir=Out
+        -> Set ControllerRef.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Event Receive Activation.OwnerActor
+      Pin: AsBP AIC (object) Dir=Out
+        -> Set ControllerRef.ControllerRef
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set ControllerRef (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_AIC.then
+      Pin: then (exec) Dir=Out
+        -> Set BehaviorComponent.execute
+      Pin: ControllerRef (object) Dir=In
+        -> Cast To BP_AIC.AsBP AIC
+      Pin: Output_Get (object) Dir=Out
+        -> Get Personality.self
+      Pin: self (object) Dir=In
+    Node: Get Personality (K2Node_VariableGet)
+      Pin: Personality (object) Dir=Out
+        -> Set BehaviorComponent.BehaviorComponent
+      Pin: self (object) Dir=In
+        -> Set ControllerRef.Output_Get
+    Node: Set BehaviorComponent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ControllerRef.then
+      Pin: then (exec) Dir=Out
+        -> Set MaxMoveSpeed.execute
+      Pin: BehaviorComponent (object) Dir=In
+        -> Get Personality.Personality
+      Pin: Output_Get (object) Dir=Out
+        -> Get Current Behavior Config
+Target is BP Behavior Component.self
+        -> Get FollowDistance.self
+      Pin: self (object) Dir=In
+    Node: Get Current Behavior Config
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Set BehaviorComponent.Output_Get
+      Pin: Config (struct) Dir=Out
+        -> Break Struct Basic Behavior.Struct_BasicBehavior
+    Node: Break Struct Basic Behavior (K2Node_BreakStruct)
+      Pin: Struct_BasicBehavior (struct) Dir=In
+        -> Get Current Behavior Config
+Target is BP Behavior Component.Config
+      Pin: BehaviorType_2_D699B7194817EACFC527B8949BCD5FEC (byte) Dir=Out
+      Pin: MovementSpeed_34_B716D9754BC12E288BC6EF99E151DD9F (real) Dir=Out
+        -> Set MaxMoveSpeed.MaxMoveSpeed
+      Pin: OnSightTriggers_50_3224A6F24F55E7CC58F2998B590297CB (struct) Dir=Out
+      Pin: LoseSightTriggers_49_A18A98624FCC4ECF2C770A9ABFEE1E90 (struct) Dir=Out
+      Pin: MessageTriggers_55_4BA7591A4081E99E8729D79955A65776 (struct) Dir=Out
+      Pin: DelayTrigger_38_5C8C6C6149AAC5846DD7578B341E44F1 (struct) Dir=Out
+      Pin: WithinDistanceTriggers_44_12A33C1E4F2159016C210985F0BCD8D2 (struct) Dir=Out
+      Pin: BeyondDistanceTriggers_45_B80166C2426C3DB58AA1B1B46D24A079 (struct) Dir=Out
+      Pin: HealthTriggers_63_A5C73CF34962E294FD5009BE1F5E2154 (struct) Dir=Out
+      Pin: Animations_12_238A696D49F94C7AACEF9D9D093E5803 (object) Dir=Out
+      Pin: Audio_64_82C07DD940FCA8760AF124A6DD3382C4 (object) Dir=Out
+      Pin: TargetTags_54_03DAC2AD452002D87E6949B6124BAC3A (name) Dir=Out
+      Pin: RandomAnim_57_32B894544143D1037551E982DEBE9461 (bool) Dir=Out
+      Pin: AscendingOrderAnim_59_6C2027964B8F9F8F327106A47FEC81E4 (bool) Dir=Out
+      Pin: PrioritizeList_66_A06242444024145CA7747196CD1AFED3 (bool) Dir=Out
+    Node: Set MaxMoveSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set BehaviorComponent.then
+      Pin: then (exec) Dir=Out
+        -> Set Distance.execute
+      Pin: MaxMoveSpeed (real) Dir=In
+        -> Break Struct Basic Behavior.MovementSpeed_34_B716D9754BC12E288BC6EF99E151DD9F
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Receive Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: OwnerActor (object) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Switch on EMovementMode.execute
+      Pin: else (exec) Dir=Out
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get ShouldMatchSpeed.self
+        -> Get BBKey Target Actor
+Target is BP Behavior Component.self
+        -> Get Owning Character
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Get ShouldMatchSpeed (K2Node_VariableGet)
+      Pin: ShouldMatchSpeed (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get ShouldMatchSpeed.ShouldMatchSpeed
+      Pin: B (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get BBKey Target Actor
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: RetActor (object) Dir=Out
+        -> Get Components By Class
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: Get Components By Class
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BBKey Target Actor
+Target is BP Behavior Component.RetActor
+      Pin: ComponentClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: RetCharacter (object) Dir=Out
+        -> Get CharacterMovement.self
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Get MovementMode.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+    Node: Get MovementMode (K2Node_VariableGet)
+      Pin: MovementMode (byte) Dir=Out
+        -> Switch on EMovementMode.Selection
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Switch on EMovementMode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Get MovementMode.MovementMode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: MOVE_None (exec) Dir=Out
+      Pin: MOVE_Walking (exec) Dir=Out
+        -> Set MaxWalkSpeed.execute
+      Pin: MOVE_NavWalking (exec) Dir=Out
+      Pin: MOVE_Falling (exec) Dir=Out
+      Pin: MOVE_Swimming (exec) Dir=Out
+        -> Set MaxSwimSpeed.execute
+      Pin: MOVE_Flying (exec) Dir=Out
+        -> Set MaxFlySpeed.execute
+      Pin: MOVE_Custom (exec) Dir=Out
+        -> Set MaxCustomMovementSpeed.execute
+    Node: Set MaxWalkSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EMovementMode.MOVE_Walking
+      Pin: then (exec) Dir=Out
+      Pin: MaxWalkSpeed (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set MaxWalkSpeed.self
+        -> Set MaxFlySpeed.self
+        -> Set MaxCustomMovementSpeed.self
+        -> Set MaxSwimSpeed.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GET.Output
+      Pin: OutputPin (object) Dir=Out
+        -> Get MaxWalkSpeed.self
+        -> Get MovementMode.self
+        -> Get MaxFlySpeed.self
+        -> Get MaxSwimSpeed.self
+        -> Get MaxCustomMovementSpeed.self
+    Node: Get MaxWalkSpeed (K2Node_VariableGet)
+      Pin: MaxWalkSpeed (real) Dir=Out
+        -> Select.MOVE_Walking
+        -> Select.MOVE_NavWalking
+        -> Select.MOVE_Falling
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set MaxFlySpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EMovementMode.MOVE_Flying
+      Pin: then (exec) Dir=Out
+      Pin: MaxFlySpeed (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set MaxCustomMovementSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EMovementMode.MOVE_Custom
+      Pin: then (exec) Dir=Out
+      Pin: MaxCustomMovementSpeed (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set MaxSwimSpeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on EMovementMode.MOVE_Swimming
+      Pin: then (exec) Dir=Out
+      Pin: MaxSwimSpeed (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set TargetLocation.execute
+      Pin: else (exec) Dir=Out
+    Node: Get TargetLocationKey (K2Node_VariableGet)
+      Pin: TargetLocationKey (struct) Dir=Out
+        -> Get Blackboard Value as Vector.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get TargetLocationKey.TargetLocationKey
+      Pin: ReturnValue (struct) Dir=Out
+        -> Not Equal (Vector).A
+        -> vector - vector.A
+        -> Reroute Node.InputPin
+    Node: Not Equal (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get TargetLocation.TargetLocation
+      Pin: ErrorTolerance (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Get TargetLocation (K2Node_VariableGet)
+      Pin: TargetLocation (struct) Dir=Out
+        -> Not Equal (Vector).B
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Not Equal (Vector).ReturnValue
+      Pin: B (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get TargetLocation.TargetLocation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Distance.Distance
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Set TargetLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: TargetLocation (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation
+      Pin: self (object) Dir=In
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get EQSContext Actor
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set TargetLocation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get EQSContext Actor
+Target is BP Behavior Component.RetActor
+      Pin: NewLocation (struct) Dir=In
+        -> Set TargetLocation.Output_Get
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Distance (K2Node_VariableGet)
+      Pin: Distance (real) Dir=Out
+        -> float > float.B
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Event Receive Tick.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get EQSContext Actor
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: RetActor (object) Dir=Out
+        -> Set Actor Location
+Target is Actor.self
+    Node: Set Distance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set MaxMoveSpeed.then
+      Pin: then (exec) Dir=Out
+      Pin: Distance (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get FollowDistance (K2Node_VariableGet)
+      Pin: FollowDistance (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+        -> Set BehaviorComponent.Output_Get
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get FollowDistance.FollowDistance
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Distance.Distance
+    Node: Get Velocity
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Velocity
+Target is Actor.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 1
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Option 1 (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Index (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set MaxCustomMovementSpeed.MaxCustomMovementSpeed
+        -> Set MaxFlySpeed.MaxFlySpeed
+        -> Set MaxSwimSpeed.MaxSwimSpeed
+        -> Set MaxWalkSpeed.MaxWalkSpeed
+    Node: Get TargetLocationKey (K2Node_VariableGet)
+      Pin: TargetLocationKey (struct) Dir=Out
+        -> Get Blackboard Value as Vector.Key
+      Pin: self (object) Dir=In
+    Node: Get Blackboard Value as Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: NodeOwner (object) Dir=In
+      Pin: Key (struct) Dir=In
+        -> Get TargetLocationKey.TargetLocationKey
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Components By Class
+Target is Actor.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Is Valid.Object
+        -> Reroute Node.InputPin
+    Node: Get MovementMode (K2Node_VariableGet)
+      Pin: MovementMode (byte) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BBKey Target Actor
+Target is BP Behavior Component.RetActor
+      Pin: OutputPin (object) Dir=Out
+        -> Get Velocity
+Target is Actor.self
+    Node: Select (K2Node_Select)
+      Pin: MOVE_None (real) Dir=In
+      Pin: MOVE_Walking (real) Dir=In
+        -> Get MaxWalkSpeed.MaxWalkSpeed
+      Pin: MOVE_NavWalking (real) Dir=In
+        -> Get MaxWalkSpeed.MaxWalkSpeed
+      Pin: MOVE_Falling (real) Dir=In
+        -> Get MaxWalkSpeed.MaxWalkSpeed
+      Pin: MOVE_Swimming (real) Dir=In
+        -> Get MaxSwimSpeed.MaxSwimSpeed
+      Pin: MOVE_Flying (real) Dir=In
+        -> Get MaxFlySpeed.MaxFlySpeed
+      Pin: MOVE_Custom (real) Dir=In
+        -> Get MaxCustomMovementSpeed.MaxCustomMovementSpeed
+      Pin: Index (byte) Dir=In
+        -> Get MovementMode.MovementMode
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 0
+    Node: Get MaxFlySpeed (K2Node_VariableGet)
+      Pin: MaxFlySpeed (real) Dir=Out
+        -> Select.MOVE_Flying
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get MaxSwimSpeed (K2Node_VariableGet)
+      Pin: MaxSwimSpeed (real) Dir=Out
+        -> Select.MOVE_Swimming
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get MaxCustomMovementSpeed (K2Node_VariableGet)
+      Pin: MaxCustomMovementSpeed (real) Dir=Out
+        -> Select.MOVE_Custom
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Get Blackboard Value as Vector.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Set TargetLocation.TargetLocation
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+      Pin: self (object) Dir=In
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: RetCharacter (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+    Node: Set initial references (EdGraphNode_Comment)
+    Node: Set the speed of the AI to be equal to the current speed of the target (EdGraphNode_Comment)
+    Node: Set the EQS Actor's location to the Target Location (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get TargetLocation (K2Node_VariableGet)
+      Pin: TargetLocation (struct) Dir=Out
+        -> vector - vector.A
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get TargetLocation.TargetLocation
+      Pin: B (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get StuckSolverDistance.StuckSolverDistance
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Capsule Trace By Channel.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Capsule Trace By Channel.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewLocation (struct) Dir=In
+        -> Break Hit Result.Location
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+      Pin: OutputPin (object) Dir=Out
+        -> Set Actor Location
+Target is Actor.self
+    Node: Get TargetLocation (K2Node_VariableGet)
+      Pin: TargetLocation (struct) Dir=Out
+        -> vector + vector.A
+      Pin: self (object) Dir=In
+    Node: Teleport the AI to the target's location if they are too far. (EdGraphNode_Comment)
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: RetCharacter (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Get StuckSolverDistance (K2Node_VariableGet)
+      Pin: StuckSolverDistance (real) Dir=Out
+        -> float > float.B
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: OutputPin (object) Dir=Out
+        -> Get StuckSolverDistance.self
+        -> Get TeleportDistance.self
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get StuckSolverDistance.StuckSolverDistance
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Forward Vector
+Target is Actor.self
+    Node: Get Actor Forward Vector
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * float.A
+    Node: vector * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Actor Forward Vector
+Target is Actor.ReturnValue
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get TeleportDistance (K2Node_VariableGet)
+      Pin: TeleportDistance (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get TeleportDistance.TeleportDistance
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector * float.B
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get TargetLocation.TargetLocation
+      Pin: B (struct) Dir=In
+        -> vector * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Capsule Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: End (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: Radius (real) Dir=In
+        -> Get Scaled Capsule Radius
+Target is Capsule Collision.ReturnValue
+      Pin: HalfHeight (real) Dir=In
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Make Array.Array
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Capsule Trace By Channel.ActorsToIgnore
+      Pin: [0] (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> Capsule Trace By Channel.OutHit
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+      Pin: B_Y (real) Dir=In
+      Pin: B_Z (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Capsule Trace By Channel.Start
+    Node: Get BehaviorComponent (K2Node_VariableGet)
+      Pin: BehaviorComponent (object) Dir=Out
+        -> Get Owning Character
+Target is BP Behavior Component.self
+        -> Get TeleportDistance.self
+      Pin: self (object) Dir=In
+    Node: Get Owning Character
+Target is BP Behavior Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+      Pin: RetCharacter (object) Dir=Out
+        -> Make Array.[0]
+        -> Reroute Node.InputPin
+        -> Get CapsuleComponent.self
+    Node: Get TeleportDistance (K2Node_VariableGet)
+      Pin: TeleportDistance (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+        -> Get BehaviorComponent.BehaviorComponent
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: OutputPin (struct) Dir=Out
+        -> vector + vector.A
+        -> vector - vector.A
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (struct) Dir=In
+      Pin: B_X (real) Dir=In
+      Pin: B_Y (real) Dir=In
+      Pin: B_Z (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Capsule Trace By Channel.End
+    Node: Calculate where to teleport based on player camera angle (EdGraphNode_Comment)
+    Node: Trace up to down for any obstacles to avoid teleporting inside objects or below the floor (EdGraphNode_Comment)
+    Node: Get Scaled Capsule Half Height
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> Capsule Trace By Channel.HalfHeight
+    Node: Get CapsuleComponent (K2Node_VariableGet)
+      Pin: CapsuleComponent (object) Dir=Out
+        -> Get Scaled Capsule Half Height
+Target is Capsule Collision.self
+        -> Get Scaled Capsule Radius
+Target is Capsule Collision.self
+      Pin: self (object) Dir=In
+        -> Get Owning Character
+Target is BP Behavior Component.RetCharacter
+    Node: Get Scaled Capsule Radius
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CapsuleComponent.CapsuleComponent
+      Pin: ReturnValue (real) Dir=Out
+        -> Capsule Trace By Channel.Radius
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get TeleportDistance.TeleportDistance
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector + vector.B_Z
+        -> vector - vector.B_Z

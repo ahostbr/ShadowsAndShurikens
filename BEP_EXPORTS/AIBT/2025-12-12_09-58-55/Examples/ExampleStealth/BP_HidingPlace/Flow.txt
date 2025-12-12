@@ -1,0 +1,139 @@
+Blueprint: BP_HidingPlace (/Game/AIBehaviorToolkit/Examples/ExampleStealth/BP_HidingPlace.BP_HidingPlace)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_Player.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To BP_Player.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Cast To BP_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsBP Player (object) Dir=Out
+        -> Get Tags.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Tags (K2Node_VariableGet)
+      Pin: Tags (name) Dir=Out
+        -> Clear.TargetArray
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_Player.AsBP Player
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_Player.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Get Tags.Tags
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewItem (name) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Get Tags.Tags
+      Pin: OutputPin (name) Dir=Out
+        -> Add Unique.TargetArray
+    Node: On Component End Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To BP_Player.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To BP_Player.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Cast To BP_Player (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component End Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component End Overlap (Box).OtherActor
+      Pin: AsBP Player (object) Dir=Out
+        -> Get Tags.self
+        -> Get bIsCrouched.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Tags (K2Node_VariableGet)
+      Pin: Tags (name) Dir=Out
+        -> Clear.TargetArray
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_Player.AsBP Player
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BP_Player.then
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Get Tags.Tags
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewItem (name) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (name) Dir=In
+        -> Get Tags.Tags
+      Pin: OutputPin (name) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Get bIsCrouched (K2Node_VariableGet)
+      Pin: bIsCrouched (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Cast To BP_Player.AsBP Player
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: Option 1 (name) Dir=In
+        -> Make Literal Name.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (name) Dir=Out
+        -> Add Unique.NewItem
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Select.Option 0
+    Node: Make Literal Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (name) Dir=In
+      Pin: ReturnValue (name) Dir=Out
+        -> Select.Option 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Get bIsCrouched.bIsCrouched
+      Pin: OutputPin (bool) Dir=Out
+        -> Select.Index
+    Node: Change tag to "PlayerHidden" when the Player enters this hiding place. (EdGraphNode_Comment)
+    Node: Change tag to "Player" or "PlayerStealth" when the Player exits this hiding place. (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
