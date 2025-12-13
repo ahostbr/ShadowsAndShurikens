@@ -5,6 +5,6 @@
 class FSOTS_UDSBridgeModule : public IModuleInterface
 {
 public:
-	virtual void StartupModule() override {}
-	virtual void ShutdownModule() override {}
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
 };

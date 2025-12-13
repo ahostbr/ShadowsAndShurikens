@@ -11,7 +11,9 @@ public class SOTS_UDSBridge : ModuleRules
 			{
 				"Core",
 				"CoreUObject",
-				"Engine"
+				"Engine",
+				"AIModule",
+				"DeveloperSettings"
 			}
 		);
 

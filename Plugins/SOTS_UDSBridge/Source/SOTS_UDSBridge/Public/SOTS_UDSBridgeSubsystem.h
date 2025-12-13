@@ -7,6 +7,7 @@
 class USOTS_UDSBridgeConfig;
 class USOTS_GlobalStealthManagerSubsystem;
 class IConsoleObject;
+class ASOTS_TrailBreadcrumb;
 
 // DLWE application path chosen at runtime.
 enum class EDLWEApplyMode : uint8
@@ -27,6 +28,19 @@ class SOTS_UDSBRIDGE_API USOTS_UDSBridgeSubsystem : public UGameInstanceSubsyste
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+	// BP/externally callable helpers
+	bool GetBridgeStateSnapshot(
+		bool& bOutHasUDS,
+		bool& bOutHasDLWE,
+		bool& bOutHasGSM,
+		bool& bOutSnowy,
+		bool& bOutRaining,
+		bool& bOutDusty,
+		bool& bOutHasSunDir,
+		FVector& OutSunDirWS);
+
+	void ForceRefreshAndApply();
 
 private:
 	// Console command entry point (registered during Initialize).
@@ -93,6 +107,7 @@ private:
 	void TickBridge();
 	void RefreshCachedRefs(bool bForce);
 	void RefreshCachedGSM();
+	void BuildStateFromCaches(FSOTS_UDSBridgeState& OutState);
 
 	// Discovery helpers
 	AActor* FindUDSActor();
@@ -102,6 +117,9 @@ private:
 	void PushSunDirToGSM(const FSOTS_UDSBridgeState& State);
 	void ApplyDLWEPolicy(const FSOTS_UDSBridgeState& State);
 	void UpdateApplyMode(UActorComponent* DLWEComp);
+	void TrySpawnTrailBreadcrumb(const FSOTS_UDSBridgeState& State);
+	UFUNCTION()
+	void OnBreadcrumbDestroyed(AActor* DestroyedActor);
 
 	// Debug
 	void EmitTelemetry(double NowSeconds);
@@ -124,4 +142,11 @@ private:
 	bool CallDLWE_SettingsFunction(UObject* DLWEComp, FName FuncName, UObject* SettingsObj) const;
 	bool IsSingleBoolParamFunction(UFunction* Fn) const;
 	bool IsSingleObjectParamFunction(UFunction* Fn) const;
+
+	// Breadcrumb chain state
+	TWeakObjectPtr<ASOTS_TrailBreadcrumb> BreadcrumbTail;
+	TWeakObjectPtr<ASOTS_TrailBreadcrumb> BreadcrumbHead;
+	FVector LastBreadcrumbLocation = FVector::ZeroVector;
+	double LastBreadcrumbSpawnTime = 0.0;
+	int32 AliveBreadcrumbCount = 0;
 };

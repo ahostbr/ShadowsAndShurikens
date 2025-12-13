@@ -5,11 +5,16 @@
 #include "EngineUtils.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "HAL/IConsoleManager.h"
+#include "SOTS_TrailBreadcrumb.h"
 #include "SOTS_GlobalStealthManagerSubsystem.h"
 #include "SOTS_UDSBridgeConfig.h"
+#include "SOTS_UDSBridgeSettings.h"
 #include "UObject/Class.h"
 #include "TimerManager.h"
+#include "Perception/AISense_Hearing.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UDSBridge, Log, All);
 
@@ -79,26 +84,12 @@ void USOTS_UDSBridgeSubsystem::TickBridge()
 	RefreshCachedGSM();
 
 	FSOTS_UDSBridgeState State;
-	if (CachedUDSActor.IsValid())
-	{
-		ExtractWeatherFlags(CachedUDSActor.Get(), State);
-
-		bool bHasSun = false;
-		FVector SunDir;
-		ExtractSunDirectionWS(CachedUDSActor.Get(), SunDir, bHasSun);
-		State.bHasSunDir = bHasSun;
-		State.SunDirWS = bHasSun ? SunDir : FVector::ZeroVector;
-	}
-	else
-	{
-		const double Now = GetWorldTimeSecondsSafe();
-		EmitWarningOnce(TEXT("UDSBridge: UDS actor not found; weather/sun data unavailable."), bWarnedNoUDS, bWarnedMissingUDSOnce, Now);
-	}
-
+	BuildStateFromCaches(State);
 	LastState = State;
 
 	PushSunDirToGSM(State);
 	ApplyDLWEPolicy(State);
+	TrySpawnTrailBreadcrumb(State);
 
 	if (UWorld* World = GetWorld())
 	{
@@ -155,6 +146,76 @@ void USOTS_UDSBridgeSubsystem::RefreshCachedGSM()
 	{
 		CachedGSMSubsystem = GetGSMSubsystem();
 	}
+}
+
+void USOTS_UDSBridgeSubsystem::BuildStateFromCaches(FSOTS_UDSBridgeState& OutState)
+{
+	OutState = FSOTS_UDSBridgeState();
+
+	if (!Config)
+	{
+		return;
+	}
+
+	if (CachedUDSActor.IsValid())
+	{
+		ExtractWeatherFlags(CachedUDSActor.Get(), OutState);
+
+		bool bHasSun = false;
+		FVector SunDir;
+		ExtractSunDirectionWS(CachedUDSActor.Get(), SunDir, bHasSun);
+		OutState.bHasSunDir = bHasSun;
+		OutState.SunDirWS = bHasSun ? SunDir : FVector::ZeroVector;
+	}
+	else
+	{
+		const double Now = GetWorldTimeSecondsSafe();
+		EmitWarningOnce(TEXT("UDSBridge: UDS actor not found; weather/sun data unavailable."), bWarnedNoUDS, bWarnedMissingUDSOnce, Now);
+	}
+}
+
+bool USOTS_UDSBridgeSubsystem::GetBridgeStateSnapshot(
+	bool& bOutHasUDS,
+	bool& bOutHasDLWE,
+	bool& bOutHasGSM,
+	bool& bOutSnowy,
+	bool& bOutRaining,
+	bool& bOutDusty,
+	bool& bOutHasSunDir,
+	FVector& OutSunDirWS)
+{
+	EnsureConfig();
+	RefreshCachedRefs(false);
+	RefreshCachedGSM();
+
+	FSOTS_UDSBridgeState State;
+	BuildStateFromCaches(State);
+	LastState = State;
+
+	bOutHasUDS = CachedUDSActor.IsValid();
+	bOutHasDLWE = CachedDLWEComponent.IsValid();
+	bOutHasGSM = CachedGSMSubsystem.IsValid();
+	bOutSnowy = State.bSnowy;
+	bOutRaining = State.bRaining;
+	bOutDusty = State.bDusty;
+	bOutHasSunDir = State.bHasSunDir;
+	OutSunDirWS = State.bHasSunDir ? State.SunDirWS : FVector::ZeroVector;
+
+	return Config != nullptr;
+}
+
+void USOTS_UDSBridgeSubsystem::ForceRefreshAndApply()
+{
+	EnsureConfig();
+	RefreshCachedRefs(true);
+	RefreshCachedGSM();
+
+	FSOTS_UDSBridgeState State;
+	BuildStateFromCaches(State);
+	LastState = State;
+
+	PushSunDirToGSM(State);
+	ApplyDLWEPolicy(State);
 }
 
 AActor* USOTS_UDSBridgeSubsystem::FindUDSActor()
@@ -308,6 +369,24 @@ float USOTS_UDSBridgeSubsystem::GetJitteredInterval() const
 
 void USOTS_UDSBridgeSubsystem::EnsureConfig()
 {
+	if (Config)
+	{
+		return;
+	}
+
+	const USOTS_UDSBridgeSettings* Settings = GetDefault<USOTS_UDSBridgeSettings>();
+	if (Settings)
+	{
+		if (Settings->DefaultBridgeConfig.IsValid())
+		{
+			Config = Settings->DefaultBridgeConfig.Get();
+		}
+		else if (Settings->DefaultBridgeConfig.ToSoftObjectPath().IsValid())
+		{
+			Config = Settings->DefaultBridgeConfig.LoadSynchronous();
+		}
+	}
+
 	if (!Config)
 	{
 		Config = NewObject<USOTS_UDSBridgeConfig>(this, USOTS_UDSBridgeConfig::StaticClass());
@@ -939,3 +1018,140 @@ bool USOTS_UDSBridgeSubsystem::IsSingleObjectParamFunction(UFunction* Fn) const
 	return ParamCount == 1;
 }
 
+void USOTS_UDSBridgeSubsystem::TrySpawnTrailBreadcrumb(const FSOTS_UDSBridgeState& State)
+{
+	if (!Config || !Config->bEnableTrailBreadcrumbs)
+	{
+		return;
+	}
+
+	if (!State.bSnowy)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	ACharacter* Character = Cast<ACharacter>(CachedPlayerPawn.Get());
+	if (!Character)
+	{
+		return;
+	}
+
+	const UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement();
+	if (!MoveComp || !MoveComp->IsMovingOnGround())
+	{
+		return;
+	}
+
+	const float Speed2D = Character->GetVelocity().Size2D();
+	if (Speed2D < Config->BreadcrumbMinSpeed2D)
+	{
+		return;
+	}
+
+	const double Now = World->GetTimeSeconds();
+	if ((Now - LastBreadcrumbSpawnTime) < Config->BreadcrumbInterval)
+	{
+		return;
+	}
+
+	const FVector ActorLoc = Character->GetActorLocation();
+	if (!LastBreadcrumbLocation.IsNearlyZero() && FVector::Dist2D(ActorLoc, LastBreadcrumbLocation) < Config->BreadcrumbMinDistance)
+	{
+		return;
+	}
+
+	FVector SpawnLoc = ActorLoc;
+	FHitResult Hit;
+	const FVector TraceStart = ActorLoc;
+	const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 200.f);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_TrailBreadcrumbTrace), false, Character);
+	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params))
+	{
+		SpawnLoc = Hit.ImpactPoint;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = Character;
+	SpawnParams.Instigator = Character;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	ASOTS_TrailBreadcrumb* NewBreadcrumb = World->SpawnActor<ASOTS_TrailBreadcrumb>(ASOTS_TrailBreadcrumb::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (!NewBreadcrumb)
+	{
+		return;
+	}
+
+	NewBreadcrumb->LifespanSeconds = Config->BreadcrumbLifespanSeconds;
+	NewBreadcrumb->HearingLoudness = Config->BreadcrumbHearingLoudness;
+	NewBreadcrumb->HearingMaxRange = Config->BreadcrumbHearingMaxRange;
+	NewBreadcrumb->HearingTag = Config->BreadcrumbHearingTag;
+	NewBreadcrumb->bEmitHearingEventOnSpawn = Config->bEmitBreadcrumbHearingEvent;
+
+	NewBreadcrumb->Prev = BreadcrumbTail.Get();
+	if (BreadcrumbTail.IsValid())
+	{
+		BreadcrumbTail->Next = NewBreadcrumb;
+	}
+	else
+	{
+		BreadcrumbHead = NewBreadcrumb;
+	}
+	BreadcrumbTail = NewBreadcrumb;
+
+	AliveBreadcrumbCount = FMath::Max(0, AliveBreadcrumbCount + 1);
+	LastBreadcrumbSpawnTime = Now;
+	LastBreadcrumbLocation = SpawnLoc;
+
+	NewBreadcrumb->OnDestroyed.AddDynamic(this, &USOTS_UDSBridgeSubsystem::OnBreadcrumbDestroyed);
+
+	if (Config->bEnableBridgeTelemetry && Now >= NextTelemetryTimeSeconds)
+	{
+		UE_LOG(LogSOTS_UDSBridge, Log, TEXT("UDSBridge breadcrumb spawn | Loc=(%.1f,%.1f,%.1f) Alive=%d HeadSet=%d TailSet=%d"),
+			SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z,
+			AliveBreadcrumbCount,
+			BreadcrumbHead.IsValid() ? 1 : 0,
+			BreadcrumbTail.IsValid() ? 1 : 0);
+	}
+
+	while (AliveBreadcrumbCount > Config->BreadcrumbMaxAlive)
+	{
+		ASOTS_TrailBreadcrumb* Head = BreadcrumbHead.Get();
+		if (Head)
+		{
+			Head->Destroy();
+		}
+		else
+		{
+			BreadcrumbTail = nullptr;
+			AliveBreadcrumbCount = 0;
+			break;
+		}
+	}
+}
+
+void USOTS_UDSBridgeSubsystem::OnBreadcrumbDestroyed(AActor* DestroyedActor)
+{
+	ASOTS_TrailBreadcrumb* Breadcrumb = Cast<ASOTS_TrailBreadcrumb>(DestroyedActor);
+	if (!Breadcrumb)
+	{
+		return;
+	}
+
+	if (BreadcrumbHead.Get() == Breadcrumb)
+	{
+		BreadcrumbHead = Breadcrumb->Next;
+	}
+
+	if (BreadcrumbTail.Get() == Breadcrumb)
+	{
+		BreadcrumbTail = Breadcrumb->Prev;
+	}
+
+	AliveBreadcrumbCount = FMath::Max(0, AliveBreadcrumbCount - 1);
+}

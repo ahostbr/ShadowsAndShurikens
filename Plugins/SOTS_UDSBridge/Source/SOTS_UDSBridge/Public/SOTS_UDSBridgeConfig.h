@@ -116,4 +116,35 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|DLWE|Policy")
 	TSoftObjectPtr<UObject> DLWE_Settings_Dust;
+
+	// Breadcrumbs for snowy trails
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	bool bEnableTrailBreadcrumbs = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	float BreadcrumbInterval = 0.45f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	float BreadcrumbMinDistance = 160.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	float BreadcrumbMinSpeed2D = 120.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	float BreadcrumbLifespanSeconds = 20.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	int32 BreadcrumbMaxAlive = 64;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	float BreadcrumbHearingLoudness = 0.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	float BreadcrumbHearingMaxRange = 1200.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	FName BreadcrumbHearingTag = FName(TEXT("TrailBreadcrumb"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	bool bEmitBreadcrumbHearingEvent = true;
 };

@@ -127,6 +127,44 @@ def run_pipeline_by_name(pipeline_name: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Audits
+# ---------------------------------------------------------------------------
+
+def run_aip_audit(project: str | None = None, out: str | None = None) -> int:
+    try:
+        import aip_audit_configs  # type: ignore
+    except Exception as exc:
+        print(f"[ERROR] Could not import aip_audit_configs: {exc}")
+        return 1
+
+    args: list[str] = []
+    if project:
+        args.extend(["--project", project])
+    if out:
+        args.extend(["--out", out])
+
+    print(f"[INFO] Running AIP audit (aip_audit_configs.py) with args: {args or 'default'}")
+    return int(aip_audit_configs.main(args))
+
+
+def run_udsbridge_audit(project: str | None = None, out: str | None = None) -> int:
+    try:
+        import udsbridge_audit_configs  # type: ignore
+    except Exception as exc:
+        print(f"[ERROR] Could not import udsbridge_audit_configs: {exc}")
+        return 1
+
+    args: list[str] = []
+    if project:
+        args.extend(["--project", project])
+    if out:
+        args.extend(["--out", out])
+
+    print(f"[INFO] Running UDSBridge audit with args: {args or 'default'}")
+    return int(udsbridge_audit_configs.main(args))
+
+
+# ---------------------------------------------------------------------------
 # Core maintenance (Category 1)
 # ---------------------------------------------------------------------------
 
@@ -612,10 +650,19 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parity_parser.add_argument("--snippets-json", dest="snippets_json", help="Path to bep_parkour_snippets.json")
     parity_parser.add_argument("--plugin-root", dest="plugin_root", help="Root path to SOTS_Parkour plugin")
 
-    subparsers.add_parser(
+    aip_parser = subparsers.add_parser(
         "aip_audit",
         help="Run the AIPerception config audit",
     )
+    aip_parser.add_argument("--project", dest="project", help="Project root override (defaults to detected root)")
+    aip_parser.add_argument("--out", dest="out", help="Output report path (defaults to DevTools/logs/aip_audit_<timestamp>.txt)")
+
+    udsbridge_parser = subparsers.add_parser(
+        "udsbridge_audit",
+        help="Scans all USOTS_UDSBridgeConfig assets for likely misconfigurations (UDS discovery, weather mappings, DLWE surface).",
+    )
+    udsbridge_parser.add_argument("--project", dest="project", help="Project root override (defaults to detected root)")
+    udsbridge_parser.add_argument("--out", dest="out", help="Output report path (defaults to DevTools/logs/udsbridge_audit_<timestamp>.txt)")
 
     return parser
 
@@ -663,8 +710,9 @@ def main(argv: list[str] | None = None) -> int:
         run_parkour_parity_sweep(parsed.snippets_json, parsed.plugin_root)
         return 0
     if parsed.command == "aip_audit":
-        run_aip_audit()
-        return 0
+        return run_aip_audit(parsed.project, parsed.out)
+    if parsed.command == "udsbridge_audit":
+        return run_udsbridge_audit(parsed.project, parsed.out)
 
     # If we somehow get here, fall back to interactive menu to preserve behavior.
     run_interactive_menu()
