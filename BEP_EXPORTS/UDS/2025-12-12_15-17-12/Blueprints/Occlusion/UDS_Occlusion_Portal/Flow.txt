@@ -1,0 +1,38 @@
+Blueprint: UDS_Occlusion_Portal (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Occlusion/UDS_Occlusion_Portal.UDS_Occlusion_Portal)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set World Scale 3D
+Target is Scene Component.execute
+    Node: Get Sample Range (K2Node_VariableGet)
+      Pin: Sample Range (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Set World Scale 3D
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewScale (struct) Dir=In
+        -> To Vector (Float).ReturnValue
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Sample Range.Sample Range
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> To Vector (Float).InDouble
+    Node: To Vector (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Scale 3D
+Target is Scene Component.NewScale

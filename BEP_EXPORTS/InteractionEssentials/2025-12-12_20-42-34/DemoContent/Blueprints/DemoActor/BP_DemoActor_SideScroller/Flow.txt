@@ -1,0 +1,88 @@
+Blueprint: BP_DemoActor_SideScroller (/Game/InteractionEssentials/DemoContent/Blueprints/DemoActor/BP_DemoActor_SideScroller.BP_DemoActor_SideScroller)
+  Graph: EventGraph
+    Node: On Interaction Completed (InteractionComponent_HoldVisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Start Camera Fade
+Target is Player Camera Manager.then
+      Pin: then (exec) Dir=Out
+        -> Open Level (by Name).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Open Level (by Name) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LevelName (name) Dir=In
+        -> Get LevelName.LevelName
+      Pin: bAbsolute (bool) Dir=In
+      Pin: Options (string) Dir=In
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.self
+    Node: Start Camera Fade
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Completed (InteractionComponent_HoldVisible).then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: FromAlpha (real) Dir=In
+      Pin: ToAlpha (real) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Color (struct) Dir=In
+      Pin: bShouldFadeAudio (bool) Dir=In
+      Pin: bHoldWhenFinished (bool) Dir=In
+    Node: Get LevelName (K2Node_VariableGet)
+      Pin: LevelName (name) Dir=Out
+        -> Open Level (by Name).LevelName
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set InputKey_PC.execute
+    Node: Get InteractionComponent_HoldVisible (K2Node_VariableGet)
+      Pin: InteractionComponent_HoldVisible (object) Dir=Out
+        -> Set InputKey_PC.self
+        -> Set InputKey_Gamepad.self
+      Pin: self (object) Dir=In
+    Node: Set InputKey_PC (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set InputKey_Gamepad.execute
+      Pin: InputKey_PC (struct) Dir=In
+        -> Get InputKey_PC.InputKey_PC
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InteractionComponent_HoldVisible.InteractionComponent_HoldVisible
+    Node: Set InputKey_Gamepad (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InputKey_PC.then
+      Pin: then (exec) Dir=Out
+      Pin: InputKey_Gamepad (struct) Dir=In
+        -> Get InputKey_Gamepad.InputKey_Gamepad
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InteractionComponent_HoldVisible.InteractionComponent_HoldVisible
+    Node: Get InputKey_PC (K2Node_VariableGet)
+      Pin: InputKey_PC (struct) Dir=Out
+        -> Set InputKey_PC.InputKey_PC
+      Pin: self (object) Dir=In
+    Node: Get InputKey_Gamepad (K2Node_VariableGet)
+      Pin: InputKey_Gamepad (struct) Dir=Out
+        -> Set InputKey_Gamepad.InputKey_Gamepad
+      Pin: self (object) Dir=In

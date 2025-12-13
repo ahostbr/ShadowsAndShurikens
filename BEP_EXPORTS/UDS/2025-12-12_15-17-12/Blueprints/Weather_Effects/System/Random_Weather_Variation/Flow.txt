@@ -1,0 +1,4800 @@
+Blueprint: Random_Weather_Variation (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/System/Random_Weather_Variation.Random_Weather_Variation)
+  Graph: EventGraph
+    Node: Increment Random Weather
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Increment Change Timer
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Increment Change Timer
+Target is Random Weather Variation.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Reset TimerReplicated From Server
+Executes On All
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Current Lerp Alpha.execute
+    Node: Set Current Lerp Alpha (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reset TimerReplicated From Server
+Executes On All
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Change Timer.execute
+      Pin: Current Lerp Alpha (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Tick Random Weather (EdGraphNode_Comment)
+    Node: Increment Change Timer
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Increment Random Weather
+Target is Random Weather Variation.execute
+      Pin: self (object) Dir=In
+    Node: Set Change Timer (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Lerp Alpha.then
+      Pin: then (exec) Dir=Out
+      Pin: Change Timer (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Replicated Timer Reset (EdGraphNode_Comment)
+  Graph: Increment Random Weather
+    Node: Increment Random Weather (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Changing Weather.execute
+    Node: Set Current Lerp Alpha (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Changing Weather.then
+      Pin: then (exec) Dir=Out
+        -> Set Eased Lerp Alpha.execute
+      Pin: Current Lerp Alpha (real) Dir=In
+        -> Get Current Lerp Alpha.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> Ease.Alpha
+      Pin: self (object) Dir=In
+    Node: Ease (K2Node_EaseFunction)
+      Pin: Function (byte) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Set Current Lerp Alpha.Output_Get
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Result (real) Dir=Out
+        -> Set Eased Lerp Alpha.Eased Lerp Alpha
+      Pin: ShortestPath (bool) Dir=In
+      Pin: BlendExp (real) Dir=In
+      Pin: Steps (int) Dir=In
+    Node: Set Eased Lerp Alpha (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Lerp Alpha.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Eased Lerp Alpha (real) Dir=In
+        -> Ease.Result
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Lerp Between Weather States
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: Lerp Between Weather States
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: A (object) Dir=In
+        -> Get Last Random Weather Type.Last Random Weather Type
+      Pin: B (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Alpha (real) Dir=In
+        -> Get Eased Lerp Alpha.Eased Lerp Alpha
+      Pin: Target State (object) Dir=In
+        -> Get Current Random Weather State.Current Random Weather State
+      Pin: Set Material Effects (bool) Dir=In
+      Pin: Use Bias for Material Effects (bool) Dir=In
+      Pin: Lerp Sources (bool) Dir=In
+    Node: Get Current Random Weather State (K2Node_VariableGet)
+      Pin: Current Random Weather State (object) Dir=Out
+        -> Lerp Between Weather States
+Target is Ultra Dynamic Weather.Target State
+      Pin: self (object) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Lerp Between Weather States
+Target is Ultra Dynamic Weather.B
+      Pin: self (object) Dir=In
+    Node: Get Last Random Weather Type (K2Node_VariableGet)
+      Pin: Last Random Weather Type (object) Dir=Out
+        -> Lerp Between Weather States
+Target is Ultra Dynamic Weather.A
+      Pin: self (object) Dir=In
+    Node: Get Eased Lerp Alpha (K2Node_VariableGet)
+      Pin: Eased Lerp Alpha (real) Dir=Out
+        -> Lerp Between Weather States
+Target is Ultra Dynamic Weather.Alpha
+      Pin: self (object) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Is Valid.Object
+      Pin: self (object) Dir=In
+    Node: Get Last Random Weather Type (K2Node_VariableGet)
+      Pin: Last Random Weather Type (object) Dir=Out
+        -> Is Valid.Object
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Last Random Weather Type.Last Random Weather Type
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Eased Lerp Alpha.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Lerp Between Weather States
+Target is Ultra Dynamic Weather.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Changing Weather (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Increment Random Weather.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Lerp Alpha.execute
+      Pin: Changing Weather (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Current Lerp Alpha (K2Node_VariableGet)
+      Pin: Current Lerp Alpha (real) Dir=Out
+        -> float < float.A
+      Pin: self (object) Dir=In
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Current Lerp Alpha.Current Lerp Alpha
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Current Lerp Alpha (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Lerp Alpha.Current Lerp Alpha
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Changing Weather.Changing Weather
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+  Graph: Increment Change Timer
+    Node: Increment Change Timer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch Has Authority.Execute
+    Node: Change To Next Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Change Timer (K2Node_VariableGet)
+      Pin: Change Timer (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Change Timer.Change Timer
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Change Timer.Change Timer
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Weather Speed.Weather Speed
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Weather Speed.self
+      Pin: self (object) Dir=In
+    Node: Get Weather Speed (K2Node_VariableGet)
+      Pin: Weather Speed (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Set Change Timer (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Change Timer (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Set Change Timer.Output_Get
+      Pin: B (real) Dir=In
+        -> Get Current Timer Length.Current Timer Length
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Current Timer Length (K2Node_VariableGet)
+      Pin: Current Timer Length (real) Dir=Out
+        -> float > float.B
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Change Timer.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.execute
+      Pin: else (exec) Dir=Out
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Random Weather Mode.Mode
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Change Timer.execute
+      Pin: else (exec) Dir=Out
+    Node: Random Weather Mode (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Mode (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Increment Change Timer.then
+      Pin: Authority (exec) Dir=Out
+        -> Branch.execute
+      Pin: Remote (exec) Dir=Out
+  Graph: Change to Next Random Weather Type
+    Node: Change to Next Random Weather Type (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Set Last Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Last Random Weather Type (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Set Last Random Weather Type.Last Random Weather Type
+      Pin: self (object) Dir=In
+    Node: Create Composite Probability Map
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Select Random Weather Type
+Target is Random Weather Variation.execute
+      Pin: self (object) Dir=In
+      Pin: Out (object) Dir=Out
+        -> Select Random Weather Type
+Target is Random Weather Variation.Probability Map
+    Node: Set New Random Interval Timer
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Select Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create Composite Probability Map
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+        -> Set Target Random Weather Type.execute
+      Pin: self (object) Dir=In
+      Pin: Probability Map (object) Dir=In
+        -> Create Composite Probability Map
+Target is Random Weather Variation.Out
+      Pin: Previous Weather (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Out (object) Dir=Out
+        -> Set Target Random Weather Type.Target Random Weather Type
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Select Random Weather Type
+Target is Random Weather Variation.Previous Weather
+      Pin: self (object) Dir=In
+    Node: Set Target Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Select Random Weather Type
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: Target Random Weather Type (object) Dir=In
+        -> Select Random Weather Type
+Target is Random Weather Variation.Out
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Is Not Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Weather Forecast Steps.self
+      Pin: self (object) Dir=In
+    Node: Get Random Weather Forecast Steps (K2Node_VariableGet)
+      Pin: Random Weather Forecast Steps (int) Dir=Out
+        -> integer > integer.A
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Random Weather Forecast Steps.Random Weather Forecast Steps
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Last Random Weather Type.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Create Composite Probability Map
+Target is Random Weather Variation.execute
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+        -> Fill Weather Forecast
+Target is Random Weather Variation.execute
+    Node: Fill Weather Forecast
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Target Random Weather Type.Target Random Weather Type
+    Node: Set Target Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Remove Index.execute
+      Pin: Target Random Weather Type (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+        -> Fill Weather Forecast
+Target is Random Weather Variation.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Target Random Weather Type.execute
+    Node: Fill Weather Forecast
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove Index.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Remove Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: Remove Index (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Target Random Weather Type.then
+      Pin: then (exec) Dir=Out
+        -> Fill Weather Forecast
+Target is Random Weather Variation.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: IndexToRemove (int) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Change to Next Random Weather Type.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Last Random Weather Type.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set New Random Interval Timer
+Target is Random Weather Variation.execute
+  Graph: Get State for Saving
+    Node: Get State for Saving (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: State (struct) Dir=In
+        -> Make Random Weather Variation State.RandomWeatherVariation_State
+    Node: Make Random Weather Variation State (K2Node_MakeStruct)
+      Pin: RandomWeatherVariation_State (struct) Dir=Out
+        -> Return Node.State
+      Pin: Mode_29_E53E8F9C40E9C74B1489D0A581FF28D2 (byte) Dir=In
+        -> Random Weather Mode.Mode
+      Pin: TargetRandomWeatherType_37_BBFDBC5E46C25F1DFB0037A44AB6D268 (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: CurrentLerpAlpha_38_659CCE944698D027E31F1C9F648EBD85 (real) Dir=In
+        -> Get Current Lerp Alpha.Current Lerp Alpha
+      Pin: CurrentTimerLength_39_6CC4C61F4528647B419BE189C0944ADF (real) Dir=In
+        -> Get Current Timer Length.Current Timer Length
+      Pin: ChangeTimer_40_28CED07F4F2AE061871DB595D0DD4C66 (real) Dir=In
+        -> Get Change Timer.Change Timer
+      Pin: LastRandomWeatherType_41_4367B1AC4E64A2564E3960B3ED6E25D8 (object) Dir=In
+        -> Get Last Random Weather Type.Last Random Weather Type
+      Pin: Forecast_36_FB829F034AD4245050A506B528B86CC0 (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+    Node: Random Weather Mode (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Mode (byte) Dir=Out
+        -> Make Random Weather Variation State.Mode_29_E53E8F9C40E9C74B1489D0A581FF28D2
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Make Random Weather Variation State.TargetRandomWeatherType_37_BBFDBC5E46C25F1DFB0037A44AB6D268
+      Pin: self (object) Dir=In
+    Node: Get Current Lerp Alpha (K2Node_VariableGet)
+      Pin: Current Lerp Alpha (real) Dir=Out
+        -> Make Random Weather Variation State.CurrentLerpAlpha_38_659CCE944698D027E31F1C9F648EBD85
+      Pin: self (object) Dir=In
+    Node: Get Current Timer Length (K2Node_VariableGet)
+      Pin: Current Timer Length (real) Dir=Out
+        -> Make Random Weather Variation State.CurrentTimerLength_39_6CC4C61F4528647B419BE189C0944ADF
+      Pin: self (object) Dir=In
+    Node: Get Change Timer (K2Node_VariableGet)
+      Pin: Change Timer (real) Dir=Out
+        -> Make Random Weather Variation State.ChangeTimer_40_28CED07F4F2AE061871DB595D0DD4C66
+      Pin: self (object) Dir=In
+    Node: Get Last Random Weather Type (K2Node_VariableGet)
+      Pin: Last Random Weather Type (object) Dir=Out
+        -> Make Random Weather Variation State.LastRandomWeatherType_41_4367B1AC4E64A2564E3960B3ED6E25D8
+      Pin: self (object) Dir=In
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Make Random Weather Variation State.Forecast_36_FB829F034AD4245050A506B528B86CC0
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get State for Saving.then
+      Pin: Condition (bool) Dir=In
+        -> Get Started.Started
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Started (K2Node_VariableGet)
+      Pin: Started (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: State (struct) Dir=In
+        -> Make Random Weather Variation State.RandomWeatherVariation_State
+    Node: Make Random Weather Variation State (K2Node_MakeStruct)
+      Pin: RandomWeatherVariation_State (struct) Dir=Out
+        -> Return Node.State
+      Pin: Mode_29_E53E8F9C40E9C74B1489D0A581FF28D2 (byte) Dir=In
+      Pin: TargetRandomWeatherType_37_BBFDBC5E46C25F1DFB0037A44AB6D268 (object) Dir=In
+      Pin: CurrentLerpAlpha_38_659CCE944698D027E31F1C9F648EBD85 (real) Dir=In
+      Pin: CurrentTimerLength_39_6CC4C61F4528647B419BE189C0944ADF (real) Dir=In
+      Pin: ChangeTimer_40_28CED07F4F2AE061871DB595D0DD4C66 (real) Dir=In
+      Pin: LastRandomWeatherType_41_4367B1AC4E64A2564E3960B3ED6E25D8 (object) Dir=In
+      Pin: Forecast_36_FB829F034AD4245050A506B528B86CC0 (object) Dir=In
+  Graph: Apply State
+    Node: Apply State (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Random Weather State (struct) Dir=Out
+    Node: Get Random Weather State (K2Node_VariableGet)
+      Pin: Random Weather State (struct) Dir=Out
+        -> Break Random Weather Variation State.RandomWeatherVariation_State
+    Node: Break Random Weather Variation State (K2Node_BreakStruct)
+      Pin: RandomWeatherVariation_State (struct) Dir=In
+        -> Get Random Weather State.Random Weather State
+      Pin: TargetRandomWeatherType_37_BBFDBC5E46C25F1DFB0037A44AB6D268 (object) Dir=Out
+        -> Cast To UDS_Weather_Settings.Object
+    Node: Cast To UDS_Weather_Settings (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Target Random Weather Type.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Break Random Weather Variation State.TargetRandomWeatherType_37_BBFDBC5E46C25F1DFB0037A44AB6D268
+      Pin: AsUDS Weather Settings (object) Dir=Out
+        -> Set Target Random Weather Type.Target Random Weather Type
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set Target Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To UDS_Weather_Settings.then
+      Pin: then (exec) Dir=Out
+      Pin: Target Random Weather Type (object) Dir=In
+        -> Cast To UDS_Weather_Settings.AsUDS Weather Settings
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Cast To UDS_Weather_Settings.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_3 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Random Weather State (K2Node_VariableGet)
+      Pin: Random Weather State (struct) Dir=Out
+        -> Break Random Weather Variation State.RandomWeatherVariation_State
+    Node: Break Random Weather Variation State (K2Node_BreakStruct)
+      Pin: RandomWeatherVariation_State (struct) Dir=In
+        -> Get Random Weather State.Random Weather State
+      Pin: LastRandomWeatherType_41_4367B1AC4E64A2564E3960B3ED6E25D8 (object) Dir=Out
+        -> Cast To UDS_Weather_Settings.Object
+    Node: Cast To UDS_Weather_Settings (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Last Random Weather Type.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Break Random Weather Variation State.LastRandomWeatherType_41_4367B1AC4E64A2564E3960B3ED6E25D8
+      Pin: AsUDS Weather Settings (object) Dir=Out
+        -> Set Last Random Weather Type.Last Random Weather Type
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Cast To UDS_Weather_Settings.execute
+    Node: Set Last Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To UDS_Weather_Settings.then
+      Pin: then (exec) Dir=Out
+      Pin: Last Random Weather Type (object) Dir=In
+        -> Cast To UDS_Weather_Settings.AsUDS Weather Settings
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Random Weather State (K2Node_VariableGet)
+      Pin: Random Weather State (struct) Dir=Out
+        -> Break Random Weather Variation State.RandomWeatherVariation_State
+    Node: Break Random Weather Variation State (K2Node_BreakStruct)
+      Pin: RandomWeatherVariation_State (struct) Dir=In
+        -> Get Random Weather State.Random Weather State
+      Pin: Forecast_36_FB829F034AD4245050A506B528B86CC0 (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Clear.then
+      Pin: Array (object) Dir=In
+        -> Break Random Weather Variation State.Forecast_36_FB829F034AD4245050A506B528B86CC0
+      Pin: LoopBody (exec) Dir=Out
+        -> Cast To UDS_Weather_Settings.execute
+      Pin: Array Element (object) Dir=Out
+        -> Cast To UDS_Weather_Settings.Object
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Clear.execute
+    Node: Cast To UDS_Weather_Settings (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: AsUDS Weather Settings (object) Dir=Out
+        -> Add.NewItem
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To UDS_Weather_Settings.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: NewItem (object) Dir=In
+        -> Cast To UDS_Weather_Settings.AsUDS Weather Settings
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Random Weather State (K2Node_VariableGet)
+      Pin: Random Weather State (struct) Dir=Out
+        -> Break Random Weather Variation State.RandomWeatherVariation_State
+    Node: Break Random Weather Variation State (K2Node_BreakStruct)
+      Pin: RandomWeatherVariation_State (struct) Dir=In
+        -> Get Random Weather State.Random Weather State
+      Pin: CurrentLerpAlpha_38_659CCE944698D027E31F1C9F648EBD85 (real) Dir=Out
+        -> Set Current Lerp Alpha.Current Lerp Alpha
+      Pin: CurrentTimerLength_39_6CC4C61F4528647B419BE189C0944ADF (real) Dir=Out
+        -> Set Current Timer Length.Current Timer Length
+      Pin: ChangeTimer_40_28CED07F4F2AE061871DB595D0DD4C66 (real) Dir=Out
+        -> Set Change Timer.Change Timer
+    Node: Set Current Lerp Alpha (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Current Timer Length.execute
+      Pin: Current Lerp Alpha (real) Dir=In
+        -> Break Random Weather Variation State.CurrentLerpAlpha_38_659CCE944698D027E31F1C9F648EBD85
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Current Timer Length (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Lerp Alpha.then
+      Pin: then (exec) Dir=Out
+        -> Set Change Timer.execute
+      Pin: Current Timer Length (real) Dir=In
+        -> Break Random Weather Variation State.CurrentTimerLength_39_6CC4C61F4528647B419BE189C0944ADF
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Change Timer (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Timer Length.then
+      Pin: then (exec) Dir=Out
+        -> Increment Random Weather
+Target is Random Weather Variation.execute
+      Pin: Change Timer (real) Dir=In
+        -> Break Random Weather Variation State.ChangeTimer_40_28CED07F4F2AE061871DB595D0DD4C66
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_3
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Current Lerp Alpha.execute
+    Node: Increment Random Weather
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Change Timer.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Apply State.then
+      Pin: Condition (bool) Dir=In
+        -> Get Started.Started
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Started (K2Node_VariableGet)
+      Pin: Started (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+  Graph: Create Composite Probability Map
+    Node: Create Composite Probability Map (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Out (object) Dir=In
+        -> Get Composite Map.Composite Map
+    Node: Get Composite Map (K2Node_VariableGet)
+      Pin: Composite Map (object) Dir=Out
+        -> Find.TargetMap
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Individual Seasons.self
+      Pin: self (object) Dir=In
+    Node: Get Individual Seasons (K2Node_VariableGet)
+      Pin: Individual Seasons (real) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> For Loop.Completed
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Keys.execute
+      Pin: Index (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Season Probability Map.Season
+      Pin: Completed (exec) Dir=Out
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Season Probability Map.Map
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Individual Seasons.Individual Seasons
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (real) Dir=Out
+        -> float > float.A
+        -> Reroute Node.InputPin
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Find.Key
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Season Probability Map.Map
+      Pin: Key (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Value (real) Dir=Out
+        -> float * float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Composite Map.Composite Map
+      Pin: Key (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Composite Map.Composite Map
+      Pin: Key (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+        -> Add.execute
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Add.Value
+    Node: Get Composite Map (K2Node_VariableGet)
+      Pin: Composite Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Safe Divide.ReturnValue
+      Pin: OutputPin (real) Dir=Out
+        -> float + float.B
+        -> Reroute Node.InputPin
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Composite Map.Composite Map
+      Pin: Key (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get Composite Map (K2Node_VariableGet)
+      Pin: Composite Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add.Key
+        -> Add.Key
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Add.Value
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> GET.Output
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> GET.Output
+      Pin: OutputPin (real) Dir=Out
+        -> float * float.B
+    Node: Get Composite Map (K2Node_VariableGet)
+      Pin: Composite Map (object) Dir=Out
+        -> Return Node.Out
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Blend Season Probabilities.self
+      Pin: self (object) Dir=In
+    Node: Get Blend Season Probabilities (K2Node_VariableGet)
+      Pin: Blend Season Probabilities (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Create Composite Probability Map.then
+      Pin: Condition (bool) Dir=In
+        -> Get Blend Season Probabilities.Blend Season Probabilities
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> For Loop.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Season
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Index (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+        -> For Loop.execute
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Season Probability Map.Map
+      Pin: Values (real) Dir=Out
+        -> For Each Loop.Array
+    Node: Get Season Probability Totals (K2Node_VariableGet)
+      Pin: Season Probability Totals (real) Dir=Out
+        -> GET.Array
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (real) Dir=In
+        -> Get Season Probability Totals.Season Probability Totals
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Item (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: bSizeToFit (bool) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (real) Dir=In
+        -> Values.Values
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: Array Element (real) Dir=Out
+        -> float + float.A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> GET.Output
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Individual Seasons.self
+      Pin: self (object) Dir=In
+    Node: Get Individual Seasons (K2Node_VariableGet)
+      Pin: Individual Seasons (real) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Individual Seasons.Individual Seasons
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (real) Dir=Out
+        -> float > float.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Values.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Season Probability Map.Season
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Loop.Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> GET.Dimension 1
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (real) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Array Elem.Item
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Season Probability Totals.Season Probability Totals
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (real) Dir=Out
+        -> float + float.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> GET.Dimension 1
+        -> Reroute Node.InputPin
+    Node: Get Season Probability Totals (K2Node_VariableGet)
+      Pin: Season Probability Totals (real) Dir=Out
+        -> Set Array Elem.TargetArray
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Set Array Elem.Index
+    Node: Get Season Probability Totals (K2Node_VariableGet)
+      Pin: Season Probability Totals (real) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Season Probability Totals.Season Probability Totals
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (real) Dir=Out
+        -> Safe Divide.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Loop.Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> GET.Dimension 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Find.Key
+        -> Reroute Node.InputPin
+    Node: Safe Divide (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Season
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Season (real) Dir=Out
+        -> Floor.A
+      Pin: Season Enum (byte) Dir=Out
+    Node: Get Season Probability Map (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Season (int) Dir=In
+        -> For Loop.Index
+      Pin: Map (object) Dir=Out
+        -> Keys.TargetMap
+        -> Find.TargetMap
+    Node: Get Season Probability Map (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Season (int) Dir=In
+        -> Floor.ReturnValue
+      Pin: Map (object) Dir=Out
+        -> Return Node.Out
+    Node: Floor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Season
+Target is Ultra Dynamic Weather.Season
+      Pin: ReturnValue (int) Dir=Out
+        -> Get Season Probability Map.Season
+    Node: Get Season Probability Map (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Season (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Map (object) Dir=Out
+        -> Values.TargetMap
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Out (object) Dir=In
+        -> Get Season Probability Map.Map
+    Node: Blend Seasons Together (EdGraphNode_Comment)
+    Node: Don't Blend (EdGraphNode_Comment)
+  Graph: Get Climate Temperature Ranges
+    Node: Get Climate Temperature Ranges (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Climate Object (object) Dir=Out
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.self
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.self
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.self
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.self
+      Pin: Scale (byte) Dir=Out
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Scale
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Scale
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Scale
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Scale
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Climate Temperature Ranges.then
+      Pin: Summer Range (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Autumn Range (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Winter Range (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Spring Range (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Low
+      Pin: Y (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.High
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Summer Range
+    Node: Return Temperature Range In Scale
+Target is UDS Climate Preset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Climate Temperature Ranges.Climate Object
+      Pin: Scale (byte) Dir=In
+        -> Get Climate Temperature Ranges.Scale
+      Pin: Season (int) Dir=In
+      Pin: Low (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: High (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Low
+      Pin: Y (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.High
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Autumn Range
+    Node: Return Temperature Range In Scale
+Target is UDS Climate Preset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Climate Temperature Ranges.Climate Object
+      Pin: Scale (byte) Dir=In
+        -> Get Climate Temperature Ranges.Scale
+      Pin: Season (int) Dir=In
+      Pin: Low (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: High (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Low
+      Pin: Y (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.High
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Winter Range
+    Node: Return Temperature Range In Scale
+Target is UDS Climate Preset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Climate Temperature Ranges.Climate Object
+      Pin: Scale (byte) Dir=In
+        -> Get Climate Temperature Ranges.Scale
+      Pin: Season (int) Dir=In
+      Pin: Low (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: High (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.Low
+      Pin: Y (real) Dir=In
+        -> Return Temperature Range In Scale
+Target is UDS Climate Preset.High
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Spring Range
+    Node: Return Temperature Range In Scale
+Target is UDS Climate Preset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Climate Temperature Ranges.Climate Object
+      Pin: Scale (byte) Dir=In
+        -> Get Climate Temperature Ranges.Scale
+      Pin: Season (int) Dir=In
+      Pin: Low (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: High (real) Dir=Out
+        -> Make Vector 2D.Y
+  Graph: Make Climate Probability Map
+    Node: Make Climate Probability Map (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Climate (object) Dir=Out
+      Pin: Season (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Probability Map (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Autumn Average High Temp (C).self
+        -> Get Spring Average High Temp (C).self
+        -> Get Summer Average High Temp (C).self
+        -> Get Winter Average High Temp (C).self
+    Node: Get Autumn Average High Temp (C) (K2Node_VariableGet)
+      Pin: Autumn Average High Temp (C) (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Spring Average High Temp (C) (K2Node_VariableGet)
+      Pin: Spring Average High Temp (C) (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Summer Average High Temp (C) (K2Node_VariableGet)
+      Pin: Summer Average High Temp (C) (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Winter Average High Temp (C) (K2Node_VariableGet)
+      Pin: Winter Average High Temp (C) (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Set High Temp (C) (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Low Temp (C).then
+      Pin: then (exec) Dir=Out
+        -> Set Cloudy Percentage.execute
+      Pin: High Temp (C) (real) Dir=In
+        -> GET.Output
+      Pin: Output_Get (real) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then_0 (exec) Dir=Out
+        -> Set Low Temp (C).execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Set Low Temp (C) (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set High Temp (C).execute
+      Pin: Low Temp (C) (real) Dir=In
+        -> GET.Output
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Spring Average Low Temp (C).self
+        -> Get Summer Average Low Temp (C).self
+        -> Get Autumn Average Low Temp (C).self
+        -> Get Winter Average Low Temp (C).self
+    Node: Get Spring Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Spring Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Summer Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Summer Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Autumn Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Autumn Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Winter Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Winter Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Average Low Temp (C).Spring Average Low Temp (C)
+      Pin: [1] (real) Dir=In
+        -> Get Summer Average Low Temp (C).Summer Average Low Temp (C)
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Average Low Temp (C).Autumn Average Low Temp (C)
+      Pin: [3] (real) Dir=In
+        -> Get Winter Average Low Temp (C).Winter Average Low Temp (C)
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Average High Temp (C).Spring Average High Temp (C)
+      Pin: [1] (real) Dir=In
+        -> Get Summer Average High Temp (C).Summer Average High Temp (C)
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Average High Temp (C).Autumn Average High Temp (C)
+      Pin: [3] (real) Dir=In
+        -> Get Winter Average High Temp (C).Winter Average High Temp (C)
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> Set High Temp (C).High Temp (C)
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> Set Low Temp (C).Low Temp (C)
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Spring Cloudy Percentage.self
+        -> Get Summer Cloudy Percentage.self
+        -> Get Autumn Cloudy Percentage.self
+        -> Get Winter Cloudy Percentage.self
+    Node: Get Spring Cloudy Percentage (K2Node_VariableGet)
+      Pin: Spring Cloudy Percentage (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Summer Cloudy Percentage (K2Node_VariableGet)
+      Pin: Summer Cloudy Percentage (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Autumn Cloudy Percentage (K2Node_VariableGet)
+      Pin: Autumn Cloudy Percentage (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Winter Cloudy Percentage (K2Node_VariableGet)
+      Pin: Winter Cloudy Percentage (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Cloudy Percentage.Spring Cloudy Percentage
+      Pin: [1] (real) Dir=In
+        -> Get Summer Cloudy Percentage.Summer Cloudy Percentage
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Cloudy Percentage.Autumn Cloudy Percentage
+      Pin: [3] (real) Dir=In
+        -> Get Winter Cloudy Percentage.Winter Cloudy Percentage
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> Set Cloudy Percentage.Cloudy Percentage
+    Node: Set Cloudy Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set High Temp (C).then
+      Pin: then (exec) Dir=Out
+        -> Set Rainfall (mm).execute
+      Pin: Cloudy Percentage (real) Dir=In
+        -> GET.Output
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Spring Rainfall (mm).self
+        -> Get Summer Rainfall (mm).self
+        -> Get Autumn Rainfall (mm).self
+        -> Get Winter Rainfall (mm).self
+    Node: Get Spring Rainfall (mm) (K2Node_VariableGet)
+      Pin: Spring Rainfall (mm) (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Summer Rainfall (mm) (K2Node_VariableGet)
+      Pin: Summer Rainfall (mm) (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Autumn Rainfall (mm) (K2Node_VariableGet)
+      Pin: Autumn Rainfall (mm) (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Winter Rainfall (mm) (K2Node_VariableGet)
+      Pin: Winter Rainfall (mm) (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Rainfall (mm).Spring Rainfall (mm)
+      Pin: [1] (real) Dir=In
+        -> Get Summer Rainfall (mm).Summer Rainfall (mm)
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Rainfall (mm).Autumn Rainfall (mm)
+      Pin: [3] (real) Dir=In
+        -> Get Winter Rainfall (mm).Winter Rainfall (mm)
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> Set Rainfall (mm).Rainfall (mm)
+    Node: Set Rainfall (mm) (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Cloudy Percentage.then
+      Pin: then (exec) Dir=Out
+        -> Set Snowfall (mm).execute
+      Pin: Rainfall (mm) (real) Dir=In
+        -> GET.Output
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Spring Snowfall (mm).self
+        -> Get Summer Snowfall (mm).self
+        -> Get Autumn Snowfall (mm).self
+        -> Get Winter Snowfall (mm).self
+    Node: Get Spring Snowfall (mm) (K2Node_VariableGet)
+      Pin: Spring Snowfall (mm) (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Summer Snowfall (mm) (K2Node_VariableGet)
+      Pin: Summer Snowfall (mm) (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Autumn Snowfall (mm) (K2Node_VariableGet)
+      Pin: Autumn Snowfall (mm) (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Get Winter Snowfall (mm) (K2Node_VariableGet)
+      Pin: Winter Snowfall (mm) (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Snowfall (mm).Spring Snowfall (mm)
+      Pin: [1] (real) Dir=In
+        -> Get Summer Snowfall (mm).Summer Snowfall (mm)
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Snowfall (mm).Autumn Snowfall (mm)
+      Pin: [3] (real) Dir=In
+        -> Get Winter Snowfall (mm).Winter Snowfall (mm)
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> Set Snowfall (mm).Snowfall (mm)
+    Node: Set Snowfall (mm) (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Rainfall (mm).then
+      Pin: then (exec) Dir=Out
+        -> Set Precipitating Percentage.execute
+      Pin: Snowfall (mm) (real) Dir=In
+        -> GET.Output
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Sunny Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Cloudy Percentage.then
+      Pin: then (exec) Dir=Out
+        -> Set Raining Percentage.execute
+      Pin: Sunny Percentage (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Cloudy Percentage (K2Node_VariableGet)
+      Pin: Cloudy Percentage (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Get Cloudy Percentage.Cloudy Percentage
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).A
+      Pin: C (real) Dir=In
+        -> Get Precipitating Percentage.Precipitating Percentage
+    Node: Set Precipitating Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Snowfall (mm).then
+      Pin: then (exec) Dir=Out
+        -> Set Cloudy Percentage.execute
+      Pin: Precipitating Percentage (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Rainfall (mm) (K2Node_VariableGet)
+      Pin: Rainfall (mm) (real) Dir=Out
+        -> float + float.A
+    Node: Get Snowfall (mm) (K2Node_VariableGet)
+      Pin: Snowfall (mm) (real) Dir=Out
+        -> float / float.A
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Rainfall (mm).Rainfall (mm)
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Power.Base
+    Node: Power (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Base (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Exp (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Lerp.Alpha
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Power.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Precipitating Percentage.Precipitating Percentage
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Snowfall (mm).Snowfall (mm)
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Set Cloudy Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Precipitating Percentage.then
+      Pin: then (exec) Dir=Out
+        -> Set Sunny Percentage.execute
+      Pin: Cloudy Percentage (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Cloudy Percentage (K2Node_VariableGet)
+      Pin: Cloudy Percentage (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Cloudy Percentage.Cloudy Percentage
+      Pin: B (real) Dir=In
+        -> Get Precipitating Percentage.Precipitating Percentage
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).A
+    Node: Get Precipitating Percentage (K2Node_VariableGet)
+      Pin: Precipitating Percentage (real) Dir=Out
+        -> float - float.B
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Cloudy Percentage.Cloudy Percentage
+    Node: Get Precipitating Percentage (K2Node_VariableGet)
+      Pin: Precipitating Percentage (real) Dir=Out
+        -> float - float.C
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Sunny Percentage.Sunny Percentage
+    Node: Get Sunny Percentage (K2Node_VariableGet)
+      Pin: Sunny Percentage (real) Dir=Out
+        -> float * float.A
+        -> float / float.A
+    Node: Set Current Type Probability (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: Current Type Probability (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Type Probability.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Type Probability.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> Add.Value
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Sunny Percentage.Sunny Percentage
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Type Probability.Current Type Probability
+    Node: Set Current Type Probability (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: Current Type Probability (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> float - float.B
+    Node: Get Sunny Percentage (K2Node_VariableGet)
+      Pin: Sunny Percentage (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Sunny Percentage.Sunny Percentage
+      Pin: B (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Type Probability.Current Type Probability
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Type Probability.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> Add.Value
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Snowing Percentage.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Current Type Probability.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Sunny Types (EdGraphNode_Comment)
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Keys.TargetMap
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Sunny Percentage.Sunny Percentage
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Return Node.Probability Map
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Find.TargetMap
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (real) Dir=Out
+        -> Equal (Float).A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Remove.TargetMap
+    Node: Remove (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Remove.Key
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Find.Key
+    Node: Cloudy Types (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then_0 (exec) Dir=Out
+        -> Set Current Type Probability.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Sequence.execute
+    Node: Group Probabilities (EdGraphNode_Comment)
+    Node: Get Climate data for this season (EdGraphNode_Comment)
+    Node: Remove Types with 0 Probability (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Keys.execute
+    Node: Set Current Type Probability (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: Current Type Probability (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Cloudy Percentage (K2Node_VariableGet)
+      Pin: Cloudy Percentage (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Cloudy Percentage.Cloudy Percentage
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Type Probability.Current Type Probability
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Type Probability.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Type Probability.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> Add.Value
+    Node: Set Current Type Probability (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: Current Type Probability (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> float - float.B
+    Node: Get Cloudy Percentage (K2Node_VariableGet)
+      Pin: Cloudy Percentage (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Cloudy Percentage.Cloudy Percentage
+      Pin: B (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Type Probability.Current Type Probability
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Type Probability.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> Add.Value
+    Node: Set Raining Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Sunny Percentage.then
+      Pin: then (exec) Dir=Out
+        -> Set Snowing Percentage.execute
+      Pin: Raining Percentage (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Precipitating Percentage (K2Node_VariableGet)
+      Pin: Precipitating Percentage (real) Dir=Out
+        -> Map Range Clamped.OutRangeB
+    Node: Get Rainfall (mm) (K2Node_VariableGet)
+      Pin: Rainfall (mm) (real) Dir=Out
+        -> float + float.A
+        -> Map Range Clamped.Value
+    Node: Get Snowfall (mm) (K2Node_VariableGet)
+      Pin: Snowfall (mm) (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Snowfall (mm).Snowfall (mm)
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Rainfall (mm).Rainfall (mm)
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+        -> Get Precipitating Percentage.Precipitating Percentage
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Raining Percentage.Raining Percentage
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Rainfall (mm).Rainfall (mm)
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.InRangeB
+    Node: Get Precipitating Percentage (K2Node_VariableGet)
+      Pin: Precipitating Percentage (real) Dir=Out
+        -> float - float.A
+    Node: Set Snowing Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Raining Percentage.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Snowing Percentage (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Raining Percentage (K2Node_VariableGet)
+      Pin: Raining Percentage (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Precipitating Percentage.Precipitating Percentage
+      Pin: B (real) Dir=In
+        -> Get Raining Percentage.Raining Percentage
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).A
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Snowing Percentage.Snowing Percentage
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then_0 (exec) Dir=Out
+        -> For Loop.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Current Precipitation Percentage.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Precipitation Types (K2Node_VariableGet)
+      Pin: Precipitation Types (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set Remaining Allocation Percentage.then
+      Pin: Array (object) Dir=In
+        -> Get Precipitation Types.Precipitation Types
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Current Type.execute
+      Pin: Array Element (object) Dir=Out
+        -> Set Current Type.Current Type
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Set Current Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Set Current Type Probability.execute
+      Pin: Current Type (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Output_Get (object) Dir=Out
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Type Probability.then
+      Pin: then (exec) Dir=Out
+        -> Set Remaining Allocation Percentage.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+        -> Get Current Type.Current Type
+      Pin: Value (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Set Allocation Fraction (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Remaining Allocation Percentage.execute
+      Pin: Allocation Fraction (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Current Precipitation Percentage (K2Node_VariableGet)
+      Pin: Current Precipitation Percentage (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Current Precipitation Percentage.Current Precipitation Percentage
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Power.Base
+    Node: Get Current Precipitation Percentage (K2Node_VariableGet)
+      Pin: Current Precipitation Percentage (real) Dir=Out
+        -> float * float.A
+    Node: Set Remaining Allocation Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Allocation Fraction.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: Remaining Allocation Percentage (real) Dir=In
+        -> Get Current Precipitation Percentage.Current Precipitation Percentage
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Current Precipitation Percentage (K2Node_VariableGet)
+      Pin: Current Precipitation Percentage (real) Dir=Out
+        -> Set Remaining Allocation Percentage.Remaining Allocation Percentage
+    Node: Get Current Type (K2Node_VariableGet)
+      Pin: Current Type (object) Dir=Out
+        -> Add.Key
+    Node: Set Remaining Allocation Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: Remaining Allocation Percentage (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Current Type Probability (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Type.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: Current Type Probability (real) Dir=In
+        -> Min (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Current Precipitation Percentage.Current Precipitation Percentage
+      Pin: B (real) Dir=In
+        -> Get Allocation Fraction.Allocation Fraction
+      Pin: ReturnValue (real) Dir=Out
+        -> Min (Float).A
+    Node: Get Allocation Fraction (K2Node_VariableGet)
+      Pin: Allocation Fraction (real) Dir=Out
+        -> float * float.B
+    Node: Min (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Remaining Allocation Percentage.Remaining Allocation Percentage
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Type Probability.Current Type Probability
+    Node: Get Remaining Allocation Percentage (K2Node_VariableGet)
+      Pin: Remaining Allocation Percentage (real) Dir=Out
+        -> Min (Float).B
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> Add.Value
+    Node: Get Remaining Allocation Percentage (K2Node_VariableGet)
+      Pin: Remaining Allocation Percentage (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Remaining Allocation Percentage.Remaining Allocation Percentage
+      Pin: B (real) Dir=In
+        -> Get Current Type Probability.Current Type Probability
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).A
+    Node: Get Current Type Probability (K2Node_VariableGet)
+      Pin: Current Type Probability (real) Dir=Out
+        -> float - float.B
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Remaining Allocation Percentage.Remaining Allocation Percentage
+    Node: Power (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Base (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Exp (real) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Lerp.Alpha
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Power.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Allocation Fraction.Allocation Fraction
+    Node: Rainy and Snowy (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Sequence.execute
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Current Precipitation Percentage.execute
+      Pin: Index (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+    Node: Set Current Precipitation Percentage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Current Precipitation Percentage (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float > float.A
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> Get Raining Percentage.Raining Percentage
+      Pin: Option 1 (real) Dir=In
+        -> Get Snowing Percentage.Snowing Percentage
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Precipitation Percentage.Current Precipitation Percentage
+    Node: Get Raining Percentage (K2Node_VariableGet)
+      Pin: Raining Percentage (real) Dir=Out
+        -> Select.Option 0
+    Node: Get Snowing Percentage (K2Node_VariableGet)
+      Pin: Snowing Percentage (real) Dir=Out
+        -> Select.Option 1
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Set Current Precipitation Percentage.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set Precipitation Types (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Precipitation Types (object) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Loop.Index
+      Pin: OutputPin (int) Dir=Out
+        -> Select.Index
+        -> Reroute Node.InputPin
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Power.Exp
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> To Boolean (Integer).InInt
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Select.Index
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Dust/Sand Present.self
+    Node: Get Dust/Sand Present (K2Node_VariableGet)
+      Pin: Dust/Sand Present (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Dust/Sand Present.Dust/Sand Present
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Cloudy Percentage (K2Node_VariableGet)
+      Pin: Cloudy Percentage (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Cloudy Percentage.Cloudy Percentage
+      Pin: B (real) Dir=In
+        -> Get Dust/Sand Present.Dust/Sand Present
+      Pin: ReturnValue (real) Dir=Out
+        -> Add.Value
+      Pin: C (real) Dir=In
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Dust/Sand Present.self
+    Node: Get Dust/Sand Present (K2Node_VariableGet)
+      Pin: Dust/Sand Present (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Get Cloudy Percentage (K2Node_VariableGet)
+      Pin: Cloudy Percentage (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Cloudy Percentage.Cloudy Percentage
+      Pin: B (real) Dir=In
+        -> Get Dust/Sand Present.Dust/Sand Present
+      Pin: ReturnValue (real) Dir=Out
+        -> Add.Value
+      Pin: C (real) Dir=In
+    Node: Get Climate (K2Node_VariableGet)
+      Pin: Climate (object) Dir=Out
+        -> Get Dust/Sand Present.self
+    Node: Get Dust/Sand Present (K2Node_VariableGet)
+      Pin: Dust/Sand Present (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get Climate.Climate
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Dust / Sand (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Sequence.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+        -> float * float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Add.Value
+    Node: Get Rainfall (mm) (K2Node_VariableGet)
+      Pin: Rainfall (mm) (real) Dir=Out
+        -> float + float.A
+    Node: Get Snowfall (mm) (K2Node_VariableGet)
+      Pin: Snowfall (mm) (real) Dir=Out
+        -> float + float.B
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Rainfall (mm).Rainfall (mm)
+      Pin: B (real) Dir=In
+        -> Get Snowfall (mm).Snowfall (mm)
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Fog (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Values.TargetMap
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Values (real) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (real) Dir=In
+        -> Values.Values
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Probability Total.execute
+      Pin: Array Element (real) Dir=Out
+        -> float + float.A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Set Probability Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: Probability Total (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Probability Total (K2Node_VariableGet)
+      Pin: Probability Total (real) Dir=Out
+        -> float + float.B
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (real) Dir=In
+        -> Get Probability Total.Probability Total
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Probability Total.Probability Total
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> Values.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Keys.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Keys.TargetMap
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (object) Dir=Out
+        -> Add.Key
+        -> Find.Key
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Add.TargetMap
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get Weather Probability Map (K2Node_VariableGet)
+      Pin: Weather Probability Map (object) Dir=Out
+        -> Find.TargetMap
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Probability Map.Weather Probability Map
+      Pin: Key (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Value (real) Dir=Out
+        -> float / float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+        -> Get Probability Total.Probability Total
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Get Probability Total (K2Node_VariableGet)
+      Pin: Probability Total (real) Dir=Out
+        -> float / float.B
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Add.Value
+    Node: Normalize Proabability Values to Total 100 (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Make Climate Probability Map.then
+      Pin: then_0 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set Precipitation Types.Precipitation Types
+      Pin: [0] (object) Dir=In
+      Pin: [1] (object) Dir=In
+      Pin: [2] (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> To Boolean (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Precipitation Types.execute
+      Pin: else (exec) Dir=Out
+        -> Set Precipitation Types.execute
+    Node: To Boolean (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Precipitation Types (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Precipitation Types (object) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (object) Dir=Out
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set Precipitation Types.Precipitation Types
+      Pin: [0] (object) Dir=In
+      Pin: [1] (object) Dir=In
+      Pin: [2] (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Precipitation Types.then
+        -> Set Precipitation Types.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Allocation Fraction.execute
+  Graph: Start Up Random Weather Variation
+    Node: Start Up Random Weather Variation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set UDW.execute
+      Pin: UDW (object) Dir=Out
+        -> Set UDW.UDW
+      Pin: Volume (object) Dir=Out
+        -> Set Volume.Volume
+      Pin: Start with a Random Type (bool) Dir=Out
+      Pin: Starting Weather Settings (object) Dir=Out
+    Node: Change To Next Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Target Random Weather Type.then
+      Pin: then (exec) Dir=Out
+        -> Set Last Random Weather Type.execute
+      Pin: self (object) Dir=In
+    Node: Set UDW (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Start Up Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+        -> Set Volume.execute
+      Pin: UDW (object) Dir=In
+        -> Start Up Random Weather Variation.UDW
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Increment Random Weather
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Started.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Function Name.then
+      Pin: Condition (bool) Dir=In
+        -> Get Start with a Random Type.Start with a Random Type
+      Pin: then (exec) Dir=Out
+        -> Set Target Random Weather Type.execute
+      Pin: else (exec) Dir=Out
+        -> Set New Random Interval Timer
+Target is Random Weather Variation.execute
+    Node: Set Component Tick Enabled
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Random Weather State.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: bEnabled (bool) Dir=In
+    Node: Construct UDS Weather Settings (K2Node_GenericCreateObject)
+      Pin: execute (exec) Dir=In
+        -> Set Volume.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Random Weather State.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Current Random Weather State.Current Random Weather State
+      Pin: self (object) Dir=In
+    Node: Set Current Random Weather State (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Construct UDS Weather Settings.then
+      Pin: then (exec) Dir=Out
+        -> Set Component Tick Enabled
+Target is Actor Component.execute
+      Pin: Current Random Weather State (object) Dir=In
+        -> Construct UDS Weather Settings.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Target Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.execute
+      Pin: Target Random Weather Type (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Target Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set New Random Interval Timer
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+        -> Set Last Random Weather Type.execute
+      Pin: Target Random Weather Type (object) Dir=In
+        -> Get Starting Weather Settings.Starting Weather Settings
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Last Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Target Random Weather Type.then
+      Pin: then (exec) Dir=Out
+      Pin: Last Random Weather Type (object) Dir=In
+        -> Get Starting Weather Settings.Starting Weather Settings
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Starting Weather Settings (K2Node_VariableGet)
+      Pin: Starting Weather Settings (object) Dir=Out
+        -> Set Target Random Weather Type.Target Random Weather Type
+        -> Set Last Random Weather Type.Last Random Weather Type
+    Node: Set Started (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Increment Random Weather
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Random Weather Season Refresh.execute
+      Pin: Started (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Component Tick Enabled
+Target is Actor Component.then
+      Pin: then_0 (exec) Dir=Out
+        -> Switch Has Authority.Execute
+      Pin: then_1 (exec) Dir=Out
+        -> Increment Random Weather
+Target is Random Weather Variation.execute
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Set Last Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: Last Random Weather Type (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Set Last Random Weather Type.Last Random Weather Type
+      Pin: self (object) Dir=In
+    Node: Set Volume (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set UDW.then
+      Pin: then (exec) Dir=Out
+        -> Construct UDS Weather Settings.execute
+      Pin: Volume (object) Dir=In
+        -> Start Up Random Weather Variation.Volume
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Authority (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: Remote (exec) Dir=Out
+    Node: Set New Random Interval Timer
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Target Random Weather Type.execute
+      Pin: self (object) Dir=In
+    Node: Get Start with a Random Type (K2Node_VariableGet)
+      Pin: Start with a Random Type (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Bind Event to Random Weather Season Refresh.self
+      Pin: self (object) Dir=In
+    Node: Bind Event to Random Weather Season Refresh (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set Started.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Random Weather Season Refresh.Delegate
+  Graph: State Source Map
+    Node: State Source Map (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Source Map (object) Dir=In
+        -> Make Map.Map
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: B (object) Dir=In
+        -> Get Last Random Weather Type.Last Random Weather Type
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> State Source Map.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: B (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Current Lerp Alpha.Current Lerp Alpha
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Equal (Object).A
+      Pin: self (object) Dir=In
+    Node: Get Last Random Weather Type (K2Node_VariableGet)
+      Pin: Last Random Weather Type (object) Dir=Out
+        -> Equal (Object).B
+      Pin: self (object) Dir=In
+    Node: Get Current Lerp Alpha (K2Node_VariableGet)
+      Pin: Current Lerp Alpha (real) Dir=Out
+        -> float >= float.A
+      Pin: self (object) Dir=In
+    Node: Make Map (K2Node_MakeMap)
+      Pin: Map (object) Dir=Out
+        -> Return Node.Source Map
+      Pin: Key 0 (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Value 0 (real) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Make Map.Key 0
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Source Map (object) Dir=In
+        -> Make Map.Map
+    Node: Make Map (K2Node_MakeMap)
+      Pin: Map (object) Dir=Out
+        -> Return Node.Source Map
+      Pin: Key 0 (object) Dir=In
+        -> Get Last Random Weather Type.Last Random Weather Type
+      Pin: Value 0 (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Key 1 (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Value 1 (real) Dir=In
+        -> Get Eased Lerp Alpha.Eased Lerp Alpha
+    Node: Get Last Random Weather Type (K2Node_VariableGet)
+      Pin: Last Random Weather Type (object) Dir=Out
+        -> Make Map.Key 0
+      Pin: self (object) Dir=In
+    Node: Get Eased Lerp Alpha (K2Node_VariableGet)
+      Pin: Eased Lerp Alpha (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Get Eased Lerp Alpha.Eased Lerp Alpha
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Map.Value 0
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Make Map.Key 1
+      Pin: self (object) Dir=In
+    Node: Get Eased Lerp Alpha (K2Node_VariableGet)
+      Pin: Eased Lerp Alpha (real) Dir=Out
+        -> Make Map.Value 1
+      Pin: self (object) Dir=In
+  Graph: Bind to UDS
+    Node: Bind to UDS (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Current Hour Changed.execute
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get UltraDynamicSky.self
+      Pin: self (object) Dir=In
+    Node: Get UltraDynamicSky (K2Node_VariableGet)
+      Pin: UltraDynamicSky (object) Dir=Out
+        -> Bind Event to Current Hour Changed.self
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Bind Event to Current Hour Changed (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Bind to UDS.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Hourly.execute
+      Pin: self (object) Dir=In
+        -> Get UltraDynamicSky.UltraDynamicSky
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Current Hour Changed.Delegate
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get UltraDynamicSky.self
+      Pin: self (object) Dir=In
+    Node: Get UltraDynamicSky (K2Node_VariableGet)
+      Pin: UltraDynamicSky (object) Dir=Out
+        -> Bind Event to Hourly.self
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Bind Event to Hourly (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Bind Event to Current Hour Changed.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get UltraDynamicSky.UltraDynamicSky
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Hourly.Delegate
+  Graph: Current Hour Changed
+    Node: Current Hour Changed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Hour (int) Dir=Out
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Random Weather Mode.Mode
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Current Hour Changed.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Switch Has Authority.Execute
+      Pin: else (exec) Dir=Out
+    Node: Change To Next Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Branch.then
+      Pin: Authority (exec) Dir=Out
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.execute
+      Pin: Remote (exec) Dir=Out
+    Node: Random Weather Mode (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Mode (byte) Dir=Out
+        -> Equal (Enum).A
+  Graph: Hourly
+    Node: Hourly (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Hour (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: A (byte) Dir=In
+        -> Random Weather Mode.Mode
+      Pin: B (byte) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Weather Change Hour.self
+      Pin: self (object) Dir=In
+    Node: Get Random Weather Change Hour (K2Node_VariableGet)
+      Pin: Random Weather Change Hour (int) Dir=Out
+        -> Equal (Integer).B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Hourly.Hour
+      Pin: B (int) Dir=In
+        -> Get Random Weather Change Hour.Random Weather Change Hour
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Hourly.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Switch Has Authority.Execute
+      Pin: else (exec) Dir=Out
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Change To Next Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Branch.then
+      Pin: Authority (exec) Dir=Out
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.execute
+      Pin: Remote (exec) Dir=Out
+    Node: Random Weather Mode (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Mode (byte) Dir=Out
+        -> Equal (Enum).A
+  Graph: Get Current Lerp Alpha
+    Node: Get Current Lerp Alpha (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on UDS_RandomWeatherTiming.execute
+    Node: Get Current Lerp Alpha (K2Node_VariableGet)
+      Pin: Current Lerp Alpha (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Current Lerp Alpha.Current Lerp Alpha
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Transition Length.self
+        -> Get Weather Speed.self
+      Pin: self (object) Dir=In
+    Node: Get Transition Length (K2Node_VariableGet)
+      Pin: Transition Length (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Select Float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Transition Length.Transition Length
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.B
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Get Current Timer Length (K2Node_VariableGet)
+      Pin: Current Timer Length (real) Dir=Out
+        -> float > float.A
+        -> Select Float.A
+      Pin: self (object) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Current Timer Length.Current Timer Length
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select Float.bPickA
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Select Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Current Timer Length.Current Timer Length
+      Pin: B (real) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Weather Speed.Weather Speed
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Get Weather Speed (K2Node_VariableGet)
+      Pin: Weather Speed (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Switch on UDS_RandomWeatherTiming (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Get Current Lerp Alpha.then
+      Pin: Selection (byte) Dir=In
+        -> Random Weather Mode.Mode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator3 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_RandomWeatherTiming.NewEnumerator0
+      Pin: ReturnValue (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=In
+        -> Max (Float).ReturnValue
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get UltraDynamicSky.self
+        -> Get Random Weather Change Hour.self
+      Pin: self (object) Dir=In
+    Node: Get UltraDynamicSky (K2Node_VariableGet)
+      Pin: UltraDynamicSky (object) Dir=Out
+        -> Get Time of Day.self
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get Time of Day (K2Node_VariableGet)
+      Pin: Time of Day (real) Dir=Out
+        -> float - float.A
+      Pin: self (object) Dir=In
+        -> Get UltraDynamicSky.UltraDynamicSky
+    Node: Get Random Weather Change Hour (K2Node_VariableGet)
+      Pin: Random Weather Change Hour (int) Dir=Out
+        -> To Float (Integer).InInt
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Time of Day.Time of Day
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Random Weather Change Hour.Random Weather Change Hour
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> % (Float).A
+    Node: % (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Transition Length.self
+      Pin: self (object) Dir=In
+    Node: Get Transition Length (K2Node_VariableGet)
+      Pin: Transition Length (real) Dir=Out
+        -> Safe Divide.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> % (Float).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.A
+    Node: Safe Divide (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Transition Length.Transition Length
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Safe Divide.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_RandomWeatherTiming.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=In
+        -> Max (Float).ReturnValue
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get UltraDynamicSky.self
+      Pin: self (object) Dir=In
+    Node: Get UltraDynamicSky (K2Node_VariableGet)
+      Pin: UltraDynamicSky (object) Dir=Out
+        -> Get Time of Day.self
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get Time of Day (K2Node_VariableGet)
+      Pin: Time of Day (real) Dir=Out
+        -> % (Float).A
+      Pin: self (object) Dir=In
+        -> Get UltraDynamicSky.UltraDynamicSky
+    Node: % (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Time of Day.Time of Day
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> % (Float).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.A
+    Node: Safe Divide (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Transition Length.Transition Length
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Transition Length.self
+      Pin: self (object) Dir=In
+    Node: Get Transition Length (K2Node_VariableGet)
+      Pin: Transition Length (real) Dir=Out
+        -> Safe Divide.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Safe Divide.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_RandomWeatherTiming.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_RandomWeatherTiming.NewEnumerator3
+      Pin: ReturnValue (real) Dir=In
+    Node: Random Weather Mode (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Mode (byte) Dir=Out
+        -> Switch on UDS_RandomWeatherTiming.Selection
+    Node: Get Current Lerp Alpha (K2Node_VariableGet)
+      Pin: Current Lerp Alpha (real) Dir=Out
+        -> Max (Float).A
+      Pin: self (object) Dir=In
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Current Lerp Alpha.Current Lerp Alpha
+      Pin: B (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Current Lerp Alpha (K2Node_VariableGet)
+      Pin: Current Lerp Alpha (real) Dir=Out
+        -> Max (Float).A
+      Pin: self (object) Dir=In
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Current Lerp Alpha.Current Lerp Alpha
+      Pin: B (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: Random Weather Mode
+    Node: Random Weather Mode (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get For WOV (K2Node_VariableGet)
+      Pin: For WOV (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Random Weather Mode.then
+      Pin: Condition (bool) Dir=In
+        -> Get For WOV.For WOV
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Weather Variation.self
+      Pin: self (object) Dir=In
+    Node: Get Random Weather Variation (K2Node_VariableGet)
+      Pin: Random Weather Variation (byte) Dir=Out
+        -> Return Node.Mode
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Mode (byte) Dir=In
+        -> Get Random Weather Variation.Random Weather Variation
+    Node: Get Volume (K2Node_VariableGet)
+      Pin: Volume (object) Dir=Out
+        -> Get Random Weather Variation.self
+      Pin: self (object) Dir=In
+    Node: Get Random Weather Variation (K2Node_VariableGet)
+      Pin: Random Weather Variation (byte) Dir=Out
+        -> Return Node.Mode
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Mode (byte) Dir=In
+        -> Get Random Weather Variation.Random Weather Variation
+  Graph: Get Season Probability Map
+    Node: Get Season Probability Map (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Season (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Map (object) Dir=In
+        -> Select.ReturnValue
+    Node: Get For WOV (K2Node_VariableGet)
+      Pin: For WOV (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Season Probability Map.then
+      Pin: Condition (bool) Dir=In
+        -> Get For WOV.For WOV
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Volume (K2Node_VariableGet)
+      Pin: Volume (object) Dir=Out
+        -> Get Weather Type Probabilities (Spring).self
+        -> Get Weather Type Probabilities (Summer).self
+        -> Get Weather Type Probabilities (Autumn).self
+        -> Get Weather Type Probabilities (Winter).self
+      Pin: self (object) Dir=In
+    Node: Get Weather Type Probabilities (Spring) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Spring) (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Get Weather Type Probabilities (Summer) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Summer) (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Get Weather Type Probabilities (Autumn) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Autumn) (object) Dir=Out
+        -> Select.Option 2
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Get Weather Type Probabilities (Winter) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Winter) (object) Dir=Out
+        -> Select.Option 3
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get Weather Type Probabilities (Spring).Weather Type Probabilities (Spring)
+      Pin: Option 1 (object) Dir=In
+        -> Get Weather Type Probabilities (Summer).Weather Type Probabilities (Summer)
+      Pin: Option 2 (object) Dir=In
+        -> Get Weather Type Probabilities (Autumn).Weather Type Probabilities (Autumn)
+      Pin: Option 3 (object) Dir=In
+        -> Get Weather Type Probabilities (Winter).Weather Type Probabilities (Winter)
+      Pin: Index (int) Dir=In
+        -> Get Season.Season
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.Map
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> Select.Index
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Map (object) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (object) Dir=In
+        -> Get Weather Type Probabilities (Spring).Weather Type Probabilities (Spring)
+      Pin: Option 1 (object) Dir=In
+        -> Get Weather Type Probabilities (Summer).Weather Type Probabilities (Summer)
+      Pin: Option 2 (object) Dir=In
+        -> Get Weather Type Probabilities (Autumn).Weather Type Probabilities (Autumn)
+      Pin: Option 3 (object) Dir=In
+        -> Get Weather Type Probabilities (Winter).Weather Type Probabilities (Winter)
+      Pin: Index (int) Dir=In
+        -> Get Season.Season
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.Map
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> Select.Index
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Weather Type Probabilities (Spring).self
+        -> Get Weather Type Probabilities (Summer).self
+        -> Get Weather Type Probabilities (Autumn).self
+        -> Get Weather Type Probabilities (Winter).self
+      Pin: self (object) Dir=In
+    Node: Get Weather Type Probabilities (Spring) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Spring) (object) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get Weather Type Probabilities (Summer) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Summer) (object) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get Weather Type Probabilities (Autumn) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Autumn) (object) Dir=Out
+        -> Select.Option 2
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get Weather Type Probabilities (Winter) (K2Node_VariableGet)
+      Pin: Weather Type Probabilities (Winter) (object) Dir=Out
+        -> Select.Option 3
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+  Graph: Set New Random Interval Timer
+    Node: Set New Random Interval Timer (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Set Current Timer Length (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Current Timer Length (real) Dir=In
+        -> Random Value In Float Range Structure.Out
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Stream.self
+        -> Get Random Weather Change Interval.self
+      Pin: self (object) Dir=In
+    Node: Get Random Stream (K2Node_VariableGet)
+      Pin: Random Stream (struct) Dir=Out
+        -> Random Value In Float Range Structure.Stream
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get Random Weather Change Interval (K2Node_VariableGet)
+      Pin: Random Weather Change Interval (struct) Dir=Out
+        -> Random Value In Float Range Structure.Range
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Random Value In Float Range Structure (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Range (struct) Dir=In
+        -> Get Random Weather Change Interval.Random Weather Change Interval
+      Pin: Stream (struct) Dir=In
+        -> Get Random Stream.Random Stream
+      Pin: __WorldContext (object) Dir=In
+      Pin: Out (real) Dir=Out
+        -> Set Current Timer Length.Current Timer Length
+    Node: Reset Timer
+Target is Random Weather Variation
+Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Weather Specific Interval Multipliers.self
+      Pin: self (object) Dir=In
+    Node: Get Weather Specific Interval Multipliers (K2Node_VariableGet)
+      Pin: Weather Specific Interval Multipliers (object) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Specific Interval Multipliers.Weather Specific Interval Multipliers
+      Pin: Key (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Value (real) Dir=Out
+        -> Max (Float).A
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Current Timer Length.then
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Current Timer Length.execute
+      Pin: else (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set New Random Interval Timer.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Current Timer Length.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reset Timer
+Target is Random Weather Variation
+Replicated To All (if server).execute
+    Node: Set Current Timer Length (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Current Timer Length (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Current Timer Length.Current Timer Length
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Timer Length.Current Timer Length
+    Node: Get Current Timer Length (K2Node_VariableGet)
+      Pin: Current Timer Length (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+  Graph: Filter Probability Map
+    Node: Filter Probability Map (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Map.execute
+      Pin: Probability Map (object) Dir=Out
+        -> Set Map.Map
+      Pin: Current Random Type (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Filtered Probability Map (object) Dir=In
+        -> Get Map.Map
+    Node: Get Weather Types to Filter (K2Node_VariableGet)
+      Pin: Weather Types to Filter (object) Dir=Out
+        -> Add.TargetArray
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get Avoid Extreme Cloud Coverage Shifts.Avoid Extreme Cloud Coverage Shifts
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+      Pin: else (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get Avoid Repeating Weather Types.Avoid Repeating Weather Types
+      Pin: then (exec) Dir=Out
+        -> Add Unique.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Weather Types to Filter (K2Node_VariableGet)
+      Pin: Weather Types to Filter (object) Dir=Out
+        -> Add Unique.TargetArray
+    Node: Add Unique (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Types to Filter.Weather Types to Filter
+      Pin: NewItem (object) Dir=In
+        -> Get Current Random Type.Current Random Type
+      Pin: ReturnValue (int) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get Avoid Changing Directly from Snow to Rain (Or Vice Versa).Avoid Changing Directly from Snow to Rain (Or Vice Versa)
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Weather Types to Filter (K2Node_VariableGet)
+      Pin: Weather Types to Filter (object) Dir=Out
+        -> For Each Loop.Array
+    Node: Set Map (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Filter Probability Map.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Map (object) Dir=In
+        -> Filter Probability Map.Probability Map
+      Pin: Output_Get (object) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Array (object) Dir=In
+        -> Get Weather Types to Filter.Weather Types to Filter
+      Pin: LoopBody (exec) Dir=Out
+        -> Remove.execute
+      Pin: Array Element (object) Dir=Out
+        -> Remove.Key
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Map (K2Node_VariableGet)
+      Pin: Map (object) Dir=Out
+        -> Remove.TargetMap
+    Node: Remove (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Map.Map
+      Pin: Key (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Map (K2Node_VariableGet)
+      Pin: Map (object) Dir=Out
+        -> Return Node.Filtered Probability Map
+    Node: Get Current Random Type (K2Node_VariableGet)
+      Pin: Current Random Type (object) Dir=Out
+        -> Get Cloud Coverage.self
+    Node: Get Current Random Type (K2Node_VariableGet)
+      Pin: Current Random Type (object) Dir=Out
+        -> Add Unique.NewItem
+    Node: Get Map (K2Node_VariableGet)
+      Pin: Map (object) Dir=Out
+        -> Keys.TargetMap
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Map.Map
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get Cloud Coverage.self
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Types to Filter.Weather Types to Filter
+      Pin: NewItem (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Cloud Coverage (K2Node_VariableGet)
+      Pin: Cloud Coverage (real) Dir=Out
+        -> float - float.A
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get Cloud Coverage (K2Node_VariableGet)
+      Pin: Cloud Coverage (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+        -> Get Current Random Type.Current Random Type
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Cloud Coverage.Cloud Coverage
+      Pin: B (real) Dir=In
+        -> Get Cloud Coverage.Cloud Coverage
+      Pin: ReturnValue (real) Dir=Out
+        -> Absolute (Float).A
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Absolute (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Extreme Cloud Coverage Shift Theshold.Extreme Cloud Coverage Shift Theshold
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add.NewItem
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Map (K2Node_VariableGet)
+      Pin: Map (object) Dir=Out
+        -> Keys.TargetMap
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Map.Map
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Snow.self
+        -> Get Rain.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Add.NewItem
+    Node: Get Weather Types to Filter (K2Node_VariableGet)
+      Pin: Weather Types to Filter (object) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Types to Filter.Weather Types to Filter
+      Pin: NewItem (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Current Random Type (K2Node_VariableGet)
+      Pin: Current Random Type (object) Dir=Out
+        -> Get Snow.self
+    Node: Get Snow (K2Node_VariableGet)
+      Pin: Snow (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Snow.Snow
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Rain (K2Node_VariableGet)
+      Pin: Rain (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Rain.Rain
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Snow (K2Node_VariableGet)
+      Pin: Snow (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> Get Current Random Type.Current Random Type
+    Node: Get Current Random Type (K2Node_VariableGet)
+      Pin: Current Random Type (object) Dir=Out
+        -> Get Rain.self
+    Node: Get Rain (K2Node_VariableGet)
+      Pin: Rain (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> Get Current Random Type.Current Random Type
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Rain.Rain
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Snow.Snow
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: B (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Avoid Extreme Cloud Coverage Shifts.self
+      Pin: self (object) Dir=In
+    Node: Get Avoid Extreme Cloud Coverage Shifts (K2Node_VariableGet)
+      Pin: Avoid Extreme Cloud Coverage Shifts (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Extreme Cloud Coverage Shift Theshold.self
+      Pin: self (object) Dir=In
+    Node: Get Extreme Cloud Coverage Shift Theshold (K2Node_VariableGet)
+      Pin: Extreme Cloud Coverage Shift Theshold (real) Dir=Out
+        -> float > float.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Avoid Repeating Weather Types.self
+      Pin: self (object) Dir=In
+    Node: Get Avoid Repeating Weather Types (K2Node_VariableGet)
+      Pin: Avoid Repeating Weather Types (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Avoid Changing Directly from Snow to Rain (Or Vice Versa).self
+      Pin: self (object) Dir=In
+    Node: Get Avoid Changing Directly from Snow to Rain (Or Vice Versa) (K2Node_VariableGet)
+      Pin: Avoid Changing Directly from Snow to Rain (Or Vice Versa) (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Map.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Cloud Coverage Limit (EdGraphNode_Comment)
+    Node: Repeating Same Type (EdGraphNode_Comment)
+    Node: Snow to Rain Limit (EdGraphNode_Comment)
+    Node: Removed Filtered Types (EdGraphNode_Comment)
+  Graph: Select Random Weather Type
+    Node: Select Random Weather Type (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Probability Map (object) Dir=Out
+      Pin: Previous Weather (object) Dir=Out
+    Node: Set Random Float (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: Random Float (real) Dir=In
+        -> Random Float in Range from Stream.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Threshold (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Threshold (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> float > float.A
+    Node: Get Threshold (K2Node_VariableGet)
+      Pin: Threshold (real) Dir=Out
+        -> float + float.B
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+        -> Get Threshold.Threshold
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Threshold.Threshold
+    Node: Get Random Float (K2Node_VariableGet)
+      Pin: Random Float (real) Dir=Out
+        -> float > float.B
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Set Threshold.Output_Get
+      Pin: B (real) Dir=In
+        -> Get Random Float.Random Float
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Threshold.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Selected Weather.execute
+      Pin: else (exec) Dir=Out
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Keys.then
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Threshold.execute
+      Pin: Array Element (object) Dir=Out
+        -> Find.Key
+        -> Reroute Node.InputPin
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Selected Weather.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Values (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Current Probabilities.Current Probabilities
+      Pin: Values (real) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Values.then
+      Pin: Array (real) Dir=In
+        -> Values.Values
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Random Max Range.execute
+      Pin: Array Element (real) Dir=Out
+        -> float + float.A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Set Random Max Range (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: Random Max Range (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Random Max Range (K2Node_VariableGet)
+      Pin: Random Max Range (real) Dir=Out
+        -> float + float.B
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> For Each Loop.Array Element
+      Pin: B (real) Dir=In
+        -> Get Random Max Range.Random Max Range
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Random Max Range.Random Max Range
+    Node: Get Random Max Range (K2Node_VariableGet)
+      Pin: Random Max Range (real) Dir=Out
+        -> Random Float in Range from Stream.Max
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Current Probabilities.Current Probabilities
+      Pin: Keys (object) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Current Probabilities.Current Probabilities
+      Pin: Key (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: Value (real) Dir=Out
+        -> float + float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Current Probabilities (K2Node_VariableGet)
+      Pin: Current Probabilities (object) Dir=Out
+        -> Keys.TargetMap
+    Node: Get Current Probabilities (K2Node_VariableGet)
+      Pin: Current Probabilities (object) Dir=Out
+        -> Find.TargetMap
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get First Type Selected.First Type Selected
+      Pin: then (exec) Dir=Out
+        -> Filter Probability Map
+Target is Random Weather Variation.execute
+      Pin: else (exec) Dir=Out
+        -> Set Current Probabilities.execute
+    Node: Set Current Probabilities (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Filter Probability Map
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: Current Probabilities (object) Dir=In
+        -> Filter Probability Map
+Target is Random Weather Variation.Filtered Probability Map
+      Pin: Output_Get (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Selected Weather.Selected Weather
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Random Stream (K2Node_VariableGet)
+      Pin: Random Stream (struct) Dir=Out
+        -> Random Float in Range from Stream.Stream
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Stream.self
+      Pin: self (object) Dir=In
+    Node: Random Float in Range from Stream (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Stream (struct) Dir=In
+        -> Get Random Stream.Random Stream
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> Get Random Max Range.Random Max Range
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Random Float.Random Float
+    Node: Filter Probability Map
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Probabilities.execute
+      Pin: self (object) Dir=In
+      Pin: Probability Map (object) Dir=In
+        -> Get Probability Map.Probability Map
+      Pin: Current Random Type (object) Dir=In
+        -> Get Previous Weather.Previous Weather
+      Pin: Filtered Probability Map (object) Dir=Out
+        -> Set Current Probabilities.Current Probabilities
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Filters Probability List (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> Values.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Totals All Probability Values in Map (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> Set Random Float.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Finds Random Value (EdGraphNode_Comment)
+    Node: Gets Selected Weather from Map (EdGraphNode_Comment)
+    Node: Get Probability Map (K2Node_VariableGet)
+      Pin: Probability Map (object) Dir=Out
+        -> Filter Probability Map
+Target is Random Weather Variation.Probability Map
+    Node: Get Previous Weather (K2Node_VariableGet)
+      Pin: Previous Weather (object) Dir=Out
+        -> Filter Probability Map
+Target is Random Weather Variation.Current Random Type
+    Node: Get Current Probabilities (K2Node_VariableGet)
+      Pin: Current Probabilities (object) Dir=Out
+        -> Values.TargetMap
+    Node: Set Selected Weather (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Selected Weather (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set First Type Selected.then
+      Pin: Out (object) Dir=In
+        -> Get Selected Weather.Selected Weather
+    Node: Get Selected Weather (K2Node_VariableGet)
+      Pin: Selected Weather (object) Dir=Out
+        -> Return Node.Out
+    Node: Set Current Probabilities (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: Current Probabilities (object) Dir=In
+        -> Get Probability Map.Probability Map
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Probability Map (K2Node_VariableGet)
+      Pin: Probability Map (object) Dir=Out
+        -> Set Current Probabilities.Current Probabilities
+    Node: Set First Type Selected (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: First Type Selected (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Select Random Weather Type.then
+      Pin: then_0 (exec) Dir=Out
+        -> Sequence.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set First Type Selected.execute
+    Node: Get First Type Selected (K2Node_VariableGet)
+      Pin: First Type Selected (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Keys.execute
+  Graph: Fill Weather Forecast
+    Node: Fill Weather Forecast (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create Composite Probability Map
+Target is Random Weather Variation.execute
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: ReturnValue (int) Dir=Out
+        -> integer < integer.A
+    Node: integer < integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+        -> Get Random Weather Forecast Steps.Random Weather Forecast Steps
+      Pin: ReturnValue (bool) Dir=Out
+        -> While Loop.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Weather Forecast Steps.self
+      Pin: self (object) Dir=In
+    Node: Get Random Weather Forecast Steps (K2Node_VariableGet)
+      Pin: Random Weather Forecast Steps (int) Dir=Out
+        -> integer < integer.B
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: While Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Set Current Probabilities.then
+      Pin: Condition (bool) Dir=In
+        -> integer < integer.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Completed (exec) Dir=Out
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Is Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Last Step Weather.execute
+      Pin: else (exec) Dir=Out
+        -> Set Last Step Weather.execute
+    Node: Set Last Step Weather (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Last Step Weather (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Set Last Step Weather.Last Step Weather
+      Pin: self (object) Dir=In
+    Node: Set Last Step Weather (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: Last Step Weather (object) Dir=In
+        -> GET.Output
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Last Index.TargetArray
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: Dimension 1 (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Set Last Step Weather.Last Step Weather
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> While Loop.LoopBody
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Weather before one to be selected (EdGraphNode_Comment)
+    Node: Set Current Probabilities (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Composite Probability Map
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+        -> While Loop.execute
+      Pin: Current Probabilities (object) Dir=In
+        -> Create Composite Probability Map
+Target is Random Weather Variation.Out
+      Pin: Output_Get (object) Dir=Out
+    Node: Create Composite Probability Map
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Fill Weather Forecast.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Probabilities.execute
+      Pin: self (object) Dir=In
+      Pin: Out (object) Dir=Out
+        -> Set Current Probabilities.Current Probabilities
+    Node: Get Current Probabilities (K2Node_VariableGet)
+      Pin: Current Probabilities (object) Dir=Out
+        -> Select Random Weather Type
+Target is Random Weather Variation.Probability Map
+    Node: Select Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: Probability Map (object) Dir=In
+        -> Get Current Probabilities.Current Probabilities
+      Pin: Previous Weather (object) Dir=In
+        -> Get Last Step Weather.Last Step Weather
+      Pin: Out (object) Dir=Out
+        -> Add.NewItem
+    Node: Get Last Step Weather (K2Node_VariableGet)
+      Pin: Last Step Weather (object) Dir=Out
+        -> Select Random Weather Type
+Target is Random Weather Variation.Previous Weather
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Select Random Weather Type
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+      Pin: NewItem (object) Dir=In
+        -> Select Random Weather Type
+Target is Random Weather Variation.Out
+      Pin: ReturnValue (int) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Select Random Weather Type
+Target is Random Weather Variation.execute
+    Node: Add Next Type to Array (EdGraphNode_Comment)
+  Graph: Recalculate Forecast
+    Node: Recalculate Forecast (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch Has Authority.Execute
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch Has Authority.Authority
+      Pin: then (exec) Dir=Out
+        -> Fill Weather Forecast
+Target is Random Weather Variation.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+    Node: Fill Weather Forecast
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Switch Has Authority (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Recalculate Forecast.then
+      Pin: Authority (exec) Dir=Out
+        -> Clear.execute
+      Pin: Remote (exec) Dir=Out
+  Graph: Clear and Restart
+    Node: Clear and Restart (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+    Node: Get Weather Forecast (K2Node_VariableGet)
+      Pin: Weather Forecast (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear and Restart.then
+      Pin: then (exec) Dir=Out
+        -> Set First Type Selected.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Weather Forecast.Weather Forecast
+    Node: Change To Next Random Weather Type
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set First Type Selected.then
+      Pin: then (exec) Dir=Out
+        -> Set Last Random Weather Type.execute
+      Pin: self (object) Dir=In
+    Node: Set First Type Selected (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.execute
+      Pin: First Type Selected (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Last Random Weather Type (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Change To Next Random Weather Type
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: Last Random Weather Type (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Set Last Random Weather Type.Last Random Weather Type
+      Pin: self (object) Dir=In
+  Graph: Check For Season Instant Refresh
+    Node: Check For Season Instant Refresh (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Check For Season Instant Refresh.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Clear And Restart
+Target is Random Weather Variation.execute
+      Pin: else (exec) Dir=Out
+    Node: Clear And Restart
+Target is Random Weather Variation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer for Next Tick by Function Name.execute
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Season
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: Get Season
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Season (real) Dir=Out
+        -> Floor.A
+      Pin: Season Enum (byte) Dir=Out
+    Node: Get Season Probability Map (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Season (int) Dir=In
+        -> Floor.ReturnValue
+      Pin: Map (object) Dir=Out
+        -> Contains.TargetMap
+    Node: Floor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Season
+Target is Ultra Dynamic Weather.Season
+      Pin: ReturnValue (int) Dir=Out
+        -> Get Season Probability Map.Season
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Contains.Key
+      Pin: self (object) Dir=In
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Season Probability Map.Map
+      Pin: Key (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Timer for Next Tick by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear And Restart
+Target is Random Weather Variation.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+  Graph: Get Material State Manager
+    Node: Get Material State Manager (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Material State Manager.then
+      Pin: Condition (bool) Dir=In
+        -> Get For WOV.For WOV
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get For WOV (K2Node_VariableGet)
+      Pin: For WOV (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get Volume (K2Node_VariableGet)
+      Pin: Volume (object) Dir=Out
+        -> Get Material State Manager.self
+      Pin: self (object) Dir=In
+    Node: Get Material State Manager (K2Node_VariableGet)
+      Pin: Material State Manager (object) Dir=Out
+        -> Return Node.Material State Manager
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Material State Manager (object) Dir=In
+        -> Get Material State Manager.Material State Manager
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Material State Manager (object) Dir=In
+        -> Get Material State Manager.Material State Manager
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Material State Manager.self
+      Pin: self (object) Dir=In
+    Node: Get Material State Manager (K2Node_VariableGet)
+      Pin: Material State Manager (object) Dir=Out
+        -> Return Node.Material State Manager
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+  Graph: Instant Material Update
+    Node: Instant Material Update (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Material State Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Material State Manager (object) Dir=Out
+        -> Apply New State
+Target is UDW Material State Manager.self
+    Node: Apply New State
+Target is UDW Material State Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Material State Manager.Material State Manager
+      Pin: Snow (real) Dir=In
+        -> Get Material Snow Coverage.Material Snow Coverage
+      Pin: Wetness (real) Dir=In
+        -> Get Material Wetness.Material Wetness
+      Pin: Dust (real) Dir=In
+        -> Get Material Dust Coverage.Material Dust Coverage
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Get Material Wetness.self
+        -> Get Material Dust Coverage.self
+        -> Get Material Snow Coverage.self
+      Pin: self (object) Dir=In
+    Node: Get Material Wetness (K2Node_VariableGet)
+      Pin: Material Wetness (real) Dir=Out
+        -> Apply New State
+Target is UDW Material State Manager.Wetness
+      Pin: self (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Force Tick
+Target is Ultra Dynamic Weather.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Apply New State
+Target is UDW Material State Manager.execute
+      Pin: else (exec) Dir=Out
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Weather Presets Used by Local Weather
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: Get Weather Presets Used by Local Weather
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Sources (object) Dir=Out
+        -> Find.TargetMap
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get Weather Presets Used by Local Weather
+Target is Ultra Dynamic Weather.Sources
+      Pin: Key (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+      Pin: Value (real) Dir=Out
+        -> float > float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Target Random Weather Type (K2Node_VariableGet)
+      Pin: Target Random Weather Type (object) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Find.Value
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Material Dust Coverage (K2Node_VariableGet)
+      Pin: Material Dust Coverage (real) Dir=Out
+        -> Apply New State
+Target is UDW Material State Manager.Dust
+      Pin: self (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+    Node: Get Material Snow Coverage (K2Node_VariableGet)
+      Pin: Material Snow Coverage (real) Dir=Out
+        -> Apply New State
+Target is UDW Material State Manager.Snow
+      Pin: self (object) Dir=In
+        -> Get Target Random Weather Type.Target Random Weather Type
+    Node: Get For WOV (K2Node_VariableGet)
+      Pin: For WOV (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Apply New State
+Target is UDW Material State Manager.then
+      Pin: Condition (bool) Dir=In
+        -> Get For WOV.For WOV
+      Pin: then (exec) Dir=Out
+        -> Check For Changing Material State To Request Target Redraw
+Target is Weather Override Volume.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Volume (K2Node_VariableGet)
+      Pin: Volume (object) Dir=Out
+        -> Check For Changing Material State To Request Target Redraw
+Target is Weather Override Volume.self
+      Pin: self (object) Dir=In
+    Node: Check For Changing Material State To Request Target Redraw
+Target is Weather Override Volume (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Force Tick
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Force Tick
+Target is Weather Override Volume.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Force Tick
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: Get For WOV (K2Node_VariableGet)
+      Pin: For WOV (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Instant Material Update.then
+      Pin: Condition (bool) Dir=In
+        -> Get For WOV.For WOV
+      Pin: then (exec) Dir=Out
+        -> Force Tick
+Target is Weather Override Volume.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Volume (K2Node_VariableGet)
+      Pin: Volume (object) Dir=Out
+        -> Force Tick
+Target is Weather Override Volume.self
+      Pin: self (object) Dir=In
+    Node: Force Tick
+Target is Weather Override Volume (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Force Tick
+Target is Ultra Dynamic Weather.execute
+      Pin: self (object) Dir=In
+        -> Get Volume.Volume
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Force Tick
+Target is Ultra Dynamic Weather.execute

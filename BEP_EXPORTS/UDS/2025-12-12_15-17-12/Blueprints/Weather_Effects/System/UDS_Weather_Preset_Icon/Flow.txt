@@ -1,0 +1,161 @@
+Blueprint: UDS_Weather_Preset_Icon (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/System/UDS_Weather_Preset_Icon.UDS_Weather_Preset_Icon)
+  Graph: EventGraph
+    Node: Get Weather Settings (K2Node_VariableGet)
+      Pin: Weather Settings (object) Dir=Out
+        -> Get Icon Texture.self
+      Pin: self (object) Dir=In
+    Node: Get Icon Texture (K2Node_VariableGet)
+      Pin: Icon Texture (softobject) Dir=Out
+        -> Load Asset Blocking.Asset
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+        -> Get Weather Settings.Weather Settings
+    Node: Load Asset Blocking (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+      Pin: self (object) Dir=In
+      Pin: Asset (softobject) Dir=In
+        -> Get Icon Texture.Icon Texture
+      Pin: ReturnValue (object) Dir=Out
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get Icon Texture.Icon Texture
+      Pin: Output (object) Dir=Out
+        -> Make Brush from Texture.Texture
+    Node: Get Weather Settings (K2Node_VariableGet)
+      Pin: Weather Settings (object) Dir=Out
+        -> Get User Friendly Name.self
+      Pin: self (object) Dir=In
+    Node: Get User Friendly Name (K2Node_VariableGet)
+      Pin: User Friendly Name (name) Dir=Out
+        -> To Text (Name).InName
+      Pin: self (object) Dir=In
+        -> Get Weather Settings.Weather Settings
+    Node: To Text (Name) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+        -> Get User Friendly Name.User Friendly Name
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get LabelText (K2Node_VariableGet)
+      Pin: LabelText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get LabelText.LabelText
+      Pin: InText (text) Dir=In
+        -> To Text (Name).ReturnValue
+    Node: Get Weather Settings (K2Node_VariableGet)
+      Pin: Weather Settings (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Pre Construct.then
+        -> Update
+Custom Event.then
+      Pin: InputObject (object) Dir=In
+        -> Get Weather Settings.Weather Settings
+      Pin: Is Valid (exec) Dir=Out
+        -> Load Asset Blocking.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+    Node: Get Icon_Image (K2Node_VariableGet)
+      Pin: Icon_Image (object) Dir=Out
+        -> Set Brush
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get Icon_Image.Icon_Image
+      Pin: InBrush (struct) Dir=In
+        -> Make Brush from Texture.ReturnValue
+    Node: Make Brush from Texture (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Texture (object) Dir=In
+      Pin: Width (int) Dir=In
+        -> Get Size.Size
+      Pin: Height (int) Dir=In
+        -> Get Size.Size
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (int) Dir=Out
+        -> Make Brush from Texture.Width
+        -> Make Brush from Texture.Height
+      Pin: self (object) Dir=In
+    Node: Get Icon_Image (K2Node_VariableGet)
+      Pin: Icon_Image (object) Dir=Out
+        -> Set Brush
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Load Asset Blocking.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get Icon_Image.Icon_Image
+      Pin: InBrush (struct) Dir=In
+        -> Make Brush from Texture.ReturnValue
+    Node: Make Brush from Texture (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Texture (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: Width (int) Dir=In
+        -> Get Size.Size
+      Pin: Height (int) Dir=In
+        -> Get Size.Size
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (int) Dir=Out
+        -> Make Brush from Texture.Width
+        -> Make Brush from Texture.Height
+      Pin: self (object) Dir=In
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Update
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get LabelText (K2Node_VariableGet)
+      Pin: LabelText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get LabelText.LabelText
+      Pin: InText (text) Dir=In

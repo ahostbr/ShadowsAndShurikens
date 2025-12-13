@@ -44,6 +44,37 @@ struct FSOTS_PerceivedTargetState
 
     UPROPERTY(BlueprintReadOnly, Category="Perception")
     float TimeSinceLastSeen = 0.f;
+
+    // Visibility bookkeeping for multi-point LOS.
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    float LastVisibilityFraction = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    int32 LastVisiblePoints = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    int32 LastTestedPoints = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    bool bLastAnyCoreVisible = false;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_TargetPointVisibilityResult
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    int32 TestedPoints = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    int32 VisiblePoints = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    bool bAnyCorePointVisible = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="Perception|TargetPoints")
+    float VisibilityFraction = 0.0f;
 };
 
 USTRUCT(BlueprintType)

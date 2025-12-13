@@ -1,0 +1,117 @@
+Blueprint: BP_DemoActor_SpatialInputOption (/Game/InteractionEssentials/DemoContent/Blueprints/DemoActor/BP_DemoActor_SpatialInputOption.BP_DemoActor_SpatialInputOption)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.execute
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Add Mapping Context
+Target is Enhanced Input Subsystem Interface.self
+    Node: Add Mapping Context
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: MappingContext (object) Dir=In
+      Pin: Priority (int) Dir=In
+      Pin: Options (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: IsInputActionKey
+    Node: IsInputActionKey (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: KeyToTest (struct) Dir=Out
+        -> Equal (Key).B
+      Pin: Action (object) Dir=Out
+        -> Query Keys Mapped to Action
+Target is Enhanced Input Subsystem Interface.Action
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enhanced Input Local Player Subsystem.PlayerController
+    Node: Enhanced Input Local Player Subsystem (K2Node_GetSubsystemFromPC)
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Query Keys Mapped to Action
+Target is Enhanced Input Subsystem Interface.self
+    Node: Query Keys Mapped to Action
+Target is Enhanced Input Subsystem Interface (K2Node_CallFunction)
+      Pin: self (interface) Dir=In
+        -> Enhanced Input Local Player Subsystem.ReturnValue
+      Pin: Action (object) Dir=In
+        -> IsInputActionKey.Action
+      Pin: ReturnValue (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Equal (Key) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: B (struct) Dir=In
+        -> IsInputActionKey.KeyToTest
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> IsInputActionKey.then
+      Pin: Array (struct) Dir=In
+        -> Query Keys Mapped to Action
+Target is Enhanced Input Subsystem Interface.ReturnValue
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Equal (Key).A
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Set NewLocalVar (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewLocalVar (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Key).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set NewLocalVar.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set NewLocalVar.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: ReturnValue (bool) Dir=In
+        -> Get NewLocalVar.NewLocalVar
+    Node: Get NewLocalVar (K2Node_VariableGet)
+      Pin: NewLocalVar (bool) Dir=Out
+        -> Return Node.ReturnValue

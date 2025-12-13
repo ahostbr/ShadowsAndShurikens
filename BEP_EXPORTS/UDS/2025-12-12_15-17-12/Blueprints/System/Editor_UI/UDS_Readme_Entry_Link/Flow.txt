@@ -1,0 +1,105 @@
+Blueprint: UDS_Readme_Entry_Link (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/UDS_Readme_Entry_Link.UDS_Readme_Entry_Link)
+  Graph: EventGraph
+    Node: On Clicked (Button_80) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Show Single Entry
+Target is UDS_Readme.execute
+    Node: Get Readme (K2Node_VariableGet)
+      Pin: Readme (object) Dir=Out
+        -> Show Single Entry
+Target is UDS_Readme.self
+      Pin: self (object) Dir=In
+    Node: Show Single Entry
+Target is UDS_Readme (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Button_80).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Readme.Readme
+      Pin: Row Name (name) Dir=In
+        -> Get Entry Row Name.Entry Row Name
+    Node: Get Entry Row Name (K2Node_VariableGet)
+      Pin: Entry Row Name (name) Dir=Out
+        -> Show Single Entry
+Target is UDS_Readme.Row Name
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Data Table Row UDS_Readme_Entries.execute
+    Node: Get Entry Row Name (K2Node_VariableGet)
+      Pin: Entry Row Name (name) Dir=Out
+        -> Get Data Table Row UDS_Readme_Entries.RowName
+      Pin: self (object) Dir=In
+    Node: Get Data Table Row UDS_Readme_Entries (K2Node_GetDataTableRow)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: RowNotFound (exec) Dir=Out
+      Pin: DataTable (object) Dir=In
+      Pin: RowName (name) Dir=In
+        -> Get Entry Row Name.Entry Row Name
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break UDS Readme Entry.UDS_Readme_Entry
+    Node: Break UDS Readme Entry (K2Node_BreakStruct)
+      Pin: UDS_Readme_Entry (struct) Dir=In
+        -> Get Data Table Row UDS_Readme_Entries.ReturnValue
+      Pin: EntryTitle_4_4B2C1546415E1329EC06F8B28CB05DF9 (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+      Pin: EntryText_13_1F188F814F7F03D55DA1ED8DF4CC1347 (text) Dir=Out
+      Pin: Keywords_8_5ACC585649ABDE1192D0EAB5258A2665 (string) Dir=Out
+      Pin: Category_12_A3CA532A4207111301CC0DB004E1A0F4 (int) Dir=Out
+        -> Select.Index
+      Pin: SubCategoryHeading_15_F6EBA06941D30788CC14989999E6C63B (bool) Dir=Out
+      Pin: SuggestedEntries_19_9776F58E45A513F145D90BBE28516AA1 (name) Dir=Out
+    Node: Get TitleText (K2Node_VariableGet)
+      Pin: TitleText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Data Table Row UDS_Readme_Entries.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get TitleText.TitleText
+      Pin: InText (text) Dir=In
+        -> Break UDS Readme Entry.EntryTitle_4_4B2C1546415E1329EC06F8B28CB05DF9
+    Node: Get TitleText (K2Node_VariableGet)
+      Pin: TitleText (object) Dir=Out
+        -> Set Color and Opacity
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TitleText.TitleText
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Text.InColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+      Pin: Option 1 (struct) Dir=In
+      Pin: Option 2 (struct) Dir=In
+      Pin: Option 3 (struct) Dir=In
+      Pin: Index (int) Dir=In
+        -> Break UDS Readme Entry.Category_12_A3CA532A4207111301CC0DB004E1A0F4
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor

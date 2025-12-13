@@ -1,0 +1,751 @@
+Blueprint: UDS_Analog_Clock (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Widgets/UDS_Analog_Clock.UDS_Analog_Clock)
+  Graph: EventGraph
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Hands
+Target is UDS Analog Clock.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+    Node: Update Hands
+Target is UDS Analog Clock (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set UDS.UDS
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+      Pin: UDS (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: PreConstruct Graph
+    Node: Get Face_Image (K2Node_VariableGet)
+      Pin: Face_Image (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Desired Size Override
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get Face_Image.Face_Image
+      Pin: Texture (object) Dir=In
+        -> Get Clock Face Texture.Clock Face Texture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get Clock Face Texture (K2Node_VariableGet)
+      Pin: Clock Face Texture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Get HourHand (K2Node_VariableGet)
+      Pin: HourHand (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get HourHand.HourHand
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get Show Hour Hand (K2Node_VariableGet)
+      Pin: Show Hour Hand (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Hour Hand.Show Hour Hand
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get MinuteHand (K2Node_VariableGet)
+      Pin: MinuteHand (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get MinuteHand.MinuteHand
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Minute Hand.Show Minute Hand
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get Show Minute Hand (K2Node_VariableGet)
+      Pin: Show Minute Hand (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Show Second Hand (K2Node_VariableGet)
+      Pin: Show Second Hand (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get SecondHand (K2Node_VariableGet)
+      Pin: SecondHand (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get SecondHand.SecondHand
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Second Hand.Show Second Hand
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Get HourHand (K2Node_VariableGet)
+      Pin: HourHand (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.execute
+      Pin: self (object) Dir=In
+        -> Get HourHand.HourHand
+      Pin: Texture (object) Dir=In
+        -> Get Hour Hand Texture.Hour Hand Texture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get Hour Hand Texture (K2Node_VariableGet)
+      Pin: Hour Hand Texture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Get HourHand (K2Node_VariableGet)
+      Pin: HourHand (object) Dir=Out
+        -> Slot as Canvas Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Canvas Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get HourHand.HourHand
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.self
+    Node: Set Size
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: InSize (struct) Dir=In
+        -> vector2d * float.ReturnValue
+    Node: Get Hour Hand Size (K2Node_VariableGet)
+      Pin: Hour Hand Size (struct) Dir=Out
+        -> vector2d * float.A
+      Pin: self (object) Dir=In
+    Node: Get Clock Size (K2Node_VariableGet)
+      Pin: Clock Size (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Clock Size.Clock Size
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector2d * float.B
+    Node: vector2d * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Hour Hand Size.Hour Hand Size
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.InSize
+    Node: Get MinuteHand (K2Node_VariableGet)
+      Pin: MinuteHand (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Size
+Target is Canvas Panel Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.execute
+      Pin: self (object) Dir=In
+        -> Get MinuteHand.MinuteHand
+      Pin: Texture (object) Dir=In
+        -> Get Minute Hand Texture.Minute Hand Texture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get MinuteHand (K2Node_VariableGet)
+      Pin: MinuteHand (object) Dir=Out
+        -> Slot as Canvas Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Canvas Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get MinuteHand.MinuteHand
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.self
+    Node: Set Size
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: InSize (struct) Dir=In
+        -> vector2d * float.ReturnValue
+    Node: Get Minute Hand Size (K2Node_VariableGet)
+      Pin: Minute Hand Size (struct) Dir=Out
+        -> vector2d * float.A
+      Pin: self (object) Dir=In
+    Node: Get Clock Size (K2Node_VariableGet)
+      Pin: Clock Size (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Clock Size.Clock Size
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector2d * float.B
+    Node: vector2d * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Minute Hand Size.Minute Hand Size
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.InSize
+    Node: Get Minute Hand Texture (K2Node_VariableGet)
+      Pin: Minute Hand Texture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Get SecondHand (K2Node_VariableGet)
+      Pin: SecondHand (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Size
+Target is Canvas Panel Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.execute
+      Pin: self (object) Dir=In
+        -> Get SecondHand.SecondHand
+      Pin: Texture (object) Dir=In
+        -> Get Second Hand Texture.Second Hand Texture
+      Pin: bMatchSize (bool) Dir=In
+    Node: Get SecondHand (K2Node_VariableGet)
+      Pin: SecondHand (object) Dir=Out
+        -> Slot as Canvas Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Canvas Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get SecondHand.SecondHand
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.self
+    Node: Set Size
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: InSize (struct) Dir=In
+        -> vector2d * float.ReturnValue
+    Node: Get Second Hand Size (K2Node_VariableGet)
+      Pin: Second Hand Size (struct) Dir=Out
+        -> vector2d * float.A
+      Pin: self (object) Dir=In
+    Node: Get Clock Size (K2Node_VariableGet)
+      Pin: Clock Size (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Clock Size.Clock Size
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> vector2d * float.B
+    Node: vector2d * float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Second Hand Size.Second Hand Size
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Size
+Target is Canvas Panel Slot.InSize
+    Node: Get Second Hand Texture (K2Node_VariableGet)
+      Pin: Second Hand Texture (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.Texture
+      Pin: self (object) Dir=In
+    Node: Get HourHand (K2Node_VariableGet)
+      Pin: HourHand (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Size
+Target is Canvas Panel Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get HourHand.HourHand
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get Hour Hand Color.Hour Hand Color
+    Node: Get Hour Hand Color (K2Node_VariableGet)
+      Pin: Hour Hand Color (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Get MinuteHand (K2Node_VariableGet)
+      Pin: MinuteHand (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get MinuteHand.MinuteHand
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get Minute Hand Color.Minute Hand Color
+    Node: Get Minute Hand Color (K2Node_VariableGet)
+      Pin: Minute Hand Color (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get SecondHand.SecondHand
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get Second Hand Color.Second Hand Color
+    Node: Get SecondHand (K2Node_VariableGet)
+      Pin: SecondHand (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get Second Hand Color (K2Node_VariableGet)
+      Pin: Second Hand Color (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Get Face_Image (K2Node_VariableGet)
+      Pin: Face_Image (object) Dir=Out
+        -> Set Desired Size Override
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Desired Size Override
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get Face_Image.Face_Image
+      Pin: DesiredSize (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Get Clock Size (K2Node_VariableGet)
+      Pin: Clock Size (real) Dir=Out
+        -> Make Vector 2D.X
+        -> Make Vector 2D.Y
+      Pin: self (object) Dir=In
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get Clock Size.Clock Size
+      Pin: Y (real) Dir=In
+        -> Get Clock Size.Clock Size
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Desired Size Override
+Target is Image.DesiredSize
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Slot as Canvas Slot.Widget
+    Node: Slot as Canvas Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Auto Size
+Target is Canvas Panel Slot.self
+        -> Is Valid.InputObject
+    Node: Set Auto Size
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: InbAutoSize (bool) Dir=In
+    Node: Get Show Axis Circle (K2Node_VariableGet)
+      Pin: Show Axis Circle (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Axis_Circle (K2Node_VariableGet)
+      Pin: Axis_Circle (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get Axis_Circle.Axis_Circle
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Axis Circle.Show Axis Circle
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get Axis_Circle (K2Node_VariableGet)
+      Pin: Axis_Circle (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Axis_Circle.Axis_Circle
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get Axis Circle Color.Axis Circle Color
+    Node: Get Axis Circle Color (K2Node_VariableGet)
+      Pin: Axis Circle Color (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: InputObject (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Auto Size
+Target is Canvas Panel Slot.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Auto Size
+Target is Canvas Panel Slot.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Desired Size Override
+Target is Image.execute
+  Graph: Update Hands
+    Node: Update Hands (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get HourHand (K2Node_VariableGet)
+      Pin: HourHand (object) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Render Transform Angle
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Time.then
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get HourHand.HourHand
+      Pin: Angle (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> % (Float).ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.Angle
+    Node: Get MinuteHand (K2Node_VariableGet)
+      Pin: MinuteHand (object) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Render Transform Angle
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Transform Angle
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get MinuteHand.MinuteHand
+      Pin: Angle (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+    Node: % (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Time.Time
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> % (Float).ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.Angle
+    Node: Get SecondHand (K2Node_VariableGet)
+      Pin: SecondHand (object) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Render Transform Angle
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SecondHand.SecondHand
+      Pin: Angle (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+    Node: % (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Time.Time
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Set Time (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+        -> Set UDS.then
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.execute
+      Pin: Time (real) Dir=In
+        -> Get Time of Day.Time of Day
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Time (K2Node_VariableGet)
+      Pin: Time (real) Dir=Out
+        -> % (Float).A
+    Node: Get Time (K2Node_VariableGet)
+      Pin: Time (real) Dir=Out
+        -> % (Float).A
+    Node: Get Time (K2Node_VariableGet)
+      Pin: Time (real) Dir=Out
+        -> % (Float).A
+    Node: % (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Time.Time
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> % (Float).B
+        -> Map Range Clamped.InRangeB
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> % (Float).ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.Angle
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Render Transform Angle
+Target is Widget.then
+      Pin: Condition (bool) Dir=In
+        -> Get Show Second Hand.Show Second Hand
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Show Second Hand (K2Node_VariableGet)
+      Pin: Show Second Hand (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get Time of Day (K2Node_VariableGet)
+      Pin: Time of Day (real) Dir=Out
+        -> Set Time.Time
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Update Hands.then
+      Pin: InputObject (object) Dir=In
+        -> Get UDS.UDS
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Time.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set UDS.UDS
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Time.execute
+      Pin: UDS (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get Time of Day.self
+      Pin: self (object) Dir=In

@@ -1,0 +1,59 @@
+Blueprint: BP_ProgressNotiArea (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/ProgressNoti/BP_ProgressNotiArea.BP_ProgressNotiArea)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component End Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Remove All Progress Notifications
+Target is BPi HUDManager V2.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component End Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove All Progress Notifications
+Target is BPi HUDManager V2.self
+    Node: Remove All Progress Notifications
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: bForceRemove (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,3535 @@
+Blueprint: BP_HelperFunctions (/Game/InteractionEssentials/Blueprints/Libraries/BP_HelperFunctions.BP_HelperFunctions)
+  Graph: GetTexture2DSize
+    Node: GetTexture2DSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Texture2D (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: GetSizeX
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: GetSizeY
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Y (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeX
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeY
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GetTexture2DSize.Texture2D
+      Pin: OutputPin (object) Dir=Out
+        -> GetSizeY
+Target is Texture 2D.self
+        -> GetSizeX
+Target is Texture 2D.self
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetTexture2DSize.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+  Graph: GetTexture2DSizeClamped
+    Node: GetTexture2DSizeClamped (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Texture2D (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Clamp (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetTexture2DSizeClamped.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: GetSizeX
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: GetSizeY
+Target is Texture 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Y (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeX
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> GetSizeY
+Target is Texture 2D.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GetTexture2DSizeClamped.Texture2D
+      Pin: OutputPin (object) Dir=Out
+        -> GetSizeY
+Target is Texture 2D.self
+        -> GetSizeX
+Target is Texture 2D.self
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GetTexture2DSizeClamped.Clamp
+      Pin: X (real) Dir=Out
+        -> Clamp (Float).Max
+      Pin: Y (real) Dir=Out
+        -> Clamp (Float).Max
+  Graph: SetSize
+    Node: SetSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: SizeBox (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Width (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Height (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InWidthOverride (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Width Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InHeightOverride (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetSize.SizeBox
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> SetSize.then
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Height Override
+Target is Size Box.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Set Width Override
+Target is Size Box.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SetSize.Width
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SetSize.Height
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Is Valid.InputObject
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+  Graph: GetSize
+    Node: GetSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: SizeBox (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetSize.then
+      Pin: Width (real) Dir=In
+        -> Select.ReturnValue
+      Pin: Height (real) Dir=In
+        -> Select.ReturnValue
+    Node: Get WidthOverride (K2Node_VariableGet)
+      Pin: WidthOverride (real) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get HeightOverride (K2Node_VariableGet)
+      Pin: HeightOverride (real) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GetSize.SizeBox
+      Pin: OutputPin (object) Dir=Out
+        -> Get WidthOverride.self
+        -> Get HeightOverride.self
+        -> Is Valid.Object
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+        -> Get HeightOverride.HeightOverride
+      Pin: Index (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Height
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+      Pin: Option 1 (real) Dir=In
+        -> Get WidthOverride.WidthOverride
+      Pin: Index (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Width
+  Graph: SubtractFromColor
+    Node: SubtractFromColor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: InColor (struct) Dir=Out
+        -> Break Color.InColor
+      Pin: Value (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Break Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InColor (struct) Dir=In
+        -> SubtractFromColor.InColor
+      Pin: R (real) Dir=Out
+        -> float - float.A
+      Pin: G (real) Dir=Out
+        -> float - float.A
+      Pin: B (real) Dir=Out
+        -> float - float.A
+      Pin: A (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.R
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> float <= float.A
+        -> Select.Option 0
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.G
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> float <= float.A
+        -> Select.Option 0
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.B
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> float <= float.A
+        -> Select.Option 0
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.R
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.G
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.B
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: R (real) Dir=In
+        -> Select.ReturnValue
+      Pin: G (real) Dir=In
+        -> Select.ReturnValue
+      Pin: B (real) Dir=In
+        -> Select.ReturnValue
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: R (EdGraphNode_Comment)
+    Node: G (EdGraphNode_Comment)
+    Node: B (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> float - float.B
+        -> float - float.B
+        -> float - float.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SubtractFromColor.Value
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Break Color.A
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Make Linear Color.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> SubtractFromColor.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Linear Color.LinearColor
+  Graph: SubtractBrightnessValue
+    Node: SubtractBrightnessValue (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: InColor (struct) Dir=Out
+        -> RGB to HSV.InColor
+      Pin: Value (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> SubtractBrightnessValue.then
+      Pin: ReturnValue (struct) Dir=In
+        -> HSV to RGB.ReturnValue
+    Node: RGB to HSV (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InColor (struct) Dir=In
+        -> SubtractBrightnessValue.InColor
+      Pin: H (real) Dir=Out
+        -> HSV to RGB.H
+      Pin: S (real) Dir=Out
+        -> HSV to RGB.S
+      Pin: V (real) Dir=Out
+        -> float * float.A
+      Pin: A (real) Dir=Out
+        -> HSV to RGB.A
+    Node: HSV to RGB (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: H (real) Dir=In
+        -> RGB to HSV.H
+      Pin: S (real) Dir=In
+        -> RGB to HSV.S
+      Pin: V (real) Dir=In
+        -> Select.ReturnValue
+      Pin: A (real) Dir=In
+        -> RGB to HSV.A
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: float <= float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Option 1 (real) Dir=In
+      Pin: Index (bool) Dir=In
+        -> float <= float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> HSV to RGB.V
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SubtractBrightnessValue.Value
+      Pin: OutputPin (real) Dir=Out
+        -> float * float.B
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> RGB to HSV.V
+      Pin: B (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> float <= float.A
+        -> Select.Option 0
+  Graph: SetFillImage
+    Node: SetFillImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: FillImage (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_DrawAs
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_ImageSize
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_Margin
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=Out
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=Out
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetFillImage.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_DrawAs
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_ImageSize
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_Margin
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=In
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetFillImage.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.WidgetStyle_FillImage_ResourceObject
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetFillImage.FillImage
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: SetFillImageSize
+    Node: SetFillImageSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: FillImageSize (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_DrawAs
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_Margin
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=Out
+        -> Set.WidgetStyle_FillImage_ResourceObject
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=Out
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetFillImageSize.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_DrawAs
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_Margin
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=In
+        -> Get.WidgetStyle_FillImage_ResourceObject
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=In
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetFillImageSize.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_ImageSize
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> SetFillImageSize.FillImageSize
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: SetFillImageTiling
+    Node: SetFillImageTiling (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Tiling (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+      Pin: Output_Get (struct) Dir=In
+        -> Set.Output_Get
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+        -> Return Node.Output_Get
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetFillImageTiling.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: Tiling (byte) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetFillImageTiling.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> SetFillImageTiling.Tiling
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Set members in Slate Brush.Tiling
+    Node: AlternativeSet
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+      Pin: Target (object) Dir=In
+      Pin: Tiling (byte) Dir=In
+  Graph: GetFillImage
+    Node: GetFillImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Target (object) Dir=Out
+        -> Get.self
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetFillImage.then
+      Pin: FillImage (object) Dir=In
+        -> Get.WidgetStyle_FillImage_ResourceObject
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=Out
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=Out
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=Out
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=Out
+        -> Return Node.FillImage
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=Out
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> GetFillImage.Target
+  Graph: SetMarqueeImage
+    Node: SetMarqueeImage (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Image (object) Dir=Out
+        -> Set members in Slate Brush.ResourceObject
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeImage.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeImage.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: ResourceObject (object) Dir=In
+        -> SetMarqueeImage.Image
+  Graph: SetMarqueeImageSize
+    Node: SetMarqueeImageSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Image Size (struct) Dir=Out
+        -> Set members in Slate Brush.ImageSize
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeImageSize.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeImageSize.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: ImageSize (struct) Dir=In
+        -> SetMarqueeImageSize.Image Size
+  Graph: SetMarqueeMargin
+    Node: SetMarqueeMargin (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Margin (struct) Dir=Out
+        -> Set members in Slate Brush.Margin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeMargin.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeMargin.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: Margin (struct) Dir=In
+        -> SetMarqueeMargin.Margin
+  Graph: SetMarqueeTint
+    Node: SetMarqueeTint (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Tint (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeTint.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set members in Slate Brush.TintColor
+      Pin: SpecifiedColor (struct) Dir=In
+        -> SetMarqueeTint.Tint
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeTint.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: TintColor (struct) Dir=In
+        -> Make Slate Color.SlateColor
+  Graph: SetMarqueeDrawAs
+    Node: SetMarqueeDrawAs (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Draw As (byte) Dir=Out
+        -> Set members in Slate Brush.DrawAs
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeDrawAs.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeDrawAs.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: DrawAs (byte) Dir=In
+        -> SetMarqueeDrawAs.Draw As
+  Graph: SetMarqueeTiling
+    Node: SetMarqueeTiling (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Tiling (byte) Dir=Out
+        -> Set members in Slate Brush.Tiling
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeTiling.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeTiling.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: Tiling (byte) Dir=In
+        -> SetMarqueeTiling.Tiling
+  Graph: SetMarqueeMirroring
+    Node: SetMarqueeMirroring (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set members in Slate Brush.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mirroring (byte) Dir=Out
+        -> Set members in Slate Brush.Mirroring
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetMarqueeMirroring.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set members in Slate Brush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Set members in Slate Brush.StructOut
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set members in Slate Brush.StructRef
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set members in Slate Brush (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> SetMarqueeMirroring.then
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: StructRef (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: StructOut (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: Mirroring (byte) Dir=In
+        -> SetMarqueeMirroring.Mirroring
+  Graph: SetBackgroundTint
+    Node: SetBackgroundTint (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Tint (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage_TintColor (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage_DrawAs (byte) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_DrawAs
+      Pin: WidgetStyle_BackgroundImage_Tiling (byte) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_Tiling
+      Pin: WidgetStyle_BackgroundImage_Mirroring (byte) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_Mirroring
+      Pin: WidgetStyle_BackgroundImage_ImageSize (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_ImageSize
+      Pin: WidgetStyle_BackgroundImage_Margin (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_Margin
+      Pin: WidgetStyle_BackgroundImage_ResourceObject (object) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_ResourceObject
+      Pin: WidgetStyle_BackgroundImage_OutlineSettings (struct) Dir=Out
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetBackgroundTint.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage_TintColor (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetStyle_BackgroundImage_DrawAs (byte) Dir=In
+        -> Get.WidgetStyle_BackgroundImage_DrawAs
+      Pin: WidgetStyle_BackgroundImage_Tiling (byte) Dir=In
+        -> Get.WidgetStyle_BackgroundImage_Tiling
+      Pin: WidgetStyle_BackgroundImage_Mirroring (byte) Dir=In
+        -> Get.WidgetStyle_BackgroundImage_Mirroring
+      Pin: WidgetStyle_BackgroundImage_ImageSize (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage_ImageSize
+      Pin: WidgetStyle_BackgroundImage_Margin (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage_Margin
+      Pin: WidgetStyle_BackgroundImage_ResourceObject (object) Dir=In
+        -> Get.WidgetStyle_BackgroundImage_ResourceObject
+      Pin: WidgetStyle_BackgroundImage_OutlineSettings (struct) Dir=In
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+        -> Get.WidgetStyle_FillImage
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetBackgroundTint.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> SetBackgroundTint.Tint
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage_TintColor
+  Graph: SetFillImageMargin
+    Node: SetFillImageMargin (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Margin (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_DrawAs
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_ImageSize
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=Out
+        -> Set.WidgetStyle_FillImage_ResourceObject
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=Out
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetFillImageMargin.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_DrawAs
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_ImageSize
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=In
+      Pin: WidgetStyle_FillImage_Margin_Left (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: WidgetStyle_FillImage_Margin_Top (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: WidgetStyle_FillImage_Margin_Right (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: WidgetStyle_FillImage_Margin_Bottom (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=In
+        -> Get.WidgetStyle_FillImage_ResourceObject
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=In
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetFillImageMargin.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Make Literal Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Set.WidgetStyle_FillImage_Margin_Left
+        -> Set.WidgetStyle_FillImage_Margin_Top
+        -> Set.WidgetStyle_FillImage_Margin_Right
+        -> Set.WidgetStyle_FillImage_Margin_Bottom
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> SetFillImageMargin.Margin
+      Pin: OutputPin (real) Dir=Out
+        -> Make Literal Float.Value
+  Graph: SetFillImageDrawAs
+    Node: SetFillImageDrawAs (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DrawAs (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set.then
+    Node: Get (K2Node_VariableGet)
+      Pin: WidgetStyle (struct) Dir=Out
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=Out
+        -> Set.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=Out
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=Out
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_ImageSize
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=Out
+        -> Set.WidgetStyle_FillImage_Margin
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=Out
+        -> Set.WidgetStyle_FillImage_ResourceObject
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=Out
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=Out
+        -> Set.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetFillImageDrawAs.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: WidgetStyle (struct) Dir=In
+      Pin: WidgetStyle_BackgroundImage (struct) Dir=In
+        -> Get.WidgetStyle_BackgroundImage
+      Pin: WidgetStyle_FillImage (struct) Dir=In
+      Pin: WidgetStyle_FillImage_TintColor (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_TintColor
+      Pin: WidgetStyle_FillImage_DrawAs (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: WidgetStyle_FillImage_Tiling (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Tiling
+      Pin: WidgetStyle_FillImage_Mirroring (byte) Dir=In
+        -> Get.WidgetStyle_FillImage_Mirroring
+      Pin: WidgetStyle_FillImage_ImageSize (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_ImageSize
+      Pin: WidgetStyle_FillImage_Margin (struct) Dir=In
+        -> Get.WidgetStyle_FillImage_Margin
+      Pin: WidgetStyle_FillImage_ResourceObject (object) Dir=In
+        -> Get.WidgetStyle_FillImage_ResourceObject
+      Pin: WidgetStyle_FillImage_OutlineSettings (struct) Dir=In
+      Pin: WidgetStyle_MarqueeImage (struct) Dir=In
+        -> Get.WidgetStyle_MarqueeImage
+      Pin: WidgetStyle_EnableFillAnimation (bool) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetFillImageDrawAs.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Set.WidgetStyle_FillImage_DrawAs
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> SetFillImageDrawAs.DrawAs
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: SetImageBrush
+    Node: SetImageBrush (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Brush (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: Brush (struct) Dir=Out
+      Pin: Brush_TintColor (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_TintColor
+      Pin: Brush_DrawAs (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_DrawAs
+      Pin: Brush_Tiling (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Tiling
+      Pin: Brush_Mirroring (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Mirroring
+      Pin: Brush_ImageSize (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_ImageSize
+      Pin: Brush_Margin (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Margin
+      Pin: Brush_ResourceObject (object) Dir=Out
+      Pin: Brush_OutlineSettings (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetImageBrush.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Set Brush
+Target is Image.self
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetImageBrush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush (struct) Dir=In
+      Pin: InBrush_TintColor (struct) Dir=In
+        -> Get.Brush_TintColor
+      Pin: InBrush_DrawAs (byte) Dir=In
+        -> Get.Brush_DrawAs
+      Pin: InBrush_Tiling (byte) Dir=In
+        -> Get.Brush_Tiling
+      Pin: InBrush_Mirroring (byte) Dir=In
+        -> Get.Brush_Mirroring
+      Pin: InBrush_ImageSize (struct) Dir=In
+        -> Get.Brush_ImageSize
+      Pin: InBrush_Margin (struct) Dir=In
+        -> Get.Brush_Margin
+      Pin: InBrush_ResourceObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush_OutlineSettings (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetImageBrush.Brush
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_ResourceObject
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Image.then
+  Graph: SetImageBrushTiling
+    Node: SetImageBrushTiling (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Tiling (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Image.then
+    Node: Get (K2Node_VariableGet)
+      Pin: Brush (struct) Dir=Out
+      Pin: Brush_TintColor (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_TintColor
+      Pin: Brush_DrawAs (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_DrawAs
+      Pin: Brush_Tiling (byte) Dir=Out
+      Pin: Brush_Mirroring (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Mirroring
+      Pin: Brush_ImageSize (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_ImageSize
+      Pin: Brush_Margin (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Margin
+      Pin: Brush_ResourceObject (object) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_ResourceObject
+      Pin: Brush_OutlineSettings (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetImageBrushTiling.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Set Brush
+Target is Image.self
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetImageBrushTiling.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush (struct) Dir=In
+      Pin: InBrush_TintColor (struct) Dir=In
+        -> Get.Brush_TintColor
+      Pin: InBrush_DrawAs (byte) Dir=In
+        -> Get.Brush_DrawAs
+      Pin: InBrush_Tiling (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush_Mirroring (byte) Dir=In
+        -> Get.Brush_Mirroring
+      Pin: InBrush_ImageSize (struct) Dir=In
+        -> Get.Brush_ImageSize
+      Pin: InBrush_Margin (struct) Dir=In
+        -> Get.Brush_Margin
+      Pin: InBrush_ResourceObject (object) Dir=In
+        -> Get.Brush_ResourceObject
+      Pin: InBrush_OutlineSettings (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> SetImageBrushTiling.Tiling
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Tiling
+  Graph: SetImageBrushSize
+    Node: SetImageBrushSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Size (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_ImageSize
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Image.then
+    Node: Get (K2Node_VariableGet)
+      Pin: Brush (struct) Dir=Out
+      Pin: Brush_TintColor (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_TintColor
+      Pin: Brush_DrawAs (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_DrawAs
+      Pin: Brush_Tiling (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Tiling
+      Pin: Brush_Mirroring (byte) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Mirroring
+      Pin: Brush_ImageSize (struct) Dir=Out
+      Pin: Brush_Margin (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_Margin
+      Pin: Brush_ResourceObject (object) Dir=Out
+        -> Set Brush
+Target is Image.InBrush_ResourceObject
+      Pin: Brush_OutlineSettings (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetImageBrushSize.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Set Brush
+Target is Image.self
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetImageBrushSize.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush (struct) Dir=In
+      Pin: InBrush_TintColor (struct) Dir=In
+        -> Get.Brush_TintColor
+      Pin: InBrush_DrawAs (byte) Dir=In
+        -> Get.Brush_DrawAs
+      Pin: InBrush_Tiling (byte) Dir=In
+        -> Get.Brush_Tiling
+      Pin: InBrush_Mirroring (byte) Dir=In
+        -> Get.Brush_Mirroring
+      Pin: InBrush_ImageSize (struct) Dir=In
+        -> SetImageBrushSize.Size
+      Pin: InBrush_Margin (struct) Dir=In
+        -> Get.Brush_Margin
+      Pin: InBrush_ResourceObject (object) Dir=In
+        -> Get.Brush_ResourceObject
+      Pin: InBrush_OutlineSettings (struct) Dir=In
+  Graph: SetBorderBrush
+    Node: SetBorderBrush (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Border.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Brush (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get (K2Node_VariableGet)
+      Pin: Background (struct) Dir=Out
+      Pin: Background_TintColor (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_TintColor
+      Pin: Background_DrawAs (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_DrawAs
+      Pin: Background_Tiling (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Tiling
+      Pin: Background_Mirroring (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Mirroring
+      Pin: Background_ImageSize (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_ImageSize
+      Pin: Background_Margin (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Margin
+      Pin: Background_ResourceObject (object) Dir=Out
+      Pin: Background_OutlineSettings (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetBorderBrush.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Set Brush
+Target is Border.self
+    Node: Set Brush
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetBorderBrush.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush (struct) Dir=In
+      Pin: InBrush_TintColor (struct) Dir=In
+        -> Get.Background_TintColor
+      Pin: InBrush_DrawAs (byte) Dir=In
+        -> Get.Background_DrawAs
+      Pin: InBrush_Tiling (byte) Dir=In
+        -> Get.Background_Tiling
+      Pin: InBrush_Mirroring (byte) Dir=In
+        -> Get.Background_Mirroring
+      Pin: InBrush_ImageSize (struct) Dir=In
+        -> Get.Background_ImageSize
+      Pin: InBrush_Margin (struct) Dir=In
+        -> Get.Background_Margin
+      Pin: InBrush_ResourceObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush_OutlineSettings (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetBorderBrush.Brush
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_ResourceObject
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Border.then
+  Graph: SetBorderBrushSize
+    Node: SetBorderBrushSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Border.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Size (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_ImageSize
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Border.then
+    Node: Get (K2Node_VariableGet)
+      Pin: Background (struct) Dir=Out
+      Pin: Background_TintColor (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_TintColor
+      Pin: Background_DrawAs (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_DrawAs
+      Pin: Background_Tiling (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Tiling
+      Pin: Background_Mirroring (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Mirroring
+      Pin: Background_ImageSize (struct) Dir=Out
+      Pin: Background_Margin (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Margin
+      Pin: Background_ResourceObject (object) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_ResourceObject
+      Pin: Background_OutlineSettings (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetBorderBrushSize.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Set Brush
+Target is Border.self
+    Node: Set Brush
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetBorderBrushSize.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush (struct) Dir=In
+      Pin: InBrush_TintColor (struct) Dir=In
+        -> Get.Background_TintColor
+      Pin: InBrush_DrawAs (byte) Dir=In
+        -> Get.Background_DrawAs
+      Pin: InBrush_Tiling (byte) Dir=In
+        -> Get.Background_Tiling
+      Pin: InBrush_Mirroring (byte) Dir=In
+        -> Get.Background_Mirroring
+      Pin: InBrush_ImageSize (struct) Dir=In
+        -> SetBorderBrushSize.Size
+      Pin: InBrush_Margin (struct) Dir=In
+        -> Get.Background_Margin
+      Pin: InBrush_ResourceObject (object) Dir=In
+        -> Get.Background_ResourceObject
+      Pin: InBrush_OutlineSettings (struct) Dir=In
+  Graph: SetBorderBrushTiling
+    Node: SetBorderBrushTiling (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Border.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Tiling (byte) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Brush
+Target is Border.then
+    Node: Get (K2Node_VariableGet)
+      Pin: Background (struct) Dir=Out
+      Pin: Background_TintColor (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_TintColor
+      Pin: Background_DrawAs (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_DrawAs
+      Pin: Background_Tiling (byte) Dir=Out
+      Pin: Background_Mirroring (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Mirroring
+      Pin: Background_ImageSize (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_ImageSize
+      Pin: Background_Margin (struct) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Margin
+      Pin: Background_ResourceObject (object) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_ResourceObject
+      Pin: Background_OutlineSettings (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetBorderBrushTiling.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get.self
+        -> Set Brush
+Target is Border.self
+    Node: Set Brush
+Target is Border (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetBorderBrushTiling.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush (struct) Dir=In
+      Pin: InBrush_TintColor (struct) Dir=In
+        -> Get.Background_TintColor
+      Pin: InBrush_DrawAs (byte) Dir=In
+        -> Get.Background_DrawAs
+      Pin: InBrush_Tiling (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBrush_Mirroring (byte) Dir=In
+        -> Get.Background_Mirroring
+      Pin: InBrush_ImageSize (struct) Dir=In
+        -> Get.Background_ImageSize
+      Pin: InBrush_Margin (struct) Dir=In
+        -> Get.Background_Margin
+      Pin: InBrush_ResourceObject (object) Dir=In
+        -> Get.Background_ResourceObject
+      Pin: InBrush_OutlineSettings (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (byte) Dir=Out
+        -> Set Brush
+Target is Border.InBrush_Tiling
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (byte) Dir=In
+        -> SetBorderBrushTiling.Tiling
+      Pin: OutputPin (byte) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: RandomizePositiveNegativeFloat
+    Node: RandomizePositiveNegativeFloat (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Value (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Random Bool (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Option 1 (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Random Bool.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> RandomizePositiveNegativeFloat.then
+      Pin: ReturnValue (real) Dir=In
+        -> Select.ReturnValue
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 1
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> RandomizePositiveNegativeFloat.Value
+      Pin: OutputPin (real) Dir=Out
+        -> Select.Option 0
+        -> float * float.A
+  Graph: Finterpolate
+    Node: Finterpolate (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Current (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Target (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpConstant (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Target (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DeltaTime (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 0
+    Node: FInterp to Constant (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Target (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DeltaTime (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.Option 1
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Option 1 (real) Dir=In
+        -> FInterp to Constant.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> FInterp to Constant.InterpSpeed
+        -> FInterp To.InterpSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Finterpolate.InterpSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Select.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Finterpolate.InterpConstant
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: OutputPin (real) Dir=Out
+        -> FInterp To.DeltaTime
+        -> FInterp to Constant.DeltaTime
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> FInterp to Constant.Target
+        -> FInterp To.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> FInterp To.Current
+        -> FInterp to Constant.Current
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Finterpolate.Target
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Finterpolate.Current
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Finterpolate.then
+      Pin: ReturnValue (real) Dir=In
+        -> Select.ReturnValue
+  Graph: AddChildToOverlay
+    Node: AddChildToOverlay (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Add Child to Overlay
+Target is Overlay.execute
+      Pin: Overlay (object) Dir=Out
+        -> Add Child to Overlay
+Target is Overlay.self
+      Pin: Child (object) Dir=Out
+        -> Add Child to Overlay
+Target is Overlay.Content
+      Pin: InVerticalAlignment (byte) Dir=Out
+        -> Set Vertical Alignment
+Target is Overlay Slot.InVerticalAlignment
+      Pin: InHorizontalAlignment (byte) Dir=Out
+        -> Set Horizontal Alignment
+Target is Overlay Slot.InHorizontalAlignment
+      Pin: __WorldContext (object) Dir=Out
+    Node: Add Child to Overlay
+Target is Overlay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AddChildToOverlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Vertical Alignment
+Target is Overlay Slot.execute
+      Pin: self (object) Dir=In
+        -> AddChildToOverlay.Overlay
+      Pin: Content (object) Dir=In
+        -> AddChildToOverlay.Child
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Vertical Alignment
+Target is Overlay Slot.self
+        -> Set Horizontal Alignment
+Target is Overlay Slot.self
+        -> Return Node.ReturnValue
+    Node: Set Vertical Alignment
+Target is Overlay Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Child to Overlay
+Target is Overlay.then
+      Pin: then (exec) Dir=Out
+        -> Set Horizontal Alignment
+Target is Overlay Slot.execute
+      Pin: self (object) Dir=In
+        -> Add Child to Overlay
+Target is Overlay.ReturnValue
+      Pin: InVerticalAlignment (byte) Dir=In
+        -> AddChildToOverlay.InVerticalAlignment
+    Node: Set Horizontal Alignment
+Target is Overlay Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vertical Alignment
+Target is Overlay Slot.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Add Child to Overlay
+Target is Overlay.ReturnValue
+      Pin: InHorizontalAlignment (byte) Dir=In
+        -> AddChildToOverlay.InHorizontalAlignment
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Horizontal Alignment
+Target is Overlay Slot.then
+      Pin: ReturnValue (object) Dir=In
+        -> Add Child to Overlay
+Target is Overlay.ReturnValue
+  Graph: Vector2DInterpolate
+    Node: Vector2DInterpolate (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Current (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Target (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpConstant (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Vector 2DInterp To.ReturnValue
+      Pin: Option 1 (struct) Dir=In
+        -> Vector 2DInterp to Constant.ReturnValue
+      Pin: Index (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Vector 2DInterp To.InterpSpeed
+        -> Vector 2DInterp to Constant.InterpSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Vector2DInterpolate.InterpSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (bool) Dir=Out
+        -> Select.Index
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Vector2DInterpolate.InterpConstant
+      Pin: OutputPin (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: OutputPin (real) Dir=Out
+        -> Vector 2DInterp To.DeltaTime
+        -> Vector 2DInterp to Constant.DeltaTime
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Vector 2DInterp To.Target
+        -> Vector 2DInterp to Constant.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Vector 2DInterp To.Current
+        -> Vector 2DInterp to Constant.Current
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Vector2DInterpolate.Target
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Vector2DInterpolate.Current
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Vector2DInterpolate.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Vector 2DInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Target (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DeltaTime (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 0
+    Node: Vector 2DInterp to Constant (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Target (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: DeltaTime (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 1
+  Graph: MapRangeClampedVector2D
+    Node: MapRangeClampedVector2D (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Value (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: InRangeA (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: InRangeB (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: OutRangeA (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: OutRangeB (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: __WorldContext (object) Dir=Out
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> MapRangeClampedVector2D.OutRangeA
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.OutRangeA
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.OutRangeA
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> MapRangeClampedVector2D.Value
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.Value
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> MapRangeClampedVector2D.InRangeA
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.InRangeA
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.InRangeA
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: InRangeA (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: InRangeB (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: OutRangeA (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: OutRangeB (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> MapRangeClampedVector2D.OutRangeB
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.OutRangeB
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.OutRangeB
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> MapRangeClampedVector2D.InRangeB
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.InRangeB
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.InRangeB
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: InRangeA (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: InRangeB (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: OutRangeA (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: OutRangeB (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Y (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> MapRangeClampedVector2D.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+  Graph: ClampVector2D
+    Node: ClampVector2D (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Vector2D (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Min (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Max (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Y (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Min (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Max (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Min (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Max (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> ClampVector2D.Vector2D
+      Pin: X (real) Dir=Out
+        -> Clamp (Float).Value
+      Pin: Y (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> ClampVector2D.Min
+      Pin: OutputPin (real) Dir=Out
+        -> Clamp (Float).Min
+        -> Clamp (Float).Min
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> ClampVector2D.Max
+      Pin: OutputPin (real) Dir=Out
+        -> Clamp (Float).Max
+        -> Clamp (Float).Max
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> ClampVector2D.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+  Graph: InterpRenderOpacity
+    Node: InterpRenderOpacity (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: TargetValue (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpConstant (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Get Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Finterpolate.Current
+    Node: Finterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Render Opacity
+Target is Widget.ReturnValue
+      Pin: Target (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpConstant (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Render Opacity
+Target is Widget.InOpacity
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> InterpRenderOpacity.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+        -> Get Render Opacity
+Target is Widget.self
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> InterpRenderOpacity.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InOpacity (real) Dir=In
+        -> Finterpolate.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InterpRenderOpacity.TargetValue
+      Pin: OutputPin (real) Dir=Out
+        -> Finterpolate.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InterpRenderOpacity.InterpSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Finterpolate.InterpSpeed
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Render Opacity
+Target is Widget.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> InterpRenderOpacity.InterpConstant
+      Pin: OutputPin (bool) Dir=Out
+        -> Finterpolate.InterpConstant
+  Graph: InterpRenderTransform
+    Node: InterpRenderTransform (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on EWidgetRenderTransform.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: TransformType (byte) Dir=Out
+        -> Switch on EWidgetRenderTransform.Selection
+      Pin: TargetValue (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpConstant (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> InterpRenderTransform.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get RenderTransform.self
+        -> Get RenderTransform.self
+        -> Get RenderTransform.self
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Get RenderTransform (K2Node_VariableGet)
+      Pin: RenderTransform (struct) Dir=Out
+        -> Break Widget Transform.WidgetTransform
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break Widget Transform (K2Node_BreakStruct)
+      Pin: WidgetTransform (struct) Dir=In
+        -> Get RenderTransform.RenderTransform
+      Pin: Translation (struct) Dir=Out
+        -> Vector 2DInterpolate.Current
+    Node: Vector 2DInterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Break Widget Transform.Translation
+      Pin: Target (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpConstant (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Render Translation
+Target is Widget.Translation
+    Node: Set Render Translation
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Translation (struct) Dir=In
+        -> Vector 2DInterpolate.ReturnValue
+    Node: Set Render Scale
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Scale (struct) Dir=In
+        -> Vector 2DInterpolate.ReturnValue
+    Node: Set Render Shear
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Shear (struct) Dir=In
+        -> Vector 2DInterpolate.ReturnValue
+    Node: Switch on EWidgetRenderTransform (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> InterpRenderTransform.then
+      Pin: Selection (byte) Dir=In
+        -> InterpRenderTransform.TransformType
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> InterpRenderTransform.TargetValue
+      Pin: OutputPin (struct) Dir=Out
+        -> Vector 2DInterpolate.Target
+        -> Vector 2DInterpolate.Target
+        -> Vector 2DInterpolate.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> InterpRenderTransform.InterpConstant
+      Pin: OutputPin (bool) Dir=Out
+        -> Vector 2DInterpolate.InterpConstant
+        -> Vector 2DInterpolate.InterpConstant
+        -> Vector 2DInterpolate.InterpConstant
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InterpRenderTransform.InterpSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Vector 2DInterpolate.InterpSpeed
+        -> Vector 2DInterpolate.InterpSpeed
+        -> Vector 2DInterpolate.InterpSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EWidgetRenderTransform.NewEnumerator0
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Render Translation
+Target is Widget.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Render Translation
+Target is Widget.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get RenderTransform (K2Node_VariableGet)
+      Pin: RenderTransform (struct) Dir=Out
+        -> Break Widget Transform.WidgetTransform
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break Widget Transform (K2Node_BreakStruct)
+      Pin: WidgetTransform (struct) Dir=In
+        -> Get RenderTransform.RenderTransform
+      Pin: Scale (struct) Dir=Out
+        -> Vector 2DInterpolate.Current
+    Node: Vector 2DInterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Break Widget Transform.Scale
+      Pin: Target (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpConstant (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Render Scale
+Target is Widget.Scale
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Render Scale
+Target is Widget.then
+        -> Reroute Node.OutputPin
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get RenderTransform (K2Node_VariableGet)
+      Pin: RenderTransform (struct) Dir=Out
+        -> Break Widget Transform.WidgetTransform
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break Widget Transform (K2Node_BreakStruct)
+      Pin: WidgetTransform (struct) Dir=In
+        -> Get RenderTransform.RenderTransform
+      Pin: Shear (struct) Dir=Out
+        -> Vector 2DInterpolate.Current
+    Node: Vector 2DInterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Break Widget Transform.Shear
+      Pin: Target (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpConstant (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Render Shear
+Target is Widget.Shear
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EWidgetRenderTransform.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Render Shear
+Target is Widget.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on EWidgetRenderTransform.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Render Scale
+Target is Widget.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Render Shear
+Target is Widget.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Render Scale
+Target is Widget.self
+        -> Set Render Translation
+Target is Widget.self
+        -> Set Render Shear
+Target is Widget.self
+  Graph: InterpRenderAngle
+    Node: InterpRenderAngle (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.execute
+      Pin: Target (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: TargetValue (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: InterpConstant (bool) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Finterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Break Widget Transform.Angle
+      Pin: Target (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InterpConstant (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.Angle
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> InterpRenderAngle.Target
+      Pin: OutputPin (object) Dir=Out
+        -> Get RenderTransform.self
+        -> Set Render Transform Angle
+Target is Widget.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InterpRenderAngle.TargetValue
+      Pin: OutputPin (real) Dir=Out
+        -> Finterpolate.Target
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> InterpRenderAngle.InterpSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Finterpolate.InterpSpeed
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Render Transform Angle
+Target is Widget.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> InterpRenderAngle.InterpConstant
+      Pin: OutputPin (bool) Dir=Out
+        -> Finterpolate.InterpConstant
+    Node: Get RenderTransform (K2Node_VariableGet)
+      Pin: RenderTransform (struct) Dir=Out
+        -> Break Widget Transform.WidgetTransform
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break Widget Transform (K2Node_BreakStruct)
+      Pin: WidgetTransform (struct) Dir=In
+        -> Get RenderTransform.RenderTransform
+      Pin: Angle (real) Dir=Out
+        -> Finterpolate.Current
+    Node: Set Render Transform Angle
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> InterpRenderAngle.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Angle (real) Dir=In
+        -> Finterpolate.ReturnValue
+  Graph: HasColorChanged
+    Node: HasColorChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: InColor (struct) Dir=Out
+        -> Break Color.InColor
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasColorChanged.then
+      Pin: ReturnValue (bool) Dir=In
+        -> OR Boolean.ReturnValue
+    Node: Break Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InColor (struct) Dir=In
+        -> HasColorChanged.InColor
+      Pin: R (real) Dir=Out
+        -> Not Equal (Float).A
+      Pin: G (real) Dir=Out
+        -> Not Equal (Float).A
+      Pin: B (real) Dir=Out
+        -> Not Equal (Float).A
+      Pin: A (real) Dir=Out
+        -> Not Equal (Float).A
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.R
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.G
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.B
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.C
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Color.A
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.D
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: C (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: D (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+  Graph: AddChildToVerticalBox
+    Node: AddChildToVerticalBox (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Add Child to Vertical Box
+Target is Vertical Box.execute
+      Pin: VerticalBox (object) Dir=Out
+        -> Add Child to Vertical Box
+Target is Vertical Box.self
+      Pin: Child (object) Dir=Out
+        -> Add Child to Vertical Box
+Target is Vertical Box.Content
+      Pin: InVerticalAlignment (byte) Dir=Out
+        -> Set Vertical Alignment
+Target is Vertical Box Slot.InVerticalAlignment
+      Pin: InHorizontalAlignment (byte) Dir=Out
+        -> Set Horizontal Alignment
+Target is Vertical Box Slot.InHorizontalAlignment
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Horizontal Alignment
+Target is Vertical Box Slot.then
+      Pin: ReturnValue (object) Dir=In
+        -> Add Child to Vertical Box
+Target is Vertical Box.ReturnValue
+    Node: Add Child to Vertical Box
+Target is Vertical Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AddChildToVerticalBox.then
+      Pin: then (exec) Dir=Out
+        -> Set Vertical Alignment
+Target is Vertical Box Slot.execute
+      Pin: self (object) Dir=In
+        -> AddChildToVerticalBox.VerticalBox
+      Pin: Content (object) Dir=In
+        -> AddChildToVerticalBox.Child
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Vertical Alignment
+Target is Vertical Box Slot.self
+        -> Set Horizontal Alignment
+Target is Vertical Box Slot.self
+        -> Return Node.ReturnValue
+    Node: Set Vertical Alignment
+Target is Vertical Box Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Child to Vertical Box
+Target is Vertical Box.then
+      Pin: then (exec) Dir=Out
+        -> Set Horizontal Alignment
+Target is Vertical Box Slot.execute
+      Pin: self (object) Dir=In
+        -> Add Child to Vertical Box
+Target is Vertical Box.ReturnValue
+      Pin: InVerticalAlignment (byte) Dir=In
+        -> AddChildToVerticalBox.InVerticalAlignment
+    Node: Set Horizontal Alignment
+Target is Vertical Box Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vertical Alignment
+Target is Vertical Box Slot.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Add Child to Vertical Box
+Target is Vertical Box.ReturnValue
+      Pin: InHorizontalAlignment (byte) Dir=In
+        -> AddChildToVerticalBox.InHorizontalAlignment
+  Graph: HasTransformChanged
+    Node: HasTransformChanged (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: InTransform (struct) Dir=Out
+        -> Break Widget Transform.WidgetTransform
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> HasTransformChanged.then
+      Pin: ReturnValue (bool) Dir=In
+        -> OR Boolean.ReturnValue
+    Node: Break Widget Transform (K2Node_BreakStruct)
+      Pin: WidgetTransform (struct) Dir=In
+        -> HasTransformChanged.InTransform
+      Pin: Translation (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Scale (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Shear (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Angle (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Break Widget Transform.Translation
+      Pin: X (real) Dir=Out
+        -> Not Equal (Float).A
+      Pin: Y (real) Dir=Out
+        -> Not Equal (Float).A
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: C (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: D (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: E (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: F (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+      Pin: G (bool) Dir=In
+        -> Not Equal (Float).ReturnValue
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Break Widget Transform.Scale
+      Pin: X (real) Dir=Out
+        -> Not Equal (Float).A
+      Pin: Y (real) Dir=Out
+        -> Not Equal (Float).A
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.C
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.D
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Break Widget Transform.Shear
+      Pin: X (real) Dir=Out
+        -> Not Equal (Float).A
+      Pin: Y (real) Dir=Out
+        -> Not Equal (Float).A
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.E
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.F
+    Node: Not Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.G
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Break Widget Transform.Angle
+      Pin: OutputPin (real) Dir=Out
+        -> Not Equal (Float).A
+  Graph: LerpVector2D
+    Node: LerpVector2D (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: A (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: B (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Alpha (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> LerpVector2D.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> LerpVector2D.A
+      Pin: X (real) Dir=Out
+        -> Lerp.A
+      Pin: Y (real) Dir=Out
+        -> Lerp.A
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> LerpVector2D.B
+      Pin: X (real) Dir=Out
+        -> Lerp.B
+      Pin: Y (real) Dir=Out
+        -> Lerp.B
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Alpha (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Alpha (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: Y (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> LerpVector2D.Alpha
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Lerp.Alpha
+        -> Lerp.Alpha
+  Graph: VectorGetDistanceTo
+    Node: VectorGetDistanceTo (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Vector (struct) Dir=Out
+        -> vector - vector.A
+      Pin: Other Vector (struct) Dir=Out
+        -> vector - vector.B
+      Pin: __WorldContext (object) Dir=Out
+    Node: vector - vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> VectorGetDistanceTo.Vector
+      Pin: B (struct) Dir=In
+        -> VectorGetDistanceTo.Other Vector
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> VectorGetDistanceTo.then
+      Pin: ReturnValue (real) Dir=In
+        -> Vector Length.ReturnValue
+  Graph: SetImageInfo
+    Node: SetImageInfo (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Target (object) Dir=Out
+      Pin: Info (struct) Dir=Out
+        -> Break S Image Info.S_ImageInfo
+      Pin: __WorldContext (object) Dir=Out
+    Node: Set Image Brush (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Opacity
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Render Scale
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Target (object) Dir=In
+        -> Get Target.Target
+      Pin: Brush (object) Dir=In
+        -> Break S Image Info.Texture_2_18E965BD4557E5E17659AE86D9990D03
+      Pin: __WorldContext (object) Dir=In
+    Node: Break S Image Info (K2Node_BreakStruct)
+      Pin: S_ImageInfo (struct) Dir=In
+        -> SetImageInfo.Info
+      Pin: Texture_2_18E965BD4557E5E17659AE86D9990D03 (object) Dir=Out
+        -> Validate Image Object.InObject
+    Node: Validate Image Object (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InObject (object) Dir=In
+        -> Break S Image Info.Texture_2_18E965BD4557E5E17659AE86D9990D03
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetImageInfo.then
+      Pin: Condition (bool) Dir=In
+        -> Validate Image Object.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Image Brush.Target
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+        -> Set Render Opacity
+Target is Widget.self
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Image Brush.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InOpacity (real) Dir=In
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InOpacity (real) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Render Opacity
+Target is Widget.then
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Image Info.S_ImageInfo
+    Node: Break S Image Info (K2Node_BreakStruct)
+      Pin: S_ImageInfo (struct) Dir=In
+        -> Get Info.Info
+      Pin: Texture_2_18E965BD4557E5E17659AE86D9990D03 (object) Dir=Out
+        -> Set Image Brush.Brush
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Image Info.S_ImageInfo
+    Node: Break S Image Info (K2Node_BreakStruct)
+      Pin: S_ImageInfo (struct) Dir=In
+        -> Get Info.Info
+      Pin: Scale_16_999B4523445630D90151B2BE90ADAD0D (struct) Dir=Out
+        -> Set Render Scale
+Target is Widget.Scale
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Render Scale
+Target is Widget.self
+    Node: Set Render Scale
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Image Brush.then
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: Scale (struct) Dir=In
+        -> Break S Image Info.Scale_16_999B4523445630D90151B2BE90ADAD0D
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.self
+    Node: Set Render Transform Angle
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Scale
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: Angle (real) Dir=In
+        -> Break S Image Info.Angle_19_588B802D49A9FD8ADAC9C3A6DD5C055D
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Transform Angle
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Break S Image Info.Color_8_42800F77430C50AF1FBA50BD096E927A
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Image Info.S_ImageInfo
+    Node: Break S Image Info (K2Node_BreakStruct)
+      Pin: S_ImageInfo (struct) Dir=In
+        -> Get Info.Info
+      Pin: Angle_19_588B802D49A9FD8ADAC9C3A6DD5C055D (real) Dir=Out
+        -> Set Render Transform Angle
+Target is Widget.Angle
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Image Info.S_ImageInfo
+    Node: Break S Image Info (K2Node_BreakStruct)
+      Pin: S_ImageInfo (struct) Dir=In
+        -> Get Info.Info
+      Pin: Color_8_42800F77430C50AF1FBA50BD096E927A (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+  Graph: ValidateImageObject
+    Node: ValidateImageObject (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: InObject (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: ReturnValue (bool) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> ValidateImageObject.then
+      Pin: InputObject (object) Dir=In
+        -> ValidateImageObject.InObject
+      Pin: Is Valid (exec) Dir=Out
+        -> Cast To Texture.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get InObject (K2Node_VariableGet)
+      Pin: InObject (object) Dir=Out
+        -> Cast To Texture.Object
+    Node: Cast To Texture (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Cast To MaterialInstance.execute
+      Pin: Object (object) Dir=In
+        -> Get InObject.InObject
+      Pin: AsTexture (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To Texture.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Get InObject (K2Node_VariableGet)
+      Pin: InObject (object) Dir=Out
+        -> Cast To MaterialInstance.Object
+    Node: Cast To MaterialInstance (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To Texture.CastFailed
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Object (object) Dir=In
+        -> Get InObject.InObject
+      Pin: AsMaterial Instance (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To MaterialInstance.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To MaterialInstance.CastFailed
+      Pin: ReturnValue (bool) Dir=In
+  Graph: SetImageInfoTransform
+    Node: SetImageInfoTransform (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Target (object) Dir=Out
+      Pin: Info (struct) Dir=Out
+        -> Break S Icon Info Transform.S_IconInfoTransform
+      Pin: __WorldContext (object) Dir=Out
+    Node: Set Image Brush (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Opacity
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Target (object) Dir=In
+        -> Get Target.Target
+      Pin: Brush (object) Dir=In
+        -> Break S Icon Info Transform.IconTexture_11_214280D949FDBB87B5B3E08050CC45F8
+      Pin: __WorldContext (object) Dir=In
+    Node: Validate Image Object (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InObject (object) Dir=In
+        -> Break S Icon Info Transform.IconTexture_11_214280D949FDBB87B5B3E08050CC45F8
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> SetImageInfoTransform.then
+      Pin: Condition (bool) Dir=In
+        -> Validate Image Object.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Image Brush.Target
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+        -> Set Render Opacity
+Target is Widget.self
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Image Brush.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InOpacity (real) Dir=In
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InOpacity (real) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Render Opacity
+Target is Widget.then
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Render Transform
+Target is Widget.self
+    Node: Get Target (K2Node_VariableGet)
+      Pin: Target (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Transform
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Break S Icon Info Transform.IconColor_13_C0A0DE6948F813CF12E1B689F924694A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+    Node: Break S Icon Info Transform (K2Node_BreakStruct)
+      Pin: S_IconInfoTransform (struct) Dir=In
+        -> SetImageInfoTransform.Info
+      Pin: IconTexture_11_214280D949FDBB87B5B3E08050CC45F8 (object) Dir=Out
+        -> Validate Image Object.InObject
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Icon Info Transform.S_IconInfoTransform
+    Node: Break S Icon Info Transform (K2Node_BreakStruct)
+      Pin: S_IconInfoTransform (struct) Dir=In
+        -> Get Info.Info
+      Pin: IconTexture_11_214280D949FDBB87B5B3E08050CC45F8 (object) Dir=Out
+        -> Set Image Brush.Brush
+      Pin: Transform_12_E829012D468F2DB2906FDD81F93FA822 (struct) Dir=Out
+      Pin: IconColor_13_C0A0DE6948F813CF12E1B689F924694A (struct) Dir=Out
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Icon Info Transform.S_IconInfoTransform
+    Node: Break S Icon Info Transform (K2Node_BreakStruct)
+      Pin: S_IconInfoTransform (struct) Dir=In
+        -> Get Info.Info
+      Pin: Transform_12_E829012D468F2DB2906FDD81F93FA822 (struct) Dir=Out
+        -> Set Render Transform
+Target is Widget.InTransform
+    Node: Set Render Transform
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Image Brush.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get Target.Target
+      Pin: InTransform (struct) Dir=In
+        -> Break S Icon Info Transform.Transform_12_E829012D468F2DB2906FDD81F93FA822
+    Node: Get Info (K2Node_VariableGet)
+      Pin: Info (struct) Dir=Out
+        -> Break S Icon Info Transform.S_IconInfoTransform
+    Node: Break S Icon Info Transform (K2Node_BreakStruct)
+      Pin: S_IconInfoTransform (struct) Dir=In
+        -> Get Info.Info
+      Pin: IconColor_13_C0A0DE6948F813CF12E1B689F924694A (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity

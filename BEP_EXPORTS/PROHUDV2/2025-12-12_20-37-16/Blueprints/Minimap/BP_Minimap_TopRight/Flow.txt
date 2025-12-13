@@ -1,0 +1,31 @@
+Blueprint: BP_Minimap_TopRight (/Game/SOTS/ThirdParty/Systems/ProHUDV2/Blueprints/Minimap/BP_Minimap_TopRight.BP_Minimap_TopRight)
+  Graph: EventGraph
+    Node: ATTENTION (EdGraphNode_Comment)
+    Node: To calibrate the minimap, use this actor to define the area of the minimap. 
+
+Place this actor in the top right corner of your world in the area marked on the minimap. 
+
+You can re-adjust this actor later at Runtime. Look out for the documentation -> Minimap calibration. (EdGraphNode_Comment)
+    Node: Get Sphere (K2Node_VariableGet)
+      Pin: Sphere (object) Dir=Out
+        -> Set Hidden in Game
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Hidden in Game
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Sphere.Sphere
+      Pin: NewHidden (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Hidden in Game
+Target is Scene Component.execute
+    Node: Hide Actor Ingame (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

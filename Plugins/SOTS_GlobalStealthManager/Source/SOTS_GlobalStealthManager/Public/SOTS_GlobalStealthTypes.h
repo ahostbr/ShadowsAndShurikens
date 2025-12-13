@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Engine/EngineTypes.h"
 #include "SOTS_GlobalStealthTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -116,6 +117,30 @@ struct FSOTS_StealthScoringConfig
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tiers", meta=(ClampMin="0.0", ClampMax="1.0"))
     float CompromisedMin = 0.80f;
+
+    // --- Shadow candidate cache (used by AI perception) ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow")
+    bool bEnableShadowCandidateCache = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow", meta=(ClampMin="0.01"))
+    float ShadowCandidateUpdateInterval = 0.25f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow", meta=(ClampMin="0.0"))
+    float ShadowCastDistance = 600.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float ShadowMinIlluminationForCandidate = 0.65f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow")
+    TEnumAsByte<ECollisionChannel> ShadowTraceChannel = ECC_Visibility;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow")
+    bool bShadowTraceComplex = false;
+
+    // Debug visualization for the cached shadow candidate (off by default).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow")
+    bool bDebugShadowCandidateCache = false;
 };
 
 // Simple, additive stealth modifier applied on top of the raw state.
@@ -176,6 +201,31 @@ struct FSOTS_StealthScoreBreakdown
     // Effective multiplier applied by modifiers (EffectiveGlobal / RawScore).
     UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth")
     float ModifierMultiplier = 1.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_ShadowCandidate
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth|Shadow")
+    bool bValid = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth|Shadow")
+    FVector ShadowPointWS = FVector::ZeroVector;
+
+    // Direction light travels (e.g., sun direction).
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth|Shadow")
+    FVector DominantLightDirWS = FVector::ForwardVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth|Shadow")
+    float Illumination01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth|Shadow")
+    float Strength01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth|Shadow")
+    double LastUpdateTimeSeconds = 0.0;
 };
 
 /**

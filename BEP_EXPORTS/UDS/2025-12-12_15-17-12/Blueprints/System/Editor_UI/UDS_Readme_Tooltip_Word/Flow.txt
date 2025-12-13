@@ -1,0 +1,167 @@
+Blueprint: UDS_Readme_Tooltip_Word (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/UDS_Readme_Tooltip_Word.UDS_Readme_Tooltip_Word)
+  Graph: EventGraph
+    Node: Set Up
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: Font (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+      Pin: Word (string) Dir=Out
+        -> To Text (String).InString
+      Pin: Glossary Entry (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (object) Dir=Out
+        -> Set Font
+Target is Text.self
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Up
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get Text.Text
+      Pin: InFontInfo (struct) Dir=In
+        -> Set Up
+Custom Event.Font
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Font
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Glossary Entry.execute
+      Pin: self (object) Dir=In
+        -> Get Text.Text
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Set Up
+Custom Event.Word
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Set Color (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Glossary Entry.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Text.execute
+      Pin: Color (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+      Pin: self (object) Dir=In
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (object) Dir=Out
+        -> Set Color and Opacity
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Text.Text
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Text.InColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Set Color.Output_Get
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Set Glossary Entry (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Color.execute
+      Pin: Glossary Entry (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Glossary Entry.Glossary Entry
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Set Up
+Custom Event.Glossary Entry
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: Get_Text_ToolTipWidget_0
+    Node: Get_Text_ToolTipWidget_0 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Create UDS Glossary Tooltip Widget.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Start
+Target is UDS Glossary Tooltip.then
+      Pin: ReturnValue (object) Dir=In
+        -> Create UDS Glossary Tooltip Widget.ReturnValue
+    Node: Create UDS Glossary Tooltip Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Get_Text_ToolTipWidget_0.then
+      Pin: then (exec) Dir=Out
+        -> Set Color.execute
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.ReturnValue
+        -> Set Color.self
+        -> Set Glossary Entry.self
+        -> Start
+Target is UDS Glossary Tooltip.self
+      Pin: OwningPlayer (object) Dir=In
+    Node: Set Color (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create UDS Glossary Tooltip Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Glossary Entry.execute
+      Pin: Color (struct) Dir=In
+        -> Get Color.Color
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Create UDS Glossary Tooltip Widget.ReturnValue
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> Set Color.Color
+      Pin: self (object) Dir=In
+    Node: Set Glossary Entry (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Color.then
+      Pin: then (exec) Dir=Out
+        -> Start
+Target is UDS Glossary Tooltip.execute
+      Pin: Glossary Entry (struct) Dir=In
+        -> Get Glossary Entry.Glossary Entry
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Create UDS Glossary Tooltip Widget.ReturnValue
+    Node: Get Glossary Entry (K2Node_VariableGet)
+      Pin: Glossary Entry (struct) Dir=Out
+        -> Set Glossary Entry.Glossary Entry
+      Pin: self (object) Dir=In
+    Node: Start
+Target is UDS Glossary Tooltip (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Glossary Entry.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Create UDS Glossary Tooltip Widget.ReturnValue

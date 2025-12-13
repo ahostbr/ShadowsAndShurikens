@@ -1,0 +1,65 @@
+Blueprint: BP_CardinalDirection (/Game/SOTS/ThirdParty/Systems/ProHUDV2/Blueprints/Minimap/BP_CardinalDirection.BP_CardinalDirection)
+  Graph: EventGraph
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.execute
+    Node: Set Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: bTeleportPhysics (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+      Pin: Pitch (real) Dir=In
+      Pin: Yaw (real) Dir=In
+        -> Get Actor Rotation
+Target is Actor.ReturnValue_Yaw
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Rotation
+Target is Actor.NewRotation
+    Node: Get Actor Rotation
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Make Rotator.Yaw
+  Graph: GetDirection
+    Node: GetDirection (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetDirection.then
+      Pin: ReturnValue (int) Dir=In
+        -> Round.ReturnValue
+    Node: Get DirectionMesh (K2Node_VariableGet)
+      Pin: DirectionMesh (object) Dir=Out
+        -> Get World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get DirectionMesh.DirectionMesh
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Roll (real) Dir=Out
+      Pin: ReturnValue_Pitch (real) Dir=Out
+      Pin: ReturnValue_Yaw (real) Dir=Out
+        -> Round.A
+    Node: Round (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue_Yaw
+      Pin: ReturnValue (int) Dir=Out
+        -> Return Node.ReturnValue

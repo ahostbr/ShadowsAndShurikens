@@ -1,0 +1,982 @@
+Blueprint: Static_Clouds_Capture (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/Static_Clouds_Capture.Static_Clouds_Capture)
+  Graph: EventGraph
+    Node: Capture
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: UDS (object) Dir=Out
+        -> Set UDS.UDS
+      Pin: Channel Targets (object) Dir=Out
+        -> Set Channel Targets.Channel Targets
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Capture
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Channel Targets.execute
+      Pin: UDS (object) Dir=In
+        -> Capture
+Custom Event.UDS
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get SceneCaptureComponentCube (K2Node_VariableGet)
+      Pin: SceneCaptureComponentCube (object) Dir=Out
+        -> Set ShowOnlyActors.self
+      Pin: self (object) Dir=In
+    Node: Set ShowOnlyActors (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Layer Height
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.execute
+      Pin: ShowOnlyActors (object) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SceneCaptureComponentCube.SceneCaptureComponentCube
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set ShowOnlyActors.ShowOnlyActors
+      Pin: [0] (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Make Array.[0]
+    Node: Get SceneCaptureComponentCube (K2Node_VariableGet)
+      Pin: SceneCaptureComponentCube (object) Dir=Out
+        -> Capture Scene
+Target is Scene Capture Component Cube.self
+      Pin: self (object) Dir=In
+    Node: Capture Scene
+Target is Scene Capture Component Cube (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set World Rotation
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Begin Draw Canvas to Render Target.execute
+      Pin: self (object) Dir=In
+        -> Get SceneCaptureComponentCube.SceneCaptureComponentCube
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Material
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Material
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Channel Targets.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (object) Dir=In
+        -> Get Vol Clouds MID Complex.Vol Clouds MID Complex
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Layer Bottom Altitude
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Layer Bottom Altitude
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Layer Height
+Target is Volumetric Cloud Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> Get LayerBottomAltitude.LayerBottomAltitude
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get VolumetricCloud.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Get LayerBottomAltitude.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get LayerBottomAltitude (K2Node_VariableGet)
+      Pin: LayerBottomAltitude (real) Dir=Out
+        -> Set Layer Bottom Altitude
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Layer Bottom Altitude
+Target is Volumetric Cloud Component.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Layer Height
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Layer Height
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Layer Bottom Altitude
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Set ShowOnlyActors.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> Get LayerHeight.LayerHeight
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get VolumetricCloud.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Get LayerHeight.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get LayerHeight (K2Node_VariableGet)
+      Pin: LayerHeight (real) Dir=Out
+        -> Set Layer Height
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+    Node: Get Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Execute Console Command.then
+      Pin: then (exec) Dir=Out
+        -> Set Old Albedo.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Old Albedo.Old Albedo
+    Node: Set Old Albedo (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Get Vector Parameter Value.execute
+      Pin: Old Albedo (struct) Dir=In
+        -> Get Vector Parameter Value.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Old Albedo.then
+      Pin: then (exec) Dir=Out
+        -> Set Old Top Emissive Color.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Old Top Emissive Color.Old Top Emissive Color
+    Node: Set Old Top Emissive Color (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Get Vector Parameter Value.execute
+      Pin: Old Top Emissive Color (struct) Dir=In
+        -> Get Vector Parameter Value.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Old Top Emissive Color.then
+      Pin: then (exec) Dir=Out
+        -> Set Old Bottom Emissive Color.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Old Bottom Emissive Color.Old Bottom Emissive Color
+    Node: Set Old Bottom Emissive Color (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Get Scalar Parameter Value.execute
+      Pin: Old Bottom Emissive Color (struct) Dir=In
+        -> Get Vector Parameter Value.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Old Phase G 2.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+        -> Set Vector Parameter Value.ParameterValue
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Get Old Albedo.Old Albedo
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Get Old Top Emissive Color.Old Top Emissive Color
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Get Old Bottom Emissive Color.Old Bottom Emissive Color
+    Node: Get Old Albedo (K2Node_VariableGet)
+      Pin: Old Albedo (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+    Node: Get Old Top Emissive Color (K2Node_VariableGet)
+      Pin: Old Top Emissive Color (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+    Node: Get Old Bottom Emissive Color (K2Node_VariableGet)
+      Pin: Old Bottom Emissive Color (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get Sun_LightComponent.self
+        -> Get Moon_LightComponent.self
+        -> Get SkyAtmosphere.self
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Construction Script Function
+Target is Ultra Dynamic Sky.self
+      Pin: self (object) Dir=In
+    Node: Get Sun_LightComponent (K2Node_VariableGet)
+      Pin: Sun_LightComponent (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get Moon_LightComponent (K2Node_VariableGet)
+      Pin: Moon_LightComponent (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Material
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: self (object) Dir=In
+        -> Get Sun_LightComponent.Sun_LightComponent
+        -> Get Moon_LightComponent.Moon_LightComponent
+        -> Get SkyAtmosphere.SkyAtmosphere
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Construction Script Function
+Target is Ultra Dynamic Sky (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get SkyAtmosphere (K2Node_VariableGet)
+      Pin: SkyAtmosphere (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Get Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Get Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Old Bottom Emissive Color.then
+      Pin: then (exec) Dir=Out
+        -> Set Old Phase G.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Old Phase G.Old Phase G
+    Node: Set Old Phase G (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Get Scalar Parameter Value.execute
+      Pin: Old Phase G (real) Dir=In
+        -> Get Scalar Parameter Value.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Old Phase G.then
+      Pin: then (exec) Dir=Out
+        -> Set Old Phase G 2.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Old Phase G 2.Old Phase G 2
+    Node: Set Old Phase G 2 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: Old Phase G 2 (real) Dir=In
+        -> Get Scalar Parameter Value.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+        -> Get Old Phase G.Old Phase G
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Construction Script Function
+Target is Ultra Dynamic Sky.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+        -> Get Old Phase G 2.Old Phase G 2
+    Node: Get Old Phase G (K2Node_VariableGet)
+      Pin: Old Phase G (real) Dir=Out
+        -> Set Scalar Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+    Node: Get Old Phase G 2 (K2Node_VariableGet)
+      Pin: Old Phase G 2 (real) Dir=Out
+        -> Set Scalar Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> For Loop.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.execute
+      Pin: Index (int) Dir=Out
+        -> To Float (Integer).InInt
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.execute
+    Node: Get DirectionalLight (K2Node_VariableGet)
+      Pin: DirectionalLight (object) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Capture Scene
+Target is Scene Capture Component Cube.execute
+      Pin: self (object) Dir=In
+        -> Get DirectionalLight.DirectionalLight
+      Pin: NewRotation (struct) Dir=In
+        -> Make Rot from X.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> For Loop.Index
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Rotate Vector Around Axis.AngleDeg
+    Node: Make Rot from X (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (struct) Dir=In
+        -> Rotate Vector Around Axis.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.NewRotation
+    Node: Rotate Vector Around Axis (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVect (struct) Dir=In
+      Pin: AngleDeg (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Axis (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Rot from X.X
+    Node: Set Channel Targets (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set UDS.then
+      Pin: then (exec) Dir=Out
+        -> Set Material
+Target is Volumetric Cloud Component.execute
+      Pin: Channel Targets (object) Dir=In
+        -> Capture
+Custom Event.Channel Targets
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get Vol Clouds MID Complex.self
+      Pin: self (object) Dir=In
+    Node: Get Channel Targets (K2Node_VariableGet)
+      Pin: Channel Targets (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Channel Targets.Channel Targets
+      Pin: Dimension 1 (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output (object) Dir=Out
+        -> Begin Draw Canvas to Render Target.TextureRenderTarget
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Loop.Index
+      Pin: OutputPin (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Begin Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Capture Scene
+Target is Scene Capture Component Cube.then
+      Pin: then (exec) Dir=Out
+        -> Draw Material
+Target is Canvas.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextureRenderTarget (object) Dir=In
+        -> GET.Output
+      Pin: Canvas (object) Dir=Out
+        -> Draw Material
+Target is Canvas.self
+      Pin: Size (struct) Dir=Out
+        -> Draw Material
+Target is Canvas.ScreenSize
+      Pin: Context (struct) Dir=Out
+        -> End Draw Canvas to Render Target.Context
+    Node: Draw Material
+Target is Canvas (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Begin Draw Canvas to Render Target.then
+      Pin: then (exec) Dir=Out
+        -> End Draw Canvas to Render Target.execute
+      Pin: self (object) Dir=In
+        -> Begin Draw Canvas to Render Target.Canvas
+      Pin: RenderMaterial (object) Dir=In
+      Pin: ScreenPosition (struct) Dir=In
+      Pin: ScreenSize (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Size
+      Pin: CoordinatePosition (struct) Dir=In
+      Pin: CoordinateSize (struct) Dir=In
+      Pin: Rotation (real) Dir=In
+      Pin: PivotPoint (struct) Dir=In
+    Node: End Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Draw Material
+Target is Canvas.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Context (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Context
+    Node: Get DirectionalLight (K2Node_VariableGet)
+      Pin: DirectionalLight (object) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set World Rotation
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Intensity
+Target is Light Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+    Node: Get SceneCaptureComponentCube (K2Node_VariableGet)
+      Pin: SceneCaptureComponentCube (object) Dir=Out
+        -> Capture Scene
+Target is Scene Capture Component Cube.self
+      Pin: self (object) Dir=In
+    Node: Capture Scene
+Target is Scene Capture Component Cube (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Sky Luminance Factor
+Target is Sky Atmosphere Component.then
+      Pin: then (exec) Dir=Out
+        -> Begin Draw Canvas to Render Target.execute
+      Pin: self (object) Dir=In
+        -> Get SceneCaptureComponentCube.SceneCaptureComponentCube
+    Node: Get Channel Targets (K2Node_VariableGet)
+      Pin: Channel Targets (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Channel Targets.Channel Targets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Begin Draw Canvas to Render Target.TextureRenderTarget
+    Node: Begin Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Capture Scene
+Target is Scene Capture Component Cube.then
+      Pin: then (exec) Dir=Out
+        -> Draw Material
+Target is Canvas.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextureRenderTarget (object) Dir=In
+        -> GET.Output
+      Pin: Canvas (object) Dir=Out
+        -> Draw Material
+Target is Canvas.self
+      Pin: Size (struct) Dir=Out
+        -> Draw Material
+Target is Canvas.ScreenSize
+      Pin: Context (struct) Dir=Out
+        -> End Draw Canvas to Render Target.Context
+    Node: Draw Material
+Target is Canvas (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Begin Draw Canvas to Render Target.then
+      Pin: then (exec) Dir=Out
+        -> End Draw Canvas to Render Target.execute
+      Pin: self (object) Dir=In
+        -> Begin Draw Canvas to Render Target.Canvas
+      Pin: RenderMaterial (object) Dir=In
+      Pin: ScreenPosition (struct) Dir=In
+      Pin: ScreenSize (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Size
+      Pin: CoordinatePosition (struct) Dir=In
+      Pin: CoordinateSize (struct) Dir=In
+      Pin: Rotation (real) Dir=In
+      Pin: PivotPoint (struct) Dir=In
+    Node: End Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Draw Material
+Target is Canvas.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Context (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Context
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get VolumetricCloud.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Get ShadowTracingDistance.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Get ShadowTracingDistance (K2Node_VariableGet)
+      Pin: ShadowTracingDistance (real) Dir=Out
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+    Node: Set Shadow Tracing Distance
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ShowOnlyActors.then
+      Pin: then (exec) Dir=Out
+        -> Set Tracing Max Distance
+Target is Volumetric Cloud Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> Get ShadowTracingDistance.ShadowTracingDistance
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get VolumetricCloud.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Get TracingMaxDistance.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get TracingMaxDistance (K2Node_VariableGet)
+      Pin: TracingMaxDistance (real) Dir=Out
+        -> Set Tracing Max Distance
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Tracing Max Distance
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Tracing Max Distance
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Tracing Start Max Distance
+Target is Volumetric Cloud Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> Get TracingMaxDistance.TracingMaxDistance
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get VolumetricCloud.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Get TracingStartMaxDistance.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get TracingStartMaxDistance (K2Node_VariableGet)
+      Pin: TracingStartMaxDistance (real) Dir=Out
+        -> Set Tracing Start Max Distance
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Tracing Start Max Distance
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Tracing Start Max Distance
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Tracing Max Distance
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> Get TracingStartMaxDistance.TracingStartMaxDistance
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Tracing Start Max Distance
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> Get ShadowViewSampleCountScale.ShadowViewSampleCountScale
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get VolumetricCloud.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Get ShadowViewSampleCountScale.self
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get ShadowViewSampleCountScale (K2Node_VariableGet)
+      Pin: ShadowViewSampleCountScale (real) Dir=Out
+        -> Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+      Pin: G (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+        -> Set Vector Parameter Value.ParameterValue
+    Node: Set World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: self (object) Dir=In
+        -> Get DirectionalLight.DirectionalLight
+      Pin: NewRotation (struct) Dir=In
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get Layer Height Scale.self
+        -> Get Volumetric Clouds Scale.self
+      Pin: self (object) Dir=In
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Shadow Tracing Distance
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+        -> float * float.ReturnValue
+    Node: Get Layer Height Scale (K2Node_VariableGet)
+      Pin: Layer Height Scale (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Layer Height Scale.Layer Height Scale
+      Pin: B (real) Dir=In
+        -> Get Volumetric Clouds Scale.Volumetric Clouds Scale
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.NewValue
+      Pin: C (real) Dir=In
+    Node: Get Volumetric Clouds Scale (K2Node_VariableGet)
+      Pin: Volumetric Clouds Scale (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get VolumetricCloud (K2Node_VariableGet)
+      Pin: VolumetricCloud (object) Dir=Out
+        -> Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component.self
+      Pin: self (object) Dir=In
+    Node: Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Sky Luminance Factor
+Target is Sky Atmosphere Component.execute
+      Pin: self (object) Dir=In
+        -> Get VolumetricCloud.VolumetricCloud
+      Pin: NewValue (real) Dir=In
+    Node: Get SkyAtmosphere (K2Node_VariableGet)
+      Pin: SkyAtmosphere (object) Dir=Out
+        -> Set Sky Luminance Factor
+Target is Sky Atmosphere Component.self
+      Pin: self (object) Dir=In
+    Node: Set Sky Luminance Factor
+Target is Sky Atmosphere Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Shadow View Sample Count Scale
+Target is Volumetric Cloud Component.then
+      Pin: then (exec) Dir=Out
+        -> Capture Scene
+Target is Scene Capture Component Cube.execute
+      Pin: self (object) Dir=In
+        -> Get SkyAtmosphere.SkyAtmosphere
+      Pin: NewValue (struct) Dir=In
+    Node: Get DirectionalLight (K2Node_VariableGet)
+      Pin: DirectionalLight (object) Dir=Out
+        -> Set Intensity
+Target is Light Component.self
+      Pin: self (object) Dir=In
+    Node: Set Intensity
+Target is Light Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+        -> Get DirectionalLight.DirectionalLight
+      Pin: NewIntensity (real) Dir=In
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Intensity
+Target is Light Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Scalar Parameter Value.then
+      Pin: then (exec) Dir=Out
+        -> Set Shadow Tracing Distance
+Target is Volumetric Cloud Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+    Node: Get Vol Clouds MID Complex (K2Node_VariableGet)
+      Pin: Vol Clouds MID Complex (object) Dir=Out
+        -> Set Material
+Target is Volumetric Cloud Component.NewValue
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

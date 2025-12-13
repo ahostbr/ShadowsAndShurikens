@@ -1,0 +1,866 @@
+Blueprint: Static_Clouds_Authoring_Tool (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Tools/Static_Clouds_Authoring_Tool.Static_Clouds_Authoring_Tool)
+  Graph: EventGraph
+    Node: On Clicked (Button_83) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Author Static Clouds Texture
+Target is Static Clouds Authoring Tool.execute
+    Node: Author Static Clouds Texture
+Target is Static Clouds Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Button_83).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Author Static Clouds Texture
+    Node: Author Static Clouds Texture (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: SpawnActor Static Clouds Capture (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Capture Actor.execute
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Capture Actor.Capture Actor
+      Pin: SpawnTransform (struct) Dir=In
+        -> Make Transform.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Make Transform (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: Scale (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor Static Clouds Capture.SpawnTransform
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Author Static Clouds Texture.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set UDS.UDS
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Show Message
+Target is Static Clouds Authoring Tool.execute
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: UDS (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Get Sky Mode.self
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Transform.Location
+    Node: Convert Render Target to Texture 2DEditor Only (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set MipGenSettings.then
+      Pin: then (exec) Dir=Out
+        -> Save Loaded Asset.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: RenderTarget (object) Dir=In
+        -> Get Composite Target.Composite Target
+      Pin: Texture (object) Dir=In
+        -> Get Texture Asset.Texture Asset
+    Node: Create Asset
+Target is Asset Tools (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Asset Tools.then
+      Pin: then (exec) Dir=Out
+        -> Cast To Texture2D.execute
+      Pin: self (interface) Dir=In
+        -> Get Asset Tools.ReturnValue
+      Pin: AssetName (string) Dir=In
+        -> Get File Name.File Name
+      Pin: PackagePath (string) Dir=In
+        -> Get File Path.File Path
+      Pin: AssetClass (class) Dir=In
+      Pin: Factory (object) Dir=In
+      Pin: CallingContext (name) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Texture2D.Object
+    Node: Cast To Texture2D (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Create Asset
+Target is Asset Tools.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Asset.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Create Asset
+Target is Asset Tools.ReturnValue
+      Pin: AsTexture 2D (object) Dir=Out
+        -> Set Texture Asset.Texture Asset
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Asset Tools (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Create Asset
+Target is Asset Tools.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (interface) Dir=Out
+        -> Create Asset
+Target is Asset Tools.self
+    Node: Get Composite Target (K2Node_VariableGet)
+      Pin: Composite Target (object) Dir=Out
+        -> Convert Render Target to Texture 2DEditor Only.RenderTarget
+    Node: Save Loaded Asset (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Convert Render Target to Texture 2DEditor Only.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: AssetToSave (object) Dir=In
+        -> Get Texture Asset.Texture Asset
+      Pin: bOnlyIfIsDirty (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Composite Target.then
+      Pin: then (exec) Dir=Out
+        -> Set Composite_MID.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Composite_MID.Composite_MID
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Composite_MID.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get Composite_MID.Composite_MID
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> GET.Output
+    Node: Set Composite_MID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Composite_MID (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Texture Resolution.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Capture Actor.Capture Actor
+    Node: Create Render Target 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Capture
+Target is Static Clouds Capture.then
+      Pin: then (exec) Dir=Out
+        -> Set Composite Target.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Width (int) Dir=In
+        -> Get Texture Resolution.Texture Resolution
+      Pin: Height (int) Dir=In
+        -> Get Texture Resolution.Texture Resolution
+      Pin: Format (byte) Dir=In
+      Pin: ClearColor (struct) Dir=In
+      Pin: bAutoGenerateMipMaps (bool) Dir=In
+      Pin: bSupportUAVs (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Composite Target.Composite Target
+    Node: Get Texture Resolution (K2Node_VariableGet)
+      Pin: Texture Resolution (int) Dir=Out
+        -> Create Render Target 2D.Width
+        -> Create Render Target 2D.Height
+      Pin: self (object) Dir=In
+    Node: Get Composite Target (K2Node_VariableGet)
+      Pin: Composite Target (object) Dir=Out
+        -> Begin Draw Canvas to Render Target.TextureRenderTarget
+    Node: Begin Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Draw Material
+Target is Canvas.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextureRenderTarget (object) Dir=In
+        -> Get Composite Target.Composite Target
+      Pin: Canvas (object) Dir=Out
+        -> Draw Material
+Target is Canvas.self
+      Pin: Size (struct) Dir=Out
+        -> Draw Material
+Target is Canvas.ScreenSize
+      Pin: Context (struct) Dir=Out
+        -> End Draw Canvas to Render Target.Context
+    Node: Draw Material
+Target is Canvas (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Begin Draw Canvas to Render Target.then
+      Pin: then (exec) Dir=Out
+        -> End Draw Canvas to Render Target.execute
+      Pin: self (object) Dir=In
+        -> Begin Draw Canvas to Render Target.Canvas
+      Pin: RenderMaterial (object) Dir=In
+        -> Get Composite_MID.Composite_MID
+      Pin: ScreenPosition (struct) Dir=In
+      Pin: ScreenSize (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Size
+      Pin: CoordinatePosition (struct) Dir=In
+      Pin: CoordinateSize (struct) Dir=In
+      Pin: Rotation (real) Dir=In
+      Pin: PivotPoint (struct) Dir=In
+    Node: End Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Draw Material
+Target is Canvas.then
+      Pin: then (exec) Dir=Out
+        -> Sanitize Package Name.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Context (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Context
+    Node: Get Composite_MID (K2Node_VariableGet)
+      Pin: Composite_MID (object) Dir=Out
+        -> Draw Material
+Target is Canvas.RenderMaterial
+    Node: Set Capture Actor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor Static Clouds Capture.then
+      Pin: then (exec) Dir=Out
+        -> Capture
+Target is Static Clouds Capture.execute
+      Pin: Capture Actor (object) Dir=In
+        -> SpawnActor Static Clouds Capture.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Capture
+Target is Static Clouds Capture.self
+    Node: Capture
+Target is Static Clouds Capture (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Capture Actor.then
+      Pin: then (exec) Dir=Out
+        -> Create Render Target 2D.execute
+      Pin: self (object) Dir=In
+        -> Set Capture Actor.Output_Get
+      Pin: UDS (object) Dir=In
+        -> Get UDS.UDS
+      Pin: Channel Targets (object) Dir=In
+        -> Get Channel_Targets.Channel_Targets
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Capture
+Target is Static Clouds Capture.UDS
+      Pin: self (object) Dir=In
+    Node: Get Capture Actor (K2Node_VariableGet)
+      Pin: Capture Actor (object) Dir=Out
+        -> Destroy Actor
+Target is Actor.self
+    Node: Create Render Target 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Width (int) Dir=In
+        -> Get Texture Resolution.Texture Resolution
+      Pin: Height (int) Dir=In
+        -> Get Texture Resolution.Texture Resolution
+      Pin: Format (byte) Dir=In
+      Pin: ClearColor (struct) Dir=In
+      Pin: bAutoGenerateMipMaps (bool) Dir=In
+      Pin: bSupportUAVs (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Add.NewItem
+    Node: Get Texture Resolution (K2Node_VariableGet)
+      Pin: Texture Resolution (int) Dir=Out
+        -> Create Render Target 2D.Width
+        -> Create Render Target 2D.Height
+      Pin: self (object) Dir=In
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Resolution.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Create Render Target 2D.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Create Render Target 2D.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Channel_Targets.Channel_Targets
+      Pin: NewItem (object) Dir=In
+        -> Create Render Target 2D.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Channel_Targets (K2Node_VariableGet)
+      Pin: Channel_Targets (object) Dir=Out
+        -> Add.TargetArray
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> For Loop.Completed
+      Pin: OutputPin (exec) Dir=Out
+        -> SpawnActor Static Clouds Capture.execute
+    Node: Get Channel_Targets (K2Node_VariableGet)
+      Pin: Channel_Targets (object) Dir=Out
+        -> Capture
+Target is Static Clouds Capture.Channel Targets
+    Node: Set Composite Target (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Render Target 2D.then
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: Composite Target (object) Dir=In
+        -> Create Render Target 2D.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Composite_MID (K2Node_VariableGet)
+      Pin: Composite_MID (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+    Node: Get Channel_Targets (K2Node_VariableGet)
+      Pin: Channel_Targets (object) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Channel_Targets.Channel_Targets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get Composite_MID.Composite_MID
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> GET.Output
+    Node: Get Composite_MID (K2Node_VariableGet)
+      Pin: Composite_MID (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: self (object) Dir=In
+        -> Get Composite_MID.Composite_MID
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> GET.Output
+    Node: Get Composite_MID (K2Node_VariableGet)
+      Pin: Composite_MID (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+        -> Begin Draw Canvas to Render Target.execute
+      Pin: self (object) Dir=In
+        -> Get Composite_MID.Composite_MID
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> GET.Output
+    Node: Get Composite_MID (K2Node_VariableGet)
+      Pin: Composite_MID (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+    Node: Get Channel_Targets (K2Node_VariableGet)
+      Pin: Channel_Targets (object) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Channel_Targets.Channel_Targets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Get Channel_Targets (K2Node_VariableGet)
+      Pin: Channel_Targets (object) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Channel_Targets.Channel_Targets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Get Channel_Targets (K2Node_VariableGet)
+      Pin: Channel_Targets (object) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Channel_Targets.Channel_Targets
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Set SRGB (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Show Message
+Target is Static Clouds Authoring Tool.then
+        -> Show Message
+Target is Static Clouds Authoring Tool.then
+      Pin: then (exec) Dir=Out
+        -> Set MipGenSettings.execute
+      Pin: SRGB (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Texture Asset.Texture Asset
+    Node: Make Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (class) Dir=In
+        -> Get UDS_Class.UDS_Class
+      Pin: Output (softclass) Dir=Out
+        -> To String (SoftClassReference).SoftClassReference
+    Node: To String (SoftClassReference) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SoftClassReference (softclass) Dir=In
+        -> Make Soft Reference.Output
+      Pin: ReturnValue (string) Dir=Out
+        -> Get Path.InPath
+    Node: Get UDS_Class (K2Node_VariableGet)
+      Pin: UDS_Class (class) Dir=Out
+        -> Make Soft Reference.Input
+      Pin: self (object) Dir=In
+    Node: Get Path (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InPath (string) Dir=In
+        -> To String (SoftClassReference).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Left Chop.SourceString
+    Node: Left Chop (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Get Path.ReturnValue
+      Pin: Count (int) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Left Chop.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Set File Path.File Path
+    Node: Does Asset Exist (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set File Path.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: AssetPath (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get File Path.File Path
+      Pin: B (string) Dir=In
+        -> Get File Name.File Name
+      Pin: ReturnValue (string) Dir=Out
+        -> Does Asset Exist.AssetPath
+        -> Load Asset.AssetPath
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Does Asset Exist.then
+      Pin: Condition (bool) Dir=In
+        -> Does Asset Exist.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Load Asset.execute
+      Pin: else (exec) Dir=Out
+        -> Get Asset Tools.execute
+    Node: Load Asset (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Cast To Texture2D.execute
+      Pin: self (object) Dir=In
+      Pin: AssetPath (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Texture2D.Object
+    Node: Cast To Texture2D (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Load Asset.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Asset.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Load Asset.ReturnValue
+      Pin: AsTexture 2D (object) Dir=Out
+        -> Set Texture Asset.Texture Asset
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set Texture Asset (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Texture2D.then
+      Pin: then (exec) Dir=Out
+        -> Show Message
+Target is Static Clouds Authoring Tool.execute
+      Pin: Texture Asset (object) Dir=In
+        -> Cast To Texture2D.AsTexture 2D
+      Pin: Output_Get (object) Dir=Out
+    Node: Set Texture Asset (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Texture2D.then
+      Pin: then (exec) Dir=Out
+        -> Show Message
+Target is Static Clouds Authoring Tool.execute
+      Pin: Texture Asset (object) Dir=In
+        -> Cast To Texture2D.AsTexture 2D
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Texture Asset (K2Node_VariableGet)
+      Pin: Texture Asset (object) Dir=Out
+        -> Convert Render Target to Texture 2DEditor Only.Texture
+        -> Save Loaded Asset.AssetToSave
+        -> Set SRGB.self
+        -> Set MipGenSettings.self
+    Node: Get TextBox (K2Node_VariableGet)
+      Pin: TextBox (object) Dir=Out
+        -> GetText (Text Box)
+Target is Text Box.self
+      Pin: self (object) Dir=In
+    Node: GetText (Text Box)
+Target is Text Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TextBox.TextBox
+      Pin: ReturnValue (text) Dir=Out
+        -> To String (Text).InText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> GetText (Text Box)
+Target is Text Box.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Make Valid File Name.InString
+    Node: Make Valid File Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: InReplacementChar (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Sanitize Package Name.InPackageName
+    Node: Set File Name (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sanitize Package Name.then
+      Pin: then (exec) Dir=Out
+        -> Set File Path.execute
+      Pin: File Name (string) Dir=In
+        -> Sanitize Package Name.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+    Node: Get File Name (K2Node_VariableGet)
+      Pin: File Name (string) Dir=Out
+        -> Append.B
+    Node: Set File Path (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set File Name.then
+      Pin: then (exec) Dir=Out
+        -> Does Asset Exist.execute
+      Pin: File Path (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Output_Get (string) Dir=Out
+    Node: Get File Path (K2Node_VariableGet)
+      Pin: File Path (string) Dir=Out
+        -> Append.A
+    Node: Get File Path (K2Node_VariableGet)
+      Pin: File Path (string) Dir=Out
+        -> Create Asset
+Target is Asset Tools.PackagePath
+    Node: Get File Name (K2Node_VariableGet)
+      Pin: File Name (string) Dir=Out
+        -> Create Asset
+Target is Asset Tools.AssetName
+    Node: Sanitize Package Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> End Draw Canvas to Render Target.then
+      Pin: then (exec) Dir=Out
+        -> Set File Name.execute
+      Pin: self (object) Dir=In
+      Pin: InPackageName (string) Dir=In
+        -> Make Valid File Name.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Set File Name.File Name
+    Node: Set MipGenSettings (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SRGB.then
+      Pin: then (exec) Dir=Out
+        -> Convert Render Target to Texture 2DEditor Only.execute
+      Pin: MipGenSettings (byte) Dir=In
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Texture Asset.Texture Asset
+    Node: Set Texture Resolution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> For Loop.execute
+      Pin: Texture Resolution (int) Dir=In
+        -> String To Integer.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get ResolutionSelection (K2Node_VariableGet)
+      Pin: ResolutionSelection (object) Dir=Out
+        -> Get Selected Option
+Target is ComboBox (String).self
+      Pin: self (object) Dir=In
+    Node: Get Selected Option
+Target is ComboBox (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ResolutionSelection.ResolutionSelection
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Integer.InString
+    Node: String To Integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Selected Option
+Target is ComboBox (String).ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Texture Resolution.Texture Resolution
+    Node: Show Message
+Target is Static Clouds Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Get Sky Mode (K2Node_VariableGet)
+      Pin: Sky Mode (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: self (object) Dir=In
+        -> Set UDS.Output_Get
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get Sky Mode.Sky Mode
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set UDS.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+        -> Show Message
+Target is Static Clouds Authoring Tool.execute
+    Node: Show Message
+Target is Static Clouds Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Show Message
+Target is Static Clouds Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Asset.then
+      Pin: then (exec) Dir=Out
+        -> Set SRGB.execute
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Show Message
+Target is Static Clouds Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Asset.then
+      Pin: then (exec) Dir=Out
+        -> Set SRGB.execute
+      Pin: self (object) Dir=In
+      Pin: Text (string) Dir=In
+      Pin: Color (struct) Dir=In
+  Graph: Save Texture Button Visibility
+    Node: Save Texture Button Visibility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Save Texture Button Visibility.then
+      Pin: ReturnValue (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get TextBox (K2Node_VariableGet)
+      Pin: TextBox (object) Dir=Out
+        -> GetText (Text Box)
+Target is Text Box.self
+      Pin: self (object) Dir=In
+    Node: GetText (Text Box)
+Target is Text Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TextBox.TextBox
+      Pin: ReturnValue (text) Dir=Out
+        -> To String (Text).InText
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> GetText (Text Box)
+Target is Text Box.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Make Valid File Name.InString
+    Node: Make Valid File Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> To String (Text).ReturnValue
+      Pin: InReplacementChar (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Len.S
+    Node: Len (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: S (string) Dir=In
+        -> Make Valid File Name.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> integer > integer.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Len.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+  Graph: Show Message
+    Node: Show Message (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Text.execute
+      Pin: Text (string) Dir=Out
+      Pin: Color (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+    Node: Get MessageText (K2Node_VariableGet)
+      Pin: MessageText (object) Dir=Out
+        -> Set Color and Opacity
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Show Message.then
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get MessageText.MessageText
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Text.InColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Show Message.Color
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Get MessageText (K2Node_VariableGet)
+      Pin: MessageText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Play Animation
+Target is User Widget.execute
+      Pin: self (object) Dir=In
+        -> Get MessageText.MessageText
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Text.Text
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get ShowMessage (K2Node_VariableGet)
+      Pin: ShowMessage (object) Dir=Out
+        -> Play Animation
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Play Animation
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get ShowMessage.ShowMessage
+      Pin: StartAtTime (real) Dir=In
+      Pin: NumLoopsToPlay (int) Dir=In
+      Pin: PlayMode (byte) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out

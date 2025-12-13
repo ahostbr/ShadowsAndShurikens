@@ -1,0 +1,54 @@
+Blueprint: UDS_Weather_Settings (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/System/UDS_Weather_Settings.UDS_Weather_Settings)
+  Graph: EventGraph
+  Graph: Custom Weather Behavior
+    Node: Custom Weather Behavior (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+      Pin: Alpha (real) Dir=Out
+      Pin: UDS (object) Dir=Out
+      Pin: UDW (object) Dir=Out
+  Graph: Get State Sources
+    Node: Get State Sources (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Sources (object) Dir=In
+        -> Make Map.Map
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get State Sources.then
+      Pin: Condition (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Sources (object) Dir=In
+        -> Get State Sources.State Sources
+    Node: Make Map (K2Node_MakeMap)
+      Pin: Map (object) Dir=Out
+        -> Return Node.Sources
+      Pin: Key 0 (object) Dir=In
+        -> Self-Reference.self
+      Pin: Value 0 (real) Dir=In
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Make Map.Key 0
+    Node: Get State Sources (K2Node_VariableGet)
+      Pin: State Sources (object) Dir=Out
+        -> Return Node.Sources
+      Pin: self (object) Dir=In
+    Node: Get State Sources (K2Node_VariableGet)
+      Pin: State Sources (object) Dir=Out
+        -> Is Empty.TargetMap
+      Pin: self (object) Dir=In
+    Node: Is Empty (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get State Sources.State Sources
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition

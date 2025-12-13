@@ -1,0 +1,549 @@
+Blueprint: Weather_Mask_Brush_Component (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/Components/Weather_Mask_Brush_Component.Weather_Mask_Brush_Component)
+  Graph: EventGraph
+  Graph: Prepare for Drawing
+    Node: Prepare for Drawing (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Runtime (bool) Dir=Out
+      Pin: UDW (object) Dir=Out
+    Node: Parent: Prepare for Drawing (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush Texture.execute
+      Pin: self (object) Dir=In
+      Pin: Runtime (bool) Dir=In
+        -> Get Runtime.Runtime
+      Pin: UDW (object) Dir=In
+    Node: Set Brush Texture (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Prepare for Drawing.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush Color.execute
+      Pin: Brush Texture (object) Dir=In
+        -> Select.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (object) Dir=In
+      Pin: NewEnumerator1 (object) Dir=In
+      Pin: NewEnumerator2 (object) Dir=In
+      Pin: NewEnumerator3 (object) Dir=In
+      Pin: NewEnumerator4 (object) Dir=In
+      Pin: NewEnumerator5 (object) Dir=In
+      Pin: Index (byte) Dir=In
+        -> Get Brush.Brush
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Brush Texture.Brush Texture
+    Node: Get Brush (K2Node_VariableGet)
+      Pin: Brush (byte) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Set Brush Color (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Brush Texture.then
+      Pin: then (exec) Dir=Out
+        -> Set Ready for Drawing.execute
+      Pin: Brush Color (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Brush Color.Brush Color
+      Pin: R (real) Dir=In
+        -> Get Mask Wetness.Mask Wetness
+      Pin: G (real) Dir=In
+        -> Get Mask Snow/Dust.Mask Snow/Dust
+      Pin: B (real) Dir=In
+      Pin: A (real) Dir=In
+    Node: Get Mask Wetness (K2Node_VariableGet)
+      Pin: Mask Wetness (real) Dir=Out
+        -> Make Linear Color.R
+      Pin: self (object) Dir=In
+    Node: Get Mask Snow/Dust (K2Node_VariableGet)
+      Pin: Mask Snow/Dust (real) Dir=Out
+        -> Make Linear Color.G
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Prepare for Drawing.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Parent: Prepare for Drawing.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Ready for Drawing (K2Node_VariableGet)
+      Pin: Ready for Drawing (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get Ready for Drawing.Ready for Drawing
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Ready for Drawing (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Brush Color.then
+      Pin: then (exec) Dir=Out
+      Pin: Ready for Drawing (bool) Dir=In
+        -> Get Runtime.Runtime
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Runtime (K2Node_VariableGet)
+      Pin: Runtime (bool) Dir=Out
+        -> Set Ready for Drawing.Ready for Drawing
+    Node: Get Runtime (K2Node_VariableGet)
+      Pin: Runtime (bool) Dir=Out
+        -> Parent: Prepare for Drawing.Runtime
+  Graph: Calculate Masking At Location
+    Node: Calculate Masking At Location (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Centered UV.execute
+      Pin: Location (struct) Dir=Out
+        -> To Vector2D (Vector).InVector
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Mask (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Cancel All Masks (bool) Dir=In
+    Node: Get Mask Value (K2Node_VariableGet)
+      Pin: Mask Value (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Mask Value.Mask Value
+      Pin: B (real) Dir=In
+        -> Get Mask Wetness.Mask Wetness
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set Mask Value.then
+        -> Set Mask Value.then
+        -> Set Mask Value.then
+        -> Set Mask Value.then
+        -> Set Mask Value.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Centered UV (K2Node_VariableGet)
+      Pin: Centered UV (struct) Dir=Out
+        -> Vector2D Length.A
+    Node: Switch on UDS_Weather_Mask_Brush (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Branch.else
+      Pin: Selection (byte) Dir=In
+        -> Get Brush.Brush
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Set Mask Value.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator3 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator4 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator5 (exec) Dir=Out
+        -> Set Mask Value.execute
+    Node: Vector2D Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Centered UV.Centered UV
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Vector2D Length.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Mask Value.Mask Value
+    Node: Get Centered UV (K2Node_VariableGet)
+      Pin: Centered UV (struct) Dir=Out
+        -> Get Abs Max 2D.A
+    Node: Get Abs Max 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Centered UV.Centered UV
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Abs Max 2D.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Mask Value.Mask Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_Weather_Mask_Brush.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Mask Value.execute
+    Node: Get Centered UV (K2Node_VariableGet)
+      Pin: Centered UV (struct) Dir=Out
+        -> Get Abs Max 2D.A
+    Node: Get Abs Max 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Centered UV.Centered UV
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Abs Max 2D.ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Mask Value.Mask Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_Weather_Mask_Brush.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Mask Value.execute
+    Node: Get Centered UV (K2Node_VariableGet)
+      Pin: Centered UV (struct) Dir=Out
+        -> Vector2D Length.A
+    Node: Vector2D Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Centered UV.Centered UV
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Vector2D Length.ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Mask Value.Mask Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_Weather_Mask_Brush.NewEnumerator3
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Mask Value.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_Weather_Mask_Brush.NewEnumerator4
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Mask Value.execute
+    Node: Get Centered UV (K2Node_VariableGet)
+      Pin: Centered UV (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Centered UV.Centered UV
+      Pin: X (real) Dir=Out
+        -> Absolute (Float).A
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: B (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Mask Value.Mask Value
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Absolute (Float).ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Absolute (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: float > float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+      Pin: B (real) Dir=In
+        -> Break Vector.Z
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Mask Value.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get Cancel Masks Above.Cancel Masks Above
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Switch on UDS_Weather_Mask_Brush.execute
+    Node: vector2d - vector2d (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> To Vector2D (Vector).ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Center Location.Center Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Rotated 2D.A
+    Node: Get Rotated 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector2d - vector2d.ReturnValue
+      Pin: AngleDeg (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.A
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Brush Yaw.Brush Yaw
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Get Rotated 2D.AngleDeg
+    Node: vector2d / vector2d (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Rotated 2D.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Brush Scale.Brush Scale
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Centered UV.Centered UV
+    Node: Get Abs Max 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Set Centered UV.Output_Get
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: Set Centered UV (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Calculate Masking At Location.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Centered UV (struct) Dir=In
+        -> vector2d / vector2d.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Get Abs Max 2D.A
+    Node: float < float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Abs Max 2D.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Centered UV.then
+      Pin: Condition (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> float > float.B
+    Node: Get Center Location (K2Node_VariableGet)
+      Pin: Center Location (struct) Dir=Out
+        -> vector2d - vector2d.B
+      Pin: self (object) Dir=In
+    Node: Get Brush Yaw (K2Node_VariableGet)
+      Pin: Brush Yaw (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+    Node: Get Brush Scale (K2Node_VariableGet)
+      Pin: Brush Scale (struct) Dir=Out
+        -> vector2d / vector2d.B
+      Pin: self (object) Dir=In
+    Node: Get Cancel Masks Above (K2Node_VariableGet)
+      Pin: Cancel Masks Above (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector.InVec
+    Node: Get Mask Snow/Dust (K2Node_VariableGet)
+      Pin: Mask Snow/Dust (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: Get Mask Wetness (K2Node_VariableGet)
+      Pin: Mask Wetness (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: Get Brush (K2Node_VariableGet)
+      Pin: Brush (byte) Dir=Out
+        -> Switch on UDS_Weather_Mask_Brush.Selection
+      Pin: self (object) Dir=In
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Location.Location
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> float > float.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Mask (struct) Dir=In
+      Pin: Cancel All Masks (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Switch on UDS_Weather_Mask_Brush.execute
+    Node: To Vector2D (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVector (struct) Dir=In
+        -> Calculate Masking At Location.Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d - vector2d.A
+    Node: Set Mask Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_Weather_Mask_Brush.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mask Value (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Mask Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mask Value (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Mask Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mask Value (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Mask Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mask Value (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Mask Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mask Value (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set Mask Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_Weather_Mask_Brush.NewEnumerator5
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Mask Value (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Mask (struct) Dir=In
+      Pin: Cancel All Masks (bool) Dir=In
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Y (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Mask
+    Node: Get Mask Value (K2Node_VariableGet)
+      Pin: Mask Value (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Mask Value.Mask Value
+      Pin: B (real) Dir=In
+        -> Get Mask Snow/Dust.Mask Snow/Dust
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Get Location (K2Node_VariableGet)
+      Pin: Location (struct) Dir=Out
+        -> Break Vector.InVec

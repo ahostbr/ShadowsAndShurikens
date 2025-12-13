@@ -1,0 +1,615 @@
+Blueprint: UDS_Digital_Clock (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Widgets/UDS_Digital_Clock.UDS_Digital_Clock)
+  Graph: EventGraph
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Time
+Target is UDS Digital Clock.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+    Node: Update Time
+Target is UDS Digital Clock (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set UDS.UDS
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+      Pin: UDS (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Pre Construct Graph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Slot as Canvas Slot.Widget
+    Node: Slot as Canvas Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Auto Size
+Target is Canvas Panel Slot.self
+        -> Is Valid.InputObject
+    Node: Set Auto Size
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: InbAutoSize (bool) Dir=In
+    Node: Update Time
+Target is UDS Digital Clock (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Font
+Target is Text.execute
+      Pin: self (object) Dir=In
+    Node: Get TimeText (K2Node_VariableGet)
+      Pin: TimeText (object) Dir=Out
+        -> Set Font
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Font
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Time
+Target is UDS Digital Clock.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Get TimeText.TimeText
+      Pin: InFontInfo (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Get Font (K2Node_VariableGet)
+      Pin: Font (object) Dir=Out
+        -> Make Slate Font Info.FontObject
+      Pin: self (object) Dir=In
+    Node: Get Font Size (K2Node_VariableGet)
+      Pin: Font Size (int) Dir=Out
+        -> To Float (Integer).InInt
+      Pin: self (object) Dir=In
+    Node: Get Digit Spacing (K2Node_VariableGet)
+      Pin: Digit Spacing (int) Dir=Out
+        -> Make Slate Font Info.LetterSpacing
+      Pin: self (object) Dir=In
+    Node: Get TimeText (K2Node_VariableGet)
+      Pin: TimeText (object) Dir=Out
+        -> Set Color and Opacity
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Font
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get TimeText.TimeText
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Make Slate Color.SlateColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Text.InColorAndOpacity
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Get Text Color.Text Color
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Get Text Color (K2Node_VariableGet)
+      Pin: Text Color (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+      Pin: self (object) Dir=In
+    Node: Get Show Background (K2Node_VariableGet)
+      Pin: Show Background (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Get Background (K2Node_VariableGet)
+      Pin: Background (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Get Background.Background
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Background.Show Background
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get Background (K2Node_VariableGet)
+      Pin: Background (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Padding
+Target is Horizontal Box Slot.execute
+      Pin: self (object) Dir=In
+        -> Get Background.Background
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Get Background Color.Background Color
+    Node: Get Background Color (K2Node_VariableGet)
+      Pin: Background Color (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: self (object) Dir=In
+    Node: Get TimeText (K2Node_VariableGet)
+      Pin: TimeText (object) Dir=Out
+        -> Slot as Horizontal Box Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Horizontal Box Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get TimeText.TimeText
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Padding
+Target is Horizontal Box Slot.self
+    Node: Set Padding
+Target is Horizontal Box Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Min Desired Width
+Target is Text.execute
+      Pin: self (object) Dir=In
+        -> Slot as Horizontal Box Slot.ReturnValue
+      Pin: InPadding (struct) Dir=In
+        -> Get Time Text Padding.Time Text Padding
+    Node: Get Time Text Padding (K2Node_VariableGet)
+      Pin: Time Text Padding (struct) Dir=Out
+        -> Set Padding
+Target is Horizontal Box Slot.InPadding
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: InputObject (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Auto Size
+Target is Canvas Panel Slot.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Auto Size
+Target is Canvas Panel Slot.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Update Time
+Target is UDS Digital Clock.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get TimeText (K2Node_VariableGet)
+      Pin: TimeText (object) Dir=Out
+        -> Set Min Desired Width
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Set Min Desired Width
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Padding
+Target is Horizontal Box Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TimeText.TimeText
+      Pin: InMinDesiredWidth (real) Dir=In
+        -> Get Time Text Min Desired Width.Time Text Min Desired Width
+    Node: Get Time Text Min Desired Width (K2Node_VariableGet)
+      Pin: Time Text Min Desired Width (real) Dir=Out
+        -> Set Min Desired Width
+Target is Text.InMinDesiredWidth
+      Pin: self (object) Dir=In
+    Node: Get Slate Font Info (K2Node_VariableGet)
+      Pin: Slate Font Info (struct) Dir=Out
+        -> Break Slate Font Info.SlateFontInfo
+      Pin: self (object) Dir=In
+    Node: Break Slate Font Info (K2Node_BreakStruct)
+      Pin: SlateFontInfo (struct) Dir=In
+        -> Get Slate Font Info.Slate Font Info
+      Pin: FontObject (object) Dir=Out
+        -> Is Valid.Object
+      Pin: FontMaterial (object) Dir=Out
+      Pin: OutlineSettings (struct) Dir=Out
+      Pin: TypefaceFontName (name) Dir=Out
+      Pin: Size (real) Dir=Out
+      Pin: LetterSpacing (int) Dir=Out
+      Pin: SkewAmount (real) Dir=Out
+      Pin: bForceMonospaced (bool) Dir=Out
+      Pin: bMaterialIsStencil (bool) Dir=Out
+      Pin: MonospacedWidth (real) Dir=Out
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Break Slate Font Info.FontObject
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Make Slate Font Info.ReturnValue
+      Pin: Option 1 (struct) Dir=In
+        -> Get Slate Font Info.Slate Font Info
+      Pin: Index (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Font
+Target is Text.InFontInfo
+    Node: Get Slate Font Info (K2Node_VariableGet)
+      Pin: Slate Font Info (struct) Dir=Out
+        -> Select.Option 1
+      Pin: self (object) Dir=In
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Font Size.Font Size
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Slate Font Info.Size
+    Node: Make Slate Font Info (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FontObject (object) Dir=In
+        -> Get Font.Font
+      Pin: FontMaterial (object) Dir=In
+      Pin: OutlineSettings (struct) Dir=In
+      Pin: TypefaceFontName (name) Dir=In
+      Pin: Size (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: LetterSpacing (int) Dir=In
+        -> Get Digit Spacing.Digit Spacing
+      Pin: SkewAmount (real) Dir=In
+      Pin: bForceMonospaced (bool) Dir=In
+      Pin: bMaterialIsStencil (bool) Dir=In
+      Pin: MonospacedWidth (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.Option 0
+  Graph: Update Time
+    Node: Update Time (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get TimeText (K2Node_VariableGet)
+      Pin: TimeText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Time.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TimeText.TimeText
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Break Timecode (K2Node_BreakStruct)
+      Pin: Timecode (struct) Dir=In
+        -> Get Time.Time
+      Pin: Hours (int) Dir=Out
+        -> % (Integer).A
+        -> Select Int.A
+        -> Reroute Node.InputPin
+      Pin: Minutes (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Seconds (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Frames (int) Dir=Out
+      Pin: Subframe (real) Dir=Out
+      Pin: bDropFrameFormat (bool) Dir=Out
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Pad Digits.output
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+      Pin: C (string) Dir=In
+        -> Pad Digits.output
+      Pin: D (string) Dir=In
+        -> Select String.ReturnValue
+      Pin: E (string) Dir=In
+        -> Select String.ReturnValue
+    Node: % (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Break Timecode.Hours
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Equal (Integer).A
+        -> Select Int.B
+    Node: Select Int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Break Timecode.Hours
+      Pin: B (int) Dir=In
+        -> Select Int.ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get 24h Time.24h Time
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: Get 24h Time (K2Node_VariableGet)
+      Pin: 24h Time (bool) Dir=Out
+        -> Select Int.bPickA
+      Pin: self (object) Dir=In
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Select Int.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Pad Digits.Number
+    Node: Pad Digits (K2Node_MacroInstance)
+      Pin: Number (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: Pad (bool) Dir=In
+        -> Get Pad Hour with Zero.Pad Hour with Zero
+      Pin: output (string) Dir=Out
+        -> Append.A
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Pad Digits.Number
+    Node: Pad Digits (K2Node_MacroInstance)
+      Pin: Number (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: Pad (bool) Dir=In
+      Pin: output (string) Dir=Out
+        -> Append.C
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Pad Digits.output
+      Pin: ReturnValue (string) Dir=Out
+        -> Select String.A
+    Node: Select String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Append.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Get Show Seconds.Show Seconds
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.D
+    Node: Get Show Seconds (K2Node_VariableGet)
+      Pin: Show Seconds (bool) Dir=Out
+        -> Select String.bPickA
+      Pin: self (object) Dir=In
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (string) Dir=Out
+        -> Pad Digits.Number
+    Node: Pad Digits (K2Node_MacroInstance)
+      Pin: Number (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: Pad (bool) Dir=In
+      Pin: output (string) Dir=Out
+        -> Append.B
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break Timecode.Minutes
+      Pin: OutputPin (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: Select Int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+      Pin: B (int) Dir=In
+        -> % (Integer).ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Select Int.B
+    Node: Equal (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> % (Integer).ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select Int.bPickA
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break Timecode.Seconds
+      Pin: OutputPin (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: Select String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Select String.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Get Show AM/PM.Show AM/PM
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.E
+    Node: Get Show AM/PM (K2Node_VariableGet)
+      Pin: Show AM/PM (bool) Dir=Out
+        -> Select String.bPickA
+      Pin: self (object) Dir=In
+    Node: integer > integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select String.bPickA
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Break Timecode.Hours
+      Pin: OutputPin (int) Dir=Out
+        -> integer > integer.A
+    Node: Select String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Select String.A
+    Node: Get Pad Hour with Zero (K2Node_VariableGet)
+      Pin: Pad Hour with Zero (bool) Dir=Out
+        -> Pad Digits.Pad
+      Pin: self (object) Dir=In
+    Node: Set Time (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+        -> Set UDS.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: Time (struct) Dir=In
+        -> Get Time Code
+Target is Ultra Dynamic Sky.Time
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get Time (K2Node_VariableGet)
+      Pin: Time (struct) Dir=Out
+        -> Break Timecode.Timecode
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get Time Code
+Target is Ultra Dynamic Sky (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDS.UDS
+      Pin: Time (struct) Dir=Out
+        -> Set Time.Time
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Update Time.then
+      Pin: InputObject (object) Dir=In
+        -> Get UDS.UDS
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Time.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set UDS.UDS
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Time.execute
+      Pin: UDS (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Get Time Code
+Target is Ultra Dynamic Sky.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Time.execute
+  Graph: Pad Digits
+    Node: Inputs (K2Node_Tunnel)
+      Pin: Number (string) Dir=Out
+        -> Append.B
+      Pin: Pad (bool) Dir=Out
+        -> Select String.bPickA
+    Node: Outputs (K2Node_Tunnel)
+      Pin: output (string) Dir=In
+        -> Right.ReturnValue
+    Node: Select String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Inputs.Pad
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Select String.ReturnValue
+      Pin: B (string) Dir=In
+        -> Inputs.Number
+      Pin: ReturnValue (string) Dir=Out
+        -> Right.SourceString
+    Node: Right (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Count (int) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Outputs.output

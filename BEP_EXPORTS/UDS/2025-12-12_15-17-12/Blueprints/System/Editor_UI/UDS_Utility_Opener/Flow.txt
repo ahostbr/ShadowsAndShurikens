@@ -1,0 +1,237 @@
+Blueprint: UDS_Utility_Opener (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/UDS_Utility_Opener.UDS_Utility_Opener)
+  Graph: EventGraph
+    Node: Event Open UDS Readme
+From UDS Utility Opener Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn Readme
+Target is UDS Utility Opener.execute
+      Pin: Entry Row (string) Dir=Out
+        -> Reroute Node.InputPin
+        -> Len.S
+      Pin: Category Index (int) Dir=Out
+        -> integer >= integer.A
+        -> Show Category
+Target is UDS Readme Interface.Category
+    Node: Len (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: S (string) Dir=In
+        -> Event Open UDS Readme
+From UDS Utility Opener Interface.Entry Row
+      Pin: ReturnValue (int) Dir=Out
+        -> integer > integer.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Len.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Show Set Of Entries
+Target is UDS Readme Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (string) Dir=In
+        -> Event Open UDS Readme
+From UDS Utility Opener Interface.Entry Row
+      Pin: OutputPin (string) Dir=Out
+        -> String To Name.InString
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (name) Dir=Out
+        -> Make Array.[0]
+    Node: Event Open UDS Readme Entry Set
+From UDS Utility Opener Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn Readme
+Target is UDS Utility Opener.execute
+      Pin: Entries (name) Dir=Out
+        -> Show Set Of Entries
+Target is UDS Readme Interface.Entries
+    Node: Spawn Readme
+Target is UDS Utility Opener (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Open UDS Readme
+From UDS Utility Opener Interface.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Show Set Of Entries
+Target is UDS Readme Interface.self
+        -> Show Category
+Target is UDS Readme Interface.self
+    Node: Spawn Readme
+Target is UDS Utility Opener (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Open UDS Readme Entry Set
+From UDS Utility Opener Interface.then
+      Pin: then (exec) Dir=Out
+        -> Show Set Of Entries
+Target is UDS Readme Interface.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Show Set Of Entries
+Target is UDS Readme Interface.self
+    Node: Show Set Of Entries
+Target is UDS Readme Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Spawn Readme
+Target is UDS Utility Opener.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Spawn Readme
+Target is UDS Utility Opener.ReturnValue
+      Pin: Entries (name) Dir=In
+        -> Event Open UDS Readme Entry Set
+From UDS Utility Opener Interface.Entries
+    Node: Show Set Of Entries
+Target is UDS Readme Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Spawn Readme
+Target is UDS Utility Opener.ReturnValue
+      Pin: Entries (name) Dir=In
+        -> Make Array.Array
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (name) Dir=Out
+        -> Show Set Of Entries
+Target is UDS Readme Interface.Entries
+      Pin: [0] (name) Dir=In
+        -> String To Name.ReturnValue
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Event Open UDS Readme
+From UDS Utility Opener Interface.Category Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Spawn Readme
+Target is UDS Utility Opener.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Show Category
+Target is UDS Readme Interface.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Show Category
+Target is UDS Readme Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Spawn Readme
+Target is UDS Utility Opener.ReturnValue
+      Pin: Category (int) Dir=In
+        -> Event Open UDS Readme
+From UDS Utility Opener Interface.Category Index
+    Node: Event Show Editor Warning Window
+From UDS Utility Opener Interface (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Show Message Dialog.execute
+      Pin: Title (string) Dir=Out
+        -> Append.B
+      Pin: Message (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Show Message Dialog.Title
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Event Show Editor Warning Window
+From UDS Utility Opener Interface.Message
+      Pin: ReturnValue (text) Dir=Out
+        -> Show Message Dialog.Message
+    Node: Show Message Dialog (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Show Editor Warning Window
+From UDS Utility Opener Interface.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Title (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Message (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: MessageType (byte) Dir=In
+      Pin: DefaultValue (byte) Dir=In
+      Pin: MessageCategory (byte) Dir=In
+      Pin: ReturnValue (byte) Dir=Out
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Event Show Editor Warning Window
+From UDS Utility Opener Interface.Title
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+  Graph: Spawn Readme
+    Node: Spawn Readme (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Load Asset Blocking.execute
+    Node: Editor Utility Subsystem (K2Node_GetEditorSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.self
+    Node: Spawn and Register Tab
+Target is Editor Utility Subsystem (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Load Asset Blocking.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Editor Utility Subsystem.ReturnValue
+      Pin: InBlueprint (object) Dir=In
+        -> Resolve Soft Reference.Output
+      Pin: ReturnValue (object) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Readme (K2Node_VariableGet)
+      Pin: Readme (softobject) Dir=Out
+        -> Load Asset Blocking.Asset
+      Pin: self (object) Dir=In
+    Node: Load Asset Blocking (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn Readme.then
+      Pin: then (exec) Dir=Out
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.execute
+      Pin: self (object) Dir=In
+      Pin: Asset (softobject) Dir=In
+        -> Get Readme.Readme
+      Pin: ReturnValue (object) Dir=Out
+    Node: Get Readme (K2Node_VariableGet)
+      Pin: Readme (softobject) Dir=Out
+        -> Resolve Soft Reference.Input
+      Pin: self (object) Dir=In
+    Node: Resolve Soft Reference (K2Node_ConvertAsset)
+      Pin: Input (softobject) Dir=In
+        -> Get Readme.Readme
+      Pin: Output (object) Dir=Out
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.InBlueprint
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.then
+      Pin: ReturnValue (object) Dir=In
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.ReturnValue

@@ -173,5 +173,32 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Stealth")
     void PopStealthConfig();
 
+    UFUNCTION(BlueprintCallable, Category="Stealth|Lighting")
+    void SetDominantDirectionalLightDirectionWS(FVector InDirWS, bool bValid);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="Stealth|Shadow")
+    FSOTS_ShadowCandidate GetPlayerShadowCandidate() const;
+
+    // Debug helper for BP/UI tooling.
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="Stealth|Shadow")
+    void GetShadowCandidateDebugState(
+        bool& bOutHasDominantDir,
+        FVector& OutDominantDir,
+        bool& bOutCandidateValid,
+        FVector& OutCandidatePoint,
+        float& OutCandidateIllum01) const;
+
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+private:
+    void UpdateShadowCandidateForPlayerIfNeeded();
+    AActor* FindPlayerActor() const;
+
+private:
+    FSOTS_ShadowCandidate CachedPlayerShadowCandidate;
+    double NextShadowCandidateUpdateTimeSeconds = 0.0;
+    double NextShadowCandidateDebugDrawTimeSeconds = 0.0;
+
+    FVector DominantDirectionalLightDirWS = FVector::ForwardVector;
+    bool bHasDominantDirectionalLightDir = false;
 };

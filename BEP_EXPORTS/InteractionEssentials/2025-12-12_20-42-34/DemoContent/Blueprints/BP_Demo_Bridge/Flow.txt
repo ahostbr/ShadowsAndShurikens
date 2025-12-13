@@ -1,0 +1,782 @@
+Blueprint: BP_Demo_Bridge (/Game/InteractionEssentials/DemoContent/Blueprints/BP_Demo_Bridge.BP_Demo_Bridge)
+  Graph: EventGraph
+    Node: On Interaction Update (InteractionComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: Value (real) Dir=Out
+        -> CollapseGraph_0_2
+Collapsed Graph.InputPin
+      Pin: Repetitions (int) Dir=Out
+    Node: On Interaction Started (InteractionComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> HandleBlendIn
+Collapsed Graph.execute
+    Node: On Interaction Completed (InteractionComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set bComplete.execute
+    Node: On Interaction Cancelled (InteractionComponent) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set bComplete.execute
+    Node: HandleBlendIn
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set IsActive.execute
+      Pin: execute (exec) Dir=In
+        -> On Interaction Started (InteractionComponent).then
+    Node: HandleBlendOut
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set InteractionRadius.execute
+      Pin: execute (exec) Dir=In
+        -> Set bComplete.then
+        -> Set bComplete.then
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set IsActive.then
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Loop Camera Shake.execute
+    Node: Set IsActive (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> HandleBlendIn
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: IsActive (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set IsActive (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionRadius.then
+      Pin: then (exec) Dir=Out
+        -> MoveTimeline.Stop
+      Pin: IsActive (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: MoveTimeline (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Set Play Rate
+Target is Timeline Component.then
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+        -> Set IsActive.then
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: NewTrack_0 (real) Dir=Out
+        -> Lerp.Alpha
+        -> Lerp.Alpha
+    Node: Loop Camera Shake (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Shake (class) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: then (exec) Dir=Out
+    Node: Loop Camera Shake (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Shake (class) Dir=In
+      Pin: Scale (real) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Loop Camera Shake.execute
+    Node: Get InteractionComponent (K2Node_VariableGet)
+      Pin: InteractionComponent (object) Dir=Out
+        -> Set InteractionRadius.self
+      Pin: self (object) Dir=In
+    Node: Set InteractionRadius (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.execute
+      Pin: InteractionRadius (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InteractionComponent.InteractionComponent
+    Node: CollapseGraph_0_2
+Collapsed Graph (K2Node_Composite)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Location And Rotation
+Target is Scene Component.NewLocation
+      Pin: ReturnValue2 (struct) Dir=Out
+        -> Set World Location And Rotation
+Target is Scene Component.NewRotation
+      Pin: InputPin (real) Dir=In
+        -> On Interaction Update (InteractionComponent).Value
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Mesh.self
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Set World Location And Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+    Node: Set World Location And Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: NewLocation (struct) Dir=In
+        -> CollapseGraph_0_2
+Collapsed Graph.ReturnValue
+      Pin: NewRotation (struct) Dir=In
+        -> CollapseGraph_0_2
+Collapsed Graph.ReturnValue2
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Set bComplete (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Cancelled (InteractionComponent).then
+      Pin: then (exec) Dir=Out
+        -> HandleBlendOut
+Collapsed Graph.execute
+      Pin: bComplete (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bComplete (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Completed (InteractionComponent).then
+      Pin: then (exec) Dir=Out
+        -> HandleBlendOut
+Collapsed Graph.execute
+      Pin: bComplete (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set InteractionRadius (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> HandleBlendOut
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+        -> Set IsActive.execute
+      Pin: InteractionRadius (real) Dir=In
+        -> Get CacheInteractionRadius.CacheInteractionRadius
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get InteractionComponent.InteractionComponent
+    Node: Get InteractionComponent (K2Node_VariableGet)
+      Pin: InteractionComponent (object) Dir=Out
+        -> Set InteractionRadius.self
+      Pin: self (object) Dir=In
+    Node: Get CacheInteractionRadius (K2Node_VariableGet)
+      Pin: CacheInteractionRadius (real) Dir=Out
+        -> Set InteractionRadius.InteractionRadius
+      Pin: self (object) Dir=In
+    Node: Get InteractionComponent (K2Node_VariableGet)
+      Pin: InteractionComponent (object) Dir=Out
+        -> Get InteractionRadius.self
+      Pin: self (object) Dir=In
+    Node: Get InteractionRadius (K2Node_VariableGet)
+      Pin: InteractionRadius (real) Dir=Out
+        -> Set CacheInteractionRadius.CacheInteractionRadius
+      Pin: self (object) Dir=In
+        -> Get InteractionComponent.InteractionComponent
+    Node: Set CacheInteractionRadius (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: CacheInteractionRadius (real) Dir=In
+        -> Get InteractionRadius.InteractionRadius
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CacheInteractionRadius.execute
+    Node: Set Relative XLoc (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: then (exec) Dir=Out
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> MoveTimeline.NewTrack_0
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Relative XLoc.NewLocation_X
+    Node: Get MoveTimeline (K2Node_VariableGet)
+      Pin: MoveTimeline (object) Dir=Out
+        -> Set Play Rate
+Target is Timeline Component.self
+      Pin: self (object) Dir=In
+    Node: Set Play Rate
+Target is Timeline Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set InteractionRadius.then
+      Pin: then (exec) Dir=Out
+        -> MoveTimeline.Play
+      Pin: self (object) Dir=In
+        -> Get MoveTimeline.MoveTimeline
+      Pin: NewRate (real) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Loop Camera Shake.then
+      Pin: then_0 (exec) Dir=Out
+        -> Timeline_2.Play
+      Pin: then_1 (exec) Dir=Out
+        -> Timeline_3.Play
+      Pin: then_2 (exec) Dir=Out
+        -> Delay.execute
+    Node: Timeline_2 (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Sequence.then_0
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: NewTrack_0 (real) Dir=Out
+        -> Lerp (Rotator).Alpha
+        -> Lerp.Alpha
+    Node: Get Camera (K2Node_VariableGet)
+      Pin: Camera (object) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_2.Update
+      Pin: then (exec) Dir=Out
+        -> Set Field Of View
+Target is Camera Component.execute
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+      Pin: NewRotation (struct) Dir=In
+        -> Lerp (Rotator).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Lerp (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Timeline_2.NewTrack_0
+      Pin: bShortestPath (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+    Node: Get Camera (K2Node_VariableGet)
+      Pin: Camera (object) Dir=Out
+        -> Set Field Of View
+Target is Camera Component.self
+      Pin: self (object) Dir=In
+    Node: Set Field Of View
+Target is Camera Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Rotation
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+      Pin: InFieldOfView (real) Dir=In
+        -> Lerp.ReturnValue
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Timeline_2.NewTrack_0
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Field Of View
+Target is Camera Component.InFieldOfView
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+        -> Set InteractionRadius.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Timeline_3 (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+        -> Sequence.then_1
+      Pin: PlayFromStart (exec) Dir=In
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: NewTrack_0 (real) Dir=Out
+        -> Lerp.Alpha
+        -> Lerp.Alpha
+    Node: Get Camera (K2Node_VariableGet)
+      Pin: Camera (object) Dir=Out
+        -> Get.self
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+      Pin: RelativeLocation_X (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_X
+      Pin: RelativeLocation_Y (real) Dir=Out
+      Pin: RelativeLocation_Z (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_3.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+      Pin: NewLocation (struct) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> Get.RelativeLocation_X
+      Pin: NewLocation_Y (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: NewLocation_Z (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Timeline_3.NewTrack_0
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_Y
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Timeline_3.NewTrack_0
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_Z
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Falling Actor.Output
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation_Y
+      Pin: ReturnValue_Z (real) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation_Z
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> MoveTimeline.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Falling Actor.Output
+      Pin: NewLocation (struct) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: NewLocation_Y (real) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue_Y
+      Pin: NewLocation_Z (real) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue_Z
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Falling Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Set Actor Location
+Target is Actor.self
+    Node: Falling Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> MoveTimeline.NewTrack_0
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation_X
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: GetCharAnimInstance
+    Node: GetCharAnimInstance (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To ThirdPerson_AnimBP.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Cast To ThirdPerson_AnimBP.then
+      Pin: ReturnValue (object) Dir=In
+        -> Cast To ThirdPerson_AnimBP.AsThird Person Anim BP
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Mesh.self
+    Node: Get Mesh (K2Node_VariableGet)
+      Pin: Mesh (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Mesh.Mesh
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To ThirdPerson_AnimBP.Object
+    Node: Cast To ThirdPerson_AnimBP (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetCharAnimInstance.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: AsThird Person Anim BP (object) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: bSuccess (bool) Dir=Out
+  Graph: InterpRelativeCameraY
+    Node: InterpRelativeCameraY (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: Target (struct) Dir=Out
+        -> Break Vector.InVec
+      Pin: InterpSpeed (real) Dir=Out
+        -> FInterp To.InterpSpeed
+        -> FInterp To.InterpSpeed
+    Node: Get Camera (K2Node_VariableGet)
+      Pin: Camera (object) Dir=Out
+        -> Get.self
+        -> Set Relative Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+      Pin: RelativeLocation_X (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_X
+      Pin: RelativeLocation_Y (real) Dir=Out
+        -> FInterp To.Current
+      Pin: RelativeLocation_Z (real) Dir=Out
+        -> FInterp To.Current
+        -> Set Relative Location
+Target is Scene Component.NewLocation_Z
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> InterpRelativeCameraY.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+      Pin: NewLocation (struct) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> Get.RelativeLocation_X
+      Pin: NewLocation_Y (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: NewLocation_Z (real) Dir=In
+        -> Get.RelativeLocation_Z
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get DeltaX (K2Node_VariableGet)
+      Pin: DeltaX (real) Dir=Out
+        -> FInterp To.DeltaTime
+        -> FInterp To.DeltaTime
+      Pin: self (object) Dir=In
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> InterpRelativeCameraY.Target
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> FInterp To.Target
+      Pin: Z (real) Dir=Out
+        -> FInterp To.Target
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get.RelativeLocation_Y
+      Pin: Target (real) Dir=In
+        -> Break Vector.Y
+      Pin: DeltaTime (real) Dir=In
+        -> Get DeltaX.DeltaX
+      Pin: InterpSpeed (real) Dir=In
+        -> InterpRelativeCameraY.InterpSpeed
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_Y
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Location
+Target is Scene Component.then
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get.RelativeLocation_Z
+      Pin: Target (real) Dir=In
+        -> Break Vector.Z
+      Pin: DeltaTime (real) Dir=In
+        -> Get DeltaX.DeltaX
+      Pin: InterpSpeed (real) Dir=In
+        -> InterpRelativeCameraY.InterpSpeed
+      Pin: ReturnValue (real) Dir=Out
+  Graph: FallingActor
+    Node: FallingActor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Output (object) Dir=In
+        -> GET.Output
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FallingActor.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Return Node.Output
+  Graph: SetEnabled
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Branch.execute
+      Pin: Enabled (bool) Dir=Out
+        -> Branch.Condition
+    Node: Outputs (K2Node_Tunnel)
+      Pin: then (exec) Dir=In
+        -> Enable Input
+Target is Actor.then
+        -> Disable Input
+Target is Actor.then
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enable Input
+Target is Actor.PlayerController
+        -> Disable Input
+Target is Actor.PlayerController
+    Node: Enable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Outputs.then
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Enable Input
+Target is Actor.self
+        -> Disable Input
+Target is Actor.self
+    Node: Disable Input
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Outputs.then
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: Condition (bool) Dir=In
+        -> Inputs.Enabled
+      Pin: then (exec) Dir=Out
+        -> Enable Input
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+        -> Disable Input
+Target is Actor.execute
+  Graph: LoopCameraShake
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Shake (class) Dir=Out
+        -> Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server).Shake
+      Pin: Scale (real) Dir=Out
+        -> Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server).Scale
+      Pin: Duration (real) Dir=Out
+        -> Delay.Duration
+    Node: Outputs (K2Node_Tunnel)
+      Pin: then (exec) Dir=In
+        -> Sequence.then_1
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server).self
+    Node: Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: Shake (class) Dir=In
+        -> Inputs.Shake
+      Pin: Scale (real) Dir=In
+        -> Inputs.Scale
+      Pin: PlaySpace (byte) Dir=In
+      Pin: UserPlaySpaceRot (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+        -> Inputs.Duration
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get IsActive (K2Node_VariableGet)
+      Pin: IsActive (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: Condition (bool) Dir=In
+        -> Get IsActive.IsActive
+      Pin: then (exec) Dir=Out
+        -> Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server).execute
+      Pin: else (exec) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then_0 (exec) Dir=Out
+        -> Client Start Camera Shake
+Target is Player Controller
+Replicated To Owning Client (if server).execute
+      Pin: then_1 (exec) Dir=Out
+        -> Outputs.then
+  Graph: SetRelativeXLoc
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.execute
+      Pin: NewLocation_X (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_X
+    Node: Outputs (K2Node_Tunnel)
+      Pin: then (exec) Dir=In
+        -> Set Relative Location
+Target is Scene Component.then
+    Node: Get Cube1 (K2Node_VariableGet)
+      Pin: Cube1 (object) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.self
+        -> Get.self
+      Pin: self (object) Dir=In
+    Node: Set Relative Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: then (exec) Dir=Out
+        -> Outputs.then
+      Pin: self (object) Dir=In
+        -> Get Cube1.Cube1
+      Pin: NewLocation (struct) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> Inputs.NewLocation_X
+      Pin: NewLocation_Y (real) Dir=In
+        -> Get.RelativeLocation_Y
+      Pin: NewLocation_Z (real) Dir=In
+        -> Get.RelativeLocation_Z
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: RelativeLocation (struct) Dir=Out
+      Pin: RelativeLocation_X (real) Dir=Out
+      Pin: RelativeLocation_Y (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_Y
+      Pin: RelativeLocation_Z (real) Dir=Out
+        -> Set Relative Location
+Target is Scene Component.NewLocation_Z
+      Pin: self (object) Dir=In
+        -> Get Cube1.Cube1

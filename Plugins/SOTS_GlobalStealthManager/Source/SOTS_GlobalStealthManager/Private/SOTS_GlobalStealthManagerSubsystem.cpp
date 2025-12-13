@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "SOTS_GlobalStealthManagerModule.h"
 #include "SOTS_PlayerStealthComponent.h"
+#include "DrawDebugHelpers.h"
 
 USOTS_GlobalStealthManagerSubsystem::USOTS_GlobalStealthManagerSubsystem()
     : CurrentStealthScore(0.0f)
@@ -123,6 +124,7 @@ void USOTS_GlobalStealthManagerSubsystem::ReportStealthSample(const FSOTS_Stealt
     UpdateGameplayTags();
     SyncPlayerStealthComponent();
     OnStealthStateChanged.Broadcast(CurrentState);
+    UpdateShadowCandidateForPlayerIfNeeded();
 
     UE_LOG(LogSOTSGlobalStealth, VeryVerbose,
         TEXT("Stealth sample processed. Score=%.3f, Level=%d"),
@@ -191,6 +193,7 @@ void USOTS_GlobalStealthManagerSubsystem::UpdateFromPlayer(const FSOTS_PlayerSte
     // Preserve AISuspicion01 set from AI bridge; do not overwrite here.
 
     RecomputeGlobalScore();
+    UpdateShadowCandidateForPlayerIfNeeded();
 }
 
 ESOTSStealthLevel USOTS_GlobalStealthManagerSubsystem::EvaluateStealthLevelFromScore(float Score) const
@@ -344,6 +347,8 @@ void USOTS_GlobalStealthManagerSubsystem::RecomputeGlobalScore()
     UpdateGameplayTags();
     SyncPlayerStealthComponent();
     OnStealthStateChanged.Broadcast(CurrentState);
+
+    UpdateShadowCandidateForPlayerIfNeeded();
 }
 
 void USOTS_GlobalStealthManagerSubsystem::UpdateGameplayTags()
@@ -410,6 +415,161 @@ void USOTS_GlobalStealthManagerSubsystem::SyncPlayerStealthComponent()
         PlayerStealth->LastDetectionScore = CurrentStealthScore;
         PlayerStealth->SetDetected(bPlayerDetected);
     }
+}
+
+AActor* USOTS_GlobalStealthManagerSubsystem::FindPlayerActor() const
+{
+    if (USOTS_PlayerStealthComponent* PlayerStealth = FindPlayerStealthComponent())
+    {
+        return PlayerStealth->GetOwner();
+    }
+
+    if (UWorld* World = GetWorld())
+    {
+        if (APlayerController* PC = World->GetFirstPlayerController())
+        {
+            return PC->GetPawn();
+        }
+    }
+
+    return nullptr;
+}
+
+void USOTS_GlobalStealthManagerSubsystem::SetDominantDirectionalLightDirectionWS(FVector InDirWS, bool bValid)
+{
+    if (bValid && !InDirWS.IsNearlyZero())
+    {
+        DominantDirectionalLightDirWS = InDirWS.GetSafeNormal();
+        bHasDominantDirectionalLightDir = true;
+    }
+    else
+    {
+        DominantDirectionalLightDirWS = FVector::ForwardVector;
+        bHasDominantDirectionalLightDir = false;
+    }
+}
+
+FSOTS_ShadowCandidate USOTS_GlobalStealthManagerSubsystem::GetPlayerShadowCandidate() const
+{
+    return CachedPlayerShadowCandidate;
+}
+
+void USOTS_GlobalStealthManagerSubsystem::GetShadowCandidateDebugState(
+    bool& bOutHasDominantDir,
+    FVector& OutDominantDir,
+    bool& bOutCandidateValid,
+    FVector& OutCandidatePoint,
+    float& OutCandidateIllum01) const
+{
+    bOutHasDominantDir = bHasDominantDirectionalLightDir;
+    OutDominantDir = DominantDirectionalLightDirWS;
+    bOutCandidateValid = CachedPlayerShadowCandidate.bValid;
+    OutCandidatePoint = CachedPlayerShadowCandidate.ShadowPointWS;
+    OutCandidateIllum01 = CachedPlayerShadowCandidate.Illumination01;
+}
+
+void USOTS_GlobalStealthManagerSubsystem::UpdateShadowCandidateForPlayerIfNeeded()
+{
+    const FSOTS_StealthScoringConfig& Cfg = ActiveConfig;
+
+    if (!Cfg.bEnableShadowCandidateCache)
+    {
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    const double Now = World->GetTimeSeconds();
+    if (Now < NextShadowCandidateUpdateTimeSeconds)
+    {
+        return;
+    }
+
+    NextShadowCandidateUpdateTimeSeconds = Now + Cfg.ShadowCandidateUpdateInterval;
+
+    CachedPlayerShadowCandidate = FSOTS_ShadowCandidate();
+    CachedPlayerShadowCandidate.LastUpdateTimeSeconds = Now;
+    CachedPlayerShadowCandidate.DominantLightDirWS = DominantDirectionalLightDirWS;
+
+    const float Illumination01 = FMath::Clamp(CurrentState.LightLevel01, 0.0f, 1.0f);
+    CachedPlayerShadowCandidate.Illumination01 = Illumination01;
+    CachedPlayerShadowCandidate.Strength01 = Illumination01;
+
+    if (Illumination01 < Cfg.ShadowMinIlluminationForCandidate)
+    {
+    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (Cfg.bDebugShadowCandidateCache && World)
+        {
+            if (Now >= NextShadowCandidateDebugDrawTimeSeconds)
+            {
+                NextShadowCandidateDebugDrawTimeSeconds = Now + 1.0;
+                DrawDebugString(World, FVector::ZeroVector + FVector(0.f, 0.f, 120.f), TEXT("GSM: Illum below min; no shadow candidate"), nullptr, FColor::Red, 1.0f, true, 1.2f);
+            }
+        }
+    #endif
+        return;
+    }
+
+    AActor* PlayerActor = FindPlayerActor();
+    const FVector PlayerLoc = PlayerActor ? PlayerActor->GetActorLocation() : FVector::ZeroVector;
+
+    if (!bHasDominantDirectionalLightDir)
+    {
+    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (Cfg.bDebugShadowCandidateCache && World)
+        {
+            if (Now >= NextShadowCandidateDebugDrawTimeSeconds)
+            {
+                NextShadowCandidateDebugDrawTimeSeconds = Now + 1.0;
+                DrawDebugString(World, PlayerLoc + FVector(0.f, 0.f, 140.f), TEXT("GSM: DominantDirectionalLightDir NOT SET — shadow candidate disabled"), nullptr, FColor::Red, 1.0f, true, 1.5f);
+            }
+        }
+    #endif
+        return;
+    }
+
+    if (!PlayerActor)
+    {
+        return;
+    }
+
+    const FVector LightDir = DominantDirectionalLightDirWS.GetSafeNormal();
+    const FVector Start = PlayerActor->GetActorLocation() + FVector(0.f, 0.f, 50.f);
+    const FVector End = Start + (LightDir * Cfg.ShadowCastDistance);
+
+    FHitResult Hit;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_ShadowCandidateTrace), Cfg.bShadowTraceComplex);
+    Params.AddIgnoredActor(PlayerActor);
+
+    if (World->LineTraceSingleByChannel(Hit, Start, End, Cfg.ShadowTraceChannel, Params))
+    {
+        CachedPlayerShadowCandidate.ShadowPointWS = Hit.ImpactPoint;
+        CachedPlayerShadowCandidate.bValid = true;
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (Cfg.bDebugShadowCandidateCache && World)
+    {
+        if (Now >= NextShadowCandidateDebugDrawTimeSeconds)
+        {
+            NextShadowCandidateDebugDrawTimeSeconds = Now + 1.0;
+
+            if (CachedPlayerShadowCandidate.bValid)
+            {
+                DrawDebugLine(World, Start, CachedPlayerShadowCandidate.ShadowPointWS, FColor::Yellow, false, 1.0f, 0, 1.5f);
+                DrawDebugPoint(World, CachedPlayerShadowCandidate.ShadowPointWS, 12.f, FColor::Yellow, false, 1.0f);
+            }
+            else
+            {
+                DrawDebugString(World, Start, TEXT("GSM: Shadow candidate trace missed"), nullptr, FColor::Red, 1.0f, true, 1.2f);
+            }
+        }
+    }
+#endif
 }
 
 void USOTS_GlobalStealthManagerSubsystem::AddStealthModifier(const FSOTS_StealthModifier& Modifier)

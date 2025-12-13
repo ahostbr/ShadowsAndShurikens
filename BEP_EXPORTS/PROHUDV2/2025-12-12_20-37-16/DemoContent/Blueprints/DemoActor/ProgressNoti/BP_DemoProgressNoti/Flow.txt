@@ -1,0 +1,162 @@
+Blueprint: BP_DemoProgressNoti (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/ProgressNoti/BP_DemoProgressNoti.BP_DemoProgressNoti)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Create Progress Notification
+Target is BPi HUDManager V2.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: FinishMaterial_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.then
+    Node: SetMaterialColor_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialTexture_2_2
+Collapsed Graph.then
+      Pin: Value (struct) Dir=In
+        -> Break S Icon Info.IconColor_12_45D244D343E41AFF398F69B859321A03
+    Node: CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> UpdateActor
+Custom Event.then
+    Node: SetMaterialTexture_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.then
+      Pin: Value (object) Dir=In
+        -> Cast To Texture.AsTexture
+    Node: Get EmissivePower (K2Node_VariableGet)
+      Pin: EmissivePower (real) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialEmissive_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> FinishMaterial_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialColor_2_2
+Collapsed Graph.then
+      Pin: Value (real) Dir=In
+        -> Get EmissivePower.EmissivePower
+    Node: UpdateActor
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.execute
+    Node: Cast To Texture (K2Node_DynamicCast)
+      Pin: Object (object) Dir=In
+        -> Break S Icon Info.IconTexture_4_9A7A53574480FA72E05559943F8AB6A3
+      Pin: AsTexture (object) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.Value
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Create Progress Notification
+Target is BPi HUDManager V2.self
+    Node: Create Progress Notification
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: NotiInfo (struct) Dir=In
+        -> Get NotiInfo.NotiInfo
+    Node: Make S Progress Noti Info (K2Node_MakeStruct)
+      Pin: S_ProgressNotiInfo (struct) Dir=Out
+      Pin: ProgressIconInfo_23_63DBC9D74D9603D2A93D89960979E7AE (struct) Dir=In
+      Pin: HeadText_9_C2F596CD44B6C227C64142BA209469A7 (text) Dir=In
+      Pin: HeadTextInfo_16_710EF3374963CDB3DDFF49830CE95ED4 (struct) Dir=In
+      Pin: ProgressText_13_395692924076068E91EB45A933FCF2DF (text) Dir=In
+      Pin: ProgressTextInfo_17_B30C78934E740558DC01B1AA1E7DD5C9 (struct) Dir=In
+      Pin: ProgressBarInfo_21_79F36B944B9D869109FE90B1B75C0067 (struct) Dir=In
+        -> Make S Progress Bar Info.S_ProgressBarInfo
+      Pin: DisplayTime_26_674D2CDD40C6D4F93FAD09B3CAD4DC6D (real) Dir=In
+    Node: Make S Progress Bar Info (K2Node_MakeStruct)
+      Pin: S_ProgressBarInfo (struct) Dir=Out
+        -> Make S Progress Noti Info.ProgressBarInfo_21_79F36B944B9D869109FE90B1B75C0067
+      Pin: UseProgressBar_17_F669BC284E77B022903AAD9C8BF2C84F (bool) Dir=In
+      Pin: MinValue_4_22BE28884D6B42983250BAA8176E6C5D (real) Dir=In
+      Pin: MaxValue_6_3C42B4804B8C8C114562A990CB30660A (real) Dir=In
+      Pin: LastValue_8_502A7CDC4AF8CFC5FB3BF58A329ECB9B (real) Dir=In
+      Pin: NewValue_10_D9BB202848B182B2522D10883243BD55 (real) Dir=In
+      Pin: BackgroundColor_15_18F453AD454DF352DF958DA13367BC94 (struct) Dir=In
+      Pin: FillColor_13_6393C5E74C54465155E63FBF3868ACBB (struct) Dir=In
+    Node: Get NotiInfo (K2Node_VariableGet)
+      Pin: NotiInfo (struct) Dir=Out
+        -> Create Progress Notification
+Target is BPi HUDManager V2.NotiInfo
+      Pin: self (object) Dir=In
+    Node: Get NotiInfo (K2Node_VariableGet)
+      Pin: NotiInfo (struct) Dir=Out
+        -> Break S Progress Noti Info.S_ProgressNotiInfo
+      Pin: self (object) Dir=In
+    Node: Break S Progress Noti Info (K2Node_BreakStruct)
+      Pin: S_ProgressNotiInfo (struct) Dir=In
+        -> Get NotiInfo.NotiInfo
+      Pin: ProgressIconInfo_23_63DBC9D74D9603D2A93D89960979E7AE (struct) Dir=Out
+        -> Break S Icon Info.S_IconInfo
+      Pin: HeadText_9_C2F596CD44B6C227C64142BA209469A7 (text) Dir=Out
+      Pin: HeadTextInfo_16_710EF3374963CDB3DDFF49830CE95ED4 (struct) Dir=Out
+      Pin: ProgressText_13_395692924076068E91EB45A933FCF2DF (text) Dir=Out
+      Pin: ProgressTextInfo_17_B30C78934E740558DC01B1AA1E7DD5C9 (struct) Dir=Out
+      Pin: ProgressBarInfo_21_79F36B944B9D869109FE90B1B75C0067 (struct) Dir=Out
+      Pin: DisplayTime_26_674D2CDD40C6D4F93FAD09B3CAD4DC6D (real) Dir=Out
+    Node: Break S Icon Info (K2Node_BreakStruct)
+      Pin: S_IconInfo (struct) Dir=In
+        -> Break S Progress Noti Info.ProgressIconInfo_23_63DBC9D74D9603D2A93D89960979E7AE
+      Pin: IconTexture_4_9A7A53574480FA72E05559943F8AB6A3 (object) Dir=Out
+        -> Cast To Texture.Object
+      Pin: Size_7_2F1FB8BD4C12FEBEF21312BF4615634C (real) Dir=Out
+      Pin: IconColor_12_45D244D343E41AFF398F69B859321A03 (struct) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.Value
+      Pin: HighlightColor_13_C3EC20C94DA067BA28F8AF9F02B31DC4 (struct) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Actor
+Target is BP Demo Progress Noti.execute
+    Node: Update Actor
+Target is BP Demo Progress Noti (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

@@ -4,10 +4,14 @@
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "SOTS_InvSPAdapter.h"
 #include "SOTS_HUDSubsystem.h"
 #include "SOTS_NotificationSubsystem.h"
 #include "SOTS_ProHUDAdapter.h"
+#include "SOTS_UIIntentTags.h"
+#include "SOTS_UIModalResultTypes.h"
+#include "SOTS_UIPayloadTypes.h"
 #include "SOTS_WaypointSubsystem.h"
 #include "SOTS_WidgetRegistryDataAsset.h"
 #include "SOTS_UISettings.h"
@@ -79,6 +83,17 @@ void USOTS_UIRouterSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	EnsureAdapters();
+
+	static bool bLoggedBaseZOrders = false;
+	if (!bLoggedBaseZOrders)
+	{
+		bLoggedBaseZOrders = true;
+		UE_LOG(LogSOTS_UIRouter, Log, TEXT("UIRouter base ZOrders HUD=%d Overlay=%d Modal=%d Debug=%d"),
+			GetLayerBaseZOrder(ESOTS_UILayer::HUD),
+			GetLayerBaseZOrder(ESOTS_UILayer::Overlay),
+			GetLayerBaseZOrder(ESOTS_UILayer::Modal),
+			GetLayerBaseZOrder(ESOTS_UILayer::Debug));
+	}
 }
 
 void USOTS_UIRouterSubsystem::Deinitialize()
@@ -172,6 +187,53 @@ void USOTS_UIRouterSubsystem::ShowNotification(const FString& Message, float Dur
 	}
 }
 
+void USOTS_UIRouterSubsystem::PushNotification_SOTS(const F_SOTS_UINotificationPayload& Payload)
+{
+	ShowNotification(Payload.Message.ToString(), Payload.DurationSeconds, Payload.CategoryTag);
+}
+
+void USOTS_UIRouterSubsystem::ShowPickupNotification(const FText& ItemName, int32 Quantity, float DurationSeconds)
+{
+	const FText Message = Quantity > 1
+		? FText::Format(NSLOCTEXT("SOTS", "PickupNotification", "{0} x{1}"), ItemName, FText::AsNumber(Quantity))
+		: ItemName;
+
+	F_SOTS_UINotificationPayload Payload;
+	Payload.Message = Message;
+	Payload.DurationSeconds = DurationSeconds;
+	Payload.CategoryTag = FGameplayTag::RequestGameplayTag(FName(TEXT("UI.Notification.Pickup")), false);
+
+	const FGameplayTag WidgetTag = ResolveFirstValidTag({
+		FName(TEXT("UI.HUD.PickupNotification")),
+		FName(TEXT("SAS.UI.InvSP.PickupNotification"))
+		});
+
+	if (!PushNotificationWidget(WidgetTag, Payload))
+	{
+		PushNotification_SOTS(Payload);
+	}
+}
+
+void USOTS_UIRouterSubsystem::ShowFirstTimePickupNotification(const FText& ItemName, float DurationSeconds)
+{
+	const FText Message = FText::Format(NSLOCTEXT("SOTS", "FirstTimePickupNotification", "New item: {0}"), ItemName);
+
+	F_SOTS_UINotificationPayload Payload;
+	Payload.Message = Message;
+	Payload.DurationSeconds = DurationSeconds;
+	Payload.CategoryTag = FGameplayTag::RequestGameplayTag(FName(TEXT("UI.Notification.Pickup.FirstTime")), false);
+
+	const FGameplayTag WidgetTag = ResolveFirstValidTag({
+		FName(TEXT("UI.HUD.PickupNotification.FirstTime")),
+		FName(TEXT("SAS.UI.InvSP.PickupNotification.FirstTime"))
+		});
+
+	if (!PushNotificationWidget(WidgetTag, Payload))
+	{
+		PushNotification_SOTS(Payload);
+	}
+}
+
 FGuid USOTS_UIRouterSubsystem::AddOrUpdateWaypoint_Actor(AActor* Target, FGameplayTag CategoryTag, bool bClampToEdges)
 {
 	FGuid Result;
@@ -220,6 +282,167 @@ void USOTS_UIRouterSubsystem::RemoveWaypoint(FGuid Id)
 	{
 		ProHUDAdapter->RemoveWorldMarker(Id);
 	}
+}
+
+FGuid USOTS_UIRouterSubsystem::AddOrUpdateWorldMarker_Actor(AActor* Target, FGameplayTag CategoryTag, bool bClampToEdges)
+{
+	return AddOrUpdateWaypoint_Actor(Target, CategoryTag, bClampToEdges);
+}
+
+FGuid USOTS_UIRouterSubsystem::AddOrUpdateWorldMarker_Location(FVector Location, FGameplayTag CategoryTag, bool bClampToEdges)
+{
+	return AddOrUpdateWaypoint_Location(Location, CategoryTag, bClampToEdges);
+}
+
+void USOTS_UIRouterSubsystem::RemoveWorldMarker(FGuid Id)
+{
+	RemoveWaypoint(Id);
+}
+
+bool USOTS_UIRouterSubsystem::OpenInventoryMenu()
+{
+	const FGameplayTag InventoryTag = ResolveFirstValidTag({
+		FName(TEXT("UI.Menu.Inventory")),
+		FName(TEXT("SAS.UI.InvSP.InventoryMenu"))
+		});
+
+	if (!InventoryTag.IsValid())
+	{
+		UE_LOG(LogSOTS_UIRouter, Warning, TEXT("Router: Inventory menu tag not configured."));
+		return false;
+	}
+
+	EnsureAdapters();
+	if (InvSPAdapter)
+	{
+		InvSPAdapter->OpenInventory();
+	}
+
+	return PushInventoryWidget(InventoryTag, ESOTS_UIInventoryRequestType::OpenInventory);
+}
+
+bool USOTS_UIRouterSubsystem::CloseInventoryMenu()
+{
+	const FGameplayTag InventoryTag = ResolveFirstValidTag({
+		FName(TEXT("UI.Menu.Inventory")),
+		FName(TEXT("SAS.UI.InvSP.InventoryMenu"))
+		});
+
+	if (!InventoryTag.IsValid())
+	{
+		return false;
+	}
+
+	if (InvSPAdapter)
+	{
+		InvSPAdapter->CloseInventory();
+	}
+
+	return PopWidgetById(InventoryTag);
+}
+
+bool USOTS_UIRouterSubsystem::ToggleInventoryMenu()
+{
+	const FGameplayTag InventoryTag = ResolveFirstValidTag({
+		FName(TEXT("UI.Menu.Inventory")),
+		FName(TEXT("SAS.UI.InvSP.InventoryMenu"))
+		});
+
+	if (!InventoryTag.IsValid())
+	{
+		return false;
+	}
+
+	ESOTS_UILayer ActiveLayer = ESOTS_UILayer::HUD;
+	if (IsWidgetActive(InventoryTag, &ActiveLayer))
+	{
+		if (InvSPAdapter)
+		{
+			InvSPAdapter->CloseInventory();
+		}
+		return PopFirstMatchingFromLayer(ActiveLayer, InventoryTag);
+	}
+
+	EnsureAdapters();
+	if (InvSPAdapter)
+	{
+		InvSPAdapter->OpenInventory();
+	}
+
+	return PushInventoryWidget(InventoryTag, ESOTS_UIInventoryRequestType::ToggleInventory);
+}
+
+bool USOTS_UIRouterSubsystem::OpenItemContainerMenu(AActor* ContainerActor)
+{
+	const FGameplayTag ContainerTag = ResolveFirstValidTag({
+		FName(TEXT("UI.Menu.Container")),
+		FName(TEXT("SAS.UI.InvSP.ContainerMenu"))
+		});
+
+	if (!ContainerTag.IsValid())
+	{
+		UE_LOG(LogSOTS_UIRouter, Warning, TEXT("Router: Container menu tag not configured."));
+		return false;
+	}
+
+	return PushInventoryWidget(ContainerTag, ESOTS_UIInventoryRequestType::OpenContainer, ContainerActor);
+}
+
+bool USOTS_UIRouterSubsystem::CloseItemContainerMenu()
+{
+	const FGameplayTag ContainerTag = ResolveFirstValidTag({
+		FName(TEXT("UI.Menu.Container")),
+		FName(TEXT("SAS.UI.InvSP.ContainerMenu"))
+		});
+
+	if (!ContainerTag.IsValid())
+	{
+		return false;
+	}
+
+	return PopWidgetById(ContainerTag);
+}
+
+void USOTS_UIRouterSubsystem::EnsureGameplayHUDReady()
+{
+	EnsureAdapters();
+	if (ProHUDAdapter)
+	{
+		ProHUDAdapter->EnsureHUDCreated();
+	}
+}
+
+void USOTS_UIRouterSubsystem::SubmitModalResult(const F_SOTS_UIModalResult& Result)
+{
+	OnModalResult.Broadcast(Result);
+
+	if (Result.ActionTag.IsValid())
+	{
+		ExecuteSystemAction(Result.ActionTag);
+	}
+
+	// Close top modal after handling result.
+	PopWidget(ESOTS_UILayer::Modal, true);
+}
+
+bool USOTS_UIRouterSubsystem::ShowConfirmDialog(const F_SOTS_UIConfirmDialogPayload& Payload)
+{
+	F_SOTS_UIConfirmDialogPayload LocalPayload = Payload;
+	if (!LocalPayload.RequestId.IsValid())
+	{
+		LocalPayload.RequestId = FGuid::NewGuid();
+	}
+
+	const FGameplayTag ModalTag = GetDefaultConfirmDialogTag();
+	if (!ModalTag.IsValid())
+	{
+		UE_LOG(LogSOTS_UIRouter, Warning, TEXT("Router: Confirm dialog tag not configured; cannot show dialog."));
+		return false;
+	}
+
+	FInstancedStruct PayloadStruct;
+	PayloadStruct.InitializeAs<F_SOTS_UIConfirmDialogPayload>(LocalPayload);
+	return PushWidgetById(ModalTag, PayloadStruct);
 }
 
 bool USOTS_UIRouterSubsystem::PushOrReplaceWidget(FGameplayTag WidgetId, FInstancedStruct Payload, bool bReplaceTop)
@@ -443,14 +666,15 @@ int32 USOTS_UIRouterSubsystem::GetLayerBaseZOrder(ESOTS_UILayer Layer) const
 {
 	switch (Layer)
 	{
+	// Visual ordering only: Debug overlays sit above everything else; input priority is controlled by LayerPriority separately.
 	case ESOTS_UILayer::HUD:
 		return 0;
 	case ESOTS_UILayer::Overlay:
 		return 100;
-	case ESOTS_UILayer::Debug:
-		return 1000;
 	case ESOTS_UILayer::Modal:
-		return 2000;
+		return 1000;
+	case ESOTS_UILayer::Debug:
+		return 10000;
 	default:
 		return 0;
 	}
@@ -518,4 +742,170 @@ void USOTS_UIRouterSubsystem::EnsureAdapters()
 	{
 		InvSPAdapter = NewObject<USOTS_InvSPAdapter>(GetGameInstance(), InvSPAdapterClass);
 	}
+}
+
+bool USOTS_UIRouterSubsystem::ExecuteSystemAction(FGameplayTag ActionTag)
+{
+	if (!ActionTag.IsValid())
+	{
+		return false;
+	}
+
+	if (ActionTag == SOTS_UIIntentTags::GetQuitGameTag())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (APlayerController* PC = World->GetFirstPlayerController())
+			{
+				UKismetSystemLibrary::QuitGame(this, PC, EQuitPreference::Quit, false);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	if (ActionTag == SOTS_UIIntentTags::GetCloseTopModalTag())
+	{
+		return PopWidget(ESOTS_UILayer::Modal, true);
+	}
+
+	if (ActionTag == SOTS_UIIntentTags::GetOpenSettingsTag())
+	{
+		const FGameplayTag SettingsTag = FGameplayTag::RequestGameplayTag(FName(TEXT("UI.Menu.Settings")), false);
+		if (SettingsTag.IsValid())
+		{
+			return PushWidgetById(SettingsTag, FInstancedStruct());
+		}
+	}
+
+	if (ActionTag == SOTS_UIIntentTags::GetOpenProfilesTag())
+	{
+		const FGameplayTag ProfilesTag = FGameplayTag::RequestGameplayTag(FName(TEXT("UI.Menu.Profiles")), false);
+		if (ProfilesTag.IsValid())
+		{
+			return PushWidgetById(ProfilesTag, FInstancedStruct());
+		}
+	}
+
+	if (ActionTag == SOTS_UIIntentTags::GetReturnToMainMenuTag())
+	{
+		UE_LOG(LogSOTS_UIRouter, Log, TEXT("Router: ReturnToMainMenu action requested (TODO: hook into game flow)."));
+		return true;
+	}
+
+	return false;
+}
+
+FGameplayTag USOTS_UIRouterSubsystem::GetDefaultConfirmDialogTag() const
+{
+	const FGameplayTag PrimaryTag = SOTS_UIIntentTags::GetConfirmDialogTag();
+	if (PrimaryTag.IsValid())
+	{
+		return PrimaryTag;
+	}
+
+	const FGameplayTag FallbackTag = SOTS_UIIntentTags::GetConfirmDialogFallbackTag();
+	if (FallbackTag.IsValid())
+	{
+		return FallbackTag;
+	}
+
+	return FGameplayTag();
+}
+
+FGameplayTag USOTS_UIRouterSubsystem::ResolveFirstValidTag(const TArray<FName>& Names) const
+{
+	for (const FName& Name : Names)
+	{
+		const FGameplayTag Tag = FGameplayTag::RequestGameplayTag(Name, false);
+		if (Tag.IsValid())
+		{
+			return Tag;
+		}
+	}
+
+	return FGameplayTag();
+}
+
+bool USOTS_UIRouterSubsystem::PushNotificationWidget(FGameplayTag WidgetTag, const F_SOTS_UINotificationPayload& Payload)
+{
+	if (!WidgetTag.IsValid())
+	{
+		return false;
+	}
+
+	FInstancedStruct PayloadStruct;
+	PayloadStruct.InitializeAs<F_SOTS_UINotificationPayload>(Payload);
+	return PushWidgetById(WidgetTag, PayloadStruct);
+}
+
+bool USOTS_UIRouterSubsystem::PushInventoryWidget(FGameplayTag WidgetTag, ESOTS_UIInventoryRequestType RequestType, AActor* ContainerActor, bool bPauseOverride)
+{
+	if (!WidgetTag.IsValid())
+	{
+		return false;
+	}
+
+	F_SOTS_UIInventoryRequestPayload Payload;
+	Payload.RequestType = RequestType;
+	Payload.ContainerActor = ContainerActor;
+	Payload.bPauseGameOverride = bPauseOverride;
+
+	FInstancedStruct PayloadStruct;
+	PayloadStruct.InitializeAs<F_SOTS_UIInventoryRequestPayload>(Payload);
+	return PushWidgetById(WidgetTag, PayloadStruct);
+}
+
+bool USOTS_UIRouterSubsystem::PopWidgetById(FGameplayTag WidgetId)
+{
+	ESOTS_UILayer Layer;
+	if (!IsWidgetActive(WidgetId, &Layer))
+	{
+		return false;
+	}
+
+	return PopFirstMatchingFromLayer(Layer, WidgetId);
+}
+
+bool USOTS_UIRouterSubsystem::IsWidgetActive(FGameplayTag WidgetId, ESOTS_UILayer* OutLayer) const
+{
+	for (const TPair<ESOTS_UILayer, FSOTS_LayerStack>& Pair : ActiveLayerStacks)
+	{
+		for (int32 Index = Pair.Value.Entries.Num() - 1; Index >= 0; --Index)
+		{
+			if (Pair.Value.Entries[Index].WidgetId == WidgetId)
+			{
+				if (OutLayer)
+				{
+					*OutLayer = Pair.Key;
+				}
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool USOTS_UIRouterSubsystem::PopFirstMatchingFromLayer(ESOTS_UILayer Layer, FGameplayTag WidgetId)
+{
+	if (FSOTS_LayerStack* Stack = ActiveLayerStacks.Find(Layer))
+	{
+		for (int32 Index = Stack->Entries.Num() - 1; Index >= 0; --Index)
+		{
+			if (Stack->Entries[Index].WidgetId == WidgetId)
+			{
+				if (UUserWidget* Widget = Stack->Entries[Index].Widget.Get())
+				{
+					Widget->RemoveFromParent();
+				}
+
+				Stack->Entries.RemoveAt(Index);
+				RefreshInputAndPauseState();
+				return true;
+			}
+		}
+	}
+
+	return false;
 }

@@ -1,0 +1,277 @@
+Blueprint: BP_Crosshair_Demo (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/Crosshair/BP_Crosshair_Demo.BP_Crosshair_Demo)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component End Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component End Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Add Crosshair
+Target is BPi HUDManager V2.self
+        -> Update Crosshair
+Target is BPi HUDManager V2.self
+    Node: Add Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Update Crosshair
+Target is BPi HUDManager V2.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Crosshair (byte) Dir=In
+        -> Get CrosshairType.CrosshairType
+      Pin: Crosshair_Info (struct) Dir=In
+        -> Get CrosshairInfo.CrosshairInfo
+    Node: Get CrosshairInfo (K2Node_VariableGet)
+      Pin: CrosshairInfo (struct) Dir=Out
+        -> Add Crosshair
+Target is BPi HUDManager V2.Crosshair_Info
+      Pin: self (object) Dir=In
+    Node: Get CrosshairType (K2Node_VariableGet)
+      Pin: CrosshairType (byte) Dir=Out
+        -> Add Crosshair
+Target is BPi HUDManager V2.Crosshair
+      Pin: self (object) Dir=In
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove Crosshair
+Target is BPi HUDManager V2.self
+        -> V1 Remove Crosshair
+Target is BPi HUDManager V2.self
+    Node: Remove Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Update Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Add Crosshair
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> V1 Remove Crosshair
+Target is BPi HUDManager V2.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: bUseMovementStrength (bool) Dir=In
+        -> Get UseMovementStrength.UseMovementStrength
+    Node: Get UseMovementStrength (K2Node_VariableGet)
+      Pin: UseMovementStrength (bool) Dir=Out
+        -> Update Crosshair
+Target is BPi HUDManager V2.bUseMovementStrength
+      Pin: self (object) Dir=In
+    Node: Get PointLight (K2Node_VariableGet)
+      Pin: PointLight (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> V1 Remove Crosshair
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get PointLight.PointLight
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PointLight.PointLight
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+    Node: Get CrosshairV1 (K2Node_VariableGet)
+      Pin: CrosshairV1 (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: Condition (bool) Dir=In
+        -> Get CrosshairV1.CrosshairV1
+      Pin: then (exec) Dir=Out
+        -> Remove Crosshair
+Target is BPi HUDManager V2.execute
+      Pin: else (exec) Dir=Out
+        -> V1 Remove Crosshair
+Target is BPi HUDManager V2.execute
+    Node: Get CrosshairV1 (K2Node_VariableGet)
+      Pin: CrosshairV1 (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: Condition (bool) Dir=In
+        -> Get CrosshairV1.CrosshairV1
+      Pin: then (exec) Dir=Out
+        -> V1 Add Crosshair
+Target is BPi HUDManager V2.execute
+      Pin: else (exec) Dir=Out
+        -> Add Crosshair
+Target is BPi HUDManager V2.execute
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> V1 Add Crosshair
+Target is BPi HUDManager V2.self
+    Node: V1 Add Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Remove Crosshair
+Target is BPi HUDManager V2.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Crosshair (byte) Dir=In
+        -> Get V1_Type.V1_Type
+      Pin: CrosshairColor (struct) Dir=In
+        -> Get V1_Color.V1_Color
+      Pin: MovementSensitivity (bool) Dir=In
+    Node: Get V1_Color (K2Node_VariableGet)
+      Pin: V1_Color (struct) Dir=Out
+        -> V1 Add Crosshair
+Target is BPi HUDManager V2.CrosshairColor
+      Pin: self (object) Dir=In
+    Node: Get V1_Type (K2Node_VariableGet)
+      Pin: V1_Type (byte) Dir=Out
+        -> V1 Add Crosshair
+Target is BPi HUDManager V2.Crosshair
+      Pin: self (object) Dir=In
+    Node: V1 Remove Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Remove Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> V1 Add Crosshair
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove Crosshair
+Target is BPi HUDManager V2.self
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> V1 Remove Crosshair
+Target is BPi HUDManager V2.self
+    Node: V1 Remove Crosshair
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Crosshair
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: Switch
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Branch.execute
+    Node: Outputs (K2Node_Tunnel)
+      Pin: MarkOnCompass (exec) Dir=In
+        -> Branch.then
+      Pin: MarkOnMinimap (exec) Dir=In
+        -> Branch.then
+      Pin: MarkOnWorld (exec) Dir=In
+        -> Branch.then
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Outputs.MarkOnMinimap
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Outputs.MarkOnWorld
+      Pin: else (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: Condition (bool) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Outputs.MarkOnCompass
+      Pin: else (exec) Dir=Out
+        -> Branch.execute

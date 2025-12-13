@@ -1,0 +1,499 @@
+Blueprint: BP_DemoActor_RepeatInvisible (/Game/InteractionEssentials/DemoContent/Blueprints/DemoActor/BP_DemoActor_RepeatInvisible.BP_DemoActor_RepeatInvisible)
+  Graph: EventGraph
+    Node: Timeline_0 (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Branch.then
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: Finished (exec) Dir=Out
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: test (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Timeline_0.test
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation_Z
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_X (real) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation_X
+      Pin: ReturnValue_Y (real) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation_Y
+      Pin: ReturnValue_Z (real) Dir=Out
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_0.Update
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewLocation (struct) Dir=In
+      Pin: NewLocation_X (real) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue_X
+      Pin: NewLocation_Y (real) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue_Y
+      Pin: NewLocation_Z (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: NewRotation (struct) Dir=In
+        -> Find Look at Rotation.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Find Look at Rotation (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Target (struct) Dir=In
+        -> Get Camera Location
+Target is Player Camera Manager.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set World Rotation
+Target is Scene Component.NewRotation
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Start
+    Node: rotate text (EdGraphNode_Comment)
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Set World Rotation
+Target is Scene Component.then
+      Pin: Reset (exec) Dir=In
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Set Text
+Target is Text Render Component.execute
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Set Text
+Target is Text Render Component.self
+      Pin: self (object) Dir=In
+    Node: Set Text
+Target is Text Render Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: Value (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Get Display Name.Object
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text
+Target is Text Render Component.Value
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Camera Location
+Target is Player Camera Manager.self
+    Node: Get Camera Location
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Find Look at Rotation.Target
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: Condition (bool) Dir=In
+        -> Get Move.Move
+      Pin: then (exec) Dir=Out
+        -> Timeline_0.PlayFromStart
+      Pin: else (exec) Dir=Out
+    Node: Get Move (K2Node_VariableGet)
+      Pin: Move (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Retriggerable Delay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> IsRepeatEvent
+Collapsed Graph.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Color (struct) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> To String (Float).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> On Interaction Update (RepeatEventInvisible).Value
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.Value
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Started (RepeatEventInvisible).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Completed (RepeatEventInvisible).then
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.then
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.then
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.then
+      Pin: then (exec) Dir=Out
+        -> Activate Interaction
+Target is BPi Interaction.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Activate Interaction
+Target is BPi Interaction.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+      Pin: Color (struct) Dir=In
+    Node: IsRepeatEvent
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: else (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: execute (exec) Dir=In
+        -> On Interaction Update (RepeatEventInvisible).then
+    Node: Set Text
+Target is BP Demo Actor Repeat Invisible (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> IsRepeatEvent
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+        -> To Text (String).ReturnValue
+      Pin: Color (struct) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.Value
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> On Interaction Update (RepeatEventInvisible).Repetitions
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: On Interaction Started (RepeatEventInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+    Node: On Interaction Completed (RepeatEventInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+    Node: On Interaction Update (RepeatEventInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> IsRepeatEvent
+Collapsed Graph.execute
+      Pin: Value (real) Dir=Out
+        -> To String (Float).InDouble
+      Pin: Repetitions (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: On Interaction Cancelled (RepeatEventInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Retriggerable Delay.execute
+    Node: Activate Interaction
+Target is BPi Interaction (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: self (object) Dir=In
+        -> Get RepeatEventInvisible.RepeatEventInvisible
+      Pin: Reset (bool) Dir=In
+    Node: Get RepeatEventInvisible (K2Node_VariableGet)
+      Pin: RepeatEventInvisible (object) Dir=Out
+        -> Activate Interaction
+Target is BPi Interaction.self
+      Pin: self (object) Dir=In
+    Node: Retriggerable Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Cancelled (RepeatEventInvisible).then
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is BP Demo Actor Repeat Invisible.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set InputKey_PC.execute
+    Node: Set InputKey_PC (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set InputKey_Gamepad.execute
+      Pin: InputKey_PC (struct) Dir=In
+        -> Get InputKey_PC.InputKey_PC
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get RepeatEventInvisible.RepeatEventInvisible
+    Node: Set InputKey_Gamepad (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set InputKey_PC.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: InputKey_Gamepad (struct) Dir=In
+        -> Get InputKey_Gamepad.InputKey_Gamepad
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get RepeatEventInvisible.RepeatEventInvisible
+    Node: Get InputKey_PC (K2Node_VariableGet)
+      Pin: InputKey_PC (struct) Dir=Out
+        -> Set InputKey_PC.InputKey_PC
+      Pin: self (object) Dir=In
+    Node: Get InputKey_Gamepad (K2Node_VariableGet)
+      Pin: InputKey_Gamepad (struct) Dir=Out
+        -> Set InputKey_Gamepad.InputKey_Gamepad
+      Pin: self (object) Dir=In
+    Node: Get RepeatEventInvisible (K2Node_VariableGet)
+      Pin: RepeatEventInvisible (object) Dir=Out
+        -> Set InputKey_PC.self
+        -> Set InputKey_Gamepad.self
+      Pin: self (object) Dir=In
+    Node: Get UseLight (K2Node_VariableGet)
+      Pin: UseLight (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set InputKey_Gamepad.then
+      Pin: Condition (bool) Dir=In
+        -> Get UseLight.UseLight
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Scene Component.execute
+      Pin: else (exec) Dir=Out
+    Node: Get PointLight (K2Node_VariableGet)
+      Pin: PointLight (object) Dir=Out
+        -> Set Visibility
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PointLight.PointLight
+      Pin: bNewVisibility (bool) Dir=In
+      Pin: bPropagateToChildren (bool) Dir=In
+  Graph: SetText
+    Node: SetText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is Text Render Component.execute
+      Pin: Value (text) Dir=Out
+        -> Make Literal Text.Value
+      Pin: Color (struct) Dir=Out
+        -> To Color (LinearColor).InLinearColor
+    Node: Get TextRender (K2Node_VariableGet)
+      Pin: TextRender (object) Dir=Out
+        -> Set Text
+Target is Text Render Component.self
+        -> Set Text Render Color
+Target is Text Render Component.self
+      Pin: self (object) Dir=In
+    Node: Set Text
+Target is Text Render Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText.then
+      Pin: then (exec) Dir=Out
+        -> Set Text Render Color
+Target is Text Render Component.execute
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: Value (text) Dir=In
+        -> Make Literal Text.ReturnValue
+    Node: Make Literal Text (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (text) Dir=In
+        -> SetText.Value
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Text
+Target is Text Render Component.Value
+    Node: Set Text Render Color
+Target is Text Render Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Text
+Target is Text Render Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get TextRender.TextRender
+      Pin: Value (struct) Dir=In
+        -> To Color (LinearColor).ReturnValue
+    Node: To Color (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InLinearColor (struct) Dir=In
+        -> SetText.Color
+      Pin: InUseSRGB (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Text Render Color
+Target is Text Render Component.Value

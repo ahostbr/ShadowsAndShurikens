@@ -1,0 +1,82 @@
+Blueprint: UDS_Readme_Image (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/UDS_Readme_Image.UDS_Readme_Image)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: Download Image (K2Node_AsyncAction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+      Pin: OnSuccess (exec) Dir=Out
+        -> Set Brush from Texture Dynamic
+Target is Image.execute
+      Pin: OnFail (exec) Dir=Out
+      Pin: Texture (object) Dir=Out
+        -> Set Brush from Texture Dynamic
+Target is Image.Texture
+      Pin: URL (string) Dir=In
+        -> Get Image URL.Image URL
+    Node: Get Image URL (K2Node_VariableGet)
+      Pin: Image URL (string) Dir=Out
+        -> Download Image.URL
+      Pin: self (object) Dir=In
+    Node: Get MainCanvasPanel (K2Node_VariableGet)
+      Pin: MainCanvasPanel (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture Dynamic
+Target is Image.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get MainCanvasPanel.MainCanvasPanel
+      Pin: InVisibility (byte) Dir=In
+    Node: Get Caption Text (K2Node_VariableGet)
+      Pin: Caption Text (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+    Node: Get Caption (K2Node_VariableGet)
+      Pin: Caption (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Download Image.execute
+      Pin: self (object) Dir=In
+        -> Get Caption.Caption
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Caption Text.Caption Text
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get Image (K2Node_VariableGet)
+      Pin: Image (object) Dir=Out
+        -> Set Brush from Texture Dynamic
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture Dynamic
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Download Image.OnSuccess
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get Image.Image
+      Pin: Texture (object) Dir=In
+        -> Download Image.Texture
+      Pin: bMatchSize (bool) Dir=In

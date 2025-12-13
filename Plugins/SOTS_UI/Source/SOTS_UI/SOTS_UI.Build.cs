@@ -13,6 +13,7 @@ public class SOTS_UI : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"StructUtils",
+				"MediaAssets",
 				"UMG",
 				"Slate",
 				"SlateCore",

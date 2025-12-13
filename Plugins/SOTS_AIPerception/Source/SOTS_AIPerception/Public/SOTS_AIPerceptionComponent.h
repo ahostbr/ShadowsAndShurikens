@@ -7,6 +7,7 @@
 #include "SOTS_AIPerceptionComponent.generated.h"
 
 class USOTS_AIPerceptionConfig;
+class USkeletalMeshComponent;
 
 /**
  * Per-AI perception component. Tracks awareness of important targets
@@ -107,7 +108,16 @@ protected:
 private:
     void UpdatePerception();
 
-    void UpdateSingleTarget(FSOTS_PerceivedTargetState& TargetState, float DeltaSeconds);
+    void UpdateSingleTarget(FSOTS_PerceivedTargetState& TargetState, float DeltaSeconds, bool bDebugDrawTargetPoints);
+
+    int32 GetNextTargetStartIndex(int32 NumTargets);
+
+    FSOTS_TargetPointVisibilityResult EvaluateTargetVisibility_MultiPoint(AActor* Target, const FVector& EyeLocation, ECollisionChannel TraceChannel, const USOTS_AIPerceptionConfig* Config, bool bDrawDebug, float DebugDrawDuration);
+    bool ComputeTargetLOS(AActor* Target, const FVector& EyeLocation, ECollisionChannel TraceChannel, FSOTS_TargetPointVisibilityResult& OutVisibility, bool bDrawDebug, float DebugDrawDuration);
+
+    static USkeletalMeshComponent* FindBestSkeletalMeshComponent(AActor* Target);
+    bool GatherTargetPointWorldLocations(AActor* Target, const TArray<FName>& BoneNames, int32 MaxPoints, TArray<FVector>& OutPoints, TArray<bool>& OutIsCorePoint) const;
+    float ComputeVisibilitySuspicionMultiplier(const FSOTS_TargetPointVisibilityResult& Vis, const USOTS_AIPerceptionConfig* Config) const;
 
     void RefreshWatchedTargets();
 
@@ -118,6 +128,8 @@ private:
     void NotifyGlobalStealthManager(ESOTS_PerceptionState OldState, ESOTS_PerceptionState NewState);
     void SetPerceptionState(ESOTS_PerceptionState NewState);
     void ApplyStateTags();
+    bool ShouldRunShadowAwareness(const USOTS_AIPerceptionConfig* Config, double NowSeconds);
+    void LogTelemetrySnapshot(int32 NumTargets, int32 EvaluatedTargetsCount, int32 MaxTargetsToEvaluate, bool bHasLOSOnPrimary, const FSOTS_PerceivedTargetState* BestState, float SuspicionNormalized);
 
     // Internal hook used to translate high-level perception state changes
     // into optional FX cues (and any future side-effects).
@@ -153,4 +165,20 @@ private:
 
     // Optional reference to higher-level behavior component (internal only for now).
     TWeakObjectPtr<UActorComponent> AIBT_BehaviorComponentRef;
+
+    // Trace budget tracking for future multi-point LOS.
+    int32 TracesUsedThisUpdate = 0;
+    int32 TargetRoundRobinIndex = 0;
+
+    void ResetTraceBudget() { TracesUsedThisUpdate = 0; }
+    bool CanSpendTraces(int32 Count) const;
+    void SpendTrace() { ++TracesUsedThisUpdate; }
+
+    // Shadow awareness scheduling.
+    double NextShadowCheckTimeSeconds = 0.0;
+    int32 ShadowTracesUsedThisSecond = 0;
+    int32 ShadowTraceSecondStamp = 0;
+
+    // Telemetry scheduling.
+    double NextTelemetryTimeSeconds = 0.0;
 };

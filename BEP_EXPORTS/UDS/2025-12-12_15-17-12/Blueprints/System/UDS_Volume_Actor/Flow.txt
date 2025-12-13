@@ -1,0 +1,600 @@
+Blueprint: UDS_Volume_Actor (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/UDS_Volume_Actor.UDS_Volume_Actor)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on UDS_OcclusionShape.execute
+    Node: Add Box Collision
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_OcclusionShape.NewEnumerator0
+      Pin: then (exec) Dir=Out
+        -> Set Collision Component.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Collision Component.Collision Component
+        -> Reroute Node.InputPin
+    Node: Add Sphere Collision
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_OcclusionShape.NewEnumerator1
+      Pin: then (exec) Dir=Out
+        -> Set Collision Component.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Collision Component.Collision Component
+        -> Reroute Node.InputPin
+    Node: Get Collision Shape (K2Node_VariableGet)
+      Pin: Collision Shape (byte) Dir=Out
+        -> Switch on UDS_OcclusionShape.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on UDS_OcclusionShape (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: Selection (byte) Dir=In
+        -> Get Collision Shape.Collision Shape
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Add Box Collision
+.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Add Sphere Collision
+.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Add Capsule Collision
+.execute
+    Node: Set Box Extent
+Target is Box Collision (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Component.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InBoxExtent (struct) Dir=In
+        -> Get Box Extent.Box Extent
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Get Box Extent (K2Node_VariableGet)
+      Pin: Box Extent (struct) Dir=Out
+        -> Set Box Extent
+Target is Box Collision.InBoxExtent
+      Pin: self (object) Dir=In
+    Node: Get Sphere Radius (K2Node_VariableGet)
+      Pin: Sphere Radius (real) Dir=Out
+        -> Set Sphere Radius
+Target is Sphere Collision.InSphereRadius
+      Pin: self (object) Dir=In
+    Node: Set Sphere Radius
+Target is Sphere Collision (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Component.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InSphereRadius (real) Dir=In
+        -> Get Sphere Radius.Sphere Radius
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Set Collision Component (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Box Collision
+.then
+      Pin: then (exec) Dir=Out
+        -> Set Box Extent
+Target is Box Collision.execute
+      Pin: Collision Component (object) Dir=In
+        -> Add Box Collision
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Collision Component (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Sphere Collision
+.then
+      Pin: then (exec) Dir=Out
+        -> Set Sphere Radius
+Target is Sphere Collision.execute
+      Pin: Collision Component (object) Dir=In
+        -> Add Sphere Collision
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Sphere Radius
+Target is Sphere Collision.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Add Sphere Collision
+.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Box Extent
+Target is Box Collision.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Add Box Collision
+.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Add Capsule Collision
+ (K2Node_AddComponent)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_OcclusionShape.NewEnumerator2
+      Pin: then (exec) Dir=Out
+        -> Set Collision Component.execute
+      Pin: self (object) Dir=In
+      Pin: TemplateName (name) Dir=In
+      Pin: bManualAttachment (bool) Dir=In
+      Pin: RelativeTransform (struct) Dir=In
+      Pin: ComponentTemplateContext (object) Dir=In
+      Pin: bDeferredFinish (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Collision Component.Collision Component
+        -> Reroute Node.InputPin
+    Node: Set Collision Component (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Capsule Collision
+.then
+      Pin: then (exec) Dir=Out
+        -> Set Capsule Radius
+Target is Capsule Collision.execute
+      Pin: Collision Component (object) Dir=In
+        -> Add Capsule Collision
+.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Capsule Radius
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Capsule Half Height
+Target is Capsule Collision.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Radius (real) Dir=In
+        -> Get Sphere Radius.Sphere Radius
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Get Sphere Radius (K2Node_VariableGet)
+      Pin: Sphere Radius (real) Dir=Out
+        -> Set Capsule Radius
+Target is Capsule Collision.Radius
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Capsule Radius
+Target is Capsule Collision.self
+        -> Set Capsule Half Height
+Target is Capsule Collision.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Add Capsule Collision
+.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Capsule Half Height
+Target is Capsule Collision (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Capsule Radius
+Target is Capsule Collision.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: HalfHeight (real) Dir=In
+        -> Get Capsule Half Height.Capsule Half Height
+      Pin: bUpdateOverlaps (bool) Dir=In
+    Node: Get Capsule Half Height (K2Node_VariableGet)
+      Pin: Capsule Half Height (real) Dir=Out
+        -> Set Capsule Half Height
+Target is Capsule Collision.HalfHeight
+      Pin: self (object) Dir=In
+    Node: Set Collision Object Type
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Response to All Channels
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Collision Component.Collision Component
+      Pin: Channel (byte) Dir=In
+        -> Get Collision Object Type.Collision Object Type
+    Node: Get Collision Component (K2Node_VariableGet)
+      Pin: Collision Component (object) Dir=Out
+        -> Set Collision Object Type
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Collision Component (K2Node_VariableGet)
+      Pin: Collision Component (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Collision Object Type
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Collision Component.Collision Component
+      Pin: NewType (byte) Dir=In
+    Node: Get Collision Component (K2Node_VariableGet)
+      Pin: Collision Component (object) Dir=Out
+        -> Set Collision Response to All Channels
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Response to All Channels
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Collision Object Type
+Target is Primitive Component.execute
+      Pin: self (object) Dir=In
+        -> Get Collision Component.Collision Component
+      Pin: NewResponse (byte) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Capsule Half Height
+Target is Capsule Collision.then
+        -> Set Sphere Radius
+Target is Sphere Collision.then
+        -> Set Box Extent
+Target is Box Collision.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Collision Response to All Channels
+Target is Primitive Component.execute
+    Node: Get Collision Object Type (K2Node_VariableGet)
+      Pin: Collision Object Type (byte) Dir=Out
+        -> Set Collision Object Type
+Target is Primitive Component.Channel
+      Pin: self (object) Dir=In
+  Graph: Query Blend Radius
+    Node: Query Blend Radius (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Location (struct) Dir=Out
+    Node: Get Collision Shape (K2Node_VariableGet)
+      Pin: Collision Shape (byte) Dir=Out
+        -> Switch on UDS_OcclusionShape.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on UDS_OcclusionShape (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Set Local Location.then
+      Pin: Selection (byte) Dir=In
+        -> Get Collision Shape.Collision Shape
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Local Location (K2Node_VariableGet)
+      Pin: Local Location (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Local Location.Local Location
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: Get Sphere Radius (K2Node_VariableGet)
+      Pin: Sphere Radius (real) Dir=Out
+        -> float - float.A
+      Pin: self (object) Dir=In
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Sphere Radius.Sphere Radius
+      Pin: B (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Blend Radius.Blend Radius
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get Blend Radius (K2Node_VariableGet)
+      Pin: Blend Radius (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Multiplier
+    Node: Get Local Location (K2Node_VariableGet)
+      Pin: Local Location (struct) Dir=Out
+        -> Vector Get Abs.A
+    Node: Get Box Extent (K2Node_VariableGet)
+      Pin: Box Extent (struct) Dir=Out
+        -> vector - vector.A
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Box Extent.Box Extent
+      Pin: B (struct) Dir=In
+        -> Vector Get Abs.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Min Element.A
+    Node: Vector Get Abs (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Local Location.Local Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.B
+    Node: Get Min Element (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Min Element.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Blend Radius.Blend Radius
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get Blend Radius (K2Node_VariableGet)
+      Pin: Blend Radius (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Multiplier
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_OcclusionShape.NewEnumerator0
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Local Location (K2Node_VariableGet)
+      Pin: Local Location (struct) Dir=Out
+        -> Break Vector.InVec
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Local Location.Local Location
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get Sphere Radius (K2Node_VariableGet)
+      Pin: Sphere Radius (real) Dir=Out
+        -> Max (Float).B
+      Pin: self (object) Dir=In
+    Node: Get Capsule Half Height (K2Node_VariableGet)
+      Pin: Capsule Half Height (real) Dir=Out
+        -> Max (Float).A
+      Pin: self (object) Dir=In
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Capsule Half Height.Capsule Half Height
+      Pin: B (real) Dir=In
+        -> Get Sphere Radius.Sphere Radius
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Sphere Radius.Sphere Radius
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Max
+        -> float * float.A
+    Node: Get Sphere Radius (K2Node_VariableGet)
+      Pin: Sphere Radius (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+    Node: Make Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Distance (Vector).V1
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector.Z
+      Pin: Min (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Max (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector.Z
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Min
+    Node: Get Local Location (K2Node_VariableGet)
+      Pin: Local Location (struct) Dir=Out
+        -> Distance (Vector).V2
+    Node: Distance (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: V1 (struct) Dir=In
+        -> Make Vector.ReturnValue
+      Pin: V2 (struct) Dir=In
+        -> Get Local Location.Local Location
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: Get Sphere Radius (K2Node_VariableGet)
+      Pin: Sphere Radius (real) Dir=Out
+        -> float - float.A
+      Pin: self (object) Dir=In
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Sphere Radius.Sphere Radius
+      Pin: B (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Blend Radius.Blend Radius
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Multiplier
+    Node: Get Blend Radius (K2Node_VariableGet)
+      Pin: Blend Radius (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_OcclusionShape.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Collision Component (K2Node_VariableGet)
+      Pin: Collision Component (object) Dir=Out
+        -> Get World Transform
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: Inverse Transform Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: T (struct) Dir=In
+        -> Get World Transform
+Target is Scene Component.ReturnValue
+      Pin: Location (struct) Dir=In
+        -> Get Location.Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Local Location.Local Location
+    Node: Get World Transform
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Collision Component.Collision Component
+      Pin: ReturnValue (struct) Dir=Out
+        -> Inverse Transform Location.T
+    Node: Set Local Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Switch on UDS_OcclusionShape.execute
+      Pin: Local Location (struct) Dir=In
+        -> Inverse Transform Location.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_OcclusionShape.NewEnumerator1
+      Pin: Multiplier (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Multiplier (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Multiplier (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Get Location (K2Node_VariableGet)
+      Pin: Location (struct) Dir=Out
+        -> Inverse Transform Location.Location
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Multiplier (real) Dir=In
+    Node: Get Blend Radius (K2Node_VariableGet)
+      Pin: Blend Radius (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Blend Radius.Blend Radius
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Query Blend Radius.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Local Location.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+  Graph: Enable Volume
+    Node: Enable Volume (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+    Node: Get Collision Component (K2Node_VariableGet)
+      Pin: Collision Component (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Enable Volume.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Collision Component.Collision Component
+      Pin: NewType (byte) Dir=In
+  Graph: Disable Volume
+    Node: Disable Volume (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.execute
+    Node: Get Collision Component (K2Node_VariableGet)
+      Pin: Collision Component (object) Dir=Out
+        -> Set Collision Enabled
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Collision Enabled
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Volume.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Collision Component.Collision Component
+      Pin: NewType (byte) Dir=In

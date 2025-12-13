@@ -1,0 +1,365 @@
+Blueprint: UDS_RenderTarget_State (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/UDS_RenderTarget_State.UDS_RenderTarget_State)
+  Graph: EventGraph
+  Graph: Target Extent 2D
+    Node: Target Extent 2D (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Target Extent 2D.then
+      Pin: Extent (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Size.Size
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.X
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Y (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Extent
+  Graph: Set Render Target
+    Node: Set Render Target (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Render Target.execute
+      Pin: Render Target (object) Dir=Out
+        -> Set Render Target.Render Target
+      Pin: Buffer Target (object) Dir=Out
+        -> Set Buffer Target.Buffer Target
+    Node: Set Render Target (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Render Target.then
+      Pin: then (exec) Dir=Out
+        -> Set Buffer Target.execute
+      Pin: Render Target (object) Dir=In
+        -> Set Render Target.Render Target
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Buffer Target (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Render Target.then
+      Pin: then (exec) Dir=Out
+        -> Set Resolution.execute
+      Pin: Buffer Target (object) Dir=In
+        -> Set Render Target.Buffer Target
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Render Target (K2Node_VariableGet)
+      Pin: Render Target (object) Dir=Out
+        -> Get SizeX.self
+      Pin: self (object) Dir=In
+    Node: Get SizeX (K2Node_VariableGet)
+      Pin: SizeX (int) Dir=Out
+        -> Set Resolution.Resolution
+      Pin: self (object) Dir=In
+        -> Get Render Target.Render Target
+    Node: Set Resolution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Buffer Target.then
+      Pin: then (exec) Dir=Out
+      Pin: Resolution (int) Dir=In
+        -> Get SizeX.SizeX
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Set Size
+    Node: Set Size (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Size.execute
+      Pin: Size (real) Dir=Out
+        -> Set Size.Size
+    Node: Set Size (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Size.then
+      Pin: then (exec) Dir=Out
+        -> Set Half Size.execute
+      Pin: Size (real) Dir=In
+        -> Set Size.Size
+      Pin: Output_Get (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: Set Half Size (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Size.then
+      Pin: then (exec) Dir=Out
+        -> Set Size to Res Ratio.execute
+      Pin: Half Size (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Set Size.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Half Size.Half Size
+    Node: Set Size to Res Ratio (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Half Size.then
+      Pin: then (exec) Dir=Out
+      Pin: Size to Res Ratio (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Size.Size
+      Pin: B (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Size to Res Ratio.Size to Res Ratio
+    Node: Get Resolution (K2Node_VariableGet)
+      Pin: Resolution (int) Dir=Out
+        -> To Float (Integer).InInt
+      Pin: self (object) Dir=In
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Resolution.Resolution
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.B
+  Graph: Set Location
+    Node: Set Location (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Center Location.execute
+      Pin: Center Location (struct) Dir=Out
+        -> Set Center Location.Center Location
+    Node: Set Center Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Location.then
+      Pin: then (exec) Dir=Out
+        -> Set Top Corner.execute
+      Pin: Center Location (struct) Dir=In
+        -> Set Location.Center Location
+      Pin: Output_Get (struct) Dir=Out
+        -> vector - vector.A
+      Pin: self (object) Dir=In
+    Node: Set Top Corner (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Center Location.then
+      Pin: then (exec) Dir=Out
+        -> Set Center 2D.execute
+      Pin: Top Corner (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Set Center Location.Output_Get
+      Pin: B (real) Dir=In
+        -> Get Half Size.Half Size
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Top Corner.Top Corner
+    Node: Get Half Size (K2Node_VariableGet)
+      Pin: Half Size (real) Dir=Out
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: Set Center 2D (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Top Corner.then
+      Pin: then (exec) Dir=Out
+        -> Set Top Corner 2D.execute
+      Pin: Center 2D (struct) Dir=In
+        -> To Vector2D (Vector).ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Center Location (K2Node_VariableGet)
+      Pin: Center Location (struct) Dir=Out
+        -> To Vector2D (Vector).InVector
+      Pin: self (object) Dir=In
+    Node: To Vector2D (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVector (struct) Dir=In
+        -> Get Center Location.Center Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Center 2D.Center 2D
+    Node: Set Top Corner 2D (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Center 2D.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Top Corner 2D (struct) Dir=In
+        -> To Vector2D (Vector).ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Top Corner (K2Node_VariableGet)
+      Pin: Top Corner (struct) Dir=Out
+        -> To Vector2D (Vector).InVector
+      Pin: self (object) Dir=In
+    Node: To Vector2D (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVector (struct) Dir=In
+        -> Get Top Corner.Top Corner
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Top Corner 2D.Top Corner 2D
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Top Corner 2D.then
+      Pin: Mapping Vector4 (struct) Dir=In
+        -> Make Linear Color.LinearColor
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Return Node.Mapping Vector4
+      Pin: R (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: G (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: B (real) Dir=In
+        -> Get Size.Size
+      Pin: A (real) Dir=In
+        -> Break Vector.Z
+    Node: Get Top Corner 2D (K2Node_VariableGet)
+      Pin: Top Corner 2D (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: self (object) Dir=In
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Top Corner 2D.Top Corner 2D
+      Pin: X (real) Dir=Out
+        -> Make Linear Color.R
+      Pin: Y (real) Dir=Out
+        -> Make Linear Color.G
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (real) Dir=Out
+        -> Make Linear Color.B
+      Pin: self (object) Dir=In
+    Node: Get Center Location (K2Node_VariableGet)
+      Pin: Center Location (struct) Dir=Out
+        -> Break Vector.InVec
+      Pin: self (object) Dir=In
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Center Location.Center Location
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> Make Linear Color.A
+  Graph: Canvas Brush Location
+    Node: Canvas Brush Location (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: In (struct) Dir=Out
+        -> vector2d - vector2d.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Canvas Brush Location.then
+      Pin: Out (struct) Dir=In
+        -> vector2d / float.ReturnValue
+    Node: vector2d - vector2d (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Canvas Brush Location.In
+      Pin: B (struct) Dir=In
+        -> Get Top Corner 2D.Top Corner 2D
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / float.A
+    Node: Get Top Corner 2D (K2Node_VariableGet)
+      Pin: Top Corner 2D (struct) Dir=Out
+        -> vector2d - vector2d.B
+      Pin: self (object) Dir=In
+    Node: vector2d / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector2d - vector2d.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Size to Res Ratio.Size to Res Ratio
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Out
+    Node: Get Size to Res Ratio (K2Node_VariableGet)
+      Pin: Size to Res Ratio (real) Dir=Out
+        -> vector2d / float.B
+      Pin: self (object) Dir=In
+  Graph: Canvas Brush Size
+    Node: Canvas Brush Size (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: In (struct) Dir=Out
+        -> vector2d / float.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Canvas Brush Size.then
+      Pin: Out (struct) Dir=In
+        -> vector2d / float.ReturnValue
+    Node: vector2d / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Canvas Brush Size.In
+      Pin: B (real) Dir=In
+        -> Get Size to Res Ratio.Size to Res Ratio
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.Out
+    Node: Get Size to Res Ratio (K2Node_VariableGet)
+      Pin: Size to Res Ratio (real) Dir=Out
+        -> vector2d / float.B
+      Pin: self (object) Dir=In
+  Graph: Target Needs Recenter
+    Node: Target Needs Recenter (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Control Location (struct) Dir=Out
+        -> vector - vector.A
+      Pin: Axis Mask (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Target Needs Recenter.then
+      Pin: Yes (bool) Dir=In
+        -> float > float.ReturnValue
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Target Needs Recenter.Control Location
+      Pin: B (struct) Dir=In
+        -> Get Center Location.Center Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: Get Center Location (K2Node_VariableGet)
+      Pin: Center Location (struct) Dir=Out
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Axis Mask.Axis Mask
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Get Abs Max.A
+    Node: Get Axis Mask (K2Node_VariableGet)
+      Pin: Axis Mask (struct) Dir=Out
+        -> vector * vector.B
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Vector Get Abs Max.ReturnValue
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Yes
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Size.Size
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.B
+    Node: Vector Get Abs Max (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A

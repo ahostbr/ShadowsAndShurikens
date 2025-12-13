@@ -1,0 +1,315 @@
+Blueprint: BP_Demo_Deadzone (/Game/InteractionEssentials/DemoContent/Blueprints/DemoActor/BP_Demo_Deadzone.BP_Demo_Deadzone)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: OverlappedComponent (object) Dir=Out
+        -> Cast To SkeletalMeshComponent.Object
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To Character.Object
+      Pin: OtherComp (object) Dir=Out
+        -> Cast To SkeletalMeshComponent.Object
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: CastFailed (exec) Dir=Out
+        -> Cast To SkeletalMeshComponent.execute
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsCharacter (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.self
+    Node: Start Camera Fade
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: FromAlpha (real) Dir=In
+      Pin: ToAlpha (real) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Color (struct) Dir=In
+      Pin: bShouldFadeAudio (bool) Dir=In
+      Pin: bHoldWhenFinished (bool) Dir=In
+    Node: Start Camera Fade
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: FromAlpha (real) Dir=In
+      Pin: ToAlpha (real) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Color (struct) Dir=In
+      Pin: bShouldFadeAudio (bool) Dir=In
+      Pin: bHoldWhenFinished (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Start Camera Fade
+Target is Player Camera Manager.then
+      Pin: then (exec) Dir=Out
+        -> Set Actor Location
+Target is Actor.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Refresh Pose
+Target is Third Person Character.execute
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+      Pin: NewLocation (struct) Dir=In
+        -> Find Nearest Spawn.ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Actor Location
+Target is Actor.self
+    Node: Find Nearest Spawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Actor Location
+Target is Actor.NewLocation
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.self
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set View Target with Blend
+Target is Player Controller.then
+      Pin: then (exec) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Refresh Pose
+Target is Third Person Character.self
+    Node: Refresh Pose
+Target is Third Person Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Actor Location
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.execute
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+    Node: Cast To SkeletalMeshComponent (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.CastFailed
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: CastFailed (exec) Dir=Out
+        -> Cast To SkeletalMeshComponent.execute
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OverlappedComponent
+      Pin: AsSkeletal Mesh Component (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Cast To Character.then
+        -> Cast To SkeletalMeshComponent.then
+        -> Cast To SkeletalMeshComponent.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Cast To SkeletalMeshComponent (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Cast To SkeletalMeshComponent.CastFailed
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherComp
+      Pin: AsSkeletal Mesh Component (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.self
+    Node: Set View Target with Blend
+Target is Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Refresh Pose
+Target is Third Person Character.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: NewViewTarget (object) Dir=In
+        -> Get Demo Character.ReturnValue
+      Pin: BlendTime (real) Dir=In
+      Pin: BlendFunc (byte) Dir=In
+      Pin: BlendExp (real) Dir=In
+      Pin: bLockOutgoing (bool) Dir=In
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.NewViewTarget
+    Node: Trigger
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Trigger
+Custom Event.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Start Camera Fade
+Target is Player Camera Manager.execute
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: FindNearestSpawn
+    Node: FindNearestSpawn (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get All Actors with Tag.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: ReturnValue (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+    Node: Get All Actors with Tag (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FindNearestSpawn.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Tag (name) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Distance To
+Target is Actor.self
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Actors with Tag.then
+      Pin: Array (object) Dir=In
+        -> Get All Actors with Tag.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Array Element (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Distance To
+Target is Actor.OtherActor
+        -> Add.NewItem
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Distance To
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+      Pin: OtherActor (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (real) Dir=Out
+        -> Add.NewItem
+    Node: Get Distances (K2Node_VariableGet)
+      Pin: Distances (real) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (real) Dir=In
+        -> Get Distances.Distances
+      Pin: NewItem (real) Dir=In
+        -> Get Distance To
+Target is Actor.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: InputObject (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Is Valid (exec) Dir=Out
+        -> Add.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Distances (K2Node_VariableGet)
+      Pin: Distances (real) Dir=Out
+        -> Min Of Float Array.FloatArray
+    Node: Min Of Float Array (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: FloatArray (real) Dir=In
+        -> Get Distances.Distances
+      Pin: IndexOfMinValue (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: MinValue (real) Dir=Out
+    Node: Get Actors (K2Node_VariableGet)
+      Pin: Actors (object) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Actors.Actors
+      Pin: NewItem (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Actors (K2Node_VariableGet)
+      Pin: Actors (object) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Actors.Actors
+      Pin: Dimension 1 (int) Dir=In
+        -> Min Of Float Array.IndexOfMinValue
+      Pin: Output (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self

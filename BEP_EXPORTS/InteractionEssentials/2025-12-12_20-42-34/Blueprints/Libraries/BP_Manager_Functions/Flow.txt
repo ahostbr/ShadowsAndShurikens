@@ -1,0 +1,37 @@
+Blueprint: BP_Manager_Functions (/Game/InteractionEssentials/Blueprints/Libraries/BP_Manager_Functions.BP_Manager_Functions)
+  Graph: GetInteractionManager
+    Node: GetInteractionManager (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: InteractionComponent (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: __WorldContext (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Manager (interface) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> GetInteractionManager.then
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: Manager (interface) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> GetInteractionManager.InteractionComponent
+      Pin: OutputPin (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Return Node.Manager

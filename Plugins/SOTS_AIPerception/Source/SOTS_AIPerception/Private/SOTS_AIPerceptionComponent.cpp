@@ -6,12 +6,17 @@
 #include "SOTS_AIPerceptionTypes.h"
 #include "SOTS_FXManagerSubsystem.h"
 #include "SOTS_TagAccessHelpers.h"
+#include "SOTS_GlobalStealthTypes.h"
 
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSOTS_AIPerceptionTelemetry, Log, Verbose);
 
 namespace SOTS_AIPerception_BBKeys
 {
@@ -53,6 +58,12 @@ void USOTS_AIPerceptionComponent::BeginPlay()
                 &USOTS_AIPerceptionComponent::UpdatePerception,
                 PerceptionUpdateInterval,
                 true);
+        }
+
+        if (PerceptionConfig && PerceptionConfig->ShadowCheckInterval > 0.0f)
+        {
+            const double Now = World->GetTimeSeconds();
+            NextShadowCheckTimeSeconds = Now + FMath::FRandRange(0.0f, PerceptionConfig->ShadowCheckInterval);
         }
     }
 
@@ -196,6 +207,264 @@ void USOTS_AIPerceptionComponent::ForceForgetTarget(AActor* Target)
     TargetStates.Remove(Target);
 }
 
+int32 USOTS_AIPerceptionComponent::GetNextTargetStartIndex(int32 NumTargets)
+{
+    if (NumTargets <= 0)
+    {
+        return 0;
+    }
+
+    TargetRoundRobinIndex = TargetRoundRobinIndex % NumTargets;
+    return TargetRoundRobinIndex;
+}
+
+FSOTS_TargetPointVisibilityResult USOTS_AIPerceptionComponent::EvaluateTargetVisibility_MultiPoint(
+    AActor* Target,
+    const FVector& EyeLocation,
+    ECollisionChannel TraceChannel,
+    const USOTS_AIPerceptionConfig* Config,
+    bool bDrawDebug,
+    float DebugDrawDuration)
+{
+    FSOTS_TargetPointVisibilityResult Result;
+
+    if (!Target || !Config)
+    {
+        return Result;
+    }
+
+    TArray<FVector> Points;
+    TArray<bool> IsCorePoint;
+
+    if (!GatherTargetPointWorldLocations(Target, Config->TargetPointBones, Config->MaxPointTracesPerTarget, Points, IsCorePoint))
+    {
+        return Result;
+    }
+
+    const int32 MaxPoints = FMath::Min(Config->MaxPointTracesPerTarget, Points.Num());
+
+    AActor* Owner = GetOwner();
+    if (!Owner)
+    {
+        return Result;
+    }
+
+    UWorld* World = Owner->GetWorld();
+    if (!World)
+    {
+        return Result;
+    }
+
+    for (int32 i = 0; i < MaxPoints; ++i)
+    {
+        if (!CanSpendTraces(1))
+        {
+            break;
+        }
+
+        SpendTrace();
+        Result.TestedPoints++;
+
+        const FVector End = Points[i];
+
+        FHitResult Hit;
+        FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_AIPerception_LOS), false);
+        Params.AddIgnoredActor(Owner);
+
+        const bool bHit = World->LineTraceSingleByChannel(
+            Hit,
+            EyeLocation,
+            End,
+            TraceChannel,
+            Params);
+
+        const bool bVisible = !bHit || Hit.GetActor() == Target;
+        if (bVisible)
+        {
+            Result.VisiblePoints++;
+
+            if (IsCorePoint.IsValidIndex(i) && IsCorePoint[i])
+            {
+                Result.bAnyCorePointVisible = true;
+                if (Config->bEarlyOutOnCorePointVisible)
+                {
+                    break;
+                }
+            }
+        }
+
+    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bDrawDebug && World)
+        {
+            const FColor Color = bVisible ? FColor::Green : FColor::Red;
+            DrawDebugSphere(World, End, 8.f, 8, Color, false, DebugDrawDuration);
+            DrawDebugLine(World, EyeLocation, End, Color, false, DebugDrawDuration);
+        }
+    #endif
+    }
+
+    if (Result.TestedPoints > 0)
+    {
+        Result.VisibilityFraction = static_cast<float>(Result.VisiblePoints) / static_cast<float>(Result.TestedPoints);
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDrawDebug && World && Result.TestedPoints > 0)
+    {
+        const FString Text = FString::Printf(TEXT("Vis %d/%d (%.2f)"), Result.VisiblePoints, Result.TestedPoints, Result.VisibilityFraction);
+        const FVector TextLocation = Target ? Target->GetActorLocation() + FVector(0.f, 0.f, 120.f) : EyeLocation;
+        DrawDebugString(World, TextLocation, Text, nullptr, FColor::White, DebugDrawDuration, true, 1.2f);
+    }
+#endif
+
+    return Result;
+}
+
+bool USOTS_AIPerceptionComponent::ComputeTargetLOS(
+    AActor* Target,
+    const FVector& EyeLocation,
+    ECollisionChannel TraceChannel,
+    FSOTS_TargetPointVisibilityResult& OutVisibility,
+    bool bDrawDebug,
+    float DebugDrawDuration)
+{
+    OutVisibility = FSOTS_TargetPointVisibilityResult();
+
+    if (!Target || !PerceptionConfig)
+    {
+        return false;
+    }
+
+    AActor* Owner = GetOwner();
+    if (!Owner)
+    {
+        return false;
+    }
+
+    UWorld* World = Owner->GetWorld();
+    if (!World)
+    {
+        return false;
+    }
+
+    // Legacy single-point LOS path.
+    if (!PerceptionConfig->bEnableTargetPointLOS)
+    {
+        if (!CanSpendTraces(1))
+        {
+            return false;
+        }
+
+        SpendTrace();
+
+        const FVector End = Target->GetActorLocation() + FVector(0.f, 0.f, 80.f);
+
+        FHitResult Hit;
+        FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_AIPerception_LOS), false);
+        Params.AddIgnoredActor(Owner);
+
+        const bool bHit = World->LineTraceSingleByChannel(
+            Hit,
+            EyeLocation,
+            End,
+            TraceChannel,
+            Params);
+
+        const bool bHasLOS = !bHit || Hit.GetActor() == Target;
+
+        OutVisibility.TestedPoints = 1;
+        OutVisibility.VisiblePoints = bHasLOS ? 1 : 0;
+        OutVisibility.bAnyCorePointVisible = bHasLOS;
+        OutVisibility.VisibilityFraction = bHasLOS ? 1.0f : 0.0f;
+
+    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bDrawDebug && World)
+        {
+            const FColor Color = bHasLOS ? FColor::Green : FColor::Red;
+            DrawDebugSphere(World, End, 8.f, 8, Color, false, DebugDrawDuration);
+            DrawDebugLine(World, EyeLocation, End, Color, false, DebugDrawDuration);
+        }
+    #endif
+
+        return bHasLOS;
+    }
+
+    // Multi-point LOS evaluation.
+    OutVisibility = EvaluateTargetVisibility_MultiPoint(Target, EyeLocation, TraceChannel, PerceptionConfig, bDrawDebug, DebugDrawDuration);
+
+    // Default: any visible point counts as LOS.
+    return OutVisibility.VisiblePoints > 0;
+}
+
+USkeletalMeshComponent* USOTS_AIPerceptionComponent::FindBestSkeletalMeshComponent(AActor* Target)
+{
+    if (!Target)
+    {
+        return nullptr;
+    }
+
+    if (ACharacter* Character = Cast<ACharacter>(Target))
+    {
+        if (USkeletalMeshComponent* Mesh = Character->GetMesh())
+        {
+            return Mesh;
+        }
+    }
+
+    return Target->FindComponentByClass<USkeletalMeshComponent>();
+}
+
+bool USOTS_AIPerceptionComponent::GatherTargetPointWorldLocations(
+    AActor* Target,
+    const TArray<FName>& BoneNames,
+    int32 MaxPoints,
+    TArray<FVector>& OutPoints,
+    TArray<bool>& OutIsCorePoint) const
+{
+    OutPoints.Reset();
+    OutIsCorePoint.Reset();
+
+    if (!Target || MaxPoints <= 0)
+    {
+        return false;
+    }
+
+    const bool bAllowFallback = PerceptionConfig ? PerceptionConfig->bFallbackToSinglePointWhenNoSkelMesh : false;
+
+    if (USkeletalMeshComponent* Mesh = FindBestSkeletalMeshComponent(Target))
+    {
+        for (int32 Index = 0; Index < BoneNames.Num() && OutPoints.Num() < MaxPoints; ++Index)
+        {
+            const FName BoneName = BoneNames[Index];
+            if (BoneName.IsNone())
+            {
+                continue;
+            }
+
+            const bool bHasSocket = Mesh->DoesSocketExist(BoneName);
+            const int32 BoneIndex = Mesh->GetBoneIndex(BoneName);
+
+            if (!bHasSocket && BoneIndex == INDEX_NONE)
+            {
+                continue;
+            }
+
+            OutPoints.Add(Mesh->GetSocketLocation(BoneName));
+
+            const bool bIsCorePoint = OutPoints.Num() <= 3;
+            OutIsCorePoint.Add(bIsCorePoint);
+        }
+    }
+
+    if (OutPoints.Num() == 0 && bAllowFallback)
+    {
+        OutPoints.Add(Target->GetActorLocation() + FVector(0.f, 0.f, 60.f));
+        OutIsCorePoint.Add(true);
+    }
+
+    return OutPoints.Num() > 0;
+}
+
 void USOTS_AIPerceptionComponent::ReportDetectionLevelChanged(ESOTS_PerceptionState NewState)
 {
     SetPerceptionState(NewState);
@@ -287,6 +556,8 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
         return;
     }
 
+    ResetTraceBudget();
+
     const float DeltaSeconds = PerceptionUpdateInterval;
 
     if (bPerceptionSuppressed)
@@ -315,12 +586,84 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
 
     ESOTS_PerceptionState HighestState = ESOTS_PerceptionState::Unaware;
 
-    // Update per-target perception and track the highest state.
+    // Determine evaluation order (round-robin) and cap per-update workload.
+    TArray<AActor*> OrderedTargets;
+    OrderedTargets.Reserve(WatchedActors.Num());
+    for (const TWeakObjectPtr<AActor>& TargetPtr : WatchedActors)
+    {
+        if (AActor* Target = TargetPtr.Get())
+        {
+            OrderedTargets.Add(Target);
+        }
+    }
+
+    const int32 NumTargets = OrderedTargets.Num();
+
+    // Choose the most relevant target for debug draw (highest awareness pre-update).
+    AActor* DebugDrawTarget = nullptr;
+    if (PerceptionConfig->bDebugDrawTargetPoints)
+    {
+        float BestPreAwareness = -1.0f;
+        for (auto& Pair : TargetStates)
+        {
+            const FSOTS_PerceivedTargetState& State = Pair.Value;
+            if (State.Awareness > BestPreAwareness && State.Target.IsValid())
+            {
+                BestPreAwareness = State.Awareness;
+                DebugDrawTarget = State.Target.Get();
+            }
+        }
+    }
+    const int32 StartIndex = GetNextTargetStartIndex(NumTargets);
+    const int32 MaxTargetsToEvaluate = (PerceptionConfig->MaxTargetsPerUpdate > 0)
+        ? PerceptionConfig->MaxTargetsPerUpdate
+        : NumTargets;
+
+    int32 EvaluatedTargetsCount = 0;
+
+    for (int32 Offset = 0;
+        Offset < NumTargets &&
+        (MaxTargetsToEvaluate <= 0 || EvaluatedTargetsCount < MaxTargetsToEvaluate);
+        ++Offset)
+    {
+        if (PerceptionConfig->MaxTotalTracesPerUpdate > 0 && !CanSpendTraces(1))
+        {
+            break;
+        }
+
+        const int32 Index = (StartIndex + Offset) % NumTargets;
+        AActor* Target = OrderedTargets[Index];
+        if (!Target)
+        {
+            continue;
+        }
+
+        if (FSOTS_PerceivedTargetState* State = TargetStates.Find(Target))
+        {
+            const bool bDrawThisTarget = PerceptionConfig->bDebugDrawTargetPoints && (Target == DebugDrawTarget);
+            UpdateSingleTarget(*State, DeltaSeconds, bDrawThisTarget);
+
+            if (State->LastTestedPoints > 0)
+            {
+                ++EvaluatedTargetsCount;
+            }
+
+            if (static_cast<uint8>(State->State) > static_cast<uint8>(HighestState))
+            {
+                HighestState = State->State;
+            }
+        }
+    }
+
+    if (NumTargets > 0)
+    {
+        TargetRoundRobinIndex = (TargetRoundRobinIndex + EvaluatedTargetsCount) % NumTargets;
+    }
+
+    // Ensure HighestState accounts for non-evaluated targets too.
     for (auto& Pair : TargetStates)
     {
         FSOTS_PerceivedTargetState& State = Pair.Value;
-        UpdateSingleTarget(State, DeltaSeconds);
-
         if (static_cast<uint8>(State.State) > static_cast<uint8>(HighestState))
         {
             HighestState = State.State;
@@ -354,8 +697,96 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
         // Increase suspicion when we have clear LOS to the primary target.
         if (BestState && BestState->SightScore > 0.0f)
         {
-            CurrentSuspicion += Cfg.SightSuspicionPerSecond * DeltaSeconds;
+            float VisibilityMultiplier = 1.0f;
+
+            if (PerceptionConfig->bEnableTargetPointLOS)
+            {
+                FSOTS_TargetPointVisibilityResult Vis;
+                Vis.VisibilityFraction = BestState->LastVisibilityFraction;
+                Vis.VisiblePoints = BestState->LastVisiblePoints;
+                Vis.TestedPoints = BestState->LastTestedPoints;
+                Vis.bAnyCorePointVisible = BestState->bLastAnyCoreVisible;
+
+                VisibilityMultiplier = ComputeVisibilitySuspicionMultiplier(Vis, PerceptionConfig);
+            }
+
+            CurrentSuspicion += Cfg.SightSuspicionPerSecond * DeltaSeconds * VisibilityMultiplier;
             bHasLOSOnPrimary = true;
+        }
+
+        // Optional shadow awareness (secondary bump via GSM cached shadow point; never enumerates lights).
+        if (PerceptionConfig->bEnableShadowAwareness)
+        {
+            UWorld* World = GetWorld();
+            if (World && ShouldRunShadowAwareness(PerceptionConfig, World->GetTimeSeconds()))
+            {
+                const double Now = World->GetTimeSeconds();
+                const float Interval = FMath::Max(PerceptionConfig->ShadowCheckInterval, 0.05f);
+                NextShadowCheckTimeSeconds = Now + Interval + FMath::FRandRange(0.0f, Interval * 0.25f);
+
+                if (USOTS_GlobalStealthManagerSubsystem* GSM = USOTS_GlobalStealthManagerSubsystem::Get(this))
+                {
+                    const FSOTS_ShadowCandidate Cand = GSM->GetPlayerShadowCandidate();
+
+                    if (Cand.bValid && Cand.Illumination01 >= PerceptionConfig->ShadowMinIllumination)
+                    {
+                        AActor* PlayerActor = nullptr;
+
+                        if (APlayerController* PC = World->GetFirstPlayerController())
+                        {
+                            PlayerActor = PC->GetPawn();
+                        }
+
+                        if (PlayerActor)
+                        {
+                            const float DistanceToShadow = FVector::Dist(GetOwner()->GetActorLocation(), Cand.ShadowPointWS);
+                            if (DistanceToShadow <= PerceptionConfig->ShadowAwarenessMaxDistance)
+                            {
+                                if (CanSpendTraces(1))
+                                {
+                                    SpendTrace();
+                                    ++ShadowTracesUsedThisSecond;
+
+                                    const FVector EyeLocation = GetOwner()->GetActorLocation() + FVector(0.f, 0.f, 80.f);
+
+                                    FHitResult Hit;
+                                    FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_AIPerception_ShadowLOS), false);
+                                    Params.AddIgnoredActor(GetOwner());
+                                    Params.AddIgnoredActor(PlayerActor);
+
+                                    const bool bHit = World->LineTraceSingleByChannel(
+                                        Hit,
+                                        EyeLocation,
+                                        Cand.ShadowPointWS,
+                                        ECC_Visibility,
+                                        Params);
+
+                                    const bool bShadowVisible = !bHit || Hit.ImpactPoint.Equals(Cand.ShadowPointWS, 25.f);
+
+                                    if (bShadowVisible)
+                                    {
+                                        if (FSOTS_PerceivedTargetState* PlayerState = TargetStates.Find(PlayerActor))
+                                        {
+                                            const float ShadowDelta = PerceptionConfig->ShadowSuspicionGainPerSecond * DeltaSeconds;
+                                            CurrentSuspicion += ShadowDelta;
+                                        }
+                                    }
+
+                                #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+                                    if (PerceptionConfig->bDebugDrawShadowAwareness)
+                                    {
+                                        const FColor Color = bShadowVisible ? FColor::Green : FColor::Red;
+                                        const float DebugDuration = FMath::Max(PerceptionConfig->ShadowCheckInterval, 0.01f);
+                                        DrawDebugLine(World, EyeLocation, Cand.ShadowPointWS, Color, false, DebugDuration);
+                                        DrawDebugPoint(World, Cand.ShadowPointWS, 10.f, Color, false, DebugDuration);
+                                    }
+                                #endif
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Passive decay each update.
@@ -449,6 +880,8 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
             }
         }
     }
+
+    LogTelemetrySnapshot(NumTargets, EvaluatedTargetsCount, MaxTargetsToEvaluate, bHasLOSOnPrimary, BestState, SuspicionNormalized);
 
     // Optional debug correlation between local suspicion and GSM aggregate.
     if (bDebugSuspicion)
@@ -550,7 +983,7 @@ void USOTS_AIPerceptionComponent::HandlePerceptionStateChanged(
     PreviousState = NewState;
 }
 
-void USOTS_AIPerceptionComponent::UpdateSingleTarget(FSOTS_PerceivedTargetState& TargetState, float DeltaSeconds)
+void USOTS_AIPerceptionComponent::UpdateSingleTarget(FSOTS_PerceivedTargetState& TargetState, float DeltaSeconds, bool bDebugDrawTargetPoints)
 {
     AActor* Owner = GetOwner();
     AActor* Target = TargetState.Target.Get();
@@ -575,6 +1008,7 @@ void USOTS_AIPerceptionComponent::UpdateSingleTarget(FSOTS_PerceivedTargetState&
     bool bHasLOS = false;
     bool bInCoreFOV = false;
     bool bInPeripheralFOV = false;
+    FSOTS_TargetPointVisibilityResult Visibility;
 
     if (bInSightRange && Distance > KINDA_SMALL_NUMBER)
     {
@@ -589,30 +1023,16 @@ void USOTS_AIPerceptionComponent::UpdateSingleTarget(FSOTS_PerceivedTargetState&
         bInCoreFOV = AngleDegrees <= HalfCoreFOV;
         bInPeripheralFOV = !bInCoreFOV && AngleDegrees <= HalfPeripheralFOV;
 
-        // Simple LOS trace.
-        FHitResult Hit;
-        FCollisionQueryParams Params(SCENE_QUERY_STAT(SOTS_AIPerception_LOS), false);
-        Params.AddIgnoredActor(Owner);
-
-        const FVector Start = OwnerLocation + FVector(0.f, 0.f, 80.f);
-        const FVector End = TargetLocation + FVector(0.f, 0.f, 80.f);
-
-        const bool bHit = Owner->GetWorld()->LineTraceSingleByChannel(
-            Hit,
-            Start,
-            End,
-            ECC_Visibility,
-            Params);
-
-        bHasLOS = !bHit || Hit.GetActor() == Target;
-
-    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        // Optional debug.
-        //DrawDebugLine(Owner->GetWorld(), Start, End, bHasLOS ? FColor::Green : FColor::Red, false, PerceptionUpdateInterval);
-    #endif
+        const FVector EyeLocation = OwnerLocation + FVector(0.f, 0.f, 80.f);
+        const float DebugDuration = PerceptionUpdateInterval;
+        bHasLOS = ComputeTargetLOS(Target, EyeLocation, ECC_Visibility, Visibility, bDebugDrawTargetPoints, DebugDuration);
     }
 
     TargetState.SightScore = bHasLOS ? 1.0f : 0.0f;
+    TargetState.LastVisibilityFraction = Visibility.VisibilityFraction;
+    TargetState.LastVisiblePoints = Visibility.VisiblePoints;
+    TargetState.LastTestedPoints = Visibility.TestedPoints;
+    TargetState.bLastAnyCoreVisible = Visibility.bAnyCorePointVisible;
 
     // Awareness integration.
     float DetectionSpeed = 0.0f;
@@ -889,4 +1309,174 @@ void USOTS_AIPerceptionComponent::SetPerceptionState(ESOTS_PerceptionState NewSt
     NotifyGlobalStealthManager(OldState, NewState);
     HandlePerceptionStateChanged(OldState, NewState);
     OnPerceptionStateChanged.Broadcast(CurrentState);
+}
+
+bool USOTS_AIPerceptionComponent::CanSpendTraces(int32 Count) const
+{
+    if (Count <= 0)
+    {
+        return true;
+    }
+
+    const int32 MaxTraces = (PerceptionConfig && PerceptionConfig->MaxTotalTracesPerUpdate > 0)
+        ? PerceptionConfig->MaxTotalTracesPerUpdate
+        : INT32_MAX;
+
+    return (TracesUsedThisUpdate + Count) <= MaxTraces;
+}
+
+void USOTS_AIPerceptionComponent::LogTelemetrySnapshot(
+    int32 NumTargets,
+    int32 EvaluatedTargetsCount,
+    int32 MaxTargetsToEvaluate,
+    bool bHasLOSOnPrimary,
+    const FSOTS_PerceivedTargetState* BestState,
+    float SuspicionNormalized)
+{
+    if (!PerceptionConfig || !PerceptionConfig->bEnablePerceptionTelemetry)
+    {
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    const double Now = World->GetTimeSeconds();
+    if (Now < NextTelemetryTimeSeconds)
+    {
+        return;
+    }
+
+    const float Interval = FMath::Max(PerceptionConfig->PerceptionTelemetryIntervalSeconds, 0.05f);
+    NextTelemetryTimeSeconds = Now + Interval + FMath::FRandRange(0.0f, Interval * 0.25f);
+
+    const FString MaxTracesStr = (PerceptionConfig->MaxTotalTracesPerUpdate > 0)
+        ? FString::FromInt(PerceptionConfig->MaxTotalTracesPerUpdate)
+        : TEXT("inf");
+
+    const int32 MaxTargetsResolved = (MaxTargetsToEvaluate > 0)
+        ? MaxTargetsToEvaluate
+        : NumTargets;
+
+    const FString MaxTargetsStr = (MaxTargetsResolved > 0)
+        ? FString::FromInt(MaxTargetsResolved)
+        : TEXT("inf");
+
+    FString Message = FString::Printf(
+        TEXT("[AIPerc/Telem] Guard=%s Susp=%.2f Targets=%d/%s Traces=%d/%s LOS=%s"),
+        *GetNameSafe(GetOwner()),
+        SuspicionNormalized,
+        EvaluatedTargetsCount,
+        *MaxTargetsStr,
+        TracesUsedThisUpdate,
+        *MaxTracesStr,
+        bHasLOSOnPrimary ? TEXT("Y") : TEXT("N"));
+
+    if (PerceptionConfig->bTelemetryIncludeTargetPoints && BestState && BestState->LastTestedPoints > 0)
+    {
+        Message += FString::Printf(
+            TEXT(" TPVis=%.2f(%d/%d core=%s)"),
+            BestState->LastVisibilityFraction,
+            BestState->LastVisiblePoints,
+            BestState->LastTestedPoints,
+            BestState->bLastAnyCoreVisible ? TEXT("Y") : TEXT("N"));
+    }
+
+    if (PerceptionConfig->bTelemetryIncludeShadow)
+    {
+        const FString MaxShadowStr = (PerceptionConfig->MaxShadowTracesPerSecondPerGuard > 0)
+            ? FString::FromInt(PerceptionConfig->MaxShadowTracesPerSecondPerGuard)
+            : TEXT("inf");
+
+        const float TimeToNextShadow = (NextShadowCheckTimeSeconds > 0.0)
+            ? FMath::Max(0.0f, static_cast<float>(NextShadowCheckTimeSeconds - Now))
+            : 0.0f;
+
+        Message += FString::Printf(
+            TEXT(" Shadow=%d/%s Next=%.2fs"),
+            ShadowTracesUsedThisSecond,
+            *MaxShadowStr,
+            TimeToNextShadow);
+    }
+
+    UE_LOG(LogSOTS_AIPerceptionTelemetry, Verbose, TEXT("%s"), *Message);
+}
+
+bool USOTS_AIPerceptionComponent::ShouldRunShadowAwareness(const USOTS_AIPerceptionConfig* Config, double NowSeconds)
+{
+    if (!Config || !Config->bEnableShadowAwareness)
+    {
+        return false;
+    }
+
+    if (Config->ShadowCheckInterval <= 0.0f)
+    {
+        return false;
+    }
+
+    const int32 SecondStamp = FMath::FloorToInt(NowSeconds);
+    if (SecondStamp != ShadowTraceSecondStamp)
+    {
+        ShadowTraceSecondStamp = SecondStamp;
+        ShadowTracesUsedThisSecond = 0;
+    }
+
+    if (Config->MaxShadowTracesPerSecondPerGuard > 0 &&
+        ShadowTracesUsedThisSecond >= Config->MaxShadowTracesPerSecondPerGuard)
+    {
+        return false;
+    }
+
+    if (NowSeconds < NextShadowCheckTimeSeconds)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+float USOTS_AIPerceptionComponent::ComputeVisibilitySuspicionMultiplier(
+    const FSOTS_TargetPointVisibilityResult& Vis,
+    const USOTS_AIPerceptionConfig* Config) const
+{
+    if (!Config || !Config->bScaleSuspicionByVisibility)
+    {
+        return 1.0f;
+    }
+
+    if (Vis.TestedPoints <= 0 || Vis.VisiblePoints <= 0)
+    {
+        return 0.0f;
+    }
+
+    if (Vis.VisibilityFraction < Config->MinVisibilityFractionForSuspicion)
+    {
+        return 0.0f;
+    }
+
+    // Core visibility shortcut to max.
+    if (Config->bCorePointGivesFullMultiplier && Vis.bAnyCorePointVisible)
+    {
+        return Config->VisibilitySuspicionMaxMultiplier;
+    }
+
+    const float Denominator = 1.0f - Config->MinVisibilityFractionForSuspicion;
+    const float T = (Denominator > KINDA_SMALL_NUMBER)
+        ? FMath::Clamp((Vis.VisibilityFraction - Config->MinVisibilityFractionForSuspicion) / Denominator, 0.0f, 1.0f)
+        : 1.0f;
+
+    float Multiplier = FMath::Lerp(
+        Config->VisibilitySuspicionMinMultiplier,
+        Config->VisibilitySuspicionMaxMultiplier,
+        T);
+
+    if (!Config->bCorePointGivesFullMultiplier && Vis.bAnyCorePointVisible)
+    {
+        Multiplier = FMath::Max(Multiplier, Config->CorePointVisibleMultiplier);
+    }
+
+    return Multiplier;
 }

@@ -1,0 +1,537 @@
+Blueprint: ThirdPersonCharacter (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/DemoCharacter/ThirdPersonCharacter.ThirdPersonCharacter)
+  Graph: EventGraph
+    Node: Jump (EdGraphNode_Comment)
+    Node: Jump
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Space Bar.Pressed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Mouse input (EdGraphNode_Comment)
+    Node: Movement input (EdGraphNode_Comment)
+    Node: Stop Jumping
+Target is Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Space Bar.Released
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Left Shift (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set bIsRunning.execute
+      Pin: Released (exec) Dir=Out
+        -> Set bIsRunning.execute
+      Pin: Key (struct) Dir=Out
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set DefaultWalkspeed.execute
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Get MaxWalkSpeed.self
+      Pin: self (object) Dir=In
+    Node: Get MaxWalkSpeed (K2Node_VariableGet)
+      Pin: MaxWalkSpeed (real) Dir=Out
+        -> Set DefaultWalkspeed.DefaultWalkspeed
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Set DefaultWalkspeed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: DefaultWalkspeed (real) Dir=In
+        -> Get MaxWalkSpeed.MaxWalkSpeed
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Run (EdGraphNode_Comment)
+    Node: Set bIsRunning (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Left Shift.Pressed
+      Pin: then (exec) Dir=Out
+      Pin: bIsRunning (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set bIsRunning (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Left Shift.Released
+      Pin: then (exec) Dir=Out
+      Pin: bIsRunning (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: HandleSmoothRun
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Move Fwd
+Target is Third Person Character.execute
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: InterpSpeed (real) Dir=In
+      Pin: AdditionalRunSpeed (real) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> HandleSmoothRun
+Collapsed Graph.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Beginplay (EdGraphNode_Comment)
+    Node: Tick (EdGraphNode_Comment)
+    Node: W (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.execute
+      Pin: Released (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.InputPin2
+      Pin: Key (struct) Dir=Out
+    Node: S (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.execute2
+      Pin: Released (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.InputPin2
+      Pin: Key (struct) Dir=Out
+    Node: A (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.execute3
+      Pin: Released (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.InputPin
+      Pin: Key (struct) Dir=Out
+    Node: D (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.execute4
+      Pin: Released (exec) Dir=Out
+        -> MovementInput
+Collapsed Graph.InputPin
+      Pin: Key (struct) Dir=Out
+    Node: Move Fwd
+Target is Third Person Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> HandleSmoothRun
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+        -> Move Rgt
+Target is Third Person Character.execute
+      Pin: self (object) Dir=In
+    Node: Move Rgt
+Target is Third Person Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Move Fwd
+Target is Third Person Character.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Mouse X (K2Node_InputAxisKeyEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> MouseInput
+Collapsed Graph.YawIn
+      Pin: AxisValue (real) Dir=Out
+        -> MouseInput
+Collapsed Graph.YawAxis
+    Node: Mouse Y (K2Node_InputAxisKeyEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> MouseInput
+Collapsed Graph.PitchIn
+      Pin: AxisValue (real) Dir=Out
+        -> MouseInput
+Collapsed Graph.PitchAxis
+    Node: Space Bar (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Jump
+Target is Character.execute
+      Pin: Released (exec) Dir=Out
+        -> Stop Jumping
+Target is Character.execute
+      Pin: Key (struct) Dir=Out
+    Node: MouseInput
+Collapsed Graph (K2Node_Composite)
+      Pin: YawIn (exec) Dir=In
+        -> Mouse X.then
+      Pin: YawAxis (real) Dir=In
+        -> Mouse X.AxisValue
+      Pin: PitchIn (exec) Dir=In
+        -> Mouse Y.then
+      Pin: PitchAxis (real) Dir=In
+        -> Mouse Y.AxisValue
+      Pin: MouseSensitivity (real) Dir=In
+    Node: MovementInput
+Collapsed Graph (K2Node_Composite)
+      Pin: execute (exec) Dir=In
+        -> W.Pressed
+      Pin: InputPin2 (exec) Dir=In
+        -> W.Released
+        -> S.Released
+      Pin: execute2 (exec) Dir=In
+        -> S.Pressed
+      Pin: execute3 (exec) Dir=In
+        -> A.Pressed
+      Pin: InputPin (exec) Dir=In
+        -> A.Released
+        -> D.Released
+      Pin: execute4 (exec) Dir=In
+        -> D.Pressed
+      Pin: StopDuration (real) Dir=In
+      Pin: InterpSpeed (real) Dir=In
+      Pin: InterpToConstant (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set DefaultWalkspeed.then
+      Pin: then (exec) Dir=Out
+        -> Create HUDFX Blackscreen
+Target is BPi HUDManager V2.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Create HUDFX Blackscreen
+Target is BPi HUDManager V2.self
+        -> Remove HUDFX Black Screen
+Target is BPi HUDManager V2.self
+    Node: Left Mouse Button (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Branch.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Get HitFeedback (K2Node_VariableGet)
+      Pin: HitFeedback (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Right Mouse Button.Pressed
+      Pin: Condition (bool) Dir=In
+        -> Get HitFeedback.HitFeedback
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Hit Feedback
+Target is BPi HUDManager V2.self
+        -> V1 Add Hit Feedback
+Target is BPi HUDManager V2.self
+    Node: Hit Feedback
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Time (real) Dir=In
+      Pin: Crosshair_Color (struct) Dir=In
+      Pin: Feedback_Type (byte) Dir=In
+        -> Get FeedbackType.FeedbackType
+      Pin: Feedback_Color (struct) Dir=In
+      Pin: Feedback_Speed (real) Dir=In
+      Pin: Feedback_Strength (real) Dir=In
+    Node: Right Mouse Button (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Branch.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Get Recoil (K2Node_VariableGet)
+      Pin: Recoil (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Left Mouse Button.Pressed
+      Pin: Condition (bool) Dir=In
+        -> Get Recoil.Recoil
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Recoil
+Target is BPi HUDManager V2.self
+        -> V1 Recoil
+Target is BPi HUDManager V2.self
+    Node: Recoil
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Speed (real) Dir=In
+      Pin: Strength (real) Dir=In
+    Node: Get FeedbackType (K2Node_VariableGet)
+      Pin: FeedbackType (byte) Dir=Out
+        -> Hit Feedback
+Target is BPi HUDManager V2.Feedback_Type
+      Pin: self (object) Dir=In
+    Node: Q (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Switch Task
+Target is BPi HUDManager V2.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Switch Task
+Target is BPi HUDManager V2.self
+    Node: Switch Task
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Q.Pressed
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: CurrentTaskObject (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.MarkerObject
+      Pin: CurrentTaskInfo (struct) Dir=Out
+        -> Break S Task.S_Task
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove All World Markers
+Target is BPi HUDManager V2.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Switch Task
+Target is BPi HUDManager V2.then
+      Pin: InputObject (object) Dir=In
+        -> Switch Task
+Target is BPi HUDManager V2.CurrentTaskObject
+      Pin: Is Valid (exec) Dir=Out
+        -> Remove All World Markers
+Target is BPi HUDManager V2.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Remove All World Markers
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.self
+    Node: Add or Update World Marker
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove All World Markers
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: MarkerObject (object) Dir=In
+        -> Switch Task
+Target is BPi HUDManager V2.CurrentTaskObject
+      Pin: Marker_Info (struct) Dir=In
+        -> Make S World Marker Info.S_WorldMarkerInfo
+    Node: Make S World Marker Info (K2Node_MakeStruct)
+      Pin: S_WorldMarkerInfo (struct) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.Marker_Info
+      Pin: MarkerIcon_15_D00B235B4F53C924E07C5CA0D807B077 (object) Dir=In
+      Pin: MarkerScale_16_52926CC042A5D48E88C4BC8849CBD196 (real) Dir=In
+      Pin: MarkerIconColor_17_184D6DBF43C3B285678FC2850769E97A (struct) Dir=In
+      Pin: UseMarkerArrow_8_E7A679F14DDB2700E545A69989092AEB (bool) Dir=In
+      Pin: MarkerName_20_6A4B72324CCBB5E8EAD63D895E9610FA (text) Dir=In
+        -> Break S Task.ObjectName_23_8198AFFE4B09F234492F5DBDEC0E84C4
+      Pin: MarkerNameFontInfo_31_630737AF460A682C89D3BFAD25347D1A (struct) Dir=In
+      Pin: ShowDistance_24_9F30D4D544214FAA2CAED59F9D94D2C3 (bool) Dir=In
+      Pin: DistanceOnlyonEdges_35_4B4BD1844F3A27E961A470B4B3A0EAF5 (bool) Dir=In
+      Pin: DistanceInfo_14_E6571AA74F9FF1AAD4F7C1B6874D878A (struct) Dir=In
+      Pin: DistanceTextFontInfo_38_AC74DA864AB65762FCC89B9A83CA07C3 (struct) Dir=In
+      Pin: MarkerVisibilityRadius_44_73E71EE44B2F108333C7B48551E7278A (int) Dir=In
+      Pin: MarkerVisibilitySmoothTransition_45_E7D999B54E44574D459959BAE6EBF983 (bool) Dir=In
+      Pin: PingMarker_47_DD6DCDEA43B509B57665F6893AE31520 (bool) Dir=In
+      Pin: ScreenPersistance_50_6FBF0CDA4E6FFD1B903E05B9B2B73ABA (bool) Dir=In
+    Node: Break S Task (K2Node_BreakStruct)
+      Pin: S_Task (struct) Dir=In
+        -> Switch Task
+Target is BPi HUDManager V2.CurrentTaskInfo
+      Pin: Object_9_2AD500E044B38652439E41A80DD12E92 (object) Dir=Out
+      Pin: ObjectName_23_8198AFFE4B09F234492F5DBDEC0E84C4 (text) Dir=Out
+        -> Make S World Marker Info.MarkerName_20_6A4B72324CCBB5E8EAD63D895E9610FA
+      Pin: Description_10_70BBE9B7458FBD98929EC2895FB86399 (text) Dir=Out
+      Pin: DescriptionFontInfo_12_639AF84C4CAAEFE8F38A828A29BF5882 (struct) Dir=Out
+      Pin: IsOptionalTask_19_320CD4A6493582F475356CA1EBD79086 (bool) Dir=Out
+    Node: Get V1 (K2Node_VariableGet)
+      Pin: V1 (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get V1.V1
+      Pin: then (exec) Dir=Out
+        -> V1 Add Hit Feedback
+Target is BPi HUDManager V2.execute
+      Pin: else (exec) Dir=Out
+        -> Hit Feedback
+Target is BPi HUDManager V2.execute
+    Node: Get V1 (K2Node_VariableGet)
+      Pin: V1 (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Get V1.V1
+      Pin: then (exec) Dir=Out
+        -> V1 Recoil
+Target is BPi HUDManager V2.execute
+      Pin: else (exec) Dir=Out
+        -> Recoil
+Target is BPi HUDManager V2.execute
+    Node: V1 Recoil
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: V1 Add Hit Feedback
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Type (byte) Dir=In
+        -> Get V1_FeedbackType.V1_FeedbackType
+      Pin: HitColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+    Node: Get V1_FeedbackType (K2Node_VariableGet)
+      Pin: V1_FeedbackType (byte) Dir=Out
+        -> V1 Add Hit Feedback
+Target is BPi HUDManager V2.Type
+      Pin: self (object) Dir=In
+    Node: Crosshair Tests (EdGraphNode_Comment)
+    Node: Crosshair Tests (EdGraphNode_Comment)
+    Node: Mission Notification / Switch Task (EdGraphNode_Comment)
+    Node: Create HUDFX Blackscreen
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: FadeDuration (real) Dir=In
+    Node: Remove HUDFX Black Screen
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: FadeDuration (real) Dir=In
+      Pin: ForceRemove (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create HUDFX Blackscreen
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> Remove HUDFX Black Screen
+Target is BPi HUDManager V2.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Escape (K2Node_InputKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Retriggerable Delay.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+    Node: Quit Game (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Retriggerable Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: SpecificPlayer (object) Dir=In
+      Pin: QuitPreference (byte) Dir=In
+      Pin: bIgnorePlatformRestrictions (bool) Dir=In
+    Node: Retriggerable Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Escape.Pressed
+      Pin: then (exec) Dir=Out
+        -> Quit Game.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Quit (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: GetMarker
+    Node: GetMarker (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Output (object) Dir=In
+        -> GET.Output
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Return Node.Output
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> GetMarker.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> GET.Array
+  Graph: GetMarker2
+    Node: GetMarker2 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Output (object) Dir=In
+        -> GET.Output
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Return Node.Output
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> GetMarker2.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> GET.Array

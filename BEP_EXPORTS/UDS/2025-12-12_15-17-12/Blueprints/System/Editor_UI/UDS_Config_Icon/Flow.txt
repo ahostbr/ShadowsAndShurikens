@@ -1,0 +1,458 @@
+Blueprint: UDS_Config_Icon (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/UDS_Config_Icon.UDS_Config_Icon)
+  Graph: EventGraph
+    Node: Get NameText (K2Node_VariableGet)
+      Pin: NameText (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Create Dynamic Material Instance.execute
+      Pin: self (object) Dir=In
+        -> Get NameText.NameText
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get Config (K2Node_VariableGet)
+      Pin: Config (object) Dir=Out
+        -> Get Name.self
+      Pin: self (object) Dir=In
+    Node: Get Name (K2Node_VariableGet)
+      Pin: Name (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+        -> Get Config.Config
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Name.Name
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get Config (K2Node_VariableGet)
+      Pin: Config (object) Dir=Out
+        -> Get Thumbnail.self
+      Pin: self (object) Dir=In
+    Node: Get Thumbnail (K2Node_VariableGet)
+      Pin: Thumbnail (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+        -> Get Config.Config
+    Node: On Hovered (Button_88) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Animation Forward
+Target is User Widget.execute
+    Node: On Unhovered (Button_88) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Play Animation Reverse
+Target is User Widget.execute
+    Node: Get Hover_Square (K2Node_VariableGet)
+      Pin: Hover_Square (object) Dir=Out
+        -> Play Animation Forward
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Get Hover_Square (K2Node_VariableGet)
+      Pin: Hover_Square (object) Dir=Out
+        -> Play Animation Reverse
+Target is User Widget.InAnimation
+      Pin: self (object) Dir=In
+    Node: Play Animation Reverse
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Unhovered (Button_88).then
+      Pin: then (exec) Dir=Out
+        -> Set Hovered.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get Hover_Square.Hover_Square
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Play Animation Forward
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Hovered (Button_88).then
+      Pin: then (exec) Dir=Out
+        -> Set Hovered.execute
+      Pin: self (object) Dir=In
+      Pin: InAnimation (object) Dir=In
+        -> Get Hover_Square.Hover_Square
+      Pin: PlaybackSpeed (real) Dir=In
+      Pin: bRestoreState (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Select
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Deselect
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get Selection_Highlight (K2Node_VariableGet)
+      Pin: Selection_Highlight (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Select
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Selection_Highlight.Selection_Highlight
+      Pin: InVisibility (byte) Dir=In
+    Node: Get Selection_Highlight (K2Node_VariableGet)
+      Pin: Selection_Highlight (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Deselect
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Selection_Highlight.Selection_Highlight
+      Pin: InVisibility (byte) Dir=In
+    Node: On Clicked (Button_88) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Select Config
+Target is UDS_Configuration Manager.execute
+    Node: Get Config Manager (K2Node_VariableGet)
+      Pin: Config Manager (object) Dir=Out
+        -> Select Config
+Target is UDS_Configuration Manager.self
+      Pin: self (object) Dir=In
+    Node: Select Config
+Target is UDS_Configuration Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Button_88).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Config Manager.Config Manager
+      Pin: Config Icon (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Select Config
+Target is UDS_Configuration Manager.Config Icon
+    Node: Create Dynamic Material Instance (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon MID.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Parent (object) Dir=In
+      Pin: OptionalName (name) Dir=In
+      Pin: CreationFlags (byte) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Icon MID.Icon MID
+    Node: Set Icon MID (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Dynamic Material Instance.then
+      Pin: then (exec) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Icon MID (object) Dir=In
+        -> Create Dynamic Material Instance.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Texture Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon MID.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Material
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Set Icon MID.Output_Get
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (object) Dir=In
+        -> Get Thumbnail.Thumbnail
+    Node: Get Icon MID (K2Node_VariableGet)
+      Pin: Icon MID (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.Material
+      Pin: self (object) Dir=In
+    Node: Get Image_41 (K2Node_VariableGet)
+      Pin: Image_41 (object) Dir=Out
+        -> Set Brush from Material
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush from Material
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Texture Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Image_41.Image_41
+      Pin: Material (object) Dir=In
+        -> Get Icon MID.Icon MID
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+    Node: Set Hovered (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Animation Forward
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Time.execute
+      Pin: Hovered (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Hovered (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Play Animation Reverse
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: Hovered (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Icon MID (K2Node_VariableGet)
+      Pin: Icon MID (object) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Scalar Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Pan Position.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Icon MID.Icon MID
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Pan Position.Pan Position
+    Node: Get Hovered (K2Node_VariableGet)
+      Pin: Hovered (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Get Hovered.Hovered
+      Pin: then (exec) Dir=Out
+        -> Set Time.execute
+      Pin: else (exec) Dir=Out
+        -> Set Pan Position.execute
+    Node: Set Pan Position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Time.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Pan Position (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Time (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Hovered.then
+      Pin: then (exec) Dir=Out
+        -> Set Tool Tip Text
+Target is Widget.execute
+      Pin: Time (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Time (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Pan Position.execute
+      Pin: Time (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> Sin (Radians).A
+      Pin: self (object) Dir=In
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Time.Time
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Time.Time
+    Node: Get Time (K2Node_VariableGet)
+      Pin: Time (real) Dir=Out
+        -> float + float.B
+      Pin: self (object) Dir=In
+    Node: Sin (Radians) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Set Time.Output_Get
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Sin (Radians).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Pan Position.Pan Position
+    Node: Get Pan Position (K2Node_VariableGet)
+      Pin: Pan Position (real) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.Value
+      Pin: self (object) Dir=In
+    Node: Set Pan Position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Pan Position (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Pan Position.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Scalar Parameter Value
+Target is Material Instance Dynamic.execute
+    Node: Get Pan Position (K2Node_VariableGet)
+      Pin: Pan Position (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> FInterp To.DeltaTime
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Pan Position.Pan Position
+      Pin: Target (real) Dir=In
+      Pin: DeltaTime (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Pan Position.Pan Position
+    Node: Start Double Click Timer
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Double Click Ready.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Double Click Ready.then
+      Pin: then (exec) Dir=Out
+        -> Set Double Click Ready.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Set Double Click Ready (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Start Double Click Timer
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: Double Click Ready (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Double Click Ready (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: Double Click Ready (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Double Click Ready (K2Node_VariableGet)
+      Pin: Double Click Ready (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Select Config
+Target is UDS_Configuration Manager.then
+      Pin: Condition (bool) Dir=In
+        -> Get Double Click Ready.Double Click Ready
+      Pin: then (exec) Dir=Out
+        -> Apply Selected Config
+Target is UDS_Configuration Manager.execute
+      Pin: else (exec) Dir=Out
+        -> Start Double Click Timer
+Target is UDS Config Icon.execute
+    Node: Get Config Manager (K2Node_VariableGet)
+      Pin: Config Manager (object) Dir=Out
+        -> Apply Selected Config
+Target is UDS_Configuration Manager.self
+      Pin: self (object) Dir=In
+    Node: Apply Selected Config
+Target is UDS_Configuration Manager (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Config Manager.Config Manager
+    Node: Start Double Click Timer
+Target is UDS Config Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Button_88 (K2Node_VariableGet)
+      Pin: Button_88 (object) Dir=Out
+        -> Set Tool Tip Text
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Tool Tip Text
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Time.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Button_88.Button_88
+      Pin: InToolTipText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get Config (K2Node_VariableGet)
+      Pin: Config (object) Dir=Out
+        -> Get Object Path String.Object
+      Pin: self (object) Dir=In
+    Node: Get Object Path String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Config.Config
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Object Path String.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Set Tool Tip Text
+Target is Widget.InToolTipText

@@ -15,13 +15,10 @@ TOOLBOX_VERSION = "SOTS DevTools Toolbox v1.6"
 
 
 # ---------------------------------------------------------------------------
-# Core helpers
+# Helpers
 # ---------------------------------------------------------------------------
 
 def get_tools_root() -> Path:
-    """
-    Returns the DevTools/python directory (where this hub script lives).
-    """
     return Path(__file__).resolve().parent
 
 
@@ -62,129 +59,79 @@ def run_pack(pack_path: str) -> int:
 
     pack = Path(pack_path).resolve()
     cmd: list[str] = [sys.executable, str(script), "--source", str(pack)]
-    print(f"[INFO] Running pack via write_files: {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False, cwd=str(get_tools_root()))
-    return result.returncode
+    print(f"[INFO] Running pack: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+    return 0
+
+
+def list_pipelines() -> None:
+    """
+    List available pipeline definitions.
+
+    Sources:
+    - DevToolsPipelines.json
+    - DevTools/python/pipelines/*.json
+    """
+    tools_root = get_tools_root()
+    root_json = tools_root.parent / "DevToolsPipelines.json"
+    pipe_dir = tools_root / "pipelines"
+
+    print("")
+    print("=== Available pipelines ===")
+    print("")
+
+    def _print_one(name: str, payload: dict) -> None:
+        desc = payload.get("description", "").strip()
+        print(f"- {name}")
+        if desc:
+            print(f"    {desc}")
+
+    # Root DevToolsPipelines.json
+    if root_json.exists():
+        try:
+            payload = json.loads(root_json.read_text(encoding="utf-8", errors="replace"))
+            for name, item in payload.get("pipelines", {}).items():
+                _print_one(name, item)
+        except Exception as exc:
+            print(f"[WARN] Failed to read {root_json}: {exc}")
+
+    # pipelines/*.json
+    if pipe_dir.exists():
+        for p in sorted(pipe_dir.glob("*.json")):
+            try:
+                item = json.loads(p.read_text(encoding="utf-8", errors="replace"))
+                name = item.get("name", p.stem)
+                _print_one(name, item)
+            except Exception as exc:
+                print(f"[WARN] Failed to read {p}: {exc}")
+
+    print("")
 
 
 def run_pipeline_by_name(pipeline_name: str) -> int:
     """
-    Forward a named pipeline into the existing pipeline hub helpers.
+    Run a named pipeline via sots_pipeline_hub.py.
 
-    Preference order:
-      1) Use run_bpgen_build.main if the hub exposes it (job-id style pipelines).
-      2) If the hub exposes a callable run_pipeline(name), invoke it.
-      3) Fallback: launch sots_pipeline_hub.py (interactive) to keep behavior
-         unchanged when no direct entrypoint exists.
+    This keeps the hub as the single entry point and preserves its logging.
     """
-    try:
-        import sots_pipeline_hub as pipeline_hub  # type: ignore
-    except Exception as exc:  # pragma: no cover - defensive
-        print(f"[ERROR] Could not import sots_pipeline_hub: {exc}")
+    tools_root = get_tools_root()
+    hub_script = tools_root / "sots_pipeline_hub.py"
+    if not hub_script.exists():
+        print(f"[ERROR] Missing pipeline hub script: {hub_script}")
         return 1
 
-    # Prefer the existing BPGen job runner pattern if available.
-    run_bpgen_build = getattr(pipeline_hub, "run_bpgen_build", None)
-    if run_bpgen_build is not None:
-        main_fn = getattr(run_bpgen_build, "main", None)
-        if callable(main_fn):
-            print(f"[INFO] Running pipeline via run_bpgen_build: job-id={pipeline_name}")
-            try:
-                return int(main_fn(["--job-id", pipeline_name]))
-            except Exception as exc:  # pragma: no cover - runtime guard
-                print(f"[ERROR] run_bpgen_build raised: {exc}")
-
-    # If the hub exposes a direct hook, use it.
-    run_pipeline_fn = getattr(pipeline_hub, "run_pipeline", None)
-    if callable(run_pipeline_fn):
-        print(f"[INFO] Running pipeline via sots_pipeline_hub.run_pipeline('{pipeline_name}')")
-        try:
-            return int(run_pipeline_fn(pipeline_name))
-        except Exception as exc:  # pragma: no cover - runtime guard
-            print(f"[ERROR] run_pipeline threw: {exc}")
-
-    # Fallback: launch the interactive hub so behavior stays consistent.
-    hub_script = get_tools_root() / "sots_pipeline_hub.py"
-    if hub_script.exists():
-        cmd = [sys.executable, str(hub_script)]
-        print(
-            "[WARN] No direct pipeline handler exposed; launching pipeline hub interactively."
-        )
-        result = subprocess.run(cmd, check=False, cwd=str(get_tools_root()))
-        return result.returncode
-
-    print("[ERROR] sots_pipeline_hub.py not found; cannot run pipeline.")
-    return 1
-
-
-def list_pipelines() -> list[str]:
-    """List available pipeline names from DevToolsPipelines.json and pipelines/*.json."""
-    dev_root = get_tools_root().parent
-    candidates: list[str] = []
-
-    cfg_path = dev_root / "DevToolsPipelines.json"
-    if cfg_path.exists():
-        try:
-            with cfg_path.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-            pipelines = data.get("pipelines") if isinstance(data, dict) else None
-            if isinstance(pipelines, list):
-                for p in pipelines:
-                    if isinstance(p, str):
-                        candidates.append(p.strip())
-        except Exception as exc:  # pragma: no cover - defensive
-            print(f"[WARN] Failed to read DevToolsPipelines.json: {exc}")
-
-    pipelines_dir = dev_root / "pipelines"
-    if pipelines_dir.exists():
-        for file in sorted(pipelines_dir.glob("*.json")):
-            candidates.append(file.stem)
-
-    # dedupe preserving order
-    seen = set()
-    result: list[str] = []
-    for name in candidates:
-        if not name:
-            continue
-        if name in seen:
-            continue
-        seen.add(name)
-        result.append(name)
-
-    for name in result:
-        print(name)
-    return result
+    cmd: list[str] = [sys.executable, str(hub_script), pipeline_name]
+    print(f"[INFO] Running pipeline: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+    return 0
 
 
 # ---------------------------------------------------------------------------
-# Tool launchers (no menu logic here, just wiring)
+# Core maintenance (Category 1)
 # ---------------------------------------------------------------------------
-
-def run_open_unreal_project() -> None:
-    """
-    Launch the project's .uproject in Unreal Editor (Windows only).
-    """
-    run_script("run_unreal_project.py")
-
 
 def run_clean_binaries_intermediate() -> None:
     run_script("clean_binaries_intermediate.py")
-
-
-def run_scan_fsots_structs() -> None:
-    run_script("scan_fsots_structs.py")
-
-
-def run_architecture_lint() -> None:
-    run_script("architecture_lint.py")
-
-
-def run_mass_regex_edit() -> None:
-    run_script("mass_regex_edit.py")
-
-
-def run_inject_license_header() -> None:
-    run_script("inject_license_header.py")
 
 
 def run_analyze_build_log() -> None:
@@ -195,88 +142,57 @@ def run_summarize_crash_logs() -> None:
     run_script("summarize_crash_logs.py")
 
 
-def run_package_plugin() -> None:
-    run_script("package_plugin.py")
-
-
-def run_plugin_audit() -> None:
-    run_script("plugin_audit.py")
-
-
-def run_compare_plugin_zips() -> None:
-    run_script("compare_plugin_zips.py")
-
-
 def run_scan_todos() -> None:
     run_script("scan_todos.py")
 
 
-def run_project_health_report() -> None:
-    run_script("project_health_report.py")
+# ---------------------------------------------------------------------------
+# Architecture / naming (Category 2)
+# ---------------------------------------------------------------------------
+
+def run_fsots_duplicate_report() -> None:
+    run_script("fsots_duplicate_report.py")
+
+
+def run_architecture_lint() -> None:
+    run_script("architecture_lint.py")
+
+
+# ---------------------------------------------------------------------------
+# Plugins / dependency health (Category 3)
+# ---------------------------------------------------------------------------
+
+def run_plugin_dependency_health() -> None:
+    run_script("plugin_dependency_health.py")
 
 
 def run_ensure_plugin_modules() -> None:
     run_script("ensure_plugin_modules.py")
 
 
-def run_build_and_analyze() -> None:
-    run_script("run_build_and_analyze.py")
-
-
-def run_fsots_duplicate_report() -> None:
-    run_script("fsots_duplicate_report.py")
-
-
-def run_plugin_dependency_health() -> None:
-    run_script("plugin_dependency_health.py")
-
-
-def run_kem_execution_report() -> None:
-    try:
-        from kem_execution_report import main as kem_execution_report_main
-    except Exception as exc:
-        print(f"[WARN] Failed to import kem_execution_report: {exc}. Falling back to subprocess.")
-        run_script("kem_execution_report.py")
-        return
-
-    kem_execution_report_main()
-
-
-def run_kem_callsites_report() -> None:
-    run_script("kem_callsites_report.py")
-
-
-def run_kem_decision_log_analyzer() -> None:
-    run_script("kem_decision_log_analyzer.py")
-
-
-def run_kem_coverage_report() -> None:
-    run_script("kem_coverage_report.py")
-
-
-def run_kem_anchor_report() -> None:
-    run_script("kem_anchor_report.py")
-
-
-def run_kem_omnitrace_tuning_report() -> None:
-    run_script("kem_omnitrace_tuning_report.py")
-
-
-def run_kem_telemetry_report() -> None:
-    run_script("kem_telemetry_report.py")
-
-
-def run_kem_coverage_matrix_report() -> None:
-    run_script("kem_coverage_matrix_report.py")
-
-
 def run_fix_plugin_dependencies() -> None:
     run_script("fix_plugin_dependencies.py")
 
 
+def run_compare_plugin_zips() -> None:
+    run_script("compare_plugin_zips.py")
+
+
+# ---------------------------------------------------------------------------
+# Batch editing / licensing / logs (Category 4)
+# ---------------------------------------------------------------------------
+
+def run_mass_regex_edit() -> None:
+    run_script("mass_regex_edit.py")
+
+
+def run_inject_license_header() -> None:
+    run_script("inject_license_header.py")
+
+
 def run_apply_json_pack() -> None:
     """
-    Apply a JSON DevTools pack (file edits) using apply_json_pack.py.
+    Apply a JSON pack (older format) using apply_json_pack.py.
     """
     run_script("apply_json_pack.py")
 
@@ -291,79 +207,67 @@ def run_quick_search() -> None:
     run_script("quick_search.py")
 
 
-def run_bep_parkour_snippets_report(zip_path: str | None = None, output_dir: str | None = None) -> None:
+def run_directory_index(
+    root: str | None = None,
+    out_dir: str | None = None,
+    max_depth: int | None = None,
+    folders_only: bool = False,
+    exclude: str | None = None,
+    chunk_lines: int | None = None,
+) -> None:
+    """
+    Generate an LLM-friendly directory index (tree) text file.
+
+    This is a thin wrapper that calls DevTools/python/generate_directory_index.py.
+    """
     extra_args: list[str] = []
-    if zip_path:
-        extra_args.extend(["--zip-path", zip_path])
-    if output_dir:
-        extra_args.extend(["--output-dir", output_dir])
-    print("[INFO] Starting BEP parkour snippet inventory...")
-    run_script("bep_parkour_snippet_report.py", extra_args)
+    if root:
+        extra_args.extend(["--root", root])
+    if out_dir:
+        extra_args.extend(["--out-dir", out_dir])
+    if max_depth is not None:
+        extra_args.extend(["--max-depth", str(max_depth)])
+    if folders_only:
+        extra_args.append("--folders-only")
+    if exclude:
+        extra_args.extend(["--exclude", exclude])
+    if chunk_lines is not None:
+        extra_args.extend(["--chunk-lines", str(chunk_lines)])
 
-
-def run_parkour_parity_sweep(snippets_json: str | None = None, plugin_root: str | None = None) -> None:
-    extra_args: list[str] = []
-    if snippets_json:
-        extra_args.extend(["--snippets-json", snippets_json])
-    if plugin_root:
-        extra_args.extend(["--plugin-root", plugin_root])
-    print("[INFO] Starting parkour parity sweep...")
-    run_script("parkour_parity_sweep.py", extra_args)
-
-
-def run_delete_target() -> None:
-    """Run the delete_target tool to remove a file or folder by path."""
-    run_script("delete_target.py")
+    run_script("generate_directory_index.py", extra_args)
 
 
 # ---------------------------------------------------------------------------
-# ChatGPT inbox manual gateway helpers
+# KEM Tools (Category 6)
 # ---------------------------------------------------------------------------
 
-def get_chatgpt_inbox_dir() -> Path:
-    """
-    Returns the DevTools/python/chatgpt_inbox directory.
-    """
-    return get_tools_root() / "chatgpt_inbox"
+def run_kem_execution_report() -> None:
+    run_script("kem_execution_report.py")
 
 
-def list_chatgpt_inbox(limit: int = 10) -> list[Path]:
-    """
-    List the latest ChatGPT inbox files (for debugging/manual runs).
-    Returns the list of Path objects, newest first.
-    """
-    inbox = get_chatgpt_inbox_dir()
-    if not inbox.exists():
-        print(f"[WARN] chatgpt_inbox directory does not exist yet: {inbox}")
-        return []
+def run_kem_telemetry_report() -> None:
+    run_script("kem_telemetry_report.py")
 
-    files = sorted(
-        inbox.glob("*.txt"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    if not files:
-        print("[WARN] No .txt files found in chatgpt_inbox.")
-        return []
 
-    files_to_show = files[:limit] if limit > 0 else files
+def run_kem_coverage_matrix_report() -> None:
+    run_script("kem_coverage_matrix_report.py")
 
-    print(f"[INFO] Latest {len(files_to_show)} ChatGPT inbox file(s):")
-    for idx, p in enumerate(files_to_show, start=1):
-        mtime = datetime.datetime.fromtimestamp(p.stat().st_mtime)
-        print(f"  {idx:2d}) {p.name}  (modified {mtime})")
 
-    return files
+# ---------------------------------------------------------------------------
+# ChatGPT Inbox manual bridge (Category 4 helper)
+# ---------------------------------------------------------------------------
 
 def run_apply_latest_chatgpt_inbox() -> None:
     """
-    Interactive ChatGPT inbox browser:
+    Manually apply the newest file in DevTools/python/chatgpt_inbox by dispatching it
+    through the same dispatcher used by the Send2SOTS bridge server.
 
-    - Starts at DevTools/python/chatgpt_inbox.
-    - Lets you navigate directories and select a .txt file.
-    - When you select a file, it calls sots_chatgpt_dispatcher.dispatch_file(file, force=True).
+    This keeps Copilot/Buddy aligned with your "manual gateway" rule: DevTools runs are
+    manual by default, never assumed.
     """
-    root = get_chatgpt_inbox_dir()
+    tools_root = get_tools_root()
+    root = tools_root / "chatgpt_inbox"
+
     if not root.exists():
         print(f"[WARN] chatgpt_inbox directory does not exist yet: {root}")
         return
@@ -379,267 +283,35 @@ def run_apply_latest_chatgpt_inbox() -> None:
         return
 
     current = root
+    newest: Path | None = None
 
-    while True:
-        print("")
-        print("=== ChatGPT inbox browser ===")
-        try:
-            rel = "." if current == root else str(current.relative_to(root))
-        except ValueError:
-            # Safety: if something odd happens with paths, fall back to absolute.
-            rel = str(current)
-        print(f" Root : {root}")
-        print(f" Here : {rel}")
-        print("")
+    # Find newest file anywhere under chatgpt_inbox
+    for p in current.rglob("*"):
+        if p.is_file():
+            if newest is None or p.stat().st_mtime > newest.stat().st_mtime:
+                newest = p
 
-        # Collect dirs/files in this directory.
-        dirs = sorted([p for p in current.iterdir() if p.is_dir()])
-        files = sorted(
-            [p for p in current.iterdir() if p.is_file() and p.suffix.lower() == ".txt"]
-        )
-
-        if not dirs and not files:
-            print("  (No subdirectories or .txt files in this directory.)")
-
-        index = 1
-        if dirs:
-            print("  Directories:")
-            for d in dirs:
-                print(f"   {index}) [D] {d.name}")
-                index += 1
-        if files:
-            print("  Files:")
-            for f in files:
-                print(f"   {index}) [F] {f.name}")
-                index += 1
-
-        print("")
-        print("  Commands:")
-        if current != root:
-            print("   b) Up one level")
-        if files:
-            print("   a) Execute ALL .txt files in this directory (sorted)")
-        print("   r) Refresh")
-        print("   q) Back to Batch menu")
-        print("")
-
-        choice = input("Inbox> ").strip()
-        if not choice:
-            continue
-
-        lower = choice.lower()
-        if lower in {"q", "0", "exit"}:
-            print("[INFO] Leaving ChatGPT inbox browser.")
-            return
-
-        if lower == "r":
-            continue
-
-        if lower == "a":
-            # Execute all .txt files in this directory, in the same sorted order
-            # they are displayed above.
-            if not files:
-                print("[WARN] No .txt files to execute in this directory.")
-                continue
-
-            print("")
-            print(f"[INFO] Execute ALL {len(files)} .txt file(s) in this directory (sorted by name):")
-            for idx, f in enumerate(files, 1):
-                try:
-                    rel_file = f.relative_to(root)
-                except ValueError:
-                    rel_file = f
-                print(f"   {idx:02d}) {rel_file}")
-
-            confirm_all = input(
-                "Run dispatcher on ALL of these files? [y/N]: "
-            ).strip().lower()
-            if confirm_all not in {"y", "yes"}:
-                print("[INFO] Cancelled 'execute all'. Returning to browser.")
-                continue
-
-            for idx, f in enumerate(files, 1):
-                try:
-                    rel_file = f.relative_to(root)
-                except ValueError:
-                    rel_file = f
-                print("")
-                print(
-                    f"[INFO] ({idx}/{len(files)}) "
-                    f"Applying ChatGPT inbox message via dispatcher: {f}"
-                )
-                try:
-                    dispatch_file(f, force=True)
-                    print("[INFO]   -> Completed.")
-                except Exception as exc2:
-                    print(
-                        f"[ERROR] Dispatcher raised an exception for {rel_file}: {exc2}"
-                    )
-
-            print("[INFO] Execute-all run completed. Returning to browser.")
-            continue
-
-        if lower == "b":
-            if current != root:
-                current = current.parent
-            else:
-                print("[WARN] Already at inbox root.")
-            continue
-
-        # Numeric selection.
-        try:
-            sel = int(choice)
-        except ValueError:
-            print("[WARN] Please enter a number, or one of b/a/r/q.")
-            continue
-
-        total = len(dirs) + len(files)
-        if total == 0:
-            print("[WARN] Nothing to select in this directory.")
-            continue
-        if sel < 1 or sel > total:
-            print(f"[WARN] Selection out of range (1-{total}).")
-            continue
-
-        if sel <= len(dirs):
-            # Go into a subdirectory.
-            chosen_dir = dirs[sel - 1]
-            current = chosen_dir
-            continue
-
-        # File selection.
-        chosen_file = files[sel - len(dirs) - 1]
-        try:
-            rel_file = chosen_file.relative_to(root)
-        except ValueError:
-            rel_file = chosen_file
-
-        print("")
-        print(f"[INFO] Selected file: {rel_file}")
-        confirm = input("Run dispatcher on this file? [y/N]: ").strip().lower()
-        if confirm not in {"y", "yes"}:
-            print("[INFO] Cancelled. Returning to browser.")
-            continue
-
-        print(f"[INFO] Applying ChatGPT inbox message via dispatcher: {chosen_file}")
-        try:
-            dispatch_file(chosen_file, force=True)
-            print("[INFO] Manual dispatcher call completed (force=True).")
-        except Exception as exc2:
-            print(f"[ERROR] Dispatcher raised an exception: {exc2}")
-
-        # After running once, return to the Batch menu. User can invoke again if needed.
+    if newest is None:
+        print(f"[INFO] No files found under: {root}")
         return
 
-
-def run_bpgen_packs() -> int:
-    """
-    Discover BPGen snippet packs under DevTools/bpgen_snippets/packs.
-    """
-    try:
-        import sots_bpgen_snippets as bpgen_snippets  # type: ignore
-    except Exception as exc:
-        print(f"[ERROR] Could not import sots_bpgen_snippets: {exc}")
-        return 1
-
-    packs = bpgen_snippets.discover_packs()
+    ts = datetime.datetime.fromtimestamp(newest.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
     print("")
-    print(f"Found {len(packs)} BPGen snippet pack(s):")
-    for pack in packs:
-        pack_name = pack.get("pack_name", "<unknown>")
-        version = pack.get("version", "unknown")
-        snippets = pack.get("snippets", [])
-        snippet_count = len(snippets) if isinstance(snippets, list) else "?"
-        path = pack.get("path", "<no path>")
-        print(f"- {pack_name} (version {version}, snippets: {snippet_count}) at {path}")
-    return 0
-
-
-def run_bpgen_run_pack(pack_name: str, ue_cmd: str | None) -> int:
-    """
-    Resolve and run a BPGen snippet pack via Unreal commandlet.
-    """
-    try:
-        import sots_bpgen_snippets as bpgen_snippets  # type: ignore
-        import sots_bpgen_runner as bpgen_runner  # type: ignore
-    except Exception as exc:
-        print(f"[ERROR] Could not import bpgen helpers: {exc}")
-        return 1
-
-    packs = bpgen_snippets.discover_packs()
-    target = None
-    for pack in packs:
-        if pack.get("pack_name") == pack_name:
-            target = pack
-            break
-
-    if not target:
-        print(f"[ERROR] Pack '{pack_name}' not found. Available packs: {[p.get('pack_name') for p in packs]}")
-        return 1
-
-    log_dir = bpgen_snippets.get_devtools_root() / "bpgen_snippets" / "logs"
-    result = bpgen_runner.run_bpgen_snippet_pack(
-        pack_path=target.get("path", ""),
-        ue_editor_cmd=ue_cmd,
-        log_dir=log_dir,
-    )
-
-    results = result.get("results", [])
-    succeeded = len([r for r in results if r.get("return_code") == 0])
-    failed = len(results) - succeeded
-
+    print("=== ChatGPT Inbox Manual Gateway ===")
+    print(f"Selected newest file:\n  {newest}\n  (mtime: {ts})")
     print("")
-    print(f"BPGen snippet pack '{target.get('pack_name', pack_name)}' finished:")
-    print(f"- {succeeded} snippet(s) succeeded")
-    print(f"- {failed} snippet(s) failed (see logs in {log_dir})")
-    return 0 if failed == 0 else 1
+    ans = input("Dispatch this file now? (y/N): ").strip().lower()
+    if ans not in {"y", "yes"}:
+        print("[INFO] Cancelled.")
+        return
 
-
-def run_bpgen_coverage() -> int:
-    """
-    Print coverage report from snippet_index.json.
-    """
-    try:
-        import sots_bpgen_coverage as coverage  # type: ignore
-    except Exception as exc:
-        print(f"[ERROR] Could not import sots_bpgen_coverage: {exc}")
-        return 1
-
-    data = coverage.load_snippet_index()
-    coverage.print_coverage_report(data)
-    return 0
-
+    # Dispatch (the dispatcher handles file type inference, pack applying, etc)
+    dispatch_file(newest, force=False)
+    print("[INFO] Dispatch complete.")
 
 
 # ---------------------------------------------------------------------------
-# Main menu (categories)
-# ---------------------------------------------------------------------------
-
-def print_main_menu() -> None:
-    tools_root = get_tools_root()
-    print("")
-    print("====================================================")
-    print("            SOTS DevTools Python Hub")
-    print("----------------------------------------------------")
-    print(f" Version : {TOOLBOX_VERSION}")
-    print(f" Tools   : {tools_root}")
-    print("====================================================")
-    print("")
-    print("  Main Categories")
-    print("  ----------------")
-    print("  1) Core maintenance")
-    print("  2) FSOTS / architecture")
-    print("  3) Plugins & dependencies")
-    print("  4) Batch editing / licensing / logs")
-    print("  5) High-level project checks")
-    print("  6) KEM tools")
-    print("")
-    print("  0) Exit")
-    print("")
-
-
-# ---------------------------------------------------------------------------
-# Category 1: Core maintenance
+# Interactive menu UI
 # ---------------------------------------------------------------------------
 
 def category_core_maintenance() -> None:
@@ -647,10 +319,10 @@ def category_core_maintenance() -> None:
         print("")
         print("=== Category 1: Core maintenance ===")
         print("")
-        print("  1) Clean build caches (+ regen VS project files)")
-        print("  2) Run configured build + analyze")
-        print("  3) Open project in Unreal Editor")
-        print("  4) Delete file/folder by path")
+        print("  1) Clean Binaries/Intermediate (safe)")
+        print("  2) Analyze last build log")
+        print("  3) Summarize crash logs")
+        print("  4) Scan TODO / FIXME comments")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -660,40 +332,33 @@ def category_core_maintenance() -> None:
         if choice == "1":
             run_clean_binaries_intermediate()
         elif choice == "2":
-            run_build_and_analyze()
+            run_analyze_build_log()
         elif choice == "3":
-            run_open_unreal_project()
+            run_summarize_crash_logs()
         elif choice == "4":
-            run_delete_target()
+            run_scan_todos()
         elif choice in {"0", "b", "B"}:
             break
         else:
             print("[WARN] Unknown option, please try again.")
 
 
-# ---------------------------------------------------------------------------
-# Category 2: FSOTS / architecture
-# ---------------------------------------------------------------------------
-
 def category_fsots_architecture() -> None:
     while True:
         print("")
-        print("=== Category 2: FSOTS / architecture ===")
+        print("=== Category 2: Architecture / naming ===")
         print("")
-        print("  1) Scan FSOTS_* structs (simple summary)")
-        print("  2) FSOTS duplicate report")
-        print("  3) Architecture lint (laws/config)")
+        print("  1) FSOTS duplicate report")
+        print("  2) Architecture lint")
         print("")
         print("  0) Back to main menu")
         print("")
 
-        choice = input("FSOTS> ").strip()
+        choice = input("Arch> ").strip()
 
         if choice == "1":
-            run_scan_fsots_structs()
-        elif choice == "2":
             run_fsots_duplicate_report()
-        elif choice == "3":
+        elif choice == "2":
             run_architecture_lint()
         elif choice in {"0", "b", "B"}:
             break
@@ -701,20 +366,15 @@ def category_fsots_architecture() -> None:
             print("[WARN] Unknown option, please try again.")
 
 
-# ---------------------------------------------------------------------------
-# Category 3: Plugins & dependencies
-# ---------------------------------------------------------------------------
-
 def category_plugins_dependencies() -> None:
     while True:
         print("")
-        print("=== Category 3: Plugins & dependencies ===")
+        print("=== Category 3: Plugins / dependencies ===")
         print("")
-        print("  1) Plugin audit")
-        print("  2) Plugin dependency health")
-        print("  3) Fix plugin dependencies")
+        print("  1) Plugin dependency health")
+        print("  2) Ensure plugin modules")
+        print("  3) Fix plugin dependencies (guided)")
         print("  4) Compare plugin zips")
-        print("  5) Package plugin to zip")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -722,24 +382,18 @@ def category_plugins_dependencies() -> None:
         choice = input("Plugins> ").strip()
 
         if choice == "1":
-            run_plugin_audit()
-        elif choice == "2":
             run_plugin_dependency_health()
+        elif choice == "2":
+            run_ensure_plugin_modules()
         elif choice == "3":
             run_fix_plugin_dependencies()
         elif choice == "4":
             run_compare_plugin_zips()
-        elif choice == "5":
-            run_package_plugin()
         elif choice in {"0", "b", "B"}:
             break
         else:
             print("[WARN] Unknown option, please try again.")
 
-
-# ---------------------------------------------------------------------------
-# Category 4: Batch editing / licensing / logs
-# ---------------------------------------------------------------------------
 
 def category_batch_editing() -> None:
     while True:
@@ -755,7 +409,8 @@ def category_batch_editing() -> None:
         print("  7) Ad-hoc regex search (pattern + optional literal)")
         print("  8) [KEM] Execution & Position Report")
         print("  9) Quick search (literal + optional regex)")
-        print(" 10) Browse ChatGPT inbox (manual SOTS bridge)")
+        print(" 10) Generate directory index (LLM_DIRECTORY_INDEX.txt)")
+        print(" 11) Browse ChatGPT inbox (manual dispatcher)")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -781,6 +436,8 @@ def category_batch_editing() -> None:
         elif choice == "9":
             run_quick_search()
         elif choice == "10":
+            run_directory_index()
+        elif choice == "11":
             run_apply_latest_chatgpt_inbox()
         elif choice in {"0", "b", "B"}:
             break
@@ -788,24 +445,13 @@ def category_batch_editing() -> None:
             print("[WARN] Unknown option, please try again.")
 
 
-# ---------------------------------------------------------------------------
-# Category 5: High-level project checks
-# ---------------------------------------------------------------------------
-
 def category_high_level_checks() -> None:
     while True:
         print("")
         print("=== Category 5: High-level project checks ===")
         print("")
-        print("  1) Project health report")
-        print("  2) Ensure plugin modules exist")
-        print("  3) (Reserved for future tool)")
-        print("  4) [KEM] Execution & Position Report")
-        print("  5) [KEM] Callsites Report")
-        print("  6) [KEM] Decision Log Analyzer")
-        print("  7) [KEM] Coverage Report (from logs)")
-        print("  8) [KEM] Anchor Report (source & maps)")
-        print("  9) [KEM] OmniTrace Tuning Report")
+        print("  1) List available pipelines")
+        print("  2) Run pipeline by name")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -813,23 +459,11 @@ def category_high_level_checks() -> None:
         choice = input("Checks> ").strip()
 
         if choice == "1":
-            run_project_health_report()
+            list_pipelines()
         elif choice == "2":
-            run_ensure_plugin_modules()
-        elif choice == "3":
-            print("[INFO] Reserved slot. No tool wired yet.")
-        elif choice == "4":
-            run_kem_execution_report()
-        elif choice == "5":
-            run_kem_callsites_report()
-        elif choice == "6":
-            run_kem_decision_log_analyzer()
-        elif choice == "7":
-            run_kem_coverage_report()
-        elif choice == "8":
-            run_kem_anchor_report()
-        elif choice == "9":
-            run_kem_omnitrace_tuning_report()
+            name = input("Pipeline name> ").strip()
+            if name:
+                run_pipeline_by_name(name)
         elif choice in {"0", "b", "B"}:
             break
         else:
@@ -839,7 +473,7 @@ def category_high_level_checks() -> None:
 def category_kem_tools() -> None:
     while True:
         print("")
-        print("=== Category 6: KEM tools ===")
+        print("=== Category 6: KillExecutionManager (KEM) tools ===")
         print("")
         print("  1) [KEM] Execution & Position Report")
         print("  2) [KEM] Telemetry Report")
@@ -871,7 +505,20 @@ def run_interactive_menu() -> None:
     print(f"[INFO] SOTS DevTools root: {tools_root}")
 
     while True:
-        print_main_menu()
+        print("")
+        print("=== SOTS DevTools Hub ===")
+        print(f"Version: {TOOLBOX_VERSION}")
+        print("")
+        print("  1) Core maintenance")
+        print("  2) Architecture / naming")
+        print("  3) Plugins / dependencies")
+        print("  4) Batch editing / licensing / logs")
+        print("  5) High-level project checks")
+        print("  6) KillExecutionManager (KEM) tools")
+        print("")
+        print("  0) Exit")
+        print("")
+
         choice = input("Main> ").strip()
 
         if choice == "1":
@@ -902,13 +549,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     pack_parser = subparsers.add_parser(
         "run_pack",
-        help="Apply a ChatGPT pack via write_files.py",
+        help="Run a write_files pack (saved in chatgpt_inbox or anywhere)",
     )
-    pack_parser.add_argument("pack_path", help="Full path to the pack .txt file")
+    pack_parser.add_argument("pack_path", help="Path to the prompt .txt file")
 
     pipeline_parser = subparsers.add_parser(
         "run_pipeline",
-        help="Run a named pipeline via the pipeline hub",
+        help="Run a named pipeline from DevToolsPipelines.json / pipelines/*.json",
     )
     pipeline_parser.add_argument("pipeline_name", help="Name/ID of the pipeline to run")
 
@@ -922,6 +569,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Launch the inbox TUI browser (manual dispatcher)",
     )
 
+    dir_parser = subparsers.add_parser(
+        "dir-index",
+        help="Generate an LLM-friendly directory index (tree) text file",
+    )
+    dir_parser.add_argument("--root", dest="root", help="Root directory to index (defaults to project root)")
+    dir_parser.add_argument("--out-dir", dest="out_dir", help="Output directory for index files (defaults to DevTools/reports/directory_index)")
+    dir_parser.add_argument("--max-depth", dest="max_depth", type=int, help="Maximum recursion depth (default: 10)")
+    dir_parser.add_argument("--folders-only", dest="folders_only", action="store_true", help="Only list folders, not files")
+    dir_parser.add_argument("--exclude", dest="exclude", help="Comma-separated exclude tokens (dir names or relative path prefixes)")
+    dir_parser.add_argument("--chunk-lines", dest="chunk_lines", type=int, help="If set, split output into part files of N lines")
+
     subparsers.add_parser(
         "bpgen_packs",
         help="List BPGen snippet packs (DevTools/bpgen_snippets/packs)",
@@ -931,24 +589,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "bpgen_run_pack",
         help="Run all snippets in a BPGen pack via SOTS_BPGenBuildCommandlet",
     )
-    bpgen_run_parser.add_argument("pack_name", help="Pack name to run (from pack_meta.json)")
-    bpgen_run_parser.add_argument(
-        "--ue",
-        dest="ue_cmd",
-        help="Path to UnrealEditor-Cmd.exe (overrides default placeholder)",
-    )
+    bpgen_run_parser.add_argument("pack_name", help="Pack folder name under DevTools/bpgen_snippets/packs")
+    bpgen_run_parser.add_argument("--ue-cmd", dest="ue_cmd", default="", help="Optional UE commandlet args")
 
     subparsers.add_parser(
         "bpgen_coverage",
-        help="Print BPGen snippet node coverage report from snippet_index.json",
+        help="Run BPGen snippet coverage report",
     )
 
-    snippets_parser = subparsers.add_parser(
-        "bep-parkour-snippets-report",
-        help="Generate BEP parkour snippet inventory (JSON + Markdown)",
+    # existing subcommands preserved below (BEP reports, parity sweeps, audits, etc.)
+    report_parser = subparsers.add_parser(
+        "bep-parkour-snippets",
+        help="Inventory BEP-exported parkour snippets and write a JSON report",
     )
-    snippets_parser.add_argument("--zip-path", dest="zip_path", help="Path to BEP_EXPORT_CGF_ParkourComp.zip (or extracted folder)")
-    snippets_parser.add_argument("--output-dir", dest="output_dir", help="Output directory for reports (defaults to DevTools/reports)")
+    report_parser.add_argument("--zip-path", dest="zip_path", help="Path to the BEP export zip")
+    report_parser.add_argument("--output-dir", dest="output_dir", help="Output directory for reports (defaults to DevTools/reports)")
 
     parity_parser = subparsers.add_parser(
         "parkour-parity-sweep",
@@ -957,17 +612,22 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parity_parser.add_argument("--snippets-json", dest="snippets_json", help="Path to bep_parkour_snippets.json")
     parity_parser.add_argument("--plugin-root", dest="plugin_root", help="Root path to SOTS_Parkour plugin")
 
+    subparsers.add_parser(
+        "aip_audit",
+        help="Run the AIPerception config audit",
+    )
+
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if not args:
-        run_interactive_menu()
-        return 0
-
     parser = build_arg_parser()
     parsed = parser.parse_args(args)
+
+    if parsed.command is None:
+        run_interactive_menu()
+        return 0
 
     if parsed.command == "run_pack":
         return run_pack(parsed.pack_path)
@@ -979,17 +639,31 @@ def main(argv: list[str] | None = None) -> int:
     if parsed.command == "browse_inbox":
         run_apply_latest_chatgpt_inbox()
         return 0
+    if parsed.command == "dir-index":
+        run_directory_index(
+            parsed.root,
+            parsed.out_dir,
+            parsed.max_depth,
+            parsed.folders_only,
+            parsed.exclude,
+            parsed.chunk_lines,
+        )
+        return 0
     if parsed.command == "bpgen_packs":
         return run_bpgen_packs()
     if parsed.command == "bpgen_run_pack":
         return run_bpgen_run_pack(parsed.pack_name, parsed.ue_cmd)
     if parsed.command == "bpgen_coverage":
         return run_bpgen_coverage()
-    if parsed.command == "bep-parkour-snippets-report":
+
+    if parsed.command == "bep-parkour-snippets":
         run_bep_parkour_snippets_report(parsed.zip_path, parsed.output_dir)
         return 0
     if parsed.command == "parkour-parity-sweep":
         run_parkour_parity_sweep(parsed.snippets_json, parsed.plugin_root)
+        return 0
+    if parsed.command == "aip_audit":
+        run_aip_audit()
         return 0
 
     # If we somehow get here, fall back to interactive menu to preserve behavior.

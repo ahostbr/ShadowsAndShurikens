@@ -1,0 +1,143 @@
+Blueprint: UDS_Climate_Preset (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/System/UDS_Climate_Preset.UDS_Climate_Preset)
+  Graph: EventGraph
+  Graph: Return Temperature Range in Scale
+    Node: Return Temperature Range in Scale (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Scale (byte) Dir=Out
+      Pin: Season (int) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Return Temperature Range in Scale.then
+      Pin: Low (real) Dir=In
+        -> Select.ReturnValue
+      Pin: High (real) Dir=In
+        -> Select.ReturnValue
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Average High Temp (C).Spring Average High Temp (C)
+      Pin: [1] (real) Dir=In
+        -> Get Summer Average High Temp (C).Summer Average High Temp (C)
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Average High Temp (C).Autumn Average High Temp (C)
+      Pin: [3] (real) Dir=In
+        -> Get Winter Average High Temp (C).Winter Average High Temp (C)
+    Node: Get Spring Average High Temp (C) (K2Node_VariableGet)
+      Pin: Spring Average High Temp (C) (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: Get Summer Average High Temp (C) (K2Node_VariableGet)
+      Pin: Summer Average High Temp (C) (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+    Node: Get Autumn Average High Temp (C) (K2Node_VariableGet)
+      Pin: Autumn Average High Temp (C) (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+    Node: Get Winter Average High Temp (C) (K2Node_VariableGet)
+      Pin: Winter Average High Temp (C) (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> float * float.A
+        -> Select.NewEnumerator1
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> GET.Output
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.NewEnumerator0
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: NewEnumerator1 (real) Dir=In
+        -> GET.Output
+      Pin: Index (byte) Dir=In
+        -> Get Scale.Scale
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.High
+    Node: Get Scale (K2Node_VariableGet)
+      Pin: Scale (byte) Dir=Out
+        -> Select.Index
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (real) Dir=Out
+        -> GET.Array
+      Pin: [0] (real) Dir=In
+        -> Get Spring Average Low Temp (C).Spring Average Low Temp (C)
+      Pin: [1] (real) Dir=In
+        -> Get Summer Average Low Temp (C).Summer Average Low Temp (C)
+      Pin: [2] (real) Dir=In
+        -> Get Autumn Average Low Temp (C).Autumn Average Low Temp (C)
+      Pin: [3] (real) Dir=In
+        -> Get Winter Average Low Temp (C).Winter Average Low Temp (C)
+    Node: Get Spring Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Spring Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: Get Summer Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Summer Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+    Node: Get Autumn Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Autumn Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+    Node: Get Winter Average Low Temp (C) (K2Node_VariableGet)
+      Pin: Winter Average Low Temp (C) (real) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Make Array.Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Season.Season
+      Pin: Output (real) Dir=Out
+        -> float * float.A
+        -> Select.NewEnumerator1
+    Node: Get Season (K2Node_VariableGet)
+      Pin: Season (int) Dir=Out
+        -> GET.Dimension 1
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> GET.Output
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: float + float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Select.NewEnumerator0
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator0 (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: NewEnumerator1 (real) Dir=In
+        -> GET.Output
+      Pin: Index (byte) Dir=In
+        -> Get Scale.Scale
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Low
+    Node: Get Scale (K2Node_VariableGet)
+      Pin: Scale (byte) Dir=Out
+        -> Select.Index

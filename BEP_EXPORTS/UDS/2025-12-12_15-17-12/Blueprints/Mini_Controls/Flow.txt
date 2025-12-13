@@ -1,0 +1,626 @@
+Blueprint: Mini_Controls (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Mini_Controls.Mini_Controls)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Acquire Actors
+Target is UDS Mini Controls.execute
+    Node: Acquire Actors
+Target is UDS Mini Controls (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: self (object) Dir=In
+    Node: On Property Changed (Weather) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Manual Weather State
+Target is UDS Mini Controls.execute
+      Pin: PropertyName (name) Dir=Out
+    Node: Update Manual Weather State
+Target is UDS Mini Controls (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Property Changed (Weather).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Editor Actor Subsystem (K2Node_GetEditorSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Selected Level Actors
+Target is Editor Actor Subsystem.self
+    Node: Set Selected Level Actors
+Target is Editor Actor Subsystem (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (UDSSelectButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Editor Actor Subsystem.ReturnValue
+      Pin: ActorsToSelect (object) Dir=In
+        -> Make Array.Array
+    Node: On Clicked (UDSSelectButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Selected Level Actors
+Target is Editor Actor Subsystem.execute
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set Selected Level Actors
+Target is Editor Actor Subsystem.ActorsToSelect
+      Pin: [0] (object) Dir=In
+        -> Get UDS.UDS
+    Node: Get UDS (K2Node_VariableGet)
+      Pin: UDS (object) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: On Clicked (UDWSelectButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Selected Level Actors
+Target is Editor Actor Subsystem.execute
+    Node: Editor Actor Subsystem (K2Node_GetEditorSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Selected Level Actors
+Target is Editor Actor Subsystem.self
+    Node: Set Selected Level Actors
+Target is Editor Actor Subsystem (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (UDWSelectButton).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Editor Actor Subsystem.ReturnValue
+      Pin: ActorsToSelect (object) Dir=In
+        -> Make Array.Array
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set Selected Level Actors
+Target is Editor Actor Subsystem.ActorsToSelect
+      Pin: [0] (object) Dir=In
+        -> Get UDW.UDW
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Acquire Actors
+Target is UDS Mini Controls.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+  Graph: Acquire Actors
+    Node: Acquire Actors (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Weather Exists.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.Object
+        -> Set UDW.UDW
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Sky Exists.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.Object
+        -> Set UDS.UDS
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Sky Exists.Sky Exists
+    Node: Set Sky Exists (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Sky Exists (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Sky Exists.then
+      Pin: Condition (bool) Dir=In
+        -> Set Sky Exists.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Set UDS.execute
+      Pin: else (exec) Dir=Out
+    Node: Set UDS (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Object
+Target is Property View Base.execute
+      Pin: UDS (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set Object
+Target is Property View Base.NewObject
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Acquire Actors.then
+      Pin: then_0 (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Weather Exists.Weather Exists
+    Node: Set Weather Exists (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Weather Exists (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Weather Exists.then
+      Pin: Condition (bool) Dir=In
+        -> Set Weather Exists.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Set UDW.execute
+      Pin: else (exec) Dir=Out
+    Node: Set UDW (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Object
+Target is Property View Base.execute
+      Pin: UDW (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set Object
+Target is Property View Base.NewObject
+      Pin: self (object) Dir=In
+    Node: Get CloudCoverage (K2Node_VariableGet)
+      Pin: CloudCoverage (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Set Object
+Target is Property View Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set UDS.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CloudCoverage.CloudCoverage
+        -> Get Fog.Fog
+        -> Get TimeofDay.TimeofDay
+        -> Get UDS_Refresh.UDS_Refresh
+      Pin: NewObject (object) Dir=In
+        -> Set UDS.Output_Get
+    Node: Get Fog (K2Node_VariableGet)
+      Pin: Fog (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get TimeofDay (K2Node_VariableGet)
+      Pin: TimeofDay (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Set Object
+Target is Property View Base (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set UDW.then
+      Pin: then (exec) Dir=Out
+        -> Update Manual Weather State
+Target is UDS Mini Controls.execute
+      Pin: self (object) Dir=In
+        -> Get Weather.Weather
+        -> Get W_CloudCoverage.W_CloudCoverage
+        -> Get W_Dust.W_Dust
+        -> Get W_Fog.W_Fog
+        -> Get W_MaterialDust.W_MaterialDust
+        -> Get W_MaterialSnow.W_MaterialSnow
+        -> Get W_MaterialWetness.W_MaterialWetness
+        -> Get W_Rain.W_Rain
+        -> Get W_Snow.W_Snow
+        -> Get W_ThunderLightning.W_ThunderLightning
+        -> Get W_WindIntensity.W_WindIntensity
+        -> Get UDWRefresh.UDWRefresh
+      Pin: NewObject (object) Dir=In
+        -> Set UDW.Output_Get
+    Node: Get Weather (K2Node_VariableGet)
+      Pin: Weather (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get Fog (K2Node_VariableGet)
+      Pin: Fog (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get CloudCoverage (K2Node_VariableGet)
+      Pin: CloudCoverage (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get Fog.Fog
+        -> Get CloudCoverage.CloudCoverage
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get Weather Exists (K2Node_VariableGet)
+      Pin: Weather Exists (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Weather Exists.Weather Exists
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+    Node: Get WeatherPanel (K2Node_VariableGet)
+      Pin: WeatherPanel (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get WeatherPanel.WeatherPanel
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get Weather Exists (K2Node_VariableGet)
+      Pin: Weather Exists (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Weather Exists.Weather Exists
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Visibility
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SkyPanel.SkyPanel
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get SkyPanel (K2Node_VariableGet)
+      Pin: SkyPanel (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Sky Exists (K2Node_VariableGet)
+      Pin: Sky Exists (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Sky Exists.Sky Exists
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get W_CloudCoverage (K2Node_VariableGet)
+      Pin: W_CloudCoverage (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_Dust (K2Node_VariableGet)
+      Pin: W_Dust (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_Fog (K2Node_VariableGet)
+      Pin: W_Fog (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_MaterialDust (K2Node_VariableGet)
+      Pin: W_MaterialDust (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_MaterialSnow (K2Node_VariableGet)
+      Pin: W_MaterialSnow (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_MaterialWetness (K2Node_VariableGet)
+      Pin: W_MaterialWetness (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_Rain (K2Node_VariableGet)
+      Pin: W_Rain (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_Snow (K2Node_VariableGet)
+      Pin: W_Snow (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_ThunderLightning (K2Node_VariableGet)
+      Pin: W_ThunderLightning (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get W_WindIntensity (K2Node_VariableGet)
+      Pin: W_WindIntensity (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Update Manual Weather State
+Target is UDS Mini Controls (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Object
+Target is Property View Base.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDS_Refresh (K2Node_VariableGet)
+      Pin: UDS_Refresh (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+    Node: Get UDWRefresh (K2Node_VariableGet)
+      Pin: UDWRefresh (object) Dir=Out
+        -> Set Object
+Target is Property View Base.self
+      Pin: self (object) Dir=In
+  Graph: Update Manual Weather State
+    Node: Update Manual Weather State (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Using Manual Weather.execute
+    Node: Set Visibility
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Using Manual Weather.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get W_CloudCoverage.W_CloudCoverage
+        -> Get W_Dust.W_Dust
+        -> Get W_Fog.W_Fog
+        -> Get W_MaterialDust.W_MaterialDust
+        -> Get W_MaterialSnow.W_MaterialSnow
+        -> Get W_MaterialWetness.W_MaterialWetness
+        -> Get W_Rain.W_Rain
+        -> Get W_Snow.W_Snow
+        -> Get W_ThunderLightning.W_ThunderLightning
+        -> Get W_WindIntensity.W_WindIntensity
+      Pin: InVisibility (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get W_CloudCoverage (K2Node_VariableGet)
+      Pin: W_CloudCoverage (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_Dust (K2Node_VariableGet)
+      Pin: W_Dust (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_Fog (K2Node_VariableGet)
+      Pin: W_Fog (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_MaterialDust (K2Node_VariableGet)
+      Pin: W_MaterialDust (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_MaterialSnow (K2Node_VariableGet)
+      Pin: W_MaterialSnow (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_MaterialWetness (K2Node_VariableGet)
+      Pin: W_MaterialWetness (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_Rain (K2Node_VariableGet)
+      Pin: W_Rain (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_Snow (K2Node_VariableGet)
+      Pin: W_Snow (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_ThunderLightning (K2Node_VariableGet)
+      Pin: W_ThunderLightning (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get W_WindIntensity (K2Node_VariableGet)
+      Pin: W_WindIntensity (object) Dir=Out
+        -> Set Visibility
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Using Manual Weather.Using Manual Weather
+    Node: Set Using Manual Weather (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Update Manual Weather State.then
+      Pin: then (exec) Dir=Out
+        -> Set Visibility
+Target is Widget.execute
+      Pin: Using Manual Weather (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Weather (K2Node_VariableGet)
+      Pin: Weather (object) Dir=Out
+        -> Is Valid.Object
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Weather.Weather
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Weather.self
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Using Manual Weather.Using Manual Weather
+      Pin: ReturnValue (byte) Dir=Out
+        -> Set Visibility
+Target is Widget.InVisibility
+    Node: Get Using Manual Weather (K2Node_VariableGet)
+      Pin: Using Manual Weather (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+  Graph: Check Actors Valid
+    Node: Check Actors Valid (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Sky Exists (K2Node_VariableGet)
+      Pin: Sky Exists (bool) Dir=Out
+        -> Not Equal (Boolean).B
+      Pin: self (object) Dir=In
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Check Actors Valid.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.Object
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Not Equal (Boolean).A
+    Node: Not Equal (Boolean) (K2Node_PromotableOperator)
+      Pin: A (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get Sky Exists.Sky Exists
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Acquire Actors
+Target is UDS Mini Controls (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Boolean).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Acquire Actors
+Target is UDS Mini Controls.execute
+      Pin: else (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.Object
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Not Equal (Boolean).A
+    Node: Get Weather Exists (K2Node_VariableGet)
+      Pin: Weather Exists (bool) Dir=Out
+        -> Not Equal (Boolean).B
+      Pin: self (object) Dir=In
+    Node: Not Equal (Boolean) (K2Node_PromotableOperator)
+      Pin: A (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get Weather Exists.Weather Exists
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Boolean).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Acquire Actors
+Target is UDS Mini Controls.execute
+      Pin: else (exec) Dir=Out
+    Node: Acquire Actors
+Target is UDS Mini Controls (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

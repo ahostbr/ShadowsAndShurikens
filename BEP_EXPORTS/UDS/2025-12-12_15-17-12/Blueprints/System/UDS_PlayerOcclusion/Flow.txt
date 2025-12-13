@@ -1,0 +1,3726 @@
+Blueprint: UDS_PlayerOcclusion (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/UDS_PlayerOcclusion.UDS_PlayerOcclusion)
+  Graph: EventGraph
+    Node: Event End Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Clear Timer by Function Name.execute
+      Pin: EndPlayReason (byte) Dir=Out
+    Node: Clear Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event End Play.then
+      Pin: then (exec) Dir=Out
+        -> Clear Timer by Function Name.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+    Node: Clear Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+        -> Clear Timer by Function Name.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+    Node: Clear Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+        -> Clear Timer by Function Name.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+    Node: Clear Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+  Graph: Initialize
+    Node: Initialize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Initialize.then
+      Pin: InputObject (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+      Pin: Is Valid (exec) Dir=Out
+        -> Save Unchanging Values
+Target is UDS Occlusion State.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set Occlusion Settings.execute
+    Node: Set Occlusion Settings (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Save Unchanging Values
+Target is UDS Occlusion State.execute
+      Pin: Occlusion Settings (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delayed Startup
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Save Unchanging Values
+Target is UDS Occlusion State.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Save Unchanging Values
+Target is UDS Occlusion State.self
+      Pin: self (object) Dir=In
+    Node: Save Unchanging Values
+Target is UDS Occlusion State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+        -> Set Occlusion Settings.then
+      Pin: then (exec) Dir=Out
+        -> Delayed Startup
+Target is UDS Player Occlusion.execute
+      Pin: self (object) Dir=In
+        -> Get State.State
+  Graph: Incremental Occlusion Traces
+    Node: Incremental Occlusion Traces (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Hard Update.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then_0 (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set Trace Index.execute
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Current Trace Occlusion.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Ignored Actors.Ignored Actors
+      Pin: DrawDebugType (byte) Dir=In
+        -> Trace Debugs.ReturnValue
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select Float.bPickA
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: B (struct) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Increment Time.Increment Time
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Line Trace By Channel.DrawTime
+    Node: Select Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Trace Occlusion.Current Trace Occlusion
+    Node: Set Current Trace Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Current Trace Occlusion (real) Dir=In
+        -> Select Float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+      Pin: B (real) Dir=In
+        -> Get Global Occlusion Total.Global Occlusion Total
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Get Current Trace Occlusion (K2Node_VariableGet)
+      Pin: Current Trace Occlusion (real) Dir=Out
+        -> Make Linear Color.R
+        -> Make Linear Color.G
+        -> Make Linear Color.B
+        -> Make Linear Color.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get Calculate Directional Occlusion.Calculate Directional Occlusion
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+    Node: LinearColor + LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Directional Occlusion Total.Directional Occlusion Total
+      Pin: B (struct) Dir=In
+        -> Get Directional Total Contribution.Directional Total Contribution
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor - LinearColor.A
+    Node: LinearColor * LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> GET.Output
+      Pin: B (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Directional Total Contribution.Directional Total Contribution
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> LinearColor * LinearColor.B
+      Pin: R (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+      Pin: G (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+      Pin: B (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+      Pin: A (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Directional Trace Max Values.Directional Trace Max Values
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Output (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Trace Offsets.Trace Offsets
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Output (struct) Dir=Out
+        -> vector + vector.B
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Global Occlusion History.Global Occlusion History
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Output (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: B (real) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Global Occlusion Total.Global Occlusion Total
+    Node: Get Current Trace Occlusion (K2Node_VariableGet)
+      Pin: Current Trace Occlusion (real) Dir=Out
+        -> Set Array Elem.Item
+    Node: Set Directional Total Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Directional Occlusion Total.execute
+      Pin: Directional Total Contribution (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get Directional Total Contribution (K2Node_VariableGet)
+      Pin: Directional Total Contribution (struct) Dir=Out
+        -> LinearColor + LinearColor.B
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Directional Occlusion History.Directional Occlusion History
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Output (struct) Dir=Out
+        -> LinearColor - LinearColor.B
+    Node: LinearColor - LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> LinearColor + LinearColor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Directional Occlusion Total.Directional Occlusion Total
+    Node: Set Traces This Frame (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Hard Update.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Traces This Frame (int) Dir=In
+        -> Select Int.ReturnValue
+      Pin: Output_Get (int) Dir=Out
+        -> integer > integer.A
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Set Time of Last Trace.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+        -> Get Traces This Frame.Traces This Frame
+      Pin: LoopBody (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Calculate Directional Occlusion (K2Node_VariableGet)
+      Pin: Calculate Directional Occlusion (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get Ignored Actors (K2Node_VariableGet)
+      Pin: Ignored Actors (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Upward Trace Max Values.Upward Trace Max Values
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Output (real) Dir=Out
+        -> float * float.A
+    Node: Get Current Trace Occlusion (K2Node_VariableGet)
+      Pin: Current Trace Occlusion (real) Dir=Out
+        -> float * float.B
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> GET.Output
+      Pin: B (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Upward Total Contribution.Upward Total Contribution
+    Node: Set Upward Total Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Upward Occlusion Total.execute
+      Pin: Upward Total Contribution (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Upward Occlusion Total.Upward Occlusion Total
+      Pin: B (real) Dir=In
+        -> Get Upward Total Contribution.Upward Total Contribution
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Get Upward Total Contribution (K2Node_VariableGet)
+      Pin: Upward Total Contribution (real) Dir=Out
+        -> float + float.B
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: B (real) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Upward Occlusion Total.Upward Occlusion Total
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (real) Dir=In
+        -> Get Upward Occlusion History.Upward Occlusion History
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Output (real) Dir=Out
+        -> float - float.B
+    Node: Get Current Trace Occlusion (K2Node_VariableGet)
+      Pin: Current Trace Occlusion (real) Dir=Out
+        -> float + float.A
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Current Trace Occlusion.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Global Occlusion Total.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Global Occlusion (EdGraphNode_Comment)
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Directional Total Contribution.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Upward Total Contribution.execute
+    Node: Directional Occlusion (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Global Occlusion Total.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (real) Dir=In
+        -> Get Global Occlusion History.Global Occlusion History
+      Pin: Index (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Item (real) Dir=In
+        -> Get Current Trace Occlusion.Current Trace Occlusion
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Directional Occlusion Total.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Directional Occlusion History.Directional Occlusion History
+      Pin: Index (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Item (struct) Dir=In
+        -> Get Directional Total Contribution.Directional Total Contribution
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get Directional Total Contribution (K2Node_VariableGet)
+      Pin: Directional Total Contribution (struct) Dir=Out
+        -> Set Array Elem.Item
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Upward Occlusion Total.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (real) Dir=In
+        -> Get Upward Occlusion History.Upward Occlusion History
+      Pin: Index (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: Item (real) Dir=In
+        -> Get Upward Total Contribution.Upward Total Contribution
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get Upward Total Contribution (K2Node_VariableGet)
+      Pin: Upward Total Contribution (real) Dir=Out
+        -> Set Array Elem.Item
+    Node: Distance (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: V1 (struct) Dir=In
+        -> Get Last Trace Location.Last Trace Location
+      Pin: V2 (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: Select Int (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: B (int) Dir=In
+        -> Min (Integer).ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get Hard Update.Hard Update
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Traces This Frame.Traces This Frame
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Hard Update.Hard Update
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set Hard Update (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Incremental Occlusion Traces.then
+      Pin: then (exec) Dir=Out
+        -> Set Traces This Frame.execute
+      Pin: Hard Update (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Hard Update (K2Node_VariableGet)
+      Pin: Hard Update (bool) Dir=Out
+        -> Select Int.bPickA
+      Pin: self (object) Dir=In
+    Node: Get Traces This Frame (K2Node_VariableGet)
+      Pin: Traces This Frame (int) Dir=Out
+        -> For Loop.LastIndex
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Trace Index.Trace Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> % (Integer).A
+    Node: % (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: B (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Trace Index.Trace Index
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Time of Last Trace.Time of Last Trace
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Set Traces This Frame.Output_Get
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Traces This Frame.then
+      Pin: Condition (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Last Trace Location.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Time of Last Trace.Time of Last Trace
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Increment Time.Increment Time
+      Pin: ReturnValue (real) Dir=Out
+        -> Round.A
+    Node: Round (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Max (Integer).A
+    Node: Min (Integer) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Max (Integer).ReturnValue
+      Pin: B (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: ReturnValue (int) Dir=Out
+        -> Select Int.B
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Trace Channel.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Line Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Distance (Vector).V2
+      Pin: self (object) Dir=In
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Set Last Trace Location.Last Trace Location
+      Pin: self (object) Dir=In
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> vector + vector.A
+        -> Line Trace By Channel.Start
+      Pin: self (object) Dir=In
+    Node: Checks if location has traveled far enough to need an instant/hard update (EdGraphNode_Comment)
+    Node: Find How Many Traces to Do this Update (EdGraphNode_Comment)
+    Node: Last Update Values (EdGraphNode_Comment)
+    Node: Trace Scene Collision (EdGraphNode_Comment)
+    Node: Trace Debugs (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (byte) Dir=Out
+        -> Line Trace By Channel.DrawDebugType
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Increment Time.self
+      Pin: self (object) Dir=In
+    Node: Get Increment Time (K2Node_VariableGet)
+      Pin: Increment Time (real) Dir=Out
+        -> float * float.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Increment Time.self
+        -> Get Time of Last Trace.self
+      Pin: self (object) Dir=In
+    Node: Get Increment Time (K2Node_VariableGet)
+      Pin: Increment Time (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> % (Integer).B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> Select Int.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> Min (Integer).B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Global Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Set Global Occlusion Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: Global Occlusion Total (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Global Occlusion Total.self
+        -> Get Global Occlusion History.self
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Global Occlusion Total (K2Node_VariableGet)
+      Pin: Global Occlusion Total (real) Dir=Out
+        -> float + float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Global Occlusion History (K2Node_VariableGet)
+      Pin: Global Occlusion History (real) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Upward Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Set Upward Occlusion Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Upward Total Contribution.then
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: Upward Occlusion Total (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Upward Occlusion Total.self
+        -> Get Upward Occlusion History.self
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Upward Occlusion Total (K2Node_VariableGet)
+      Pin: Upward Occlusion Total (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Upward Occlusion History (K2Node_VariableGet)
+      Pin: Upward Occlusion History (real) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Directional Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Set Directional Occlusion Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Directional Total Contribution.then
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: Directional Occlusion Total (struct) Dir=In
+        -> LinearColor - LinearColor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Occlusion Total.self
+        -> Get Directional Occlusion History.self
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Occlusion Total (K2Node_VariableGet)
+      Pin: Directional Occlusion Total (struct) Dir=Out
+        -> LinearColor + LinearColor.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Directional Occlusion History (K2Node_VariableGet)
+      Pin: Directional Occlusion History (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Trace Max Values.self
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Trace Max Values (K2Node_VariableGet)
+      Pin: Directional Trace Max Values (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Upward Trace Max Values.self
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Upward Trace Max Values (K2Node_VariableGet)
+      Pin: Upward Trace Max Values (real) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Set Trace Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: Trace Index (int) Dir=In
+        -> % (Integer).ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Trace Index.self
+        -> Get Trace Offsets.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Trace Offsets (K2Node_VariableGet)
+      Pin: Trace Offsets (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> Set Array Elem.Index
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> Set Array Elem.Index
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Trace Index.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Index (K2Node_VariableGet)
+      Pin: Trace Index (int) Dir=Out
+        -> Set Array Elem.Index
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Occlusion History.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Occlusion History (K2Node_VariableGet)
+      Pin: Directional Occlusion History (struct) Dir=Out
+        -> Set Array Elem.TargetArray
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Global Occlusion History.self
+      Pin: self (object) Dir=In
+    Node: Get Global Occlusion History (K2Node_VariableGet)
+      Pin: Global Occlusion History (real) Dir=Out
+        -> Set Array Elem.TargetArray
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Upward Occlusion History.self
+      Pin: self (object) Dir=In
+    Node: Get Upward Occlusion History (K2Node_VariableGet)
+      Pin: Upward Occlusion History (real) Dir=Out
+        -> Set Array Elem.TargetArray
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Time of Last Trace (K2Node_VariableGet)
+      Pin: Time of Last Trace (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Time of Last Trace.self
+      Pin: self (object) Dir=In
+    Node: Set Time of Last Trace (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Last Trace Location.then
+      Pin: then (exec) Dir=Out
+        -> For Loop.execute
+      Pin: Time of Last Trace (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Last Trace Location.self
+      Pin: self (object) Dir=In
+    Node: Set Last Trace Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Time of Last Trace.execute
+      Pin: Last Trace Location (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Last Trace Location.self
+      Pin: self (object) Dir=In
+    Node: Get Last Trace Location (K2Node_VariableGet)
+      Pin: Last Trace Location (struct) Dir=Out
+        -> Distance (Vector).V1
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Max (Integer) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Round.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Min (Integer).A
+  Graph: Update Current Occlusion
+    Node: Update Current Occlusion (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on UDS_Occlusion_Mode.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Check for Portal Components
+Target is UDS Player Occlusion.then
+      Pin: then_0 (exec) Dir=Out
+        -> Set Time Delta.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get Calculate Directional Occlusion.Calculate Directional Occlusion
+      Pin: then (exec) Dir=Out
+        -> Set Target Directional Occlusion.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Calculate Directional Occlusion (K2Node_VariableGet)
+      Pin: Calculate Directional Occlusion (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: LinearColor / LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Directional Occlusion Total.Directional Occlusion Total
+      Pin: B (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> LinearColor / LinearColor.B
+      Pin: R (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+      Pin: G (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+      Pin: B (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+      Pin: A (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+    Node: FInterp To (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get Current Global Occlusion.Current Global Occlusion
+      Pin: Target (real) Dir=In
+        -> Get Target Global Occlusion.Target Global Occlusion
+      Pin: DeltaTime (real) Dir=In
+        -> Get Time Delta.Time Delta
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Select Float.B
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Global Occlusion Total.Global Occlusion Total
+      Pin: B (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.A
+    Node: LinearColor * LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> LinearColor / LinearColor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor + LinearColor.A
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> LinearColor * LinearColor.B
+      Pin: R (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+      Pin: G (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+      Pin: B (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+      Pin: A (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+    Node: Set Vector Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Upward Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Set Scalar Parameter Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> Get Current Directional Occlusion.Current Directional Occlusion
+    Node: Set Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (real) Dir=In
+        -> Get Current Global Occlusion.Current Global Occlusion
+    Node: Interpolate (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (struct) Dir=In
+        -> Get Current Directional Occlusion.Current Directional Occlusion
+      Pin: Target (struct) Dir=In
+        -> Get Target Directional Occlusion.Target Directional Occlusion
+      Pin: DeltaTime (real) Dir=In
+        -> Get Time Delta.Time Delta
+      Pin: InterpSpeed (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select Color.B
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Upward Occlusion Total.Upward Occlusion Total
+      Pin: B (real) Dir=In
+        -> Get Upward Occlusion Max.Upward Occlusion Max
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Upward Occlusion.Current Upward Occlusion
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: InRangeA (real) Dir=In
+        -> Get Global Occlusion Min Fraction.Global Occlusion Min Fraction
+      Pin: InRangeB (real) Dir=In
+        -> Get Global Occlusion Max Fraction.Global Occlusion Max Fraction
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Target Global Occlusion.Target Global Occlusion
+    Node: Select Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Target Global Occlusion.Target Global Occlusion
+      Pin: B (real) Dir=In
+        -> FInterp To.ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get Hard Update.Hard Update
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Current Global Occlusion.Current Global Occlusion
+    Node: Get Hard Update (K2Node_VariableGet)
+      Pin: Hard Update (bool) Dir=Out
+        -> Select Float.bPickA
+      Pin: self (object) Dir=In
+    Node: Get Hard Update (K2Node_VariableGet)
+      Pin: Hard Update (bool) Dir=Out
+        -> Select Color.bPickA
+      Pin: self (object) Dir=In
+    Node: Select Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Target Directional Occlusion.Target Directional Occlusion
+      Pin: B (struct) Dir=In
+        -> Interpolate (LinearColor).ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> Get Hard Update.Hard Update
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Current Directional Occlusion.Current Directional Occlusion
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get Hard Update.Hard Update
+      Pin: then (exec) Dir=Out
+        -> Periodic Context Checks
+Target is UDS Player Occlusion.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Hard Update (K2Node_VariableGet)
+      Pin: Hard Update (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Periodic Context Checks
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Check for Portal Components
+Target is UDS Player Occlusion.execute
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Sequence.execute
+    Node: Switch on UDS_Occlusion_Mode (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Update Current Occlusion.then
+      Pin: Selection (byte) Dir=In
+        -> Get Occlusion Mode.Occlusion Mode
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Set Global Occlusion Total.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Global Occlusion Total.Global Occlusion Total
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Directional Occlusion Total.Directional Occlusion Total
+      Pin: R (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+      Pin: G (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+      Pin: B (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+      Pin: A (real) Dir=In
+        -> Get Directional Occlusion Max.Directional Occlusion Max
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on UDS_Occlusion_Mode.NewEnumerator2
+        -> Switch on UDS_Occlusion_Mode.NewEnumerator0
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Set Upward Occlusion Total.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).A
+    Node: Get Tick Period (K2Node_VariableGet)
+      Pin: Tick Period (real) Dir=Out
+        -> Max (Float).B
+      Pin: self (object) Dir=In
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Tick Period.Tick Period
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Time Delta.Time Delta
+    Node: Set Time Delta (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Set Target Global Occlusion.execute
+      Pin: Time Delta (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Time Delta (K2Node_VariableGet)
+      Pin: Time Delta (real) Dir=Out
+        -> FInterp To.DeltaTime
+    Node: Get Time Delta (K2Node_VariableGet)
+      Pin: Time Delta (real) Dir=Out
+        -> Interpolate (LinearColor).DeltaTime
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Occlusion Mode.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Mode (K2Node_VariableGet)
+      Pin: Occlusion Mode (byte) Dir=Out
+        -> Switch on UDS_Occlusion_Mode.Selection
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Global Occlusion Max Fraction.self
+        -> Get Global Occlusion Min Fraction.self
+      Pin: self (object) Dir=In
+    Node: Get Global Occlusion Max Fraction (K2Node_VariableGet)
+      Pin: Global Occlusion Max Fraction (real) Dir=Out
+        -> Map Range Clamped.InRangeB
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Get Global Occlusion Min Fraction (K2Node_VariableGet)
+      Pin: Global Occlusion Min Fraction (real) Dir=Out
+        -> Map Range Clamped.InRangeA
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Check for Portal Components
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Periodic Context Checks
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+    Node: Break Linear Color (K2Node_BreakStruct)
+      Pin: LinearColor (struct) Dir=In
+        -> LinearColor + LinearColor.ReturnValue
+      Pin: R (real) Dir=Out
+        -> Clamp (Float).Value
+      Pin: G (real) Dir=Out
+        -> Clamp (Float).Value
+      Pin: B (real) Dir=Out
+        -> Clamp (Float).Value
+      Pin: A (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Linear Color.R
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.R
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Linear Color.G
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.G
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Linear Color.B
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.B
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Linear Color.A
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.A
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Set Target Directional Occlusion.Target Directional Occlusion
+      Pin: R (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: G (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: A (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: LinearColor + LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Directional Portal Contribution.Directional Portal Contribution
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Linear Color.LinearColor
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Global Contribution.Global Contribution
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: Global Occlusion (EdGraphNode_Comment)
+    Node: Directional Occlusion (EdGraphNode_Comment)
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+        -> Get Global Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> To Float (Integer).InInt
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Global Occlusion Total (K2Node_VariableGet)
+      Pin: Global Occlusion Total (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Global Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Set Global Occlusion Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_Occlusion_Mode.NewEnumerator1
+      Pin: then (exec) Dir=Out
+        -> Set Directional Occlusion Total.execute
+      Pin: Global Occlusion Total (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Upward Occlusion Total.self
+        -> Get Upward Occlusion Max.self
+      Pin: self (object) Dir=In
+    Node: Get Upward Occlusion Total (K2Node_VariableGet)
+      Pin: Upward Occlusion Total (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Upward Occlusion Max (K2Node_VariableGet)
+      Pin: Upward Occlusion Max (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Upward Occlusion Total.self
+        -> Get Upward Occlusion Max.self
+      Pin: self (object) Dir=In
+    Node: Set Upward Occlusion Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Directional Occlusion Total.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Upward Occlusion Total (real) Dir=In
+        -> Get Upward Occlusion Max.Upward Occlusion Max
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Upward Occlusion Max (K2Node_VariableGet)
+      Pin: Upward Occlusion Max (real) Dir=Out
+        -> Set Upward Occlusion Total.Upward Occlusion Total
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Directional Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Set Directional Occlusion Total (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Global Occlusion Total.then
+      Pin: then (exec) Dir=Out
+        -> Set Upward Occlusion Total.execute
+      Pin: Directional Occlusion Total (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Occlusion Max.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Occlusion Max (K2Node_VariableGet)
+      Pin: Directional Occlusion Max (real) Dir=Out
+        -> Make Linear Color.R
+        -> Make Linear Color.G
+        -> Make Linear Color.B
+        -> Make Linear Color.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Occlusion Total.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Occlusion Total (K2Node_VariableGet)
+      Pin: Directional Occlusion Total (struct) Dir=Out
+        -> LinearColor / LinearColor.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Occlusion Max.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Occlusion Max (K2Node_VariableGet)
+      Pin: Directional Occlusion Max (real) Dir=Out
+        -> Make Linear Color.R
+        -> Make Linear Color.G
+        -> Make Linear Color.B
+        -> Make Linear Color.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Occlusion Multiplier.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Multiplier (K2Node_VariableGet)
+      Pin: Occlusion Multiplier (real) Dir=Out
+        -> Make Linear Color.R
+        -> Make Linear Color.G
+        -> Make Linear Color.B
+        -> Make Linear Color.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Portal Contribution.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Portal Contribution (K2Node_VariableGet)
+      Pin: Directional Portal Contribution (struct) Dir=Out
+        -> LinearColor + LinearColor.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Occlusion Multiplier.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Multiplier (K2Node_VariableGet)
+      Pin: Occlusion Multiplier (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Occlusion Multiplier.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Multiplier (K2Node_VariableGet)
+      Pin: Occlusion Multiplier (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Global Contribution.self
+      Pin: self (object) Dir=In
+    Node: Get Global Contribution (K2Node_VariableGet)
+      Pin: Global Contribution (real) Dir=Out
+        -> float + float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Current Directional Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Set Current Directional Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Target Directional Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Upward Occlusion.execute
+      Pin: Current Directional Occlusion (struct) Dir=In
+        -> Select Color.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Current Directional Occlusion.self
+        -> Get Target Directional Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Get Current Directional Occlusion (K2Node_VariableGet)
+      Pin: Current Directional Occlusion (struct) Dir=Out
+        -> Interpolate (LinearColor).Current
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Target Directional Occlusion (K2Node_VariableGet)
+      Pin: Target Directional Occlusion (struct) Dir=Out
+        -> Interpolate (LinearColor).Target
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Current Directional Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Get Current Directional Occlusion (K2Node_VariableGet)
+      Pin: Current Directional Occlusion (struct) Dir=Out
+        -> Set Vector Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Current Global Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Get Current Global Occlusion (K2Node_VariableGet)
+      Pin: Current Global Occlusion (real) Dir=Out
+        -> Set Scalar Parameter Value.ParameterValue
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Current Global Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Set Current Global Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Target Global Occlusion.then
+      Pin: then (exec) Dir=Out
+      Pin: Current Global Occlusion (real) Dir=In
+        -> Select Float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Target Global Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Get Target Global Occlusion (K2Node_VariableGet)
+      Pin: Target Global Occlusion (real) Dir=Out
+        -> Select Float.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Current Global Occlusion.self
+        -> Get Target Global Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Get Current Global Occlusion (K2Node_VariableGet)
+      Pin: Current Global Occlusion (real) Dir=Out
+        -> FInterp To.Current
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Target Global Occlusion (K2Node_VariableGet)
+      Pin: Target Global Occlusion (real) Dir=Out
+        -> FInterp To.Target
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Current Upward Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Set Current Upward Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Directional Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value.execute
+      Pin: Current Upward Occlusion (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Target Directional Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Set Target Directional Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Directional Occlusion.execute
+      Pin: Target Directional Occlusion (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Target Directional Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Get Target Directional Occlusion (K2Node_VariableGet)
+      Pin: Target Directional Occlusion (struct) Dir=Out
+        -> Select Color.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Target Global Occlusion.self
+      Pin: self (object) Dir=In
+    Node: Set Target Global Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Time Delta.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Global Occlusion.execute
+      Pin: Target Global Occlusion (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+  Graph: Periodic Context Checks
+    Node: Periodic Context Checks (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Time of Last Periodic Context Check.execute
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+      Pin: Z (real) Dir=Out
+        -> float > float.B
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Scalar Parameter Value.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Switch on UDS_Occlusion_Water_Behavior.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: Select Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Get Force Full Occlusion.Force Full Occlusion
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Occlusion Multiplier.Occlusion Multiplier
+    Node: Get Force Full Occlusion (K2Node_VariableGet)
+      Pin: Force Full Occlusion (bool) Dir=Out
+        -> Select Float.bPickA
+      Pin: self (object) Dir=In
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Break Vector.InVec
+      Pin: self (object) Dir=In
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Portal Components.Portal Components
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (object) Dir=In
+        -> Get Portal Components.Portal Components
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Current Portal.execute
+      Pin: Array Element (object) Dir=Out
+        -> Set Current Portal.Current Portal
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Current Portal (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Current Portal (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Output_Get (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Set Current Portal.Output_Get
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Vector Length.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Sample Range.Sample Range
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Sample Range.self
+    Node: Get Sample Range (K2Node_VariableGet)
+      Pin: Sample Range (real) Dir=Out
+        -> float < float.B
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Current Portal.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.Start
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: End (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Ignored Actors.Ignored Actors
+      Pin: DrawDebugType (byte) Dir=In
+        -> Trace Debugs.ReturnValue
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+        -> Get Update Period.Update Period
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Get Ignored Actors (K2Node_VariableGet)
+      Pin: Ignored Actors (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Trace Channel.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Line Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Line Trace By Channel.End
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Update Period.self
+      Pin: self (object) Dir=In
+    Node: Get Update Period (K2Node_VariableGet)
+      Pin: Update Period (real) Dir=Out
+        -> Line Trace By Channel.DrawTime
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Active
+Target is Actor Component.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Vector Length.A
+    Node: Vector Length (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float < float.A
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector - vector.A
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> vector - vector.B
+      Pin: self (object) Dir=In
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Sample Range.self
+    Node: Get Sample Range (K2Node_VariableGet)
+      Pin: Sample Range (real) Dir=Out
+        -> float / float.B
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Portal Direction.execute
+      Pin: else (exec) Dir=Out
+    Node: LinearColor * LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Portal Direction Mask.Mask
+      Pin: B (struct) Dir=In
+        -> Make Linear Color.LinearColor
+      Pin: ReturnValue (struct) Dir=Out
+        -> LinearColor + LinearColor.B
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Sample Range.Sample Range
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Power.Base
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Directional Occlusion.self
+    Node: Get Directional Occlusion (K2Node_VariableGet)
+      Pin: Directional Occlusion (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Portal Distance Mask.Portal Distance Mask
+      Pin: B (real) Dir=In
+        -> Get Directional Occlusion.Directional Occlusion
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.R
+        -> Make Linear Color.G
+        -> Make Linear Color.B
+        -> Make Linear Color.A
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: ReturnValue (struct) Dir=Out
+        -> Normalize.A
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.A
+        -> Select Vector.B
+    Node: Set Portal Direction (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Portal Distance Mask.execute
+      Pin: Portal Direction (struct) Dir=In
+        -> Select Vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Distance (Vector).V1
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Distance (Vector).V2
+      Pin: self (object) Dir=In
+    Node: Distance (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: V1 (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: V2 (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: Get Portal Direction (K2Node_VariableGet)
+      Pin: Portal Direction (struct) Dir=Out
+        -> vector * vector.A
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> LinearColor * LinearColor.B
+      Pin: R (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: G (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Portal Direction.Portal Direction
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Normalize.A
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Portal Direction Mask.Direction
+    Node: Portal Direction Mask (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Direction (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: Mask (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+    Node: Set Portal Distance Mask (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Portal Direction.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Portal Distance Mask (real) Dir=In
+        -> Power.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Portal Distance Mask (K2Node_VariableGet)
+      Pin: Portal Distance Mask (real) Dir=Out
+        -> float * float.A
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Portal Distance Mask.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Directional Occlusion.self
+    Node: Get Directional Occlusion (K2Node_VariableGet)
+      Pin: Directional Occlusion (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Directional Occlusion.Directional Occlusion
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Directional Portal Contribution.execute
+      Pin: else (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Global Contribution.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Global Occlusion.self
+    Node: Get Global Occlusion (K2Node_VariableGet)
+      Pin: Global Occlusion (real) Dir=Out
+        -> float > float.A
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Global Occlusion.Global Occlusion
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Distance Falloff Exponent.self
+    Node: Get Distance Falloff Exponent (K2Node_VariableGet)
+      Pin: Distance Falloff Exponent (real) Dir=Out
+        -> Power.Exp
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: Power (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Base (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Exp (real) Dir=In
+        -> Get Distance Falloff Exponent.Distance Falloff Exponent
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Portal Distance Mask.Portal Distance Mask
+    Node: LinearColor + LinearColor (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Directional Portal Contribution.Directional Portal Contribution
+      Pin: B (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Directional Portal Contribution.Directional Portal Contribution
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Global Occlusion.self
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Portal Distance Mask.Portal Distance Mask
+      Pin: B (real) Dir=In
+        -> Get Global Occlusion.Global Occlusion
+      Pin: ReturnValue (real) Dir=Out
+        -> float + float.B
+    Node: Get Portal Distance Mask (K2Node_VariableGet)
+      Pin: Portal Distance Mask (real) Dir=Out
+        -> float * float.A
+    Node: Get Global Occlusion (K2Node_VariableGet)
+      Pin: Global Occlusion (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Global Contribution.Global Contribution
+      Pin: B (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Global Contribution.Global Contribution
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Is Active
+Target is Actor Component.self
+    Node: Is Active
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Forward Vector
+Target is Scene Component.self
+    Node: Get Forward Vector
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.B
+    Node: Dot Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Forward Vector
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: Select Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: bPickA (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Portal Direction.Portal Direction
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Dot Product.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select Vector.bPickA
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Current Portal (K2Node_VariableGet)
+      Pin: Current Portal (object) Dir=Out
+        -> Get Forward Vector
+Target is Scene Component.self
+    Node: Get Forward Vector
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Current Portal.Current Portal
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Forward Vector
+Target is Scene Component.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select Vector.A
+    Node: Test for Occlusion Volumes (EdGraphNode_Comment)
+    Node: Test if Under Water (EdGraphNode_Comment)
+    Node: Test for Portals (EdGraphNode_Comment)
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Occlusion Behavior Under Water.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Behavior Under Water (K2Node_VariableGet)
+      Pin: Occlusion Behavior Under Water (byte) Dir=Out
+        -> Switch on UDS_Occlusion_Water_Behavior.Selection
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Switch on UDS_Occlusion_Water_Behavior (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Get Occlusion Behavior Under Water.Occlusion Behavior Under Water
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Set Occlusion Multiplier.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Set Global Contribution.execute
+      Pin: NewEnumerator2 (exec) Dir=Out
+    Node: Trace Debugs (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (byte) Dir=Out
+        -> Line Trace By Channel.DrawDebugType
+    Node: Get Scalar Parameter Value (K2Node_CallMaterialParameterCollectionFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Collection (object) Dir=In
+      Pin: ParameterName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Scalar Parameter Value.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Scalar Parameter Value.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Get Scalar Parameter Value.execute
+      Pin: else (exec) Dir=Out
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Occlusion Multiplier.self
+        -> Set Global Contribution.self
+        -> Set Directional Portal Contribution.self
+      Pin: self (object) Dir=In
+    Node: Set Occlusion Multiplier (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Time of Last Periodic Context Check.then
+      Pin: then (exec) Dir=Out
+        -> Set Global Contribution.execute
+      Pin: Occlusion Multiplier (real) Dir=In
+        -> Select Float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Set Global Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Occlusion Multiplier.then
+      Pin: then (exec) Dir=Out
+        -> Set Directional Portal Contribution.execute
+      Pin: Global Contribution (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Set Directional Portal Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Global Contribution.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Directional Portal Contribution (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Occlusion Multiplier.self
+      Pin: self (object) Dir=In
+    Node: Set Occlusion Multiplier (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_Occlusion_Water_Behavior.NewEnumerator0
+      Pin: then (exec) Dir=Out
+      Pin: Occlusion Multiplier (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Global Contribution.self
+      Pin: self (object) Dir=In
+    Node: Set Global Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_Occlusion_Water_Behavior.NewEnumerator1
+      Pin: then (exec) Dir=Out
+        -> Set Directional Portal Contribution.execute
+      Pin: Global Contribution (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Directional Portal Contribution.self
+      Pin: self (object) Dir=In
+    Node: Set Directional Portal Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Global Contribution.then
+      Pin: then (exec) Dir=Out
+      Pin: Directional Portal Contribution (struct) Dir=In
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Directional Portal Contribution.self
+      Pin: self (object) Dir=In
+    Node: Set Directional Portal Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Directional Portal Contribution (struct) Dir=In
+        -> LinearColor + LinearColor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Directional Portal Contribution.self
+      Pin: self (object) Dir=In
+    Node: Get Directional Portal Contribution (K2Node_VariableGet)
+      Pin: Directional Portal Contribution (struct) Dir=Out
+        -> LinearColor + LinearColor.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Global Contribution.self
+      Pin: self (object) Dir=In
+    Node: Set Global Contribution (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Global Contribution (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Global Contribution.self
+      Pin: self (object) Dir=In
+    Node: Get Global Contribution (K2Node_VariableGet)
+      Pin: Global Contribution (real) Dir=Out
+        -> float + float.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Time of Last Periodic Context Check.self
+      Pin: self (object) Dir=In
+    Node: Set Time of Last Periodic Context Check (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Periodic Context Checks.then
+      Pin: then (exec) Dir=Out
+        -> Set Occlusion Multiplier.execute
+      Pin: Time of Last Periodic Context Check (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Time of Last Periodic Context Check.Time of Last Periodic Context Check
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.Location
+      Pin: self (object) Dir=In
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Occlusion Multiplier.self
+      Pin: self (object) Dir=In
+    Node: Set Occlusion Multiplier (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Occlusion Multiplier (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Directional Portal Contribution.then
+      Pin: then_0 (exec) Dir=Out
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then_0 (exec) Dir=Out
+        -> Get Scalar Parameter Value.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Scalar Parameter Value.ReturnValue
+      Pin: B (real) Dir=In
+        -> Break Vector.Z
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Portal Components (K2Node_VariableGet)
+      Pin: Portal Components (object) Dir=Out
+        -> Is Not Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get Portal Components (K2Node_VariableGet)
+      Pin: Portal Components (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (real) Dir=In
+        -> Get Occlusion Multiplier.Occlusion Multiplier
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Occlusion Multiplier.Occlusion Multiplier
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Occlusion Multiplier.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Multiplier (K2Node_VariableGet)
+      Pin: Occlusion Multiplier (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Test Point For Occlusion Volumes
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: Final Multiplier (real) Dir=Out
+        -> float < float.A
+        -> Reroute Node.InputPin
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.Final Multiplier
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.then
+      Pin: Condition (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Occlusion Multiplier.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> float * float.A
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.Final Multiplier
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: Update Ignored Actors
+    Node: Update Ignored Actors (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: InputObject (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Ignored Actors.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Clear.execute
+    Node: Set Ignored Actors (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: Ignored Actors (object) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set Ignored Actors.Ignored Actors
+      Pin: [0] (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+    Node: Get Ignored Actors (K2Node_VariableGet)
+      Pin: Ignored Actors (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Ignored Actors.Ignored Actors
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Make Array.[0]
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Update Ignored Actors.then
+      Pin: InputObject (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: Get Sample Location
+    Node: Get Sample Location (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on UDS_OcclusionSamplingLocation.execute
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Occlusion Sampling Location.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Sampling Location (K2Node_VariableGet)
+      Pin: Occlusion Sampling Location (byte) Dir=Out
+        -> Switch on UDS_OcclusionSamplingLocation.Selection
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Switch on UDS_OcclusionSamplingLocation (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Get Sample Location.then
+      Pin: Selection (byte) Dir=In
+        -> Get Occlusion Sampling Location.Occlusion Sampling Location
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Set Sample Location.execute
+    Node: Get Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Camera Location
+Target is Player Camera Manager.self
+        -> Is Valid.InputObject
+    Node: Get Camera Location
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Sample Location.Sample Location
+    Node: Set Sample Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: Sample Location (struct) Dir=In
+        -> Get Camera Location
+Target is Player Camera Manager.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InputObject (object) Dir=In
+        -> Get Player Camera Manager.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Sample Location.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Player Pawn (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Actor Location
+Target is Actor.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Switch on UDS_OcclusionSamplingLocation.NewEnumerator1
+      Pin: InputObject (object) Dir=In
+        -> Get Player Pawn.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Sample Location.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Pawn.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Sample Location.Sample Location
+    Node: Set Sample Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: Sample Location (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+        -> Switch on UDS_OcclusionSamplingLocation.NewEnumerator0
+      Pin: OutputPin (exec) Dir=Out
+        -> Is Valid.exec
+    Node: Set Sample Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on UDS_OcclusionSamplingLocation.NewEnumerator2
+      Pin: then (exec) Dir=Out
+      Pin: Sample Location (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Sample Location.Sample Location
+  Graph: Check For Portal Components
+    Node: Check For Portal Components (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Time of Last Portal Component Check.execute
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Time of Last Portal Component Check.then
+      Pin: then (exec) Dir=Out
+        -> Multi Line Trace For Objects.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Portal Components.Portal Components
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Time of Last Portal Component Check.self
+      Pin: self (object) Dir=In
+    Node: Set Time of Last Portal Component Check (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Check For Portal Components.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: Time of Last Portal Component Check (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Time of Last Portal Component Check.Time of Last Portal Component Check
+    Node: Multi Line Trace For Objects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: End (struct) Dir=In
+        -> vector - vector.ReturnValue
+      Pin: ObjectTypes (byte) Dir=In
+        -> Make Array.Array
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Ignored Actors.Ignored Actors
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHits (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> vector - vector.A
+        -> Multi Line Trace For Objects.Start
+      Pin: self (object) Dir=In
+    Node: vector - vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Multi Line Trace For Objects.End
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (byte) Dir=Out
+        -> Multi Line Trace For Objects.ObjectTypes
+      Pin: [0] (byte) Dir=In
+    Node: Get Ignored Actors (K2Node_VariableGet)
+      Pin: Ignored Actors (object) Dir=Out
+        -> Multi Line Trace For Objects.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Multi Line Trace For Objects.then
+      Pin: Condition (bool) Dir=In
+        -> Multi Line Trace For Objects.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (struct) Dir=In
+        -> Multi Line Trace For Objects.OutHits
+      Pin: LoopBody (exec) Dir=Out
+        -> Cast To UDS_Occlusion_Portal.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+      Pin: HitComponent (object) Dir=Out
+        -> Cast To UDS_Occlusion_Portal.Object
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Cast To UDS_Occlusion_Portal (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Break Hit Result.HitComponent
+      Pin: AsUDS Occlusion Portal (object) Dir=Out
+        -> Add.NewItem
+      Pin: bSuccess (bool) Dir=Out
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To UDS_Occlusion_Portal.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Portal Components.Portal Components
+      Pin: NewItem (object) Dir=In
+        -> Cast To UDS_Occlusion_Portal.AsUDS Occlusion Portal
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Portal Components (K2Node_VariableGet)
+      Pin: Portal Components (object) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Get Portal Components (K2Node_VariableGet)
+      Pin: Portal Components (object) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+  Graph: Delayed Startup
+    Node: Delayed Startup (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get Sample Location
+Target is UDS Player Occlusion.execute
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Periodic Context Checks
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Update Ignored Actors
+Target is UDS Player Occlusion.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Get Update Period.Update Period
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Update Ignored Actors
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: self (object) Dir=In
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Ignored Actors
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Update Period.self
+      Pin: self (object) Dir=In
+    Node: Get Update Period (K2Node_VariableGet)
+      Pin: Update Period (real) Dir=Out
+        -> Set Timer by Function Name.Time
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Check for Portal Components
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: self (object) Dir=In
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Check for Portal Components
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Periodic Context Checks
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Function Name.then
+      Pin: Condition (bool) Dir=In
+        -> Get Query Occlusion Portals.Query Occlusion Portals
+      Pin: then (exec) Dir=Out
+        -> Check for Portal Components
+Target is UDS Player Occlusion.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Query Occlusion Portals.self
+      Pin: self (object) Dir=In
+    Node: Get Query Occlusion Portals (K2Node_VariableGet)
+      Pin: Query Occlusion Portals (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Timer by Function Name.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Runtime Tick
+Target is UDS Player Occlusion.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Sample Location
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delayed Startup.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Sample Location
+Target is UDS Player Occlusion.then
+      Pin: Condition (bool) Dir=In
+        -> Equal Exactly (Vector).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Timer for Next Tick by Function Name.execute
+      Pin: else (exec) Dir=Out
+        -> Periodic Context Checks
+Target is UDS Player Occlusion.execute
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Equal Exactly (Vector).A
+      Pin: self (object) Dir=In
+    Node: Equal Exactly (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Timer for Next Tick by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Runtime Tick
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Portal Direction Mask
+    Node: Portal Direction Mask (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Direction (struct) Dir=Out
+        -> Break Vector.InVec
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Portal Direction Mask.then
+      Pin: Mask (struct) Dir=In
+        -> Make Linear Color.LinearColor
+    Node: Break Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Portal Direction Mask.Direction
+      Pin: X (real) Dir=Out
+        -> Clamp (Float).Value
+        -> float * float.A
+      Pin: Y (real) Dir=Out
+        -> Clamp (Float).Value
+        -> float * float.A
+      Pin: Z (real) Dir=Out
+    Node: Make Linear Color (K2Node_MakeStruct)
+      Pin: LinearColor (struct) Dir=Out
+        -> Return Node.Mask
+      Pin: R (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: G (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: A (real) Dir=In
+        -> Clamp (Float).ReturnValue
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector.X
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.R
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break Vector.Y
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.G
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector.X
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.B
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector.Y
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Linear Color.A
+  Graph: Editor Tick
+    Node: Editor Tick (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Sample Location.execute
+      Pin: Occlusion Location (struct) Dir=Out
+        -> Set Sample Location.Sample Location
+    Node: Set Sample Location (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Editor Tick.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Sample Location (struct) Dir=In
+        -> Editor Tick.Occlusion Location
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Incremental Occlusion Traces
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+        -> Update Current Occlusion
+Target is UDS Player Occlusion.execute
+      Pin: self (object) Dir=In
+    Node: Update Current Occlusion
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Incremental Occlusion Traces
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Sample Location.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_3 (exec) Dir=Out
+        -> Incremental Occlusion Traces
+Target is UDS Player Occlusion.execute
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Time of Last Periodic Context Check.self
+      Pin: self (object) Dir=In
+    Node: Get Time of Last Periodic Context Check (K2Node_VariableGet)
+      Pin: Time of Last Periodic Context Check (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Time of Last Periodic Context Check.Time of Last Periodic Context Check
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Update Period.Update Period
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Update Period.self
+      Pin: self (object) Dir=In
+    Node: Get Update Period (K2Node_VariableGet)
+      Pin: Update Period (real) Dir=Out
+        -> float > float.B
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Periodic Context Checks
+Target is UDS Player Occlusion.execute
+      Pin: else (exec) Dir=Out
+    Node: Periodic Context Checks
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Time of Last Portal Component Check.self
+      Pin: self (object) Dir=In
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Time of Last Portal Component Check.Time of Last Portal Component Check
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Check for Portal Components
+Target is UDS Player Occlusion.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Time of Last Portal Component Check (K2Node_VariableGet)
+      Pin: Time of Last Portal Component Check (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Check for Portal Components
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Time of Last Editor Cache.self
+      Pin: self (object) Dir=In
+    Node: Get Time of Last Editor Cache (K2Node_VariableGet)
+      Pin: Time of Last Editor Cache (real) Dir=Out
+        -> float - float.B
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Time of Last Editor Cache.Time of Last Editor Cache
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Unchanging Values Saved.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Save Unchanging Values
+Target is UDS Occlusion State.self
+        -> Set Unchanging Values Saved.self
+      Pin: self (object) Dir=In
+    Node: Save Unchanging Values
+Target is UDS Occlusion State (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Unchanging Values Saved.then
+      Pin: then (exec) Dir=Out
+        -> Set Time of Last Editor Cache.execute
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Set Unchanging Values Saved (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Save Unchanging Values
+Target is UDS Occlusion State.execute
+      Pin: Unchanging Values Saved (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Set Time of Last Editor Cache (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Save Unchanging Values
+Target is UDS Occlusion State.then
+      Pin: then (exec) Dir=Out
+      Pin: Time of Last Editor Cache (real) Dir=In
+        -> Get Game Time in Seconds.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Game Time in Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Time of Last Editor Cache.Time of Last Editor Cache
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Set Time of Last Editor Cache.self
+      Pin: self (object) Dir=In
+  Graph: Trace Debugs
+    Node: Trace Debugs (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Get Show Trace Debugs.Show Trace Debugs
+      Pin: ReturnValue (byte) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Show Trace Debugs.self
+      Pin: self (object) Dir=In
+    Node: Get Show Trace Debugs (K2Node_VariableGet)
+      Pin: Show Trace Debugs (bool) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Trace Debugs.then
+      Pin: ReturnValue (byte) Dir=In
+        -> Select.ReturnValue
+  Graph: Runtime Tick
+    Node: Runtime Tick (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Update Current Occlusion
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Incremental Occlusion Traces
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Update Current Occlusion
+Target is UDS Player Occlusion.then
+      Pin: Condition (bool) Dir=In
+        -> Get Hard Update.Hard Update
+      Pin: then (exec) Dir=Out
+        -> Call Hard Occlusion Change.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Hard Update (K2Node_VariableGet)
+      Pin: Hard Update (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Call Hard Occlusion Change (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Incremental Occlusion Traces
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Sample Location
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Update Current Occlusion
+Target is UDS Player Occlusion.execute
+      Pin: self (object) Dir=In
+    Node: Get Sample Location
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Incremental Occlusion Traces
+Target is UDS Player Occlusion.execute
+      Pin: self (object) Dir=In
+    Node: Set Timer for Next Tick by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Tick Period (K2Node_VariableGet)
+      Pin: Tick Period (real) Dir=Out
+        -> Equal (Float).A
+      Pin: self (object) Dir=In
+    Node: Equal (Float) (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Tick Period.Tick Period
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Equal (Float).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Timer for Next Tick by Function Name.execute
+      Pin: else (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Get Tick Period.Tick Period
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Tick Period (K2Node_VariableGet)
+      Pin: Tick Period (real) Dir=Out
+        -> Set Timer by Function Name.Time
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Runtime Tick.then
+      Pin: then_0 (exec) Dir=Out
+        -> Get Sample Location
+Target is UDS Player Occlusion.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+  Graph: Custom Global Occlusion Sample
+    Node: Custom Global Occlusion Sample (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.execute
+      Pin: Location (struct) Dir=Out
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.Location
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Global Occlusion (real) Dir=In
+    Node: Test Point For Occlusion Volumes
+Target is UDS Player Occlusion (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Custom Global Occlusion Sample.then
+      Pin: then (exec) Dir=Out
+        -> Set Total Occlusion.execute
+      Pin: self (object) Dir=In
+      Pin: Location (struct) Dir=In
+        -> Custom Global Occlusion Sample.Location
+      Pin: Final Multiplier (real) Dir=Out
+        -> Set Total Occlusion.Total Occlusion
+    Node: Set Total Occlusion (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Total Occlusion (real) Dir=In
+        -> Test Point For Occlusion Volumes
+Target is UDS Player Occlusion.Final Multiplier
+      Pin: Output_Get (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Set Total Occlusion.Output_Get
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Total Occlusion.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Loop.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Location.Location
+      Pin: B (struct) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (struct) Dir=Out
+        -> Line Trace By Channel.End
+    Node: Get Trace Offsets (K2Node_VariableGet)
+      Pin: Trace Offsets (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: Get Ignored Actors (K2Node_VariableGet)
+      Pin: Ignored Actors (object) Dir=Out
+        -> Line Trace By Channel.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Trace Channel.self
+      Pin: self (object) Dir=In
+    Node: Get Trace Channel (K2Node_VariableGet)
+      Pin: Trace Channel (byte) Dir=Out
+        -> Line Trace By Channel.TraceChannel
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Trace Offsets.self
+      Pin: self (object) Dir=In
+    Node: Line Trace By Channel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Location.Location
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: TraceChannel (byte) Dir=In
+        -> Get Trace Channel.Trace Channel
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Ignored Actors.Ignored Actors
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHit (struct) Dir=Out
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Location (K2Node_VariableGet)
+      Pin: Location (struct) Dir=Out
+        -> Line Trace By Channel.Start
+        -> vector + vector.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Line Trace By Channel.then
+      Pin: Condition (bool) Dir=In
+        -> Line Trace By Channel.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: else (exec) Dir=Out
+    Node: Get Ray Hits (K2Node_VariableGet)
+      Pin: Ray Hits (int) Dir=Out
+        -> Increment Int.Value
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Branch.then
+      Pin: Value (int) Dir=In
+        -> Get Ray Hits.Ray Hits
+      Pin:    (exec) Dir=Out
+      Pin: Result (int) Dir=Out
+    Node: Get Ray Hits (K2Node_VariableGet)
+      Pin: Ray Hits (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Ray Hits.Ray Hits
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (int) Dir=In
+        -> int / int.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Loop.Completed
+      Pin: Global Occlusion (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+    Node: Get Total Occlusion (K2Node_VariableGet)
+      Pin: Total Occlusion (real) Dir=Out
+        -> Map Range Clamped.OutRangeA
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: InRangeA (real) Dir=In
+        -> Get Global Occlusion Min Fraction.Global Occlusion Min Fraction
+      Pin: InRangeB (real) Dir=In
+        -> Get Global Occlusion Max Fraction.Global Occlusion Max Fraction
+      Pin: OutRangeA (real) Dir=In
+        -> Get Total Occlusion.Total Occlusion
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Global Occlusion
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Global Occlusion Max Fraction.self
+        -> Get Global Occlusion Min Fraction.self
+      Pin: self (object) Dir=In
+    Node: Get Global Occlusion Max Fraction (K2Node_VariableGet)
+      Pin: Global Occlusion Max Fraction (real) Dir=Out
+        -> Map Range Clamped.InRangeB
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Get Global Occlusion Min Fraction (K2Node_VariableGet)
+      Pin: Global Occlusion Min Fraction (real) Dir=Out
+        -> Map Range Clamped.InRangeA
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Line Trace By Channel.execute
+      Pin: Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> int / int.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: int / int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> int - int.A
+    Node: Get State (K2Node_VariableGet)
+      Pin: State (object) Dir=Out
+        -> Get Traces Per Update.self
+      Pin: self (object) Dir=In
+    Node: Get Traces Per Update (K2Node_VariableGet)
+      Pin: Traces Per Update (int) Dir=Out
+        -> int / int.A
+      Pin: self (object) Dir=In
+        -> Get State.State
+    Node: int / int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Traces Per Update.Traces Per Update
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> float / float.B
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> int / int.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> For Loop.LastIndex
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Trace Offsets.Trace Offsets
+      Pin: Dimension 1 (int) Dir=In
+        -> For Loop.Index
+      Pin: Output (struct) Dir=Out
+        -> vector + vector.B
+  Graph: Test Point for Occlusion Volumes
+    Node: Test Point for Occlusion Volumes (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Location (struct) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Multi Line Trace For Objects.execute
+      Pin: else (exec) Dir=Out
+    Node: Not Equal (Enum) (K2Node_EnumInequality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get Occlusion Mode.Occlusion Mode
+      Pin: B (byte) Dir=In
+    Node: Get Occlusion Settings (K2Node_VariableGet)
+      Pin: Occlusion Settings (object) Dir=Out
+        -> Get Occlusion Mode.self
+      Pin: self (object) Dir=In
+    Node: Get Occlusion Mode (K2Node_VariableGet)
+      Pin: Occlusion Mode (byte) Dir=Out
+        -> Not Equal (Enum).A
+      Pin: self (object) Dir=In
+        -> Get Occlusion Settings.Occlusion Settings
+    Node: Multi Line Trace For Objects (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Start (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: End (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: ObjectTypes (byte) Dir=In
+        -> Make Array.Array
+      Pin: bTraceComplex (bool) Dir=In
+      Pin: ActorsToIgnore (object) Dir=In
+        -> Get Ignored Actors.Ignored Actors
+      Pin: DrawDebugType (byte) Dir=In
+      Pin: OutHits (struct) Dir=Out
+        -> For Each Loop.Array
+      Pin: bIgnoreSelf (bool) Dir=In
+      Pin: TraceColor (struct) Dir=In
+      Pin: TraceHitColor (struct) Dir=In
+      Pin: DrawTime (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (byte) Dir=Out
+        -> Multi Line Trace For Objects.ObjectTypes
+      Pin: [0] (byte) Dir=In
+    Node: Get Ignored Actors (K2Node_VariableGet)
+      Pin: Ignored Actors (object) Dir=Out
+        -> Multi Line Trace For Objects.ActorsToIgnore
+      Pin: self (object) Dir=In
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> vector + vector.A
+        -> Multi Line Trace For Objects.Start
+      Pin: self (object) Dir=In
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Multi Line Trace For Objects.End
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Multi Line Trace For Objects.then
+      Pin: Condition (bool) Dir=In
+        -> Multi Line Trace For Objects.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+    Node: Break Hit Result (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Hit (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: bBlockingHit (bool) Dir=Out
+      Pin: bInitialOverlap (bool) Dir=Out
+      Pin: Time (real) Dir=Out
+      Pin: Distance (real) Dir=Out
+      Pin: Location (struct) Dir=Out
+      Pin: ImpactPoint (struct) Dir=Out
+      Pin: Normal (struct) Dir=Out
+      Pin: ImpactNormal (struct) Dir=Out
+      Pin: PhysMat (object) Dir=Out
+      Pin: HitActor (object) Dir=Out
+        -> Cast To UDS_Occlusion_Volume.Object
+      Pin: HitComponent (object) Dir=Out
+      Pin: HitBoneName (name) Dir=Out
+      Pin: BoneName (name) Dir=Out
+      Pin: HitItem (int) Dir=Out
+      Pin: ElementIndex (int) Dir=Out
+      Pin: FaceIndex (int) Dir=Out
+      Pin: TraceStart (struct) Dir=Out
+      Pin: TraceEnd (struct) Dir=Out
+    Node: Cast To UDS_Occlusion_Volume (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Query Occlusion Multiplier
+Target is UDS Occlusion Volume.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Break Hit Result.HitActor
+      Pin: AsUDS Occlusion Volume (object) Dir=Out
+        -> Query Occlusion Multiplier
+Target is UDS Occlusion Volume.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Query Occlusion Multiplier
+Target is UDS Occlusion Volume (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To UDS_Occlusion_Volume.then
+      Pin: then (exec) Dir=Out
+        -> Set Multiplier.execute
+      Pin: self (object) Dir=In
+        -> Cast To UDS_Occlusion_Volume.AsUDS Occlusion Volume
+      Pin: Location (struct) Dir=In
+        -> Get Sample Location.Sample Location
+      Pin: Multiplier (real) Dir=Out
+        -> float * float.A
+    Node: Get Sample Location (K2Node_VariableGet)
+      Pin: Sample Location (struct) Dir=Out
+        -> Query Occlusion Multiplier
+Target is UDS Occlusion Volume.Location
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Query Occlusion Multiplier
+Target is UDS Occlusion Volume.Multiplier
+      Pin: B (real) Dir=In
+        -> Get Multiplier.Multiplier
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Multiplier.Multiplier
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (struct) Dir=In
+        -> Multi Line Trace For Objects.OutHits
+      Pin: LoopBody (exec) Dir=Out
+        -> Cast To UDS_Occlusion_Volume.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Hit Result.Hit
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Multiplier (K2Node_VariableGet)
+      Pin: Multiplier (real) Dir=Out
+        -> float * float.B
+    Node: Set Multiplier (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Query Occlusion Multiplier
+Target is UDS Occlusion Volume.then
+      Pin: then (exec) Dir=Out
+      Pin: Multiplier (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Final Multiplier (real) Dir=In
+        -> Get Multiplier.Multiplier
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Test Point for Occlusion Volumes.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Multiplier (K2Node_VariableGet)
+      Pin: Multiplier (real) Dir=Out
+        -> Return Node.Final Multiplier
+  Graph: Hard Occlusion Change
+    Node: Hard Occlusion Change (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

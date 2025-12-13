@@ -1,0 +1,1007 @@
+Blueprint: WB_ItemIcon (/Game/SOTS/ThirdParty/Systems/ProHUDV2/Widgets/Base/WB_ItemIcon.WB_ItemIcon)
+  Graph: EventGraph
+    Node: UpdateFade
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: FadeIn (bool) Dir=Out
+        -> Branch.Condition
+      Pin: FadeSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: HighlightSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: bUseHighlight (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> UpdateFade
+Custom Event.then
+      Pin: Condition (bool) Dir=In
+        -> UpdateFade
+Custom Event.FadeIn
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get bIsVisible (K2Node_VariableGet)
+      Pin: bIsVisible (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: Set bIsVisible (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Anim Fade
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+      Pin: bIsVisible (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get bIsVisible.bIsVisible
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Anim Fade
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set bIsVisible.execute
+      Pin: self (object) Dir=In
+      Pin: FadeIn (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Anim Highlight
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: FadeIn (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Get bIsVisible.bIsVisible
+      Pin: then (exec) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.execute
+      Pin: else (exec) Dir=Out
+    Node: Get bIsVisible (K2Node_VariableGet)
+      Pin: bIsVisible (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Anim Fade
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set bIsVisible.execute
+      Pin: self (object) Dir=In
+      Pin: FadeIn (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Set bIsVisible (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Anim Fade
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+      Pin: bIsVisible (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> UpdateFade
+Custom Event.HighlightSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Anim Highlight
+Target is WB Item Icon.PlaybackSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> UpdateFade
+Custom Event.FadeSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.PlaybackSpeed
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Update Fade (EdGraphNode_Comment)
+    Node: AddIcon
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.execute
+      Pin: BaseIconInfo (struct) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.ItemInfo
+      Pin: MainIconInfo (struct) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.MainIconInfo
+      Pin: bUseHighlight (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Update Fade
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: FadeIn (bool) Dir=In
+      Pin: FadeSpeed (real) Dir=In
+      Pin: HighlightSpeed (real) Dir=In
+      Pin: bUseHighlight (bool) Dir=In
+        -> Reroute Node.OutputPin
+    Node: RemoveIcon
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> FadeOutAnim
+Collapsed Graph.execute
+    Node: Remove Icon (EdGraphNode_Comment)
+    Node: Add Icon (EdGraphNode_Comment)
+    Node: FadeOutAnim
+Collapsed Graph (K2Node_Composite)
+      Pin: OnFinished (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: execute (exec) Dir=In
+        -> RemoveIcon
+Custom Event.then
+      Pin: FadeSpeed (real) Dir=In
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> FadeOutAnim
+Collapsed Graph.OnFinished
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+    Node: Get OV_L1 (K2Node_VariableGet)
+      Pin: OV_L1 (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get OV_L1.OV_L1
+        -> Get OV_L2.OV_L2
+        -> Get OV_L3.OV_L3
+        -> Get OV_HL.OV_HL
+        -> Get OV_MainIcon.OV_MainIcon
+      Pin: InOpacity (real) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Anim Highlight
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Construct (EdGraphNode_Comment)
+    Node: Add Icon (EdGraphNode_Comment)
+    Node: UpdateIcon
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.execute
+      Pin: BaseIconInfo (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: MainIconInfo (struct) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.MainIconInfo
+      Pin: PlaybackSpeed (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Icon Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: ItemInfo (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: MainIconInfo (struct) Dir=In
+        -> UpdateIcon
+Custom Event.MainIconInfo
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Anim Fade
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Anim Fade
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateIcon
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: FadeIn (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+    Node: Anim Fade
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: FadeIn (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: AddIconEditor
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.execute
+      Pin: BaseIconInfo (struct) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.ItemInfo
+      Pin: MainIconInfo (struct) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.MainIconInfo
+    Node: Add Icon Editor (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Anim Highlight
+Target is WB Item Icon.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Delay.then
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.PlaybackSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> UpdateFade
+Custom Event.bUseHighlight
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> AddIcon
+Custom Event.bUseHighlight
+      Pin: OutputPin (bool) Dir=Out
+        -> Update Fade
+Target is WB Item Icon.bUseHighlight
+    Node: Set Icon Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AddIcon
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Update Fade
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: ItemInfo (struct) Dir=In
+        -> AddIcon
+Custom Event.BaseIconInfo
+      Pin: MainIconInfo (struct) Dir=In
+        -> AddIcon
+Custom Event.MainIconInfo
+    Node: Set Icon Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> AddIconEditor
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: ItemInfo (struct) Dir=In
+        -> AddIconEditor
+Custom Event.BaseIconInfo
+      Pin: MainIconInfo (struct) Dir=In
+        -> AddIconEditor
+Custom Event.MainIconInfo
+    Node: Get OV_L2 (K2Node_VariableGet)
+      Pin: OV_L2 (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get OV_L3 (K2Node_VariableGet)
+      Pin: OV_L3 (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get OV_HL (K2Node_VariableGet)
+      Pin: OV_HL (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> UpdateIcon
+Custom Event.BaseIconInfo
+      Pin: OutputPin (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> UpdateIcon
+Custom Event.PlaybackSpeed
+      Pin: OutputPin (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (real) Dir=Out
+        -> Anim Fade
+Target is WB Item Icon.PlaybackSpeed
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Icon Info
+Target is WB Item Icon.ItemInfo
+    Node: Get OV_MainIcon (K2Node_VariableGet)
+      Pin: OV_MainIcon (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+      Pin: self (object) Dir=In
+  Graph: Anim_Fade
+    Node: Anim_Fade (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Anim Handler.execute
+      Pin: FadeIn (bool) Dir=Out
+        -> Anim Handler.FadeIn
+      Pin: PlaybackSpeed (real) Dir=Out
+        -> Anim Handler.PlaybackSpeed
+    Node: Get Fade (K2Node_VariableGet)
+      Pin: Fade (object) Dir=Out
+        -> Anim Handler.InAnimation
+      Pin: self (object) Dir=In
+    Node: Anim Handler (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Anim_Fade.then
+      Pin: InAnimation (object) Dir=In
+        -> Get Fade.Fade
+      Pin: FadeIn (bool) Dir=In
+        -> Anim_Fade.FadeIn
+      Pin: Loop (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+        -> Anim_Fade.PlaybackSpeed
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Anim Handler.then
+  Graph: Anim_Highlight
+    Node: Anim_Highlight (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Anim Handler.execute
+      Pin: FadeIn (bool) Dir=Out
+        -> Anim Handler.FadeIn
+      Pin: PlaybackSpeed (real) Dir=Out
+        -> Anim Handler.PlaybackSpeed
+    Node: Get Highlight_Base (K2Node_VariableGet)
+      Pin: Highlight_Base (object) Dir=Out
+        -> Anim Handler.InAnimation
+      Pin: self (object) Dir=In
+    Node: Anim Handler (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Anim_Highlight.then
+      Pin: InAnimation (object) Dir=In
+        -> Get Highlight_Base.Highlight_Base
+      Pin: FadeIn (bool) Dir=In
+        -> Anim_Highlight.FadeIn
+      Pin: Loop (bool) Dir=In
+      Pin: PlaybackSpeed (real) Dir=In
+        -> Anim_Highlight.PlaybackSpeed
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Anim Handler.then
+  Graph: SetClampedSize
+    Node: SetClampedSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Size.execute
+      Pin: Size (struct) Dir=Out
+        -> Clamp Vector 2D.Vector2D
+    Node: Get SB_Content (K2Node_VariableGet)
+      Pin: SB_Content (object) Dir=Out
+        -> Set Size.SizeBox
+      Pin: self (object) Dir=In
+    Node: Set Size (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetClampedSize.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: SizeBox (object) Dir=In
+        -> Get SB_Content.SB_Content
+      Pin: Width (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Height (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: __WorldContext (object) Dir=In
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Clamp Vector 2D.ReturnValue
+      Pin: X (real) Dir=Out
+        -> Set Size.Width
+      Pin: Y (real) Dir=Out
+        -> Set Size.Height
+    Node: Clamp Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Vector2D (struct) Dir=In
+        -> SetClampedSize.Size
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Size.then
+  Graph: SetIconInfo
+    Node: SetIconInfo (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set ItemInfo.execute
+      Pin: ItemInfo (struct) Dir=Out
+        -> Set ItemInfo.ItemInfo
+      Pin: MainIconInfo (struct) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.IconInfo
+    Node: Set Clamped Size
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ItemInfo.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: Size (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Y (real) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Clamped Size
+Target is WB Item Icon.Size
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Get Size.Size
+      Pin: OutputPin (real) Dir=Out
+        -> Make Vector 2D.X
+        -> Make Vector 2D.Y
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+    Node: Get Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Size (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get IconLayer1 (K2Node_VariableGet)
+      Pin: IconLayer1 (object) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.Image
+      Pin: self (object) Dir=In
+    Node: Get Icon Layer 1 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: IconLayer1 (struct) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.IconInfo
+    Node: Set Icon Layer Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Clamped Size
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: Image (object) Dir=In
+        -> Get IconLayer1.IconLayer1
+      Pin: IconInfo (struct) Dir=In
+        -> Get Icon Layer 1.IconLayer1
+    Node: Set Icon Layer Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Layer Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: Image (object) Dir=In
+        -> Get IconLayer2.IconLayer2
+      Pin: IconInfo (struct) Dir=In
+        -> Get Icon Layer 2.IconLayer2
+    Node: Set Icon Layer Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Layer Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: Image (object) Dir=In
+        -> Get IconLayer3.IconLayer3
+      Pin: IconInfo (struct) Dir=In
+        -> Get Icon Layer 3.IconLayer3
+    Node: Set Icon Layer Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Layer Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+      Pin: Image (object) Dir=In
+        -> Get IconLayerHL.IconLayerHL
+      Pin: IconInfo (struct) Dir=In
+        -> Get Icon Layer Highlight.IconLayerHL
+    Node: Get IconLayer2 (K2Node_VariableGet)
+      Pin: IconLayer2 (object) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.Image
+      Pin: self (object) Dir=In
+    Node: Get IconLayer3 (K2Node_VariableGet)
+      Pin: IconLayer3 (object) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.Image
+      Pin: self (object) Dir=In
+    Node: Get IconLayerHL (K2Node_VariableGet)
+      Pin: IconLayerHL (object) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.Image
+      Pin: self (object) Dir=In
+    Node: Get Icon Layer 2 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: IconLayer2 (struct) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.IconInfo
+    Node: Get Icon Layer 3 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: IconLayer3 (struct) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.IconInfo
+    Node: Get Icon Layer Highlight (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: IconLayerHL (struct) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.IconInfo
+        -> HandleFindHLColor
+Collapsed Graph.S_ItemIcon
+    Node: Set ItemInfo (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetIconInfo.then
+      Pin: then (exec) Dir=Out
+        -> Set Clamped Size
+Target is WB Item Icon.execute
+      Pin: ItemInfo (struct) Dir=In
+        -> SetIconInfo.ItemInfo
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Shine (K2Node_VariableGet)
+      Pin: Shine (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get Flipbook1 (K2Node_VariableGet)
+      Pin: Flipbook1 (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Get Flipbook2 (K2Node_VariableGet)
+      Pin: Flipbook2 (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Layer Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get Shine.Shine
+        -> Get Flipbook1.Flipbook1
+        -> Get Flipbook2.Flipbook2
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> HandleFindHLColor
+Collapsed Graph.ReturnValue
+    Node: HandleFindHLColor
+Collapsed Graph (K2Node_Composite)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+      Pin: S_ItemIcon (struct) Dir=In
+        -> Get Icon Layer Highlight.IconLayerHL
+    Node: Set Icon Layer Info
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Layer Info
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.execute
+      Pin: self (object) Dir=In
+      Pin: Image (object) Dir=In
+        -> Get MainIcon.MainIcon
+      Pin: IconInfo (struct) Dir=In
+        -> SetIconInfo.MainIconInfo
+    Node: Get MainIcon (K2Node_VariableGet)
+      Pin: MainIcon (object) Dir=Out
+        -> Set Icon Layer Info
+Target is WB Item Icon.Image
+      Pin: self (object) Dir=In
+  Graph: GetIconLayer1
+    Node: GetIconLayer1 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetIconLayer1.then
+      Pin: IconLayer1 (struct) Dir=In
+        -> Break S Item Icon Info.IconLayer1_13_F8343B454EE87779E34615A204FBDE73
+    Node: Get ItemInfo (K2Node_VariableGet)
+      Pin: ItemInfo (struct) Dir=Out
+        -> Break S Item Icon Info.S_ItemIconInfo
+      Pin: self (object) Dir=In
+    Node: Break S Item Icon Info (K2Node_BreakStruct)
+      Pin: S_ItemIconInfo (struct) Dir=In
+        -> Get ItemInfo.ItemInfo
+      Pin: Size_16_A4D1F9AB402BCE42ADC5A0990FA027BA (real) Dir=Out
+      Pin: IconLayer1_13_F8343B454EE87779E34615A204FBDE73 (struct) Dir=Out
+        -> Return Node.IconLayer1
+      Pin: IconLayer2_12_0CE1913C4FDE6493A941A8A84977418F (struct) Dir=Out
+      Pin: IconLayer3_11_6F65955F456EE35457FD0EBE11F8105F (struct) Dir=Out
+      Pin: IconLayerHighlight_17_7864E2484F2326AD4BF0B48D3E4E7DF2 (struct) Dir=Out
+  Graph: GetIconLayer2
+    Node: GetIconLayer2 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetIconLayer2.then
+      Pin: IconLayer2 (struct) Dir=In
+        -> Break S Item Icon Info.IconLayer2_12_0CE1913C4FDE6493A941A8A84977418F
+    Node: Get ItemInfo (K2Node_VariableGet)
+      Pin: ItemInfo (struct) Dir=Out
+        -> Break S Item Icon Info.S_ItemIconInfo
+      Pin: self (object) Dir=In
+    Node: Break S Item Icon Info (K2Node_BreakStruct)
+      Pin: S_ItemIconInfo (struct) Dir=In
+        -> Get ItemInfo.ItemInfo
+      Pin: Size_16_A4D1F9AB402BCE42ADC5A0990FA027BA (real) Dir=Out
+      Pin: IconLayer1_13_F8343B454EE87779E34615A204FBDE73 (struct) Dir=Out
+      Pin: IconLayer2_12_0CE1913C4FDE6493A941A8A84977418F (struct) Dir=Out
+        -> Return Node.IconLayer2
+      Pin: IconLayer3_11_6F65955F456EE35457FD0EBE11F8105F (struct) Dir=Out
+      Pin: IconLayerHighlight_17_7864E2484F2326AD4BF0B48D3E4E7DF2 (struct) Dir=Out
+  Graph: GetIconLayer3
+    Node: GetIconLayer3 (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetIconLayer3.then
+      Pin: IconLayer3 (struct) Dir=In
+        -> Break S Item Icon Info.IconLayer3_11_6F65955F456EE35457FD0EBE11F8105F
+    Node: Get ItemInfo (K2Node_VariableGet)
+      Pin: ItemInfo (struct) Dir=Out
+        -> Break S Item Icon Info.S_ItemIconInfo
+      Pin: self (object) Dir=In
+    Node: Break S Item Icon Info (K2Node_BreakStruct)
+      Pin: S_ItemIconInfo (struct) Dir=In
+        -> Get ItemInfo.ItemInfo
+      Pin: Size_16_A4D1F9AB402BCE42ADC5A0990FA027BA (real) Dir=Out
+      Pin: IconLayer1_13_F8343B454EE87779E34615A204FBDE73 (struct) Dir=Out
+      Pin: IconLayer2_12_0CE1913C4FDE6493A941A8A84977418F (struct) Dir=Out
+      Pin: IconLayer3_11_6F65955F456EE35457FD0EBE11F8105F (struct) Dir=Out
+        -> Return Node.IconLayer3
+      Pin: IconLayerHighlight_17_7864E2484F2326AD4BF0B48D3E4E7DF2 (struct) Dir=Out
+  Graph: GetIconLayerHighlight
+    Node: GetIconLayerHighlight (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetIconLayerHighlight.then
+      Pin: IconLayerHL (struct) Dir=In
+        -> Break S Item Icon Info.IconLayerHighlight_17_7864E2484F2326AD4BF0B48D3E4E7DF2
+    Node: Get ItemInfo (K2Node_VariableGet)
+      Pin: ItemInfo (struct) Dir=Out
+        -> Break S Item Icon Info.S_ItemIconInfo
+      Pin: self (object) Dir=In
+    Node: Break S Item Icon Info (K2Node_BreakStruct)
+      Pin: S_ItemIconInfo (struct) Dir=In
+        -> Get ItemInfo.ItemInfo
+      Pin: Size_16_A4D1F9AB402BCE42ADC5A0990FA027BA (real) Dir=Out
+      Pin: IconLayer1_13_F8343B454EE87779E34615A204FBDE73 (struct) Dir=Out
+      Pin: IconLayer2_12_0CE1913C4FDE6493A941A8A84977418F (struct) Dir=Out
+      Pin: IconLayer3_11_6F65955F456EE35457FD0EBE11F8105F (struct) Dir=Out
+      Pin: IconLayerHighlight_17_7864E2484F2326AD4BF0B48D3E4E7DF2 (struct) Dir=Out
+        -> Return Node.IconLayerHL
+  Graph: GetSize
+    Node: GetSize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetSize.then
+      Pin: Size (real) Dir=In
+        -> Break S Item Icon Info.Size_16_A4D1F9AB402BCE42ADC5A0990FA027BA
+    Node: Get ItemInfo (K2Node_VariableGet)
+      Pin: ItemInfo (struct) Dir=Out
+        -> Break S Item Icon Info.S_ItemIconInfo
+      Pin: self (object) Dir=In
+    Node: Break S Item Icon Info (K2Node_BreakStruct)
+      Pin: S_ItemIconInfo (struct) Dir=In
+        -> Get ItemInfo.ItemInfo
+      Pin: Size_16_A4D1F9AB402BCE42ADC5A0990FA027BA (real) Dir=Out
+        -> Return Node.Size
+      Pin: IconLayer1_13_F8343B454EE87779E34615A204FBDE73 (struct) Dir=Out
+      Pin: IconLayer2_12_0CE1913C4FDE6493A941A8A84977418F (struct) Dir=Out
+      Pin: IconLayer3_11_6F65955F456EE35457FD0EBE11F8105F (struct) Dir=Out
+      Pin: IconLayerHighlight_17_7864E2484F2326AD4BF0B48D3E4E7DF2 (struct) Dir=Out
+  Graph: SetIconImageBrush
+    Node: SetIconImageBrush (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Image (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Brush (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set Image Brush (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Target (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Brush (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: __WorldContext (object) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> SetIconImageBrush.then
+      Pin: InputObject (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Image Brush.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Image Brush.Brush
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Is Valid.InputObject
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InOpacity (real) Dir=In
+    Node: Set Render Opacity
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Image Brush.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InOpacity (real) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Render Opacity
+Target is Widget.then
+        -> Set Render Opacity
+Target is Widget.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Render Opacity
+Target is Widget.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetIconImageBrush.Brush
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Image Brush.Target
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetIconImageBrush.Image
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Render Opacity
+Target is Widget.self
+        -> Set Render Opacity
+Target is Widget.self
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+  Graph: SetIconLayerInfo
+    Node: SetIconLayerInfo (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Icon Image Brush
+Target is WB Item Icon.execute
+      Pin: Image (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: IconInfo (struct) Dir=Out
+        -> Break S Icon Info 2.S_IconInfo2
+    Node: Set Icon Image Brush
+Target is WB Item Icon (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetIconLayerInfo.then
+      Pin: then (exec) Dir=Out
+        -> Set Render Transform
+Target is Widget.execute
+      Pin: self (object) Dir=In
+      Pin: Image (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Brush (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Break S Icon Info 2 (K2Node_BreakStruct)
+      Pin: S_IconInfo2 (struct) Dir=In
+        -> SetIconLayerInfo.IconInfo
+      Pin: IconTexture_11_214280D949FDBB87B5B3E08050CC45F8 (object) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Transform_12_E829012D468F2DB2906FDD81F93FA822 (struct) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: IconColor_13_C0A0DE6948F813CF12E1B689F924694A (struct) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Icon Image Brush
+Target is WB Item Icon.Image
+        -> Reroute Node.InputPin
+    Node: Set Render Transform
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Icon Image Brush
+Target is WB Item Icon.then
+      Pin: then (exec) Dir=Out
+        -> Set Color and Opacity
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InTransform (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break S Icon Info 2.Transform_12_E829012D468F2DB2906FDD81F93FA822
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Render Transform
+Target is Widget.InTransform
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Render Transform
+Target is Widget.self
+        -> Reroute Node.InputPin
+    Node: Set Color and Opacity
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Render Transform
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InColorAndOpacity (struct) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Color and Opacity
+Target is Image.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (struct) Dir=In
+        -> Break S Icon Info 2.IconColor_13_C0A0DE6948F813CF12E1B689F924694A
+      Pin: OutputPin (struct) Dir=Out
+        -> Set Color and Opacity
+Target is Image.InColorAndOpacity
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Break S Icon Info 2.IconTexture_11_214280D949FDBB87B5B3E08050CC45F8
+      Pin: OutputPin (object) Dir=Out
+        -> Set Icon Image Brush
+Target is WB Item Icon.Brush
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Color and Opacity
+Target is Image.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> SetIconLayerInfo.Image
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin

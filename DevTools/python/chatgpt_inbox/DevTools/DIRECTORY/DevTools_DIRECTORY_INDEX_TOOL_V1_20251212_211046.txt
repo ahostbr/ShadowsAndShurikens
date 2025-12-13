@@ -1,0 +1,1167 @@
+<!--
+Adds a DevTools-friendly directory index generator (LLM_DIRECTORY_INDEX.txt) and wires it into sots_tools.py.
+
+What you get:
+- New tool: DevTools/python/generate_directory_index.py
+  - Excludes noisy folders (Binaries/Intermediate/Saved/etc)
+  - Optional max depth, folders-only, chunking, and JSON summary
+  - Writes a small run log + emits LLM_LOG summary
+
+- New sots_tools entrypoints:
+  - Interactive menu: Category 4 option 10
+  - CLI: python DevTools/python/sots_tools.py dir-index [args]
+
+NOTE:
+- Category 4 “Browse ChatGPT inbox” shifts from option 10 -> option 11.
+-->
+
+[SOTS_DEVTOOLS]
+tool: write_files
+mode: manual
+category: devtools
+plugin: DevTools
+pass: DIRECTORY_INDEX_TOOL_V1
+version: 0.81
+tags: directory-index;tree;llm;devtools;sots_tools
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/generate_directory_index.py ===
+#!/usr/bin/env python3
+"""
+generate_directory_index.py
+
+DevTools-friendly directory index generator for SOTS.
+
+Outputs an LLM-friendly "tree" text file (similar to Windows `tree /F /A`) with:
+- max depth / max items safety caps
+- exclude by directory name and/or relative path prefixes
+- optional folders-only mode
+- optional chunking into part files
+- JSON summary for quick ingestion
+
+This script prints clear progress + writes a small run log in the output folder.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import json
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Iterable
+
+from cli_utils import confirm_start, confirm_exit
+from project_paths import get_project_root
+from llm_log import print_llm_summary
+
+
+DEFAULT_EXCLUDE = [
+    "Binaries",
+    "Intermediate",
+    "Saved",
+    "DerivedDataCache",
+    ".vs",
+    ".git",
+    "ThirdParty",
+]
+
+
+def _now_stamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def _split_csv(s: str | None) -> list[str]:
+    if not s:
+        return []
+    parts: list[str] = []
+    for p in s.split(","):
+        p = p.strip()
+        if p:
+            parts.append(p)
+    return parts
+
+
+def _norm_rel_posix(root: Path, path: Path) -> str:
+    try:
+        rel = path.resolve().relative_to(root.resolve())
+    except Exception:
+        rel = path
+    return str(rel).replace("\\", "/").lstrip("/")
+
+
+@dataclass
+class ExcludeRules:
+    dirnames_lower: set[str]
+    path_prefixes_lower: list[str]
+
+    @staticmethod
+    def from_tokens(tokens: Iterable[str]) -> "ExcludeRules":
+        dirnames: set[str] = set()
+        prefixes: list[str] = []
+        for t in tokens:
+            t = t.strip()
+            if not t:
+                continue
+            if "/" in t or "\\" in t:
+                prefixes.append(t.replace("\\", "/").strip("/").lower())
+            else:
+                dirnames.add(t.lower())
+        return ExcludeRules(dirnames_lower=dirnames, path_prefixes_lower=prefixes)
+
+    def is_excluded_dir(self, name: str, rel_posix: str) -> bool:
+        n = name.lower()
+        if n in self.dirnames_lower:
+            return True
+        rel_l = rel_posix.lower()
+        for pref in self.path_prefixes_lower:
+            if rel_l.startswith(pref):
+                return True
+        return False
+
+
+@dataclass
+class Stats:
+    total_dirs_seen: int = 0
+    total_files_seen: int = 0
+    total_excluded_dirs: int = 0
+    total_lines_written: int = 0
+    max_depth_seen: int = 0
+    hit_max_items: bool = False
+    errors: int = 0
+
+
+class LineWriter:
+    def __init__(self, out_dir: Path, base_name: str, chunk_lines: int):
+        self.out_dir = out_dir
+        self.base_name = base_name
+        self.chunk_lines = max(0, int(chunk_lines))
+        self.part_index = 1
+        self.line_in_part = 0
+        self.parts: list[Path] = []
+        self.fp = None
+
+    def _part_path(self, idx: int) -> Path:
+        stem = Path(self.base_name).stem
+        suffix = Path(self.base_name).suffix or ".txt"
+        if self.chunk_lines > 0:
+            return self.out_dir / f"{stem}.part{idx:02d}{suffix}"
+        return self.out_dir / f"{stem}{suffix}"
+
+    def open(self) -> None:
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        p = self._part_path(self.part_index)
+        self.fp = p.open("w", encoding="utf-8", errors="replace", newline="\n")
+        self.parts.append(p)
+
+    def close(self) -> None:
+        if self.fp:
+            self.fp.close()
+            self.fp = None
+
+    def write_line(self, line: str, stats: Stats) -> None:
+        if self.fp is None:
+            self.open()
+
+        # Chunk rollover
+        if self.chunk_lines > 0 and self.line_in_part >= self.chunk_lines:
+            self.close()
+            self.part_index += 1
+            self.line_in_part = 0
+            self.open()
+
+        assert self.fp is not None
+        self.fp.write(line + "\n")
+        self.line_in_part += 1
+        stats.total_lines_written += 1
+
+    def write_manifest_if_chunked(self, manifest_name: str, header_lines: list[str]) -> Path | None:
+        if self.chunk_lines <= 0:
+            return None
+
+        manifest = self.out_dir / manifest_name
+        with manifest.open("w", encoding="utf-8", errors="replace", newline="\n") as f:
+            for h in header_lines:
+                f.write(h + "\n")
+            f.write("\nParts:\n")
+            for p in self.parts:
+                f.write(f" - {p.name}\n")
+        return manifest
+
+
+def _scandir_sorted(path: Path):
+    # Fast-ish sorted scandir for stable output.
+    try:
+        with os.scandir(path) as it:
+            entries = list(it)
+    except Exception:
+        return [], []
+
+    dirs = [e for e in entries if e.is_dir(follow_symlinks=False)]
+    files = [e for e in entries if e.is_file(follow_symlinks=False)]
+    dirs.sort(key=lambda e: e.name.lower())
+    files.sort(key=lambda e: e.name.lower())
+    return dirs, files
+
+
+def generate_index(
+    root: Path,
+    writer: LineWriter,
+    rules: ExcludeRules,
+    *,
+    out_name_for_manifest: str,
+    folders_only: bool,
+    max_depth: int,
+    max_items: int,
+    show_excluded_placeholders: bool,
+) -> tuple[Stats, dict[str, dict[str, int]]]:
+    stats = Stats()
+    top_level: dict[str, dict[str, int]] = {}
+
+    def bump_top(top: str, key: str, amount: int = 1) -> None:
+        d = top_level.setdefault(top, {"dirs": 0, "files": 0, "excluded_dirs": 0})
+        d[key] = int(d.get(key, 0)) + amount
+
+    def walk(dir_path: Path, prefix: str, depth: int, top_name: str) -> None:
+        if stats.total_dirs_seen + stats.total_files_seen >= max_items:
+            stats.hit_max_items = True
+            return
+        stats.max_depth_seen = max(stats.max_depth_seen, depth)
+        if depth > max_depth:
+            return
+
+        dirs, files = _scandir_sorted(dir_path)
+
+        children = []
+        children.extend(("dir", d) for d in dirs)
+        if not folders_only:
+            children.extend(("file", f) for f in files)
+
+        for i, (kind, entry) in enumerate(children):
+            if stats.total_dirs_seen + stats.total_files_seen >= max_items:
+                stats.hit_max_items = True
+                return
+
+            is_last = (i == len(children) - 1)
+            connector = "\\---" if is_last else "+---"
+
+            name = entry.name
+            child_path = Path(entry.path)
+
+            if kind == "dir":
+                rel = _norm_rel_posix(root, child_path)
+                excluded = rules.is_excluded_dir(name, rel)
+
+                if excluded:
+                    stats.total_excluded_dirs += 1
+                    bump_top(top_name, "excluded_dirs", 1)
+                    if show_excluded_placeholders:
+                        writer.write_line(f"{prefix}{connector}{name} [EXCLUDED]", stats)
+                    continue
+
+                writer.write_line(f"{prefix}{connector}{name}", stats)
+                stats.total_dirs_seen += 1
+                bump_top(top_name, "dirs", 1)
+
+                next_prefix = (prefix + "    ") if is_last else (prefix + "|   ")
+                walk(child_path, next_prefix, depth + 1, top_name)
+            else:
+                writer.write_line(f"{prefix}{connector}{name}", stats)
+                stats.total_files_seen += 1
+                bump_top(top_name, "files", 1)
+
+    # Header at top of output
+    header = [
+        f'Directory index root: "{root}"',
+        f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"MaxDepth: {max_depth} | MaxItems: {max_items} | FoldersOnly: {folders_only}",
+        f"ExcludeDirNames: {', '.join(sorted(rules.dirnames_lower)) if rules.dirnames_lower else '(none)'}",
+        f"ExcludePathPrefixes: {', '.join(rules.path_prefixes_lower) if rules.path_prefixes_lower else '(none)'}",
+        "",
+    ]
+    for h in header:
+        writer.write_line(h, stats)
+
+    # Root line
+    writer.write_line(".", stats)
+
+    # Root's immediate folders become the top-level buckets.
+    top_bucket_for_root_files = "."
+    top_level.setdefault(top_bucket_for_root_files, {"dirs": 0, "files": 0, "excluded_dirs": 0})
+
+    try:
+        dirs, files = _scandir_sorted(root)
+    except Exception:
+        dirs, files = [], []
+
+    children = []
+    children.extend(("dir", d) for d in dirs)
+    if not folders_only:
+        children.extend(("file", f) for f in files)
+
+    for i, (kind, entry) in enumerate(children):
+        if stats.total_dirs_seen + stats.total_files_seen >= max_items:
+            stats.hit_max_items = True
+            break
+
+        is_last = (i == len(children) - 1)
+        connector = "\\---" if is_last else "+---"
+        name = entry.name
+        child_path = Path(entry.path)
+
+        if kind == "dir":
+            rel = _norm_rel_posix(root, child_path)
+            excluded = rules.is_excluded_dir(name, rel)
+            if excluded:
+                stats.total_excluded_dirs += 1
+                bump_top(name, "excluded_dirs", 1)
+                if show_excluded_placeholders:
+                    writer.write_line(f"{connector}{name} [EXCLUDED]", stats)
+                continue
+
+            writer.write_line(f"{connector}{name}", stats)
+            stats.total_dirs_seen += 1
+            bump_top(name, "dirs", 1)
+
+            next_prefix = ("    ") if is_last else ("|   ")
+            walk(child_path, next_prefix, 1, name)
+        else:
+            writer.write_line(f"{connector}{name}", stats)
+            stats.total_files_seen += 1
+            bump_top(top_bucket_for_root_files, "files", 1)
+
+    # Footer
+    writer.write_line("", stats)
+    writer.write_line(f"Total dirs written: {stats.total_dirs_seen}", stats)
+    writer.write_line(f"Total files written: {stats.total_files_seen}", stats)
+    writer.write_line(f"Excluded dirs: {stats.total_excluded_dirs}", stats)
+    writer.write_line(f"Max depth seen: {stats.max_depth_seen}", stats)
+    if stats.hit_max_items:
+        writer.write_line(f"NOTE: Hit max-items cap ({max_items}). Output is truncated.", stats)
+
+    # If chunked, create manifest file listing parts.
+    manifest_header = header + [
+        f"Output was chunked into {len(writer.parts)} part file(s).",
+        f"Base name: {out_name_for_manifest}",
+    ]
+    writer.write_manifest_if_chunked(out_name_for_manifest, manifest_header)
+
+    return stats, top_level
+
+
+def main(argv: list[str] | None = None) -> int:
+    tool_name = "generate_directory_index"
+    confirm_start(tool_name)
+
+    ap = argparse.ArgumentParser(description="Generate an LLM-friendly directory index text file.")
+    ap.add_argument("--root", help="Root directory to index (defaults to project root).")
+    ap.add_argument("--out-dir", help="Output directory (defaults to DevTools/reports/directory_index/<timestamp>).")
+    ap.add_argument("--out-name", default="LLM_DIRECTORY_INDEX.txt", help="Base output file name.")
+    ap.add_argument("--summary-name", default="LLM_DIRECTORY_INDEX.summary.json", help="JSON summary file name.")
+    ap.add_argument("--max-depth", type=int, default=10, help="Maximum recursion depth.")
+    ap.add_argument("--max-items", type=int, default=200000, help="Max total dirs+files to write before truncating.")
+    ap.add_argument("--folders-only", action="store_true", help="Only list folders.")
+    ap.add_argument("--exclude", help="Comma-separated exclude tokens (dir names or relative path prefixes).")
+    ap.add_argument("--chunk-lines", type=int, default=0, help="Split output into part files of N lines (0 disables).")
+    ap.add_argument("--no-excluded-placeholders", action="store_true", help="Do not write '[EXCLUDED]' placeholder lines.")
+
+    args = ap.parse_args(argv)
+
+    root = Path(args.root).expanduser().resolve() if args.root else get_project_root()
+
+    if args.out_dir:
+        out_dir = Path(args.out_dir).expanduser().resolve()
+    else:
+        out_dir = get_project_root() / "DevTools" / "reports" / "directory_index" / _now_stamp()
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    exclude_tokens = DEFAULT_EXCLUDE.copy()
+    exclude_tokens.extend(_split_csv(args.exclude))
+    rules = ExcludeRules.from_tokens(exclude_tokens)
+
+    # Write a tiny run log (per your “never silent” law).
+    run_log = out_dir / "directory_index_run.log"
+    with run_log.open("w", encoding="utf-8", errors="replace", newline="\n") as f:
+        f.write(f"Tool: {tool_name}\n")
+        f.write(f"Root: {root}\n")
+        f.write(f"OutDir: {out_dir}\n")
+        f.write(f"OutName: {args.out_name}\n")
+        f.write(f"SummaryName: {args.summary_name}\n")
+        f.write(f"MaxDepth: {args.max_depth}\n")
+        f.write(f"MaxItems: {args.max_items}\n")
+        f.write(f"FoldersOnly: {args.folders_only}\n")
+        f.write(f"ChunkLines: {args.chunk_lines}\n")
+        f.write(f"ExcludeDirNames: {', '.join(sorted(rules.dirnames_lower))}\n")
+        f.write(f"ExcludePathPrefixes: {', '.join(rules.path_prefixes_lower)}\n")
+
+    writer = LineWriter(out_dir, args.out_name, args.chunk_lines)
+
+    print(f"[INFO] Root: {root}")
+    print(f"[INFO] Output dir: {out_dir}")
+    print(f"[INFO] Writing: {args.out_name} (chunk_lines={args.chunk_lines})")
+    print(f"[INFO] Writing summary: {args.summary_name}")
+    print(f"[INFO] Excludes: {', '.join(exclude_tokens)}")
+
+    stats, top_level = generate_index(
+        root,
+        writer,
+        rules,
+        out_name_for_manifest=args.out_name,
+        folders_only=args.folders_only,
+        max_depth=args.max_depth,
+        max_items=args.max_items,
+        show_excluded_placeholders=(not args.no_excluded_placeholders),
+    )
+
+    writer.close()
+
+    summary = {
+        "root": str(root),
+        "generated_local": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "options": {
+            "max_depth": args.max_depth,
+            "max_items": args.max_items,
+            "folders_only": bool(args.folders_only),
+            "chunk_lines": int(args.chunk_lines),
+            "excluded_placeholders": (not args.no_excluded_placeholders),
+        },
+        "totals": {
+            "dirs_written": stats.total_dirs_seen,
+            "files_written": stats.total_files_seen,
+            "excluded_dirs": stats.total_excluded_dirs,
+            "lines_written": stats.total_lines_written,
+            "max_depth_seen": stats.max_depth_seen,
+            "hit_max_items": stats.hit_max_items,
+            "errors": stats.errors,
+        },
+        "top_level": top_level,
+        "exclude_dirnames": sorted(rules.dirnames_lower),
+        "exclude_path_prefixes": rules.path_prefixes_lower,
+        "outputs": {
+            "out_dir": str(out_dir),
+            "parts": [p.name for p in writer.parts],
+            "manifest_or_output": args.out_name,
+            "run_log": run_log.name,
+        },
+    }
+
+    summary_path = out_dir / args.summary_name
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+
+    print("[INFO] Done.")
+    print(f"[INFO] Parts written: {len(writer.parts)}")
+    for p in writer.parts:
+        print(f"  - {p}")
+    print(f"[INFO] Run log: {run_log}")
+    print(f"[INFO] Summary JSON: {summary_path}")
+
+    print_llm_summary(
+        tool=tool_name,
+        status="OK",
+        root=str(root),
+        out_dir=str(out_dir),
+        out_name=str(args.out_name),
+        summary_name=str(args.summary_name),
+        max_depth=args.max_depth,
+        max_items=args.max_items,
+        folders_only=bool(args.folders_only),
+        chunk_lines=int(args.chunk_lines),
+        dirs_written=stats.total_dirs_seen,
+        files_written=stats.total_files_seen,
+        excluded_dirs=stats.total_excluded_dirs,
+        lines_written=stats.total_lines_written,
+        max_depth_seen=stats.max_depth_seen,
+        hit_max_items=stats.hit_max_items,
+        parts_written=len(writer.parts),
+    )
+
+    confirm_exit()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+=== END FILE ===
+
+=== FILE: DevTools/python/sots_tools.py ===
+from __future__ import annotations
+
+import sys
+import subprocess
+import argparse
+import json
+from pathlib import Path
+import datetime  # NEW: for pretty timestamps in manual gateway
+
+# ---------------------------------------------------------------------------
+# Toolbox metadata
+# ---------------------------------------------------------------------------
+
+TOOLBOX_VERSION = "SOTS DevTools Toolbox v1.6"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def get_tools_root() -> Path:
+    return Path(__file__).resolve().parent
+
+
+def run_script(script_name: str, extra_args: list[str] | None = None) -> None:
+    """
+    Helper to run a Python tool script located in DevTools/python.
+
+    - If the script is missing, print a clear error and return.
+    - All tools are responsible for their own confirm_start/confirm_exit,
+      logging via llm_log, etc.
+    """
+    tools_root = get_tools_root()
+    script = tools_root / script_name
+
+    if not script.exists():
+        print(f"[ERROR] Script not found: {script}")
+        return
+
+    cmd: list[str] = [sys.executable, str(script)]
+    if extra_args:
+        cmd.extend(extra_args)
+
+    print(f"[INFO] Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+
+
+def run_pack(pack_path: str) -> int:
+    """
+    Run a ChatGPT pack (write_files) manually via the same pathway as inbox files.
+
+    The pack_path is passed to write_files.py --source so behavior/logging match
+    existing manual runs. All stdout/stderr stream through unchanged.
+    """
+    script = get_tools_root() / "write_files.py"
+    if not script.exists():
+        print(f"[ERROR] write_files.py not found at {script}")
+        return 1
+
+    pack = Path(pack_path).resolve()
+    cmd: list[str] = [sys.executable, str(script), "--source", str(pack)]
+    print(f"[INFO] Running pack: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+    return 0
+
+
+def list_pipelines() -> None:
+    """
+    List available pipeline definitions.
+
+    Sources:
+    - DevToolsPipelines.json
+    - DevTools/python/pipelines/*.json
+    """
+    tools_root = get_tools_root()
+    root_json = tools_root.parent / "DevToolsPipelines.json"
+    pipe_dir = tools_root / "pipelines"
+
+    print("")
+    print("=== Available pipelines ===")
+    print("")
+
+    def _print_one(name: str, payload: dict) -> None:
+        desc = payload.get("description", "").strip()
+        print(f"- {name}")
+        if desc:
+            print(f"    {desc}")
+
+    # Root DevToolsPipelines.json
+    if root_json.exists():
+        try:
+            payload = json.loads(root_json.read_text(encoding="utf-8", errors="replace"))
+            for name, item in payload.get("pipelines", {}).items():
+                _print_one(name, item)
+        except Exception as exc:
+            print(f"[WARN] Failed to read {root_json}: {exc}")
+
+    # pipelines/*.json
+    if pipe_dir.exists():
+        for p in sorted(pipe_dir.glob("*.json")):
+            try:
+                item = json.loads(p.read_text(encoding="utf-8", errors="replace"))
+                name = item.get("name", p.stem)
+                _print_one(name, item)
+            except Exception as exc:
+                print(f"[WARN] Failed to read {p}: {exc}")
+
+    print("")
+
+
+def run_pipeline_by_name(pipeline_name: str) -> int:
+    """
+    Run a named pipeline via sots_pipeline_hub.py.
+
+    This keeps the hub as the single entry point and preserves its logging.
+    """
+    tools_root = get_tools_root()
+    hub_script = tools_root / "sots_pipeline_hub.py"
+    if not hub_script.exists():
+        print(f"[ERROR] Missing pipeline hub script: {hub_script}")
+        return 1
+
+    cmd: list[str] = [sys.executable, str(hub_script), pipeline_name]
+    print(f"[INFO] Running pipeline: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Core maintenance (Category 1)
+# ---------------------------------------------------------------------------
+
+def run_clean_binaries_intermediate() -> None:
+    run_script("clean_binaries_intermediate.py")
+
+
+def run_analyze_build_log() -> None:
+    run_script("analyze_build_log.py")
+
+
+def run_summarize_crash_logs() -> None:
+    run_script("summarize_crash_logs.py")
+
+
+def run_scan_todos() -> None:
+    run_script("scan_todos.py")
+
+
+# ---------------------------------------------------------------------------
+# Architecture / naming (Category 2)
+# ---------------------------------------------------------------------------
+
+def run_fsots_duplicate_report() -> None:
+    run_script("fsots_duplicate_report.py")
+
+
+def run_architecture_lint() -> None:
+    run_script("architecture_lint.py")
+
+
+# ---------------------------------------------------------------------------
+# Plugins / dependency health (Category 3)
+# ---------------------------------------------------------------------------
+
+def run_plugin_dependency_health() -> None:
+    run_script("plugin_dependency_health.py")
+
+
+def run_ensure_plugin_modules() -> None:
+    run_script("ensure_plugin_modules.py")
+
+
+def run_fix_plugin_dependencies() -> None:
+    run_script("fix_plugin_dependencies.py")
+
+
+def run_compare_plugin_zips() -> None:
+    run_script("compare_plugin_zips.py")
+
+
+# ---------------------------------------------------------------------------
+# Batch editing / licensing / logs (Category 4)
+# ---------------------------------------------------------------------------
+
+def run_mass_regex_edit() -> None:
+    run_script("mass_regex_edit.py")
+
+
+def run_inject_license_header() -> None:
+    run_script("inject_license_header.py")
+
+
+def run_apply_json_pack() -> None:
+    """
+    Apply a JSON pack (older format) using apply_json_pack.py.
+    """
+    run_script("apply_json_pack.py")
+
+
+def run_ad_hoc_regex_search() -> None:
+    """Run the ad-hoc regex search tool."""
+    run_script("ad_hoc_regex_search.py")
+
+
+def run_quick_search() -> None:
+    """Run the quick search tool (literal + regex)."""
+    run_script("quick_search.py")
+
+
+def run_directory_index(
+    root: str | None = None,
+    out_dir: str | None = None,
+    max_depth: int | None = None,
+    folders_only: bool = False,
+    exclude: str | None = None,
+    chunk_lines: int | None = None,
+) -> None:
+    """
+    Generate an LLM-friendly directory index (tree) text file.
+
+    This is a thin wrapper that calls DevTools/python/generate_directory_index.py.
+    """
+    extra_args: list[str] = []
+    if root:
+        extra_args.extend(["--root", root])
+    if out_dir:
+        extra_args.extend(["--out-dir", out_dir])
+    if max_depth is not None:
+        extra_args.extend(["--max-depth", str(max_depth)])
+    if folders_only:
+        extra_args.append("--folders-only")
+    if exclude:
+        extra_args.extend(["--exclude", exclude])
+    if chunk_lines is not None:
+        extra_args.extend(["--chunk-lines", str(chunk_lines)])
+
+    run_script("generate_directory_index.py", extra_args)
+
+
+# ---------------------------------------------------------------------------
+# KEM Tools (Category 6)
+# ---------------------------------------------------------------------------
+
+def run_kem_execution_report() -> None:
+    run_script("kem_execution_report.py")
+
+
+def run_kem_telemetry_report() -> None:
+    run_script("kem_telemetry_report.py")
+
+
+def run_kem_coverage_matrix_report() -> None:
+    run_script("kem_coverage_matrix_report.py")
+
+
+# ---------------------------------------------------------------------------
+# ChatGPT Inbox manual bridge (Category 4 helper)
+# ---------------------------------------------------------------------------
+
+def run_apply_latest_chatgpt_inbox() -> None:
+    """
+    Manually apply the newest file in DevTools/python/chatgpt_inbox by dispatching it
+    through the same dispatcher used by the Send2SOTS bridge server.
+
+    This keeps Copilot/Buddy aligned with your "manual gateway" rule: DevTools runs are
+    manual by default, never assumed.
+    """
+    tools_root = get_tools_root()
+    root = tools_root / "chatgpt_inbox"
+
+    if not root.exists():
+        print(f"[WARN] chatgpt_inbox directory does not exist yet: {root}")
+        return
+
+    try:
+        # Import once so we fail early if the dispatcher is missing.
+        from sots_chatgpt_dispatcher import dispatch_file  # type: ignore
+    except Exception as exc:
+        print("[ERROR] Could not import sots_chatgpt_dispatcher.dispatch_file.")
+        print(f"       {exc}")
+        print("       Make sure sots_chatgpt_dispatcher.py is on PYTHONPATH and defines:")
+        print("           def dispatch_file(prompt_path: Path, *, force: bool = False) -> None")
+        return
+
+    current = root
+    newest: Path | None = None
+
+    # Find newest file anywhere under chatgpt_inbox
+    for p in current.rglob("*"):
+        if p.is_file():
+            if newest is None or p.stat().st_mtime > newest.stat().st_mtime:
+                newest = p
+
+    if newest is None:
+        print(f"[INFO] No files found under: {root}")
+        return
+
+    ts = datetime.datetime.fromtimestamp(newest.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+    print("")
+    print("=== ChatGPT Inbox Manual Gateway ===")
+    print(f"Selected newest file:\n  {newest}\n  (mtime: {ts})")
+    print("")
+    ans = input("Dispatch this file now? (y/N): ").strip().lower()
+    if ans not in {"y", "yes"}:
+        print("[INFO] Cancelled.")
+        return
+
+    # Dispatch (the dispatcher handles file type inference, pack applying, etc)
+    dispatch_file(newest, force=False)
+    print("[INFO] Dispatch complete.")
+
+
+# ---------------------------------------------------------------------------
+# Interactive menu UI
+# ---------------------------------------------------------------------------
+
+def category_core_maintenance() -> None:
+    while True:
+        print("")
+        print("=== Category 1: Core maintenance ===")
+        print("")
+        print("  1) Clean Binaries/Intermediate (safe)")
+        print("  2) Analyze last build log")
+        print("  3) Summarize crash logs")
+        print("  4) Scan TODO / FIXME comments")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Core> ").strip()
+
+        if choice == "1":
+            run_clean_binaries_intermediate()
+        elif choice == "2":
+            run_analyze_build_log()
+        elif choice == "3":
+            run_summarize_crash_logs()
+        elif choice == "4":
+            run_scan_todos()
+        elif choice in {"0", "b", "B"}:
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+def category_fsots_architecture() -> None:
+    while True:
+        print("")
+        print("=== Category 2: Architecture / naming ===")
+        print("")
+        print("  1) FSOTS duplicate report")
+        print("  2) Architecture lint")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Arch> ").strip()
+
+        if choice == "1":
+            run_fsots_duplicate_report()
+        elif choice == "2":
+            run_architecture_lint()
+        elif choice in {"0", "b", "B"}:
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+def category_plugins_dependencies() -> None:
+    while True:
+        print("")
+        print("=== Category 3: Plugins / dependencies ===")
+        print("")
+        print("  1) Plugin dependency health")
+        print("  2) Ensure plugin modules")
+        print("  3) Fix plugin dependencies (guided)")
+        print("  4) Compare plugin zips")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Plugins> ").strip()
+
+        if choice == "1":
+            run_plugin_dependency_health()
+        elif choice == "2":
+            run_ensure_plugin_modules()
+        elif choice == "3":
+            run_fix_plugin_dependencies()
+        elif choice == "4":
+            run_compare_plugin_zips()
+        elif choice in {"0", "b", "B"}:
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+def category_batch_editing() -> None:
+    while True:
+        print("")
+        print("=== Category 4: Batch editing / licensing / logs ===")
+        print("")
+        print("  1) Mass regex edit from config")
+        print("  2) Inject / verify license headers")
+        print("  3) Analyze last build log")
+        print("  4) Summarize crash logs")
+        print("  5) Scan TODO / FIXME comments")
+        print("  6) Apply JSON DevTools pack")
+        print("  7) Ad-hoc regex search (pattern + optional literal)")
+        print("  8) [KEM] Execution & Position Report")
+        print("  9) Quick search (literal + optional regex)")
+        print(" 10) Generate directory index (LLM_DIRECTORY_INDEX.txt)")
+        print(" 11) Browse ChatGPT inbox (manual dispatcher)")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Batch> ").strip()
+
+        if choice == "1":
+            run_mass_regex_edit()
+        elif choice == "2":
+            run_inject_license_header()
+        elif choice == "3":
+            run_analyze_build_log()
+        elif choice == "4":
+            run_summarize_crash_logs()
+        elif choice == "5":
+            run_scan_todos()
+        elif choice == "6":
+            run_apply_json_pack()
+        elif choice == "7":
+            run_ad_hoc_regex_search()
+        elif choice == "8":
+            run_kem_execution_report()
+        elif choice == "9":
+            run_quick_search()
+        elif choice == "10":
+            run_directory_index()
+        elif choice == "11":
+            run_apply_latest_chatgpt_inbox()
+        elif choice in {"0", "b", "B"}:
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+def category_high_level_checks() -> None:
+    while True:
+        print("")
+        print("=== Category 5: High-level project checks ===")
+        print("")
+        print("  1) List available pipelines")
+        print("  2) Run pipeline by name")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Checks> ").strip()
+
+        if choice == "1":
+            list_pipelines()
+        elif choice == "2":
+            name = input("Pipeline name> ").strip()
+            if name:
+                run_pipeline_by_name(name)
+        elif choice in {"0", "b", "B"}:
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+def category_kem_tools() -> None:
+    while True:
+        print("")
+        print("=== Category 6: KillExecutionManager (KEM) tools ===")
+        print("")
+        print("  1) [KEM] Execution & Position Report")
+        print("  2) [KEM] Telemetry Report")
+        print("  3) [KEM] Coverage Matrix Report")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("KEM> ").strip()
+
+        if choice == "1":
+            run_kem_execution_report()
+        elif choice == "2":
+            run_kem_telemetry_report()
+        elif choice == "3":
+            run_kem_coverage_matrix_report()
+        elif choice in {"0", "b", "B"}:
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def run_interactive_menu() -> None:
+    tools_root = get_tools_root()
+    print(f"[INFO] SOTS DevTools root: {tools_root}")
+
+    while True:
+        print("")
+        print("=== SOTS DevTools Hub ===")
+        print(f"Version: {TOOLBOX_VERSION}")
+        print("")
+        print("  1) Core maintenance")
+        print("  2) Architecture / naming")
+        print("  3) Plugins / dependencies")
+        print("  4) Batch editing / licensing / logs")
+        print("  5) High-level project checks")
+        print("  6) KillExecutionManager (KEM) tools")
+        print("")
+        print("  0) Exit")
+        print("")
+
+        choice = input("Main> ").strip()
+
+        if choice == "1":
+            category_core_maintenance()
+        elif choice == "2":
+            category_fsots_architecture()
+        elif choice == "3":
+            category_plugins_dependencies()
+        elif choice == "4":
+            category_batch_editing()
+        elif choice == "5":
+            category_high_level_checks()
+        elif choice == "6":
+            category_kem_tools()
+        elif choice in {"0", "q", "Q", "quit", "exit"}:
+            print("[INFO] Exiting SOTS DevTools hub.")
+            break
+        else:
+            print("[WARN] Unknown option, please try again.")
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="SOTS DevTools hub (interactive menu by default)",
+        add_help=True,
+    )
+    subparsers = parser.add_subparsers(dest="command")
+
+    pack_parser = subparsers.add_parser(
+        "run_pack",
+        help="Run a write_files pack (saved in chatgpt_inbox or anywhere)",
+    )
+    pack_parser.add_argument("pack_path", help="Path to the prompt .txt file")
+
+    pipeline_parser = subparsers.add_parser(
+        "run_pipeline",
+        help="Run a named pipeline from DevToolsPipelines.json / pipelines/*.json",
+    )
+    pipeline_parser.add_argument("pipeline_name", help="Name/ID of the pipeline to run")
+
+    subparsers.add_parser(
+        "list_pipelines",
+        help="List available pipelines from DevToolsPipelines.json and pipelines/*.json",
+    )
+
+    subparsers.add_parser(
+        "browse_inbox",
+        help="Launch the inbox TUI browser (manual dispatcher)",
+    )
+
+    dir_parser = subparsers.add_parser(
+        "dir-index",
+        help="Generate an LLM-friendly directory index (tree) text file",
+    )
+    dir_parser.add_argument("--root", dest="root", help="Root directory to index (defaults to project root)")
+    dir_parser.add_argument("--out-dir", dest="out_dir", help="Output directory for index files (defaults to DevTools/reports/directory_index)")
+    dir_parser.add_argument("--max-depth", dest="max_depth", type=int, help="Maximum recursion depth (default: 10)")
+    dir_parser.add_argument("--folders-only", dest="folders_only", action="store_true", help="Only list folders, not files")
+    dir_parser.add_argument("--exclude", dest="exclude", help="Comma-separated exclude tokens (dir names or relative path prefixes)")
+    dir_parser.add_argument("--chunk-lines", dest="chunk_lines", type=int, help="If set, split output into part files of N lines")
+
+    subparsers.add_parser(
+        "bpgen_packs",
+        help="List BPGen snippet packs (DevTools/bpgen_snippets/packs)",
+    )
+
+    bpgen_run_parser = subparsers.add_parser(
+        "bpgen_run_pack",
+        help="Run all snippets in a BPGen pack via SOTS_BPGenBuildCommandlet",
+    )
+    bpgen_run_parser.add_argument("pack_name", help="Pack folder name under DevTools/bpgen_snippets/packs")
+    bpgen_run_parser.add_argument("--ue-cmd", dest="ue_cmd", default="", help="Optional UE commandlet args")
+
+    subparsers.add_parser(
+        "bpgen_coverage",
+        help="Run BPGen snippet coverage report",
+    )
+
+    # existing subcommands preserved below (BEP reports, parity sweeps, audits, etc.)
+    report_parser = subparsers.add_parser(
+        "bep-parkour-snippets",
+        help="Inventory BEP-exported parkour snippets and write a JSON report",
+    )
+    report_parser.add_argument("--zip-path", dest="zip_path", help="Path to the BEP export zip")
+    report_parser.add_argument("--output-dir", dest="output_dir", help="Output directory for reports (defaults to DevTools/reports)")
+
+    parity_parser = subparsers.add_parser(
+        "parkour-parity-sweep",
+        help="Run name-based parity sweep between BEP snippets and SOTS_Parkour C++",
+    )
+    parity_parser.add_argument("--snippets-json", dest="snippets_json", help="Path to bep_parkour_snippets.json")
+    parity_parser.add_argument("--plugin-root", dest="plugin_root", help="Root path to SOTS_Parkour plugin")
+
+    subparsers.add_parser(
+        "aip_audit",
+        help="Run the AIPerception config audit",
+    )
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    parser = build_arg_parser()
+    parsed = parser.parse_args(args)
+
+    if parsed.command is None:
+        run_interactive_menu()
+        return 0
+
+    if parsed.command == "run_pack":
+        return run_pack(parsed.pack_path)
+    if parsed.command == "run_pipeline":
+        return run_pipeline_by_name(parsed.pipeline_name)
+    if parsed.command == "list_pipelines":
+        list_pipelines()
+        return 0
+    if parsed.command == "browse_inbox":
+        run_apply_latest_chatgpt_inbox()
+        return 0
+    if parsed.command == "dir-index":
+        run_directory_index(
+            parsed.root,
+            parsed.out_dir,
+            parsed.max_depth,
+            parsed.folders_only,
+            parsed.exclude,
+            parsed.chunk_lines,
+        )
+        return 0
+    if parsed.command == "bpgen_packs":
+        return run_bpgen_packs()
+    if parsed.command == "bpgen_run_pack":
+        return run_bpgen_run_pack(parsed.pack_name, parsed.ue_cmd)
+    if parsed.command == "bpgen_coverage":
+        return run_bpgen_coverage()
+
+    if parsed.command == "bep-parkour-snippets":
+        run_bep_parkour_snippets_report(parsed.zip_path, parsed.output_dir)
+        return 0
+    if parsed.command == "parkour-parity-sweep":
+        run_parkour_parity_sweep(parsed.snippets_json, parsed.plugin_root)
+        return 0
+    if parsed.command == "aip_audit":
+        run_aip_audit()
+        return 0
+
+    # If we somehow get here, fall back to interactive menu to preserve behavior.
+    run_interactive_menu()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+=== END FILE ===

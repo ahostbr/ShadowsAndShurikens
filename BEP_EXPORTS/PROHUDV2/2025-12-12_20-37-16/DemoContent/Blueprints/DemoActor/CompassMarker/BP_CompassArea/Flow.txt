@@ -1,0 +1,123 @@
+Blueprint: BP_CompassArea (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/CompassMarker/BP_CompassArea.BP_CompassArea)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: On Component End Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Show Compass
+Target is BPi HUDManager V2.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component End Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Hide Compass
+Target is BPi HUDManager V2.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component End Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Show Compass
+Target is BPi HUDManager V2.self
+        -> Hide Compass
+Target is BPi HUDManager V2.self
+        -> Remove All Compass Markers
+Target is BPi HUDManager V2.self
+    Node: Show Compass
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Hide Compass
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: then (exec) Dir=Out
+        -> Remove All Compass Markers
+Target is BPi HUDManager V2.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Remove All Compass Markers
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Hide Compass
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove All Compass Markers
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: Array Element (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Update Marker
+Target is BP Demo Trigger Marker.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: InputObject (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Is Valid (exec) Dir=Out
+        -> Update Marker
+Target is BP Demo Trigger Marker.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Update Marker
+Target is BP Demo Trigger Marker (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Condition (bool) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

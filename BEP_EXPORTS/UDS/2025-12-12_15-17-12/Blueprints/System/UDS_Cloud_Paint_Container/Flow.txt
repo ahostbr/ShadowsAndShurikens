@@ -1,0 +1,136 @@
+Blueprint: UDS_Cloud_Paint_Container (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/UDS_Cloud_Paint_Container.UDS_Cloud_Paint_Container)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Cloud Paint Container.execute
+      Pin: else (exec) Dir=Out
+    Node: Update Painted Cloud Coverage Target
+Target is Ultra Dynamic Sky (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Cloud Paint Container.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Event End Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: EndPlayReason (byte) Dir=Out
+        -> Contains Item.ItemToFind
+    Node: Contains Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (byte) Dir=In
+        -> Make Array.Array
+      Pin: ItemToFind (byte) Dir=In
+        -> Event End Play.EndPlayReason
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (byte) Dir=Out
+        -> Contains Item.TargetArray
+      Pin: [0] (byte) Dir=In
+      Pin: [1] (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event End Play.then
+      Pin: Condition (bool) Dir=In
+        -> Contains Item.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Get Actor Of Class.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Run Context (K2Node_VariableGet)
+      Pin: Run Context (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get Run Context.Run Context
+      Pin: B (byte) Dir=In
+    Node: Notify Of Removed Cloud Paint Container
+Target is Ultra Dynamic Sky (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Cloud Paint Container.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Run Context.self
+        -> Update Painted Cloud Coverage Target
+Target is Ultra Dynamic Sky.self
+        -> Is Valid.InputObject
+        -> Set Cloud Paint Container.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Get Actor Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Notify Of Removed Cloud Paint Container
+Target is Ultra Dynamic Sky.self
+        -> Set Cloud Paint Container.self
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Get Actor Of Class.then
+      Pin: InputObject (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set Cloud Paint Container.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Set Cloud Paint Container (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Update Painted Cloud Coverage Target
+Target is Ultra Dynamic Sky.execute
+      Pin: Cloud Paint Container (object) Dir=In
+        -> Self-Reference.self
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Set Cloud Paint Container (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Notify Of Removed Cloud Paint Container
+Target is Ultra Dynamic Sky.execute
+      Pin: Cloud Paint Container (object) Dir=In
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Actor Of Class.ReturnValue
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Cloud Paint Container.Cloud Paint Container
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,2491 @@
+Blueprint: CloudProfileKeyGradient (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/Editor_UI/Cloud_Profile_Tool/CloudProfileKeyGradient.CloudProfileKeyGradient)
+  Graph: EventGraph
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+    Node: Get Gradient Label (K2Node_VariableGet)
+      Pin: Gradient Label (string) Dir=Out
+        -> To Text (String).InString
+      Pin: self (object) Dir=In
+    Node: Get Label (K2Node_VariableGet)
+      Pin: Label (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Tool Tip Text
+Target is Widget.execute
+      Pin: self (object) Dir=In
+        -> Get Label.Label
+      Pin: InText (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Gradient Label.Gradient Label
+      Pin: ReturnValue (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+    Node: Get Label (K2Node_VariableGet)
+      Pin: Label (object) Dir=Out
+        -> Set Tool Tip Text
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Tool Tip Text
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Create Render Target 2D.execute
+      Pin: self (object) Dir=In
+        -> Get Label.Label
+      Pin: InToolTipText (text) Dir=In
+        -> Get In Tool Tip Text.In Tool Tip Text
+    Node: Get In Tool Tip Text (K2Node_VariableGet)
+      Pin: In Tool Tip Text (text) Dir=Out
+        -> Set Tool Tip Text
+Target is Widget.InToolTipText
+      Pin: self (object) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Drag
+Target is Cloud Profile Key Gradient.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+    Node: Update Drag
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Value Changed (KeyEditorSpinbox) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: InValue (real) Dir=Out
+    Node: Get KeyEditorSpinbox (K2Node_VariableGet)
+      Pin: KeyEditorSpinbox (object) Dir=Out
+        -> Has Mouse Capture
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Has Mouse Capture
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get KeyEditorSpinbox.KeyEditorSpinbox
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Value Changed (KeyEditorSpinbox).then
+      Pin: Condition (bool) Dir=In
+        -> Has Mouse Capture
+Target is Widget.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+    Node: Get KeyEditorSpinbox (K2Node_VariableGet)
+      Pin: KeyEditorSpinbox (object) Dir=Out
+        -> Get Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Get Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get KeyEditorSpinbox.KeyEditorSpinbox
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Array Elem.TargetArray
+        -> GET.Array
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+      Pin: Y (int) Dir=Out
+        -> GET.Dimension 1
+        -> Set Array Elem.Index
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Update Gradient Preview
+Target is Cloud Profile Key Gradient.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: Index (int) Dir=In
+        -> Break Int Point.Y
+      Pin: Item (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: bSizeToFit (bool) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+        -> Break Int Point.Y
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+        -> Make Vector 2D.X
+      Pin: Y (real) Dir=Out
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Y (real) Dir=In
+        -> Get Value
+Target is Spin Box.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Array Elem.Item
+    Node: Create Render Target 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Tool Tip Text
+Target is Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Gradient Target.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Width (int) Dir=In
+      Pin: Height (int) Dir=In
+      Pin: Format (byte) Dir=In
+      Pin: ClearColor (struct) Dir=In
+      Pin: bAutoGenerateMipMaps (bool) Dir=In
+      Pin: bSupportUAVs (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Gradient Target.Gradient Target
+    Node: Set Gradient Target (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create Render Target 2D.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush
+Target is Image.execute
+      Pin: Gradient Target (object) Dir=In
+        -> Create Render Target 2D.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Make Slate Brush.ResourceObject
+      Pin: self (object) Dir=In
+    Node: Get Gradient (K2Node_VariableGet)
+      Pin: Gradient (object) Dir=Out
+        -> Set Brush
+Target is Image.self
+      Pin: self (object) Dir=In
+    Node: Set Brush
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Gradient Target.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Gradient.Gradient
+      Pin: InBrush (struct) Dir=In
+        -> Make Slate Brush.SlateBrush
+    Node: Make Slate Brush (K2Node_MakeStruct)
+      Pin: SlateBrush (struct) Dir=Out
+        -> Set Brush
+Target is Image.InBrush
+      Pin: TintColor (struct) Dir=In
+      Pin: DrawAs (byte) Dir=In
+      Pin: Tiling (byte) Dir=In
+      Pin: Mirroring (byte) Dir=In
+      Pin: ImageSize (struct) Dir=In
+      Pin: Margin (struct) Dir=In
+      Pin: ResourceObject (object) Dir=In
+        -> Set Gradient Target.Output_Get
+      Pin: OutlineSettings (struct) Dir=In
+        -> Make Slate Brush Outline Settings.SlateBrushOutlineSettings
+    Node: Make Slate Brush Outline Settings (K2Node_MakeStruct)
+      Pin: SlateBrushOutlineSettings (struct) Dir=Out
+        -> Make Slate Brush.OutlineSettings
+      Pin: CornerRadii (struct) Dir=In
+        -> Make Vector 4.ReturnValue
+      Pin: Color (struct) Dir=In
+        -> Make Slate Color.SlateColor
+      Pin: Width (real) Dir=In
+      Pin: RoundingType (byte) Dir=In
+      Pin: bUseBrushTransparency (bool) Dir=In
+    Node: Make Vector 4 (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+      Pin: Z (real) Dir=In
+      Pin: W (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.CornerRadii
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Make Slate Brush Outline Settings.Color
+      Pin: SpecifiedColor (struct) Dir=In
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Latent Gradient Update
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Latent Gradient Update
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Update Gradient Preview
+Target is Cloud Profile Key Gradient.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Update Gradient Preview
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: On Value Committed (KeyEditorSpinbox) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: InValue (real) Dir=Out
+      Pin: CommitMethod (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> On Value Committed (KeyEditorSpinbox).CommitMethod
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Value Committed (KeyEditorSpinbox).then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.then
+        -> Branch.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Array Elem.execute
+    Node: Update Gradient Preview
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Array Elem.then
+      Pin: then (exec) Dir=Out
+        -> Set Profile Update Needed.execute
+      Pin: self (object) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Profile Update Needed.self
+      Pin: self (object) Dir=In
+    Node: Set Profile Update Needed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Update Gradient Preview
+Target is Cloud Profile Key Gradient.then
+      Pin: then (exec) Dir=Out
+      Pin: Profile Update Needed (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Construct (EdGraphNode_Comment)
+    Node: Drag Tick (EdGraphNode_Comment)
+    Node: Latent Gradient Update (EdGraphNode_Comment)
+    Node: Change Key Value (EdGraphNode_Comment)
+  Graph: On_BarBorder_MouseButtonDown
+    Node: On_BarBorder_MouseButtonDown (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Click Position.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Absolute to Local (Coordinates).Geometry
+        -> Get Local Size.Geometry
+      Pin: MouseEvent (struct) Dir=Out
+        -> Get Screen Space Position.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Event Reply.EventReply
+    Node: Make Event Reply (K2Node_MakeStruct)
+      Pin: EventReply (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Absolute to Local (Coordinates) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> On_BarBorder_MouseButtonDown.MyGeometry
+      Pin: AbsoluteCoordinate (struct) Dir=In
+        -> Get Screen Space Position.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.A
+    Node: vector2d / vector2d (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Absolute to Local (Coordinates).ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Local Size.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Local Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> On_BarBorder_MouseButtonDown.MyGeometry
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.B
+    Node: Get Screen Space Position (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On_BarBorder_MouseButtonDown.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Absolute to Local (Coordinates).AbsoluteCoordinate
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> vector2d / vector2d.ReturnValue
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> float - float.B
+    Node: Set Click Position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On_BarBorder_MouseButtonDown.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Click Position (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Click Position.Click Position
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Array Index (int) Dir=Out
+        -> Make Int Point.Y
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Click Position (K2Node_VariableGet)
+      Pin: Click Position (real) Dir=Out
+        -> Nearly Equal (Float).B
+    Node: Nearly Equal (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+        -> Get Click Position.Click Position
+      Pin: ErrorTolerance (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Nearly Equal (Float).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Clicked New Key.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Clicked New Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Clicked New Key (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get GradientKeyCanvas (K2Node_VariableGet)
+      Pin: GradientKeyCanvas (object) Dir=Out
+        -> Get Cached Geometry
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Cached Geometry
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get GradientKeyCanvas.GradientKeyCanvas
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Local Size.Geometry
+    Node: Get Local Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> Get Cached Geometry
+Target is Widget.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Local Size.ReturnValue
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> float / float.B
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Nearly Equal (Float).ErrorTolerance
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Clicked New Key.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (IntPoint).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Selected Gradient Key.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: X (real) Dir=Out
+        -> Nearly Equal (Float).A
+      Pin: Y (real) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Click Position.then
+      Pin: then_0 (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Condition (bool) Dir=In
+        -> Get Clicked New Key.Clicked New Key
+      Pin: then (exec) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.execute
+      Pin: else (exec) Dir=Out
+        -> Set Selected Gradient Key.execute
+    Node: Get Clicked New Key (K2Node_VariableGet)
+      Pin: Clicked New Key (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Dragging Key Bar (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.then
+      Pin: then (exec) Dir=Out
+      Pin: Dragging Key Bar (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Set Selected Gradient Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Place Key Editor
+Target is Cloud Profile Key Gradient.execute
+      Pin: Selected Gradient Key (struct) Dir=In
+        -> Make Int Point.IntPoint
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Make Int Point (K2Node_MakeStruct)
+      Pin: IntPoint (struct) Dir=Out
+        -> Not Equal (IntPoint).B
+        -> Set Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: Y (int) Dir=In
+        -> For Each Loop.Array Index
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Make Int Point.X
+      Pin: self (object) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Not Equal (IntPoint).A
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Not Equal (IntPoint) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: B (struct) Dir=In
+        -> Make Int Point.IntPoint
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Set Selected Gradient Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.execute
+      Pin: Selected Gradient Key (struct) Dir=In
+        -> Make Int Point.IntPoint
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Make Int Point (K2Node_MakeStruct)
+      Pin: IntPoint (struct) Dir=Out
+        -> Set Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=In
+      Pin: Y (int) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.self
+      Pin: self (object) Dir=In
+    Node: Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+        -> Set Selected Gradient Key.then
+      Pin: then (exec) Dir=Out
+        -> Set Dragging Key Bar.execute
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Place Key Editor
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Gradient Key.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: On_BarBorder_MouseButtonUp
+    Node: On_BarBorder_MouseButtonUp (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Dragging Key Bar.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: MouseEvent (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set Dragging Key Bar.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Event Reply.EventReply
+    Node: Make Event Reply (K2Node_MakeStruct)
+      Pin: EventReply (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Set Dragging Key Bar (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On_BarBorder_MouseButtonUp.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Dragging Key Bar (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: On_BarBorder_MouseMove
+    Node: On_BarBorder_MouseMove (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Click Position.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Absolute to Local (Coordinates).Geometry
+        -> Get Local Size.Geometry
+      Pin: MouseEvent (struct) Dir=Out
+        -> Get Screen Space Position.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Event Reply.EventReply
+    Node: Make Event Reply (K2Node_MakeStruct)
+      Pin: EventReply (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get Dragging Key Bar.Dragging Key Bar
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Dragging Key Bar (K2Node_VariableGet)
+      Pin: Dragging Key Bar (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Click Position.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Array Elem.execute
+      Pin: else (exec) Dir=Out
+    Node: Absolute to Local (Coordinates) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> On_BarBorder_MouseMove.MyGeometry
+      Pin: AbsoluteCoordinate (struct) Dir=In
+        -> Get Screen Space Position.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.A
+    Node: vector2d / vector2d (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Absolute to Local (Coordinates).ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Local Size.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Local Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> On_BarBorder_MouseMove.MyGeometry
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.B
+    Node: Get Screen Space Position (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On_BarBorder_MouseMove.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Absolute to Local (Coordinates).AbsoluteCoordinate
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> vector2d / vector2d.ReturnValue
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> float - float.B
+    Node: Set Click Position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On_BarBorder_MouseMove.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Click Position (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Click Position.Click Position
+    Node: Get Click Position (K2Node_VariableGet)
+      Pin: Click Position (real) Dir=Out
+        -> Make Vector 2D.X
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: Y (int) Dir=Out
+        -> integer >= integer.A
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break Int Point.X
+      Pin: B (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Equal (Integer).B
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: B (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break Int Point.Y
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Array Elem.TargetArray
+        -> GET.Array
+    Node: Set Array Elem (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Populate Gradient Keys
+Target is Cloud Profile Key Gradient.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: Index (int) Dir=In
+        -> Break Int Point.Y
+      Pin: Item (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: bSizeToFit (bool) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+      Pin: Y (int) Dir=Out
+        -> Set Array Elem.Index
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+        -> Break Int Point.Y
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get Click Position.Click Position
+      Pin: Y (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Array Elem.Item
+    Node: Populate Gradient Keys
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Array Elem.then
+      Pin: then (exec) Dir=Out
+        -> Place Key Editor
+Target is Cloud Profile Key Gradient.execute
+      Pin: self (object) Dir=In
+    Node: Place Key Editor
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Populate Gradient Keys
+Target is Cloud Profile Key Gradient.then
+      Pin: then (exec) Dir=Out
+        -> Latent Gradient Update
+Target is Cloud Profile Key Gradient.execute
+      Pin: self (object) Dir=In
+    Node: Latent Gradient Update
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Place Key Editor
+Target is Cloud Profile Key Gradient.then
+      Pin: then (exec) Dir=Out
+        -> Set Profile Update Needed.execute
+      Pin: self (object) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Profile Update Needed.self
+      Pin: self (object) Dir=In
+    Node: Set Profile Update Needed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Latent Gradient Update
+Target is Cloud Profile Key Gradient.then
+      Pin: then (exec) Dir=Out
+      Pin: Profile Update Needed (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+  Graph: On_BarBorder_MouseDoubleClick
+    Node: On_BarBorder_MouseDoubleClick (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Click Position.execute
+      Pin: MyGeometry (struct) Dir=Out
+        -> Absolute to Local (Coordinates).Geometry
+        -> Get Local Size.Geometry
+      Pin: MouseEvent (struct) Dir=Out
+        -> Get Screen Space Position.Input
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Event Reply.EventReply
+    Node: Make Event Reply (K2Node_MakeStruct)
+      Pin: EventReply (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Absolute to Local (Coordinates) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> On_BarBorder_MouseDoubleClick.MyGeometry
+      Pin: AbsoluteCoordinate (struct) Dir=In
+        -> Get Screen Space Position.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.A
+    Node: vector2d / vector2d (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Absolute to Local (Coordinates).ReturnValue
+      Pin: B (struct) Dir=In
+        -> Get Local Size.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Local Size (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> On_BarBorder_MouseDoubleClick.MyGeometry
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector2d / vector2d.B
+    Node: Get Screen Space Position (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Input (struct) Dir=In
+        -> On_BarBorder_MouseDoubleClick.MouseEvent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Absolute to Local (Coordinates).AbsoluteCoordinate
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> vector2d / vector2d.ReturnValue
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> float - float.B
+    Node: Set Click Position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On_BarBorder_MouseDoubleClick.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Click Position (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Click Position.Click Position
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+        -> Remove Index.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Click Position.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+      Pin: Y (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break Int Point.Y
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Selected Gradient Key.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: NewItem (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+        -> Get Click Position.Click Position
+      Pin: Y (real) Dir=In
+        -> Get Value On Gradient.Value
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add.NewItem
+    Node: Get Click Position (K2Node_VariableGet)
+      Pin: Click Position (real) Dir=Out
+        -> Make Vector 2D.X
+        -> Get Value On Gradient.Position
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Last Index.TargetArray
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Make Int Point.Y
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Set Selected Gradient Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.execute
+      Pin: Selected Gradient Key (struct) Dir=In
+        -> Make Int Point.IntPoint
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Make Int Point (K2Node_MakeStruct)
+      Pin: IntPoint (struct) Dir=Out
+        -> Set Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: Y (int) Dir=In
+        -> Last Index.ReturnValue
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Make Int Point.X
+      Pin: self (object) Dir=In
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.self
+      Pin: self (object) Dir=In
+    Node: Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Gradient Key.then
+      Pin: then (exec) Dir=Out
+        -> Place Key Editor
+Target is Cloud Profile Key Gradient.execute
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Remove Index.TargetArray
+    Node: Remove Index (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Selected Gradient Key.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: IndexToRemove (int) Dir=In
+        -> Break Int Point.Y
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+      Pin: Y (int) Dir=Out
+        -> Remove Index.IndexToRemove
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.self
+      Pin: self (object) Dir=In
+    Node: Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Selected Gradient Key.then
+      Pin: then (exec) Dir=Out
+        -> Set Profile Update Needed.execute
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Set Selected Gradient Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Remove Index.then
+      Pin: then (exec) Dir=Out
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.execute
+      Pin: Selected Gradient Key (struct) Dir=In
+        -> Make Int Point.IntPoint
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Make Int Point (K2Node_MakeStruct)
+      Pin: IntPoint (struct) Dir=Out
+        -> Set Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=In
+      Pin: Y (int) Dir=In
+    Node: Place Key Editor
+Target is Cloud Profile Key Gradient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.then
+      Pin: then (exec) Dir=Out
+        -> Set Profile Update Needed.execute
+      Pin: self (object) Dir=In
+    Node: Get Value On Gradient (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Position (real) Dir=In
+        -> Get Click Position.Click Position
+      Pin: Sorted Array (struct) Dir=In
+        -> Sort Key Array.Sorted
+      Pin: Value (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Sort Key Array (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Sorted (struct) Dir=Out
+        -> Get Value On Gradient.Sorted Array
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Profile Update Needed.self
+      Pin: self (object) Dir=In
+    Node: Set Profile Update Needed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Place Key Editor
+Target is Cloud Profile Key Gradient.then
+      Pin: then (exec) Dir=Out
+      Pin: Profile Update Needed (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Set Profile Update Needed.self
+      Pin: self (object) Dir=In
+    Node: Set Profile Update Needed (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Populate All Gradient Keys
+Target is Cloud Profile Authoring Tool.then
+      Pin: then (exec) Dir=Out
+      Pin: Profile Update Needed (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+  Graph: Populate Gradient Keys
+    Node: Populate Gradient Keys (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear Children
+Target is Panel Widget.execute
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Position.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Array Index (int) Dir=Out
+        -> Set Index.Index
+      Pin: Completed (exec) Dir=Out
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: X (real) Dir=Out
+        -> Set Position.Position
+      Pin: Y (real) Dir=Out
+    Node: Get GradientKeyCanvas (K2Node_VariableGet)
+      Pin: GradientKeyCanvas (object) Dir=Out
+        -> Add Child to Canvas
+Target is Canvas Panel.self
+      Pin: self (object) Dir=In
+    Node: Construct Image (K2Node_GenericCreateObject)
+      Pin: execute (exec) Dir=In
+        -> Set Index.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush from Texture
+Target is Image.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Brush from Texture
+Target is Image.self
+        -> Set Current Image.Current Image
+      Pin: self (object) Dir=In
+    Node: Set Brush from Texture
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construct Image.then
+      Pin: then (exec) Dir=Out
+        -> Set Current Image.execute
+      Pin: self (object) Dir=In
+        -> Construct Image.ReturnValue
+      Pin: Texture (object) Dir=In
+      Pin: bMatchSize (bool) Dir=In
+    Node: Set Current Image (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Brush from Texture
+Target is Image.then
+      Pin: then (exec) Dir=Out
+        -> Add Child to Canvas
+Target is Canvas Panel.execute
+      Pin: Current Image (object) Dir=In
+        -> Construct Image.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Current Image (K2Node_VariableGet)
+      Pin: Current Image (object) Dir=Out
+        -> Add Child to Canvas
+Target is Canvas Panel.Content
+    Node: Add Child to Canvas
+Target is Canvas Panel (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Current Image.then
+      Pin: then (exec) Dir=Out
+        -> Set bAutoSize.execute
+      Pin: self (object) Dir=In
+        -> Get GradientKeyCanvas.GradientKeyCanvas
+      Pin: Content (object) Dir=In
+        -> Get Current Image.Current Image
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Anchors
+Target is Canvas Panel Slot.self
+        -> Set bAutoSize.self
+        -> Set Alignment
+Target is Canvas Panel Slot.self
+    Node: Set Anchors
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set bAutoSize.then
+      Pin: then (exec) Dir=Out
+        -> Set Alignment
+Target is Canvas Panel Slot.execute
+      Pin: self (object) Dir=In
+        -> Add Child to Canvas
+Target is Canvas Panel.ReturnValue
+      Pin: InAnchors (struct) Dir=In
+        -> Make Anchors.Anchors
+    Node: Make Anchors (K2Node_MakeStruct)
+      Pin: Anchors (struct) Dir=Out
+        -> Set Anchors
+Target is Canvas Panel Slot.InAnchors
+      Pin: Minimum (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Maximum (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Set Position (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Position (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: Output_Get (real) Dir=Out
+    Node: Get Position (K2Node_VariableGet)
+      Pin: Position (real) Dir=Out
+        -> float - float.B
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Anchors.Minimum
+        -> Make Anchors.Maximum
+    Node: Set bAutoSize (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Child to Canvas
+Target is Canvas Panel.then
+      Pin: then (exec) Dir=Out
+        -> Set Anchors
+Target is Canvas Panel Slot.execute
+      Pin: bAutoSize (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Add Child to Canvas
+Target is Canvas Panel.ReturnValue
+    Node: Set Alignment
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Anchors
+Target is Canvas Panel Slot.then
+      Pin: then (exec) Dir=Out
+        -> Set Brush Tint Color
+Target is Image.execute
+      Pin: self (object) Dir=In
+        -> Add Child to Canvas
+Target is Canvas Panel.ReturnValue
+      Pin: InAlignment (struct) Dir=In
+    Node: Get Current Image (K2Node_VariableGet)
+      Pin: Current Image (object) Dir=Out
+        -> Set Brush Tint Color
+Target is Image.self
+    Node: Set Brush Tint Color
+Target is Image (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Alignment
+Target is Canvas Panel Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Current Image.Current Image
+      Pin: TintColor (struct) Dir=In
+        -> Make Slate Color.SlateColor
+    Node: Make Slate Color (K2Node_MakeStruct)
+      Pin: SlateColor (struct) Dir=Out
+        -> Set Brush Tint Color
+Target is Image.TintColor
+      Pin: SpecifiedColor (struct) Dir=In
+        -> Select Color.ReturnValue
+      Pin: ColorUseRule (byte) Dir=In
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Position.then
+      Pin: then (exec) Dir=Out
+        -> Construct Image.execute
+      Pin: Index (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: Output_Get (int) Dir=Out
+    Node: Select Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+      Pin: bPickA (bool) Dir=In
+        -> Equal (IntPoint).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Slate Color.SpecifiedColor
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected CC Key Index.self
+      Pin: self (object) Dir=In
+    Node: Get Selected CC Key Index (K2Node_VariableGet)
+      Pin: Selected CC Key Index (int) Dir=Out
+        -> integer >= integer.A
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Selected CC Key Index.Selected CC Key Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Clear Children
+Target is Panel Widget.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+    Node: Get GradientKeyCanvas (K2Node_VariableGet)
+      Pin: GradientKeyCanvas (object) Dir=Out
+        -> Clear Children
+Target is Panel Widget.self
+      Pin: self (object) Dir=In
+    Node: Clear Children
+Target is Panel Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Populate Gradient Keys.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get GradientKeyCanvas.GradientKeyCanvas
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Get Position.Position
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Equal (IntPoint).A
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Equal (IntPoint) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: B (struct) Dir=In
+        -> Make Int Point.IntPoint
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select Color.bPickA
+    Node: Make Int Point (K2Node_MakeStruct)
+      Pin: IntPoint (struct) Dir=Out
+        -> Equal (IntPoint).B
+      Pin: X (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: Y (int) Dir=In
+        -> Get Index.Index
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Make Int Point.X
+      Pin: self (object) Dir=In
+    Node: Get Index (K2Node_VariableGet)
+      Pin: Index (int) Dir=Out
+        -> Make Int Point.Y
+  Graph: Get_KeyValueSpinCanvas_Visibility
+    Node: Get_KeyValueSpinCanvas_Visibility (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get_KeyValueSpinCanvas_Visibility.then
+      Pin: ReturnValue (byte) Dir=In
+        -> Select.ReturnValue
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: Y (int) Dir=Out
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break Int Point.X
+      Pin: B (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Equal (Integer).B
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (byte) Dir=In
+      Pin: Option 1 (byte) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: ReturnValue (byte) Dir=Out
+        -> Return Node.ReturnValue
+  Graph: Update Drag
+    Node: Update Drag (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Update Drag.then
+      Pin: Condition (bool) Dir=In
+        -> Get Dragging Key Bar.Dragging Key Bar
+      Pin: then (exec) Dir=Out
+        -> Get Mouse Position on Viewport.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Dragging Key Bar (K2Node_VariableGet)
+      Pin: Dragging Key Bar (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get BarBorder (K2Node_VariableGet)
+      Pin: BarBorder (object) Dir=Out
+        -> Get Cached Geometry
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Mouse Position on Viewport (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Is Under Location.AbsoluteCoordinate
+    Node: Get Cached Geometry
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get BarBorder.BarBorder
+      Pin: ReturnValue (struct) Dir=Out
+        -> Is Under Location.Geometry
+    Node: Is Under Location (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Geometry (struct) Dir=In
+        -> Get Cached Geometry
+Target is Widget.ReturnValue
+      Pin: AbsoluteCoordinate (struct) Dir=In
+        -> Get Mouse Position on Viewport.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Under Location.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Mouse Position on Viewport.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Dragging Key Bar.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Dragging Key Bar (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Dragging Key Bar (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Place Key Editor
+    Node: Place Key Editor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get KeyValueSpinCanvas (K2Node_VariableGet)
+      Pin: KeyValueSpinCanvas (object) Dir=Out
+        -> Slot as Canvas Slot.Widget
+      Pin: self (object) Dir=In
+    Node: Slot as Canvas Slot (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Widget (object) Dir=In
+        -> Get KeyValueSpinCanvas.KeyValueSpinCanvas
+      Pin: ReturnValue (object) Dir=Out
+        -> Set Anchors
+Target is Canvas Panel Slot.self
+    Node: Set Anchors
+Target is Canvas Panel Slot (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Value
+Target is Spin Box.execute
+      Pin: self (object) Dir=In
+        -> Slot as Canvas Slot.ReturnValue
+      Pin: InAnchors (struct) Dir=In
+        -> Make Anchors.Anchors
+    Node: Make Anchors (K2Node_MakeStruct)
+      Pin: Anchors (struct) Dir=Out
+        -> Set Anchors
+Target is Canvas Panel Slot.InAnchors
+      Pin: Minimum (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: Maximum (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Anchors.Minimum
+        -> Make Anchors.Maximum
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+        -> Break Int Point.Y
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: Y (int) Dir=Out
+        -> integer >= integer.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Place Key Editor.then
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Anchors
+Target is Canvas Panel Slot.execute
+      Pin: else (exec) Dir=Out
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break Int Point.X
+      Pin: B (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Equal (Integer).B
+      Pin: self (object) Dir=In
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Break Int Point.Y
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: B (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected Gradient Key.self
+      Pin: self (object) Dir=In
+    Node: Get Selected Gradient Key (K2Node_VariableGet)
+      Pin: Selected Gradient Key (struct) Dir=Out
+        -> Break Int Point.IntPoint
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Break Int Point (K2Node_BreakStruct)
+      Pin: IntPoint (struct) Dir=In
+        -> Get Selected Gradient Key.Selected Gradient Key
+      Pin: X (int) Dir=Out
+      Pin: Y (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+        -> float - float.B
+      Pin: Y (real) Dir=Out
+        -> Reroute Node.InputPin
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+    Node: Get KeyEditorSpinbox (K2Node_VariableGet)
+      Pin: KeyEditorSpinbox (object) Dir=Out
+        -> Set Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Set Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Anchors
+Target is Canvas Panel Slot.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get KeyEditorSpinbox.KeyEditorSpinbox
+      Pin: NewValue (real) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: OutputPin (real) Dir=Out
+        -> Set Value
+Target is Spin Box.NewValue
+  Graph: Get Value on Gradient
+    Node: Get Value on Gradient (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Switch on Int.execute
+      Pin: Position (real) Dir=Out
+      Pin: Sorted Array (struct) Dir=Out
+        -> Length.TargetArray
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.0
+      Pin: Value (real) Dir=In
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Value on Gradient.Sorted Array
+      Pin: ReturnValue (int) Dir=Out
+        -> Clamp (Integer).Value
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: Default (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Get Value on Gradient.then
+      Pin: Selection (int) Dir=In
+        -> Clamp (Integer).ReturnValue
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+        -> Return Node.execute
+      Pin: 1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 2 (exec) Dir=Out
+        -> Set Inserted.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> Return Node.Value
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on Int.1
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: X (real) Dir=Out
+        -> float > float.A
+      Pin: Y (real) Dir=Out
+    Node: Get Position (K2Node_VariableGet)
+      Pin: Position (real) Dir=Out
+        -> float > float.B
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+        -> Get Position.Position
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set Inserted (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.2
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: Inserted (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Index Between.execute
+      Pin: else (exec) Dir=Out
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set Inserted.then
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Array Index (int) Dir=Out
+        -> Set Index Between.Index Between
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Index Between (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Inserted.execute
+      Pin: Index Between (int) Dir=In
+        -> For Each Loop with Break.Array Index
+      Pin: Output_Get (int) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Inserted.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Set Inserted (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Index Between.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Inserted (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get Inserted (K2Node_VariableGet)
+      Pin: Inserted (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get Inserted.Inserted
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Index Between (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: Index Between (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> Return Node.Value
+    Node: Get Index Between (K2Node_VariableGet)
+      Pin: Index Between (int) Dir=Out
+        -> Equal (Integer).A
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Index Between.Index Between
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Value (real) Dir=In
+        -> Break Vector 2D.Y
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> Return Node.Value
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Index Between.Index Between
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Index Between (K2Node_VariableGet)
+      Pin: Index Between (int) Dir=Out
+        -> GET.Dimension 1
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Dimension 1 (int) Dir=In
+        -> int - int.ReturnValue
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Get Index Between (K2Node_VariableGet)
+      Pin: Index Between (int) Dir=Out
+        -> int - int.A
+    Node: int - int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Index Between.Index Between
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.InRangeA
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.OutRangeA
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Position.Position
+      Pin: InRangeA (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: InRangeB (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: OutRangeA (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: OutRangeB (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.Value
+    Node: Get Position (K2Node_VariableGet)
+      Pin: Position (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+        -> Map Range Clamped.InRangeB
+      Pin: Y (real) Dir=Out
+        -> Map Range Clamped.OutRangeB
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Value (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+    Node: Clamp (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Length.ReturnValue
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Switch on Int.Selection
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> Last Index.TargetArray
+        -> GET.Array
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> GET.Array
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> GET.Array
+        -> GET.Array
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> GET.Array
+  Graph: Update Gradient Preview
+    Node: Update Gradient Preview (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Length.TargetArray
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Clamp (Integer).Value
+    Node: Clamp (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Length.ReturnValue
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> Switch on Int.Selection
+    Node: Switch on Int (K2Node_SwitchInteger)
+      Pin: Default (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (int) Dir=In
+        -> Clamp (Integer).ReturnValue
+      Pin: NotEqual_IntInt (object) Dir=In
+      Pin: 0 (exec) Dir=Out
+        -> Clear Render Target 2D.execute
+      Pin: 1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: 2 (exec) Dir=Out
+        -> Set Sorted Array.execute
+    Node: Get Gradient Target (K2Node_VariableGet)
+      Pin: Gradient Target (object) Dir=Out
+        -> Clear Render Target 2D.TextureRenderTarget
+      Pin: self (object) Dir=In
+    Node: Clear Render Target 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextureRenderTarget (object) Dir=In
+        -> Get Gradient Target.Gradient Target
+      Pin: ClearColor (struct) Dir=In
+        -> To LinearColor (Float).ReturnValue
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> GET.Array
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> GET.Output
+      Pin: X (real) Dir=Out
+      Pin: Y (real) Dir=Out
+        -> Power.Base
+    Node: To LinearColor (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Power.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Clear Render Target 2D.ClearColor
+    Node: Get Gradient Target (K2Node_VariableGet)
+      Pin: Gradient Target (object) Dir=Out
+        -> Clear Render Target 2D.TextureRenderTarget
+      Pin: self (object) Dir=In
+    Node: Clear Render Target 2D (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.0
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextureRenderTarget (object) Dir=In
+        -> Get Gradient Target.Gradient Target
+      Pin: ClearColor (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on Int.1
+      Pin: OutputPin (exec) Dir=Out
+        -> Clear Render Target 2D.execute
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Selected CC Key Index.self
+      Pin: self (object) Dir=In
+    Node: Get Selected CC Key Index (K2Node_VariableGet)
+      Pin: Selected CC Key Index (int) Dir=Out
+        -> integer >= integer.A
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Selected CC Key Index.Selected CC Key Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Update Gradient Preview.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Switch on Int.execute
+      Pin: else (exec) Dir=Out
+    Node: Power (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Base (real) Dir=In
+        -> Break Vector 2D.Y
+      Pin: Exp (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> To LinearColor (Float).InDouble
+    Node: Sort Key Array (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Sorted (struct) Dir=Out
+        -> Set Sorted Array.Sorted Array
+    Node: Set Sorted Array (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on Int.2
+      Pin: then (exec) Dir=Out
+        -> Begin Draw Canvas to Render Target.execute
+      Pin: Sorted Array (struct) Dir=In
+        -> Sort Key Array.Sorted
+      Pin: Output_Get (struct) Dir=Out
+    Node: For Loop (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Pixel.execute
+      Pin: Index (int) Dir=Out
+        -> Set Pixel.Pixel
+      Pin: Completed (exec) Dir=Out
+    Node: Get Gradient Target (K2Node_VariableGet)
+      Pin: Gradient Target (object) Dir=Out
+        -> Begin Draw Canvas to Render Target.TextureRenderTarget
+      Pin: self (object) Dir=In
+    Node: Begin Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Sorted Array.then
+      Pin: then (exec) Dir=Out
+        -> Set Canvas.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextureRenderTarget (object) Dir=In
+        -> Get Gradient Target.Gradient Target
+      Pin: Canvas (object) Dir=Out
+        -> Set Canvas.Canvas
+      Pin: Size (struct) Dir=Out
+      Pin: Context (struct) Dir=Out
+        -> End Draw Canvas to Render Target.Context
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Canvas.then
+      Pin: then_0 (exec) Dir=Out
+        -> For Loop.execute
+      Pin: then_1 (exec) Dir=Out
+        -> End Draw Canvas to Render Target.execute
+    Node: End Draw Canvas to Render Target (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Context (struct) Dir=In
+        -> Begin Draw Canvas to Render Target.Context
+    Node: Set Canvas (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Begin Draw Canvas to Render Target.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Canvas (object) Dir=In
+        -> Begin Draw Canvas to Render Target.Canvas
+      Pin: Output_Get (object) Dir=Out
+    Node: Set Pixel (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Draw Box
+Target is Canvas.execute
+      Pin: Pixel (int) Dir=In
+        -> For Loop.Index
+      Pin: Output_Get (int) Dir=Out
+    Node: Get Canvas (K2Node_VariableGet)
+      Pin: Canvas (object) Dir=Out
+        -> Draw Box
+Target is Canvas.self
+    Node: Draw Box
+Target is Canvas (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Pixel.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Canvas.Canvas
+      Pin: ScreenPosition (struct) Dir=In
+        -> Make Vector 2D.ReturnValue
+      Pin: ScreenSize (struct) Dir=In
+      Pin: Thickness (real) Dir=In
+      Pin: RenderColor (struct) Dir=In
+        -> To LinearColor (Float).ReturnValue
+    Node: Get Pixel (K2Node_VariableGet)
+      Pin: Pixel (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: Make Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: X (real) Dir=In
+      Pin: Y (real) Dir=In
+        -> Map Range Clamped.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Box
+Target is Canvas.ScreenPosition
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Pixel.Pixel
+      Pin: ReturnValue (real) Dir=Out
+        -> Map Range Clamped.Value
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Get Value On Gradient.Position
+    Node: Get Pixel (K2Node_VariableGet)
+      Pin: Pixel (int) Dir=Out
+        -> To Float (Integer).InInt
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Get Pixel.Pixel
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: Get Value On Gradient (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Position (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Sorted Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Value (real) Dir=Out
+        -> Power.Base
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> Get Value On Gradient.Sorted Array
+    Node: To LinearColor (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Power.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Box
+Target is Canvas.RenderColor
+    Node: Power (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Base (real) Dir=In
+        -> Get Value On Gradient.Value
+      Pin: Exp (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> To LinearColor (Float).InDouble
+    Node: Map Range Clamped (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: InRangeA (real) Dir=In
+      Pin: InRangeB (real) Dir=In
+      Pin: OutRangeA (real) Dir=In
+      Pin: OutRangeB (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Vector 2D.Y
+  Graph: Sort Key Array
+    Node: Sort Key Array (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Get Key Array (K2Node_MacroInstance)
+      Pin: ReturnValue (struct) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Sort Key Array.then
+      Pin: Array (struct) Dir=In
+        -> Get Key Array.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Set Current Key.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Set Current Key.Current Key
+      Pin: Array Index (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> For Each Loop with Break.Array
+    Node: Set Current Key (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Current Key (struct) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get Current Key (K2Node_VariableGet)
+      Pin: Current Key (struct) Dir=Out
+        -> Break Vector 2D.InVec
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Current Key.Current Key
+      Pin: X (real) Dir=Out
+        -> float > float.B
+      Pin: Y (real) Dir=Out
+    Node: Break Vector 2D (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> For Each Loop with Break.Array Element
+      Pin: X (real) Dir=Out
+        -> float > float.A
+      Pin: Y (real) Dir=Out
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Current Key.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+        -> Set Inserted.execute
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: NewItem (struct) Dir=In
+        -> Get Current Key.Current Key
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Current Key (K2Node_VariableGet)
+      Pin: Current Key (struct) Dir=Out
+        -> Add.NewItem
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> Insert.TargetArray
+    Node: Insert (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Inserted.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: NewItem (struct) Dir=In
+        -> Get Current Key.Current Key
+      Pin: Index (int) Dir=In
+        -> For Each Loop with Break.Array Index
+    Node: Get Current Key (K2Node_VariableGet)
+      Pin: Current Key (struct) Dir=Out
+        -> Insert.NewItem
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Insert.execute
+      Pin: else (exec) Dir=Out
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: B (real) Dir=In
+        -> Break Vector 2D.X
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set Inserted (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Insert.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Inserted (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Set Inserted (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> For Each Loop with Break.Exec
+      Pin: Inserted (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop with Break.Completed
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Inserted (K2Node_VariableGet)
+      Pin: Inserted (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get Inserted.Inserted
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> Add.TargetArray
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: NewItem (struct) Dir=In
+        -> Get Current Key.Current Key
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Current Key (K2Node_VariableGet)
+      Pin: Current Key (struct) Dir=Out
+        -> Add.NewItem
+    Node: For Each Loop with Break (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set Inserted.then
+      Pin: Array (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (struct) Dir=Out
+        -> Break Vector 2D.InVec
+      Pin: Array Index (int) Dir=Out
+        -> Insert.Index
+      Pin: Completed (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Each Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Set Inserted.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Sorted Array (K2Node_VariableGet)
+      Pin: Sorted Array (struct) Dir=Out
+        -> Return Node.Sorted
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: Sorted (struct) Dir=In
+        -> Get Sorted Array.Sorted Array
+  Graph: Get Key Array
+    Node: Inputs (K2Node_Tunnel)
+    Node: Outputs (K2Node_Tunnel)
+      Pin: ReturnValue (struct) Dir=In
+        -> Select.ReturnValue
+    Node: Get Authoring Tool (K2Node_VariableGet)
+      Pin: Authoring Tool (object) Dir=Out
+        -> Get Editor Profile Object.self
+        -> Get Selected CC Key Index.self
+      Pin: self (object) Dir=In
+    Node: Get Editor Profile Object (K2Node_VariableGet)
+      Pin: Editor Profile Object (object) Dir=Out
+        -> Get Coverage Keys.self
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: Get Coverage Keys (K2Node_VariableGet)
+      Pin: Coverage Keys (struct) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get Editor Profile Object.Editor Profile Object
+    Node: Get Selected CC Key Index (K2Node_VariableGet)
+      Pin: Selected CC Key Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+        -> Get Authoring Tool.Authoring Tool
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get Coverage Keys.Coverage Keys
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Selected CC Key Index.Selected CC Key Index
+      Pin: Output (struct) Dir=Out
+        -> Break UDS Cloud Profile Key.UDS_CloudProfile_Key
+    Node: Break UDS Cloud Profile Key (K2Node_BreakStruct)
+      Pin: UDS_CloudProfile_Key (struct) Dir=In
+        -> GET.Output
+      Pin: LayerHeightMultiplier_2_1A6E89D34680101D7256378CE882CC53 (real) Dir=Out
+      Pin: TaperKeys_20_8AC21A344ED8259F3DD597B021C6397C (struct) Dir=Out
+        -> Select.Option 0
+      Pin: ExtinctionKeys_16_AA99CAC24BB59572648F0F8E1321A7D7 (struct) Dir=Out
+        -> Select.Option 1
+      Pin: NoiseKeys_18_0C9923BF486271AE03C4E59313525025 (struct) Dir=Out
+        -> Select.Option 2
+      Pin: CloudCoveragePosition_14_BB0C8A99457FC444C01CD0ADF39A146C (real) Dir=Out
+    Node: Get Setting Index (K2Node_VariableGet)
+      Pin: Setting Index (int) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (struct) Dir=In
+        -> Break UDS Cloud Profile Key.TaperKeys_20_8AC21A344ED8259F3DD597B021C6397C
+      Pin: Option 1 (struct) Dir=In
+        -> Break UDS Cloud Profile Key.ExtinctionKeys_16_AA99CAC24BB59572648F0F8E1321A7D7
+      Pin: Option 2 (struct) Dir=In
+        -> Break UDS Cloud Profile Key.NoiseKeys_18_0C9923BF486271AE03C4E59313525025
+      Pin: Index (int) Dir=In
+        -> Get Setting Index.Setting Index
+      Pin: ReturnValue (struct) Dir=Out
+        -> Outputs.ReturnValue

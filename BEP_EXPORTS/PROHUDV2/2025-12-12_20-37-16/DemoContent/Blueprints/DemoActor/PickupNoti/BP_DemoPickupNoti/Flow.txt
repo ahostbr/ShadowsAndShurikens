@@ -1,0 +1,178 @@
+Blueprint: BP_DemoPickupNoti (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/PickupNoti/BP_DemoPickupNoti.BP_DemoPickupNoti)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Add Pickup Notification
+Target is BPi HUDManager V2.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: FinishMaterial_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.then
+    Node: SetMaterialColor_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialTexture_2_2
+Collapsed Graph.then
+      Pin: Value (struct) Dir=In
+        -> Break S Icon Info 2.IconColor_13_C0A0DE6948F813CF12E1B689F924694A
+    Node: CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> UpdateActor
+Custom Event.then
+    Node: SetMaterialTexture_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.then
+      Pin: Value (object) Dir=In
+        -> Cast To Texture.AsTexture
+    Node: Get EmissivePower (K2Node_VariableGet)
+      Pin: EmissivePower (real) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialEmissive_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> FinishMaterial_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialColor_2_2
+Collapsed Graph.then
+      Pin: Value (real) Dir=In
+        -> Get EmissivePower.EmissivePower
+    Node: UpdateActor
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.execute
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Add Pickup Notification
+Target is BPi HUDManager V2.self
+    Node: Add Pickup Notification
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Print String.then
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Tag (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Info (struct) Dir=In
+        -> Get NotificationInfo.NotificationInfo
+    Node: Get NotificationInfo (K2Node_VariableGet)
+      Pin: NotificationInfo (struct) Dir=Out
+        -> Add Pickup Notification
+Target is BPi HUDManager V2.Info
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: NotificationInfo (struct) Dir=Out
+      Pin: NotificationInfo_IconState_5_8571E8EB47E52676C576248AE86DA2DC (int) Dir=Out
+      Pin: NotificationInfo_DisplayTime_15_67C996B34AD00A69B25D6D9579DCF2EF (real) Dir=Out
+      Pin: NotificationInfo_IconInfo_9_F85C40F647B13C6FD94BDC952D0E8176 (struct) Dir=Out
+        -> Break S Icon Info 2.S_IconInfo2
+      Pin: NotificationInfo_Text_8_647C94734429D45137AB86B08B349927 (text) Dir=Out
+      Pin: NotificationInfo_TextInfo_12_127A95AD49F118C821B889867822816A (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Break S Icon Info 2 (K2Node_BreakStruct)
+      Pin: S_IconInfo2 (struct) Dir=In
+        -> Get.NotificationInfo_IconInfo_9_F85C40F647B13C6FD94BDC952D0E8176
+      Pin: IconTexture_11_214280D949FDBB87B5B3E08050CC45F8 (object) Dir=Out
+        -> Cast To Texture.Object
+      Pin: Transform_12_E829012D468F2DB2906FDD81F93FA822 (struct) Dir=Out
+      Pin: IconColor_13_C0A0DE6948F813CF12E1B689F924694A (struct) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.Value
+    Node: Cast To Texture (K2Node_DynamicCast)
+      Pin: Object (object) Dir=In
+        -> Break S Icon Info 2.IconTexture_11_214280D949FDBB87B5B3E08050CC45F8
+      Pin: AsTexture (object) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.Value
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Tag (K2Node_VariableGet)
+      Pin: Tag (string) Dir=Out
+        -> Append.A
+      Pin: self (object) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Tag.Tag
+      Pin: B (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Add Pickup Notification
+Target is BPi HUDManager V2.Tag
+        -> Print String.InString
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Add Pickup Notification
+Target is BPi HUDManager V2.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Actor
+Target is BP Demo Pickup Noti.execute
+    Node: Update Actor
+Target is BP Demo Pickup Noti (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

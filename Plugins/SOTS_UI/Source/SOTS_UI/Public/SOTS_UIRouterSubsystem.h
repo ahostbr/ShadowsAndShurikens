@@ -4,12 +4,16 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "StructUtils/InstancedStruct.h"
 #include "SOTS_WidgetRegistryTypes.h"
+#include "SOTS_UIPayloadTypes.h"
+#include "SOTS_UIModalResultTypes.h"
 #include "SOTS_UIRouterSubsystem.generated.h"
 
 class USOTS_WidgetRegistryDataAsset;
 class USOTS_ProHUDAdapter;
 class USOTS_InvSPAdapter;
 class UUserWidget;
+class AActor;
+struct F_SOTS_UIConfirmDialogPayload;
 
 USTRUCT()
 struct FSOTS_ActiveWidgetEntry
@@ -82,6 +86,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
 	void ShowNotification(const FString& Message, float DurationSeconds, FGameplayTag CategoryTag);
 
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Notifications")
+	void PushNotification_SOTS(const F_SOTS_UINotificationPayload& Payload);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Notifications")
+	void ShowPickupNotification(const FText& ItemName, int32 Quantity, float DurationSeconds);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Notifications")
+	void ShowFirstTimePickupNotification(const FText& ItemName, float DurationSeconds);
+
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
 	FGuid AddOrUpdateWaypoint_Actor(AActor* Target, FGameplayTag CategoryTag, bool bClampToEdges);
 
@@ -90,6 +103,45 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
 	void RemoveWaypoint(FGuid Id);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	FGuid AddOrUpdateWorldMarker_Actor(AActor* Target, FGameplayTag CategoryTag, bool bClampToEdges);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	FGuid AddOrUpdateWorldMarker_Location(FVector Location, FGameplayTag CategoryTag, bool bClampToEdges);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	void RemoveWorldMarker(FGuid Id);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
+	bool OpenInventoryMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
+	bool CloseInventoryMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
+	bool ToggleInventoryMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
+	bool OpenItemContainerMenu(AActor* ContainerActor);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
+	bool CloseItemContainerMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	void EnsureGameplayHUDReady();
+
+	// Modal result channel
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnModalResult, const F_SOTS_UIModalResult&, Result);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
+	FGuid MakeRequestId() const { return FGuid::NewGuid(); }
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
+	void SubmitModalResult(const F_SOTS_UIModalResult& Result);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
+	bool ShowConfirmDialog(const F_SOTS_UIConfirmDialogPayload& Payload);
 
 protected:
 	UPROPERTY(EditAnywhere, Config, Category = "SOTS|UI")
@@ -115,6 +167,14 @@ private:
 	void CacheWidgetIfNeeded(const FSOTS_WidgetRegistryEntry& Entry, UUserWidget* Widget);
 	APlayerController* GetPlayerController() const;
 	void EnsureAdapters();
+	bool ExecuteSystemAction(FGameplayTag ActionTag);
+	FGameplayTag GetDefaultConfirmDialogTag() const;
+	FGameplayTag ResolveFirstValidTag(const TArray<FName>& Names) const;
+	bool PushNotificationWidget(FGameplayTag WidgetTag, const F_SOTS_UINotificationPayload& Payload);
+	bool PushInventoryWidget(FGameplayTag WidgetTag, ESOTS_UIInventoryRequestType RequestType, AActor* ContainerActor = nullptr, bool bPauseOverride = false);
+	bool PopWidgetById(FGameplayTag WidgetId);
+	bool IsWidgetActive(FGameplayTag WidgetId, ESOTS_UILayer* OutLayer = nullptr) const;
+	bool PopFirstMatchingFromLayer(ESOTS_UILayer Layer, FGameplayTag WidgetId);
 
 private:
 	UPROPERTY()
@@ -132,5 +192,10 @@ private:
 	UPROPERTY()
 	TMap<FGameplayTag, TObjectPtr<UUserWidget>> CachedWidgets;
 
+public:
+	UPROPERTY(BlueprintAssignable, Category = "SOTS|UI|Modal")
+	FSOTS_OnModalResult OnModalResult;
+
+private:
 	bool bGamePausedForUI = false;
 };

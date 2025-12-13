@@ -1,0 +1,166 @@
+Blueprint: UDW_Lightning_Spawn_Manager (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/System/UDW_Lightning_Spawn_Manager.UDW_Lightning_Spawn_Manager)
+  Graph: EventGraph
+  Graph: Initialize
+    Node: Initialize (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set UDW.execute
+      Pin: UDW (object) Dir=Out
+        -> Set UDW.UDW
+    Node: Set UDW (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Initialize.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: UDW (object) Dir=In
+        -> Initialize.UDW
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set UDW.then
+      Pin: then (exec) Dir=Out
+        -> Set Lightning Timer.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Lightning Flash Period
+Target is Ultra Dynamic Weather.Period
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Lightning Timer.Lightning Timer
+    Node: Set Lightning Timer (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+      Pin: Lightning Timer (struct) Dir=In
+        -> Set Timer by Function Name.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Lightning Flash Period
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: Lightning Flash Period
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Period (real) Dir=Out
+        -> Set Timer by Function Name.Time
+  Graph: Timed Lightning Spawn
+    Node: Timed Lightning Spawn (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Timed Lightning Spawn.then
+      Pin: then_0 (exec) Dir=Out
+        -> Global Lightning Internal
+Target is Ultra Dynamic Weather
+Replicated To All (if server).execute
+      Pin: then_1 (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Set Lightning Timer.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Lightning Flash Period
+Target is Ultra Dynamic Weather.Period
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Lightning Timer.Lightning Timer
+    Node: Set Lightning Timer (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+      Pin: Lightning Timer (struct) Dir=In
+        -> Set Timer by Function Name.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Global Lightning Internal
+Target is Ultra Dynamic Weather
+Replicated To All (if server).self
+      Pin: self (object) Dir=In
+    Node: Global Lightning Internal
+Target is Ultra Dynamic Weather
+Replicated To All (if server) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Angle (real) Dir=In
+        -> Random Float in Range from Stream.ReturnValue
+      Pin: Thunder/Lightning Threshold (real) Dir=In
+        -> Random Float in Range from Stream.ReturnValue
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Get Random Stream.self
+      Pin: self (object) Dir=In
+    Node: Get Random Stream (K2Node_VariableGet)
+      Pin: Random Stream (struct) Dir=Out
+        -> Random Float in Range from Stream.Stream
+        -> Random Float in Range from Stream.Stream
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+    Node: Random Float in Range from Stream (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Stream (struct) Dir=In
+        -> Get Random Stream.Random Stream
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Global Lightning Internal
+Target is Ultra Dynamic Weather
+Replicated To All (if server).Angle
+    Node: Random Float in Range from Stream (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Stream (struct) Dir=In
+        -> Get Random Stream.Random Stream
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Global Lightning Internal
+Target is Ultra Dynamic Weather
+Replicated To All (if server).Thunder/Lightning Threshold
+    Node: Get UDW (K2Node_VariableGet)
+      Pin: UDW (object) Dir=Out
+        -> Lightning Flash Period
+Target is Ultra Dynamic Weather.self
+      Pin: self (object) Dir=In
+    Node: Lightning Flash Period
+Target is Ultra Dynamic Weather (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get UDW.UDW
+      Pin: Period (real) Dir=Out
+        -> Set Timer by Function Name.Time
+  Graph: Disable Spawning
+    Node: Disable Spawning (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear and Invalidate Timer by Handle.execute
+    Node: Get Lightning Timer (K2Node_VariableGet)
+      Pin: Lightning Timer (struct) Dir=Out
+        -> Clear and Invalidate Timer by Handle.Handle
+      Pin: self (object) Dir=In
+    Node: Clear and Invalidate Timer by Handle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Disable Spawning.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Handle (struct) Dir=In
+        -> Get Lightning Timer.Lightning Timer

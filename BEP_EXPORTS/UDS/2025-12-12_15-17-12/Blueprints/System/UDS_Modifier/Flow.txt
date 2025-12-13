@@ -1,0 +1,167 @@
+Blueprint: UDS_Modifier (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/System/UDS_Modifier.UDS_Modifier)
+  Graph: EventGraph
+  Graph: Parse Maps into Arrays
+    Node: Parse Maps into Arrays (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+    Node: Set Float Property Keys (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+      Pin: Float Property Keys (byte) Dir=In
+        -> Keys.Keys
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Float Property Overrides (K2Node_VariableGet)
+      Pin: Float Property Overrides (byte) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parse Maps into Arrays.then
+      Pin: then (exec) Dir=Out
+        -> Set Float Property Keys.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (byte) Dir=In
+        -> Get Float Property Overrides.Float Property Overrides
+      Pin: Keys (byte) Dir=Out
+        -> Set Float Property Keys.Float Property Keys
+    Node: Get Color Property Overrides (K2Node_VariableGet)
+      Pin: Color Property Overrides (byte) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+    Node: Set Color Property Keys (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: Color Property Keys (byte) Dir=In
+        -> Keys.Keys
+      Pin: Output_Get (byte) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Float Property Keys.then
+      Pin: then (exec) Dir=Out
+        -> Set Color Property Keys.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (byte) Dir=In
+        -> Get Color Property Overrides.Color Property Overrides
+      Pin: Keys (byte) Dir=Out
+        -> Set Color Property Keys.Color Property Keys
+    Node: Get Float Property Keys (K2Node_VariableGet)
+      Pin: Float Property Keys (byte) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Array (byte) Dir=In
+        -> Get Float Property Keys.Float Property Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (byte) Dir=Out
+        -> Find.Key
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Float Property Overrides (K2Node_VariableGet)
+      Pin: Float Property Overrides (byte) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (byte) Dir=In
+        -> Get Float Property Overrides.Float Property Overrides
+      Pin: Key (byte) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Value (real) Dir=Out
+        -> Add.NewItem
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Float Property Values (K2Node_VariableGet)
+      Pin: Float Property Values (real) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Color Property Keys.then
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (real) Dir=In
+        -> Get Float Property Values.Float Property Values
+    Node: Get Color Property Values (K2Node_VariableGet)
+      Pin: Color Property Values (struct) Dir=Out
+        -> Clear.TargetArray
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Color Property Values.Color Property Values
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Clear.then
+      Pin: then_0 (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: then_1 (exec) Dir=Out
+        -> For Each Loop.Exec
+    Node: Get Float Property Values (K2Node_VariableGet)
+      Pin: Float Property Values (real) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (real) Dir=In
+        -> Get Float Property Values.Float Property Values
+      Pin: NewItem (real) Dir=In
+        -> Find.Value
+      Pin: ReturnValue (int) Dir=Out
+    Node: Get Color Property Keys (K2Node_VariableGet)
+      Pin: Color Property Keys (byte) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Array (byte) Dir=In
+        -> Get Color Property Keys.Color Property Keys
+      Pin: LoopBody (exec) Dir=Out
+        -> Add.execute
+      Pin: Array Element (byte) Dir=Out
+        -> Find.Key
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Color Property Overrides (K2Node_VariableGet)
+      Pin: Color Property Overrides (byte) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (byte) Dir=In
+        -> Get Color Property Overrides.Color Property Overrides
+      Pin: Key (byte) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Value (struct) Dir=Out
+        -> Add.NewItem
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Color Property Values (K2Node_VariableGet)
+      Pin: Color Property Values (struct) Dir=Out
+        -> Add.TargetArray
+      Pin: self (object) Dir=In
+    Node: Add (K2Node_CallArrayFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get Color Property Values.Color Property Values
+      Pin: NewItem (struct) Dir=In
+        -> Find.Value
+      Pin: ReturnValue (int) Dir=Out

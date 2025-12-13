@@ -1,0 +1,143 @@
+Blueprint: BP_DemoTutNoti (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/TutNoti/BP_DemoTutNoti.BP_DemoTutNoti)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Create Tutorial Notification
+Target is BPi HUDManager V2.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: FinishMaterial_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.then
+    Node: SetMaterialColor_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialTexture_2_2
+Collapsed Graph.then
+      Pin: Value (struct) Dir=In
+        -> Make Color.ReturnValue
+    Node: CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> UpdateActor
+Custom Event.then
+    Node: SetMaterialTexture_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.then
+      Pin: Value (object) Dir=In
+    Node: Get EmissivePower (K2Node_VariableGet)
+      Pin: EmissivePower (real) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialEmissive_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> FinishMaterial_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialColor_2_2
+Collapsed Graph.then
+      Pin: Value (real) Dir=In
+        -> Get EmissivePower.EmissivePower
+    Node: UpdateActor
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.execute
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Create Tutorial Notification
+Target is BPi HUDManager V2.self
+    Node: Make Color (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: R (real) Dir=In
+        -> Break Linear Color.R
+      Pin: G (real) Dir=In
+        -> Break Linear Color.G
+      Pin: B (real) Dir=In
+        -> Break Linear Color.B
+      Pin: A (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.Value
+    Node: Break Linear Color (K2Node_BreakStruct)
+      Pin: LinearColor (struct) Dir=In
+        -> Break S Tut Noti Info.HighlightColor_8_BD553D1A40A7C2CE09FC099AE01BB0A4
+      Pin: R (real) Dir=Out
+        -> Make Color.R
+      Pin: G (real) Dir=Out
+        -> Make Color.G
+      Pin: B (real) Dir=Out
+        -> Make Color.B
+      Pin: A (real) Dir=Out
+    Node: Get TutNotiInfo (K2Node_VariableGet)
+      Pin: TutNotiInfo (struct) Dir=Out
+        -> Break S Tut Noti Info.S_TutNotiInfo
+      Pin: self (object) Dir=In
+    Node: Break S Tut Noti Info (K2Node_BreakStruct)
+      Pin: S_TutNotiInfo (struct) Dir=In
+        -> Get TutNotiInfo.TutNotiInfo
+      Pin: DisplayTime_2_DCB33C3246B4D6304EB8AE9F242137E2 (real) Dir=Out
+      Pin: ContentWidget_5_413FF1F7411F3C5AABEA7BABE8D80ED7 (class) Dir=Out
+      Pin: HighlightColor_8_BD553D1A40A7C2CE09FC099AE01BB0A4 (struct) Dir=Out
+        -> Break Linear Color.LinearColor
+    Node: Create Tutorial Notification
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: Info (struct) Dir=In
+        -> Get TutNotiInfo.TutNotiInfo
+      Pin: ContentWidget (object) Dir=Out
+    Node: Get TutNotiInfo (K2Node_VariableGet)
+      Pin: TutNotiInfo (struct) Dir=Out
+        -> Create Tutorial Notification
+Target is BPi HUDManager V2.Info
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Actor
+Target is BP Demo Tut Noti.execute
+    Node: Update Actor
+Target is BP Demo Tut Noti (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

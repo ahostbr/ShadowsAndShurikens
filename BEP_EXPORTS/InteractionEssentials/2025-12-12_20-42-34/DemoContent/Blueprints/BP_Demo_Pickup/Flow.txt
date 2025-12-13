@@ -1,0 +1,148 @@
+Blueprint: BP_Demo_Pickup (/Game/InteractionEssentials/DemoContent/Blueprints/BP_Demo_Pickup.BP_Demo_Pickup)
+  Graph: EventGraph
+    Node: On Interaction Started (HoldInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CanMove.execute
+    Node: On Interaction Completed (HoldInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set CanMove.self
+        -> Get CharacterMovement.self
+    Node: Set CanMove (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Started (HoldInvisible).then
+      Pin: then (exec) Dir=Out
+        -> Stop Movement Immediately
+Target is Movement Component.execute
+      Pin: CanMove (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+    Node: On Interaction Cancelled (HoldInvisible) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set CanMove.execute
+    Node: Get Demo Character (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set CanMove.self
+    Node: Set CanMove (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Cancelled (HoldInvisible).then
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+      Pin: CanMove (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+    Node: Stop Movement Immediately
+Target is Movement Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set CanMove.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Stop Movement Immediately
+Target is Movement Component.self
+      Pin: self (object) Dir=In
+        -> Get Demo Character.ReturnValue
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> On Interaction Completed (HoldInvisible).then
+      Pin: then_0 (exec) Dir=Out
+        -> Timeline_0.PlayFromStart
+      Pin: then_1 (exec) Dir=Out
+        -> Set CanMove.execute
+    Node: Timeline_0 (K2Node_Timeline)
+      Pin: Play (exec) Dir=In
+      Pin: PlayFromStart (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Stop (exec) Dir=In
+      Pin: Reverse (exec) Dir=In
+      Pin: ReverseFromEnd (exec) Dir=In
+      Pin: Update (exec) Dir=Out
+        -> Set Relative Scale 3D
+Target is Scene Component.execute
+      Pin: Finished (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: SetNewTime (exec) Dir=In
+      Pin: NewTime (real) Dir=In
+      Pin: Direction (byte) Dir=Out
+      Pin: NewTrack_0 (real) Dir=Out
+        -> Lerp.Alpha
+        -> Lerp (Rotator).Alpha
+    Node: Set Relative Scale 3D
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_0.Update
+      Pin: then (exec) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.execute
+      Pin: self (object) Dir=In
+        -> Get Cube.Cube
+      Pin: NewScale3D (struct) Dir=In
+        -> To Vector (Float).ReturnValue
+    Node: Get Cube (K2Node_VariableGet)
+      Pin: Cube (object) Dir=Out
+        -> Set Relative Scale 3D
+Target is Scene Component.self
+        -> Set Relative Rotation
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+    Node: To Vector (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Scale 3D
+Target is Scene Component.NewScale3D
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Timeline_0.NewTrack_0
+      Pin: ReturnValue (real) Dir=Out
+        -> To Vector (Float).InDouble
+    Node: Set Relative Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Relative Scale 3D
+Target is Scene Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Cube.Cube
+      Pin: NewRotation (struct) Dir=In
+        -> Lerp (Rotator).ReturnValue
+      Pin: bSweep (bool) Dir=In
+      Pin: SweepHitResult (struct) Dir=Out
+      Pin: bTeleport (bool) Dir=In
+    Node: Lerp (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Timeline_0.NewTrack_0
+      Pin: bShortestPath (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Relative Rotation
+Target is Scene Component.NewRotation
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Timeline_0.Finished
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

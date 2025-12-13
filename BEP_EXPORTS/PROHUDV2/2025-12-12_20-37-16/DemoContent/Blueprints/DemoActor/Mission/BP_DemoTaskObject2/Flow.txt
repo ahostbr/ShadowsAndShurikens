@@ -1,0 +1,245 @@
+Blueprint: BP_DemoTaskObject2 (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/Mission/BP_DemoTaskObject2.BP_DemoTaskObject2)
+  Graph: EventGraph
+    Node: On Component Begin Overlap (Box) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To ProHUDV2_CHAR.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+        -> Cast To ProHUDV2_CHAR.Object
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: Cast To ProHUDV2_CHAR (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Box).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> On Component Begin Overlap (Box).OtherActor
+      Pin: AsPro HUDV2 CHAR (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: FinishMaterial_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.then
+    Node: SetMaterialColor_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialTexture_2_2
+Collapsed Graph.then
+      Pin: Value (struct) Dir=In
+        -> Get Color.Color
+    Node: CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> UpdateActor
+Custom Event.then
+    Node: Get Icon (K2Node_VariableGet)
+      Pin: Icon (object) Dir=Out
+        -> SetMaterialTexture_2_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialTexture_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialColor_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.then
+      Pin: Value (object) Dir=In
+        -> Get Icon.Icon
+    Node: Get EmissivePower (K2Node_VariableGet)
+      Pin: EmissivePower (real) Dir=Out
+        -> SetMaterialEmissive_2_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialEmissive_2_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> FinishMaterial_2_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialColor_2_2
+Collapsed Graph.then
+      Pin: Value (real) Dir=In
+        -> Get EmissivePower.EmissivePower
+    Node: UpdateActor
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CreateDynamicMaterialForBillboard_2_2
+Collapsed Graph.execute
+    Node: Get bUseTask (K2Node_VariableGet)
+      Pin: bUseTask (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To ProHUDV2_CHAR.then
+      Pin: Condition (bool) Dir=In
+        -> Get bUseTask.bUseTask
+      Pin: then (exec) Dir=Out
+        -> Do Once.execute
+      Pin: else (exec) Dir=Out
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Leave Mission Area.execute
+    Node: Get Mission Area (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Bind Event to On Leave Mission Area.self
+    Node: OnLeaveMissionArea_Event_0
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to On Leave Mission Area.Delegate
+      Pin: then (exec) Dir=Out
+        -> Do Once.Reset
+    Node: Bind Event to On Leave Mission Area (K2Node_AssignDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Mission Area.Output
+      Pin: Delegate (delegate) Dir=In
+        -> OnLeaveMissionArea_Event_0
+Custom Event.OutputDelegate
+    Node: Do Once (K2Node_MacroInstance)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Reset (exec) Dir=In
+        -> OnLeaveMissionArea_Event_0
+Custom Event.then
+      Pin: Start Closed (bool) Dir=In
+      Pin: Completed (exec) Dir=Out
+        -> Remove Task
+Target is BPi HUDManager V2.execute
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove Task
+Target is BPi HUDManager V2.self
+    Node: Remove Task
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Do Once.Completed
+      Pin: then (exec) Dir=Out
+        -> Remove World Marker
+Target is BPi HUDManager V2.execute
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: MissionName (text) Dir=In
+        -> Get Demo Mission Name.ReturnValue
+      Pin: State (byte) Dir=In
+      Pin: TaskToRemove (int) Dir=In
+      Pin: RemoveAllTasks (bool) Dir=In
+      Pin: CurrentTaskObject (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.MarkerObject
+      Pin: CurrentTaskInfo (struct) Dir=Out
+    Node: Get Demo Mission Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (text) Dir=Out
+        -> Remove Task
+Target is BPi HUDManager V2.MissionName
+    Node: Get MaterialBillboard (K2Node_VariableGet)
+      Pin: MaterialBillboard (object) Dir=Out
+        -> Remove World Marker
+Target is BPi HUDManager V2.MarkerObject
+      Pin: self (object) Dir=In
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove World Marker
+Target is BPi HUDManager V2.self
+    Node: Remove World Marker
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Remove Task
+Target is BPi HUDManager V2.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: MarkerObject (object) Dir=In
+        -> Get MaterialBillboard.MaterialBillboard
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.self
+    Node: Add or Update World Marker
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: MarkerObject (object) Dir=In
+        -> Remove Task
+Target is BPi HUDManager V2.CurrentTaskObject
+      Pin: Marker_Info (struct) Dir=In
+        -> Make S World Marker Info.S_WorldMarkerInfo
+    Node: Make S World Marker Info (K2Node_MakeStruct)
+      Pin: S_WorldMarkerInfo (struct) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.Marker_Info
+      Pin: MarkerIcon_15_D00B235B4F53C924E07C5CA0D807B077 (object) Dir=In
+      Pin: MarkerScale_16_52926CC042A5D48E88C4BC8849CBD196 (real) Dir=In
+      Pin: MarkerIconColor_17_184D6DBF43C3B285678FC2850769E97A (struct) Dir=In
+      Pin: UseMarkerArrow_8_E7A679F14DDB2700E545A69989092AEB (bool) Dir=In
+      Pin: MarkerName_20_6A4B72324CCBB5E8EAD63D895E9610FA (text) Dir=In
+      Pin: MarkerNameFontInfo_31_630737AF460A682C89D3BFAD25347D1A (struct) Dir=In
+      Pin: ShowDistance_24_9F30D4D544214FAA2CAED59F9D94D2C3 (bool) Dir=In
+      Pin: DistanceOnlyonEdges_35_4B4BD1844F3A27E961A470B4B3A0EAF5 (bool) Dir=In
+      Pin: DistanceInfo_14_E6571AA74F9FF1AAD4F7C1B6874D878A (struct) Dir=In
+      Pin: DistanceTextFontInfo_38_AC74DA864AB65762FCC89B9A83CA07C3 (struct) Dir=In
+      Pin: MarkerVisibilityRadius_44_73E71EE44B2F108333C7B48551E7278A (int) Dir=In
+      Pin: MarkerVisibilitySmoothTransition_45_E7D999B54E44574D459959BAE6EBF983 (bool) Dir=In
+      Pin: PingMarker_47_DD6DCDEA43B509B57665F6893AE31520 (bool) Dir=In
+      Pin: ScreenPersistance_50_6FBF0CDA4E6FFD1B903E05B9B2B73ABA (bool) Dir=In
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Remove World Marker
+Target is BPi HUDManager V2.then
+      Pin: InputObject (object) Dir=In
+        -> Remove Task
+Target is BPi HUDManager V2.CurrentTaskObject
+      Pin: Is Valid (exec) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.execute
+      Pin: Is Not Valid (exec) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Actor
+Target is BP Demo Task Object 2.execute
+    Node: Update Actor
+Target is BP Demo Task Object 2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

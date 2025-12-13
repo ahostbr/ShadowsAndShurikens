@@ -1,0 +1,180 @@
+Blueprint: BP_DemoWorldMarker (/Game/SOTS/ThirdParty/Systems/ProHUDV2/DemoContent/Blueprints/DemoActor/BP_DemoWorldMarker.BP_DemoWorldMarker)
+  Graph: EventGraph
+    Node: RemoveWorldMarker
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Remove World Marker
+Target is BPi HUDManager V2.execute
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> SetMaterialColor_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: FinishMaterial_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+      Pin: execute (exec) Dir=In
+        -> SetMaterialEmissive_2
+Collapsed Graph.then
+    Node: SetMaterialColor_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialEmissive_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialTexture_2
+Collapsed Graph.then
+      Pin: Value (struct) Dir=In
+        -> Get Color.Color
+    Node: CreateDynamicMaterialForBillboard_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialTexture_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> UpdateActor
+Custom Event.then
+    Node: Get Icon (K2Node_VariableGet)
+      Pin: Icon (object) Dir=Out
+        -> SetMaterialTexture_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialTexture_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> SetMaterialColor_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> CreateDynamicMaterialForBillboard_2
+Collapsed Graph.then
+      Pin: Value (object) Dir=In
+        -> Get Icon.Icon
+    Node: Get EmissivePower (K2Node_VariableGet)
+      Pin: EmissivePower (real) Dir=Out
+        -> SetMaterialEmissive_2
+Collapsed Graph.Value
+      Pin: self (object) Dir=In
+    Node: SetMaterialEmissive_2
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> FinishMaterial_2
+Collapsed Graph.execute
+      Pin: execute (exec) Dir=In
+        -> SetMaterialColor_2
+Collapsed Graph.then
+      Pin: Value (real) Dir=In
+        -> Get EmissivePower.EmissivePower
+    Node: UpdateActor
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> CreateDynamicMaterialForBillboard_2
+Collapsed Graph.execute
+    Node: Add or Update World Marker
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> CreateWorldMarker
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: MarkerObject (object) Dir=In
+        -> Get MaterialBillboard.MaterialBillboard
+      Pin: Marker_Info (struct) Dir=In
+        -> CreateWorldMarker
+Custom Event.Marker_Info
+    Node: Get MaterialBillboard (K2Node_VariableGet)
+      Pin: MaterialBillboard (object) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.MarkerObject
+        -> Remove World Marker
+Target is BPi HUDManager V2.MarkerObject
+      Pin: self (object) Dir=In
+    Node: CreateWorldMarker
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.execute
+      Pin: Marker_Info (struct) Dir=Out
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.Marker_Info
+    Node: Get HUDManager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: HUD_Manager (interface) Dir=Out
+        -> Remove World Marker
+Target is BPi HUDManager V2.self
+        -> Add or Update World Marker
+Target is BPi HUDManager V2.self
+    Node: Remove World Marker
+Target is BPi HUDManager V2 (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> RemoveWorldMarker
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+        -> Get HUDManager.HUD_Manager
+      Pin: MarkerObject (object) Dir=In
+        -> Get MaterialBillboard.MaterialBillboard
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Actor
+Target is BP Demo World Marker.execute
+    Node: Update Actor
+Target is BP Demo World Marker (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Switch
+    Node: Inputs (K2Node_Tunnel)
+      Pin: execute (exec) Dir=Out
+        -> Branch.execute
+    Node: Outputs (K2Node_Tunnel)
+      Pin: MarkOnCompass (exec) Dir=In
+        -> Branch.then
+      Pin: MarkOnMinimap (exec) Dir=In
+        -> Branch.then
+      Pin: MarkOnWorld (exec) Dir=In
+        -> Branch.then
+    Node: Get MarkOnMinimap (K2Node_VariableGet)
+      Pin: MarkOnMinimap (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get MarkOnMinimap.MarkOnMinimap
+      Pin: then (exec) Dir=Out
+        -> Outputs.MarkOnMinimap
+      Pin: else (exec) Dir=Out
+        -> Branch.execute
+    Node: Get MarkOnWorld (K2Node_VariableGet)
+      Pin: MarkOnWorld (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Condition (bool) Dir=In
+        -> Get MarkOnWorld.MarkOnWorld
+      Pin: then (exec) Dir=Out
+        -> Outputs.MarkOnWorld
+      Pin: else (exec) Dir=Out
+    Node: Get MarkOnCompass (K2Node_VariableGet)
+      Pin: MarkOnCompass (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Inputs.execute
+      Pin: Condition (bool) Dir=In
+        -> Get MarkOnCompass.MarkOnCompass
+      Pin: then (exec) Dir=Out
+        -> Outputs.MarkOnCompass
+      Pin: else (exec) Dir=Out
+        -> Branch.execute

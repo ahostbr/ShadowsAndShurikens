@@ -30,14 +30,14 @@ public class SOTS_AIPerception : ModuleRules
                 "AIModule",
                 "SOTS_TagManager",
                 "SOTS_ProfileShared",
-                "SOTS_FX_Plugin",
-                "SOTS_GlobalStealthManager"
+                "SOTS_FX_Plugin"
             }
         );
         
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "SOTS_GlobalStealthManager"
             }
         );
         

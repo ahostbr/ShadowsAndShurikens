@@ -1,0 +1,406 @@
+Blueprint: TopDownCharacter (/Game/InteractionEssentials/DemoContent/DemoCharacter_TD/TopDownCharacter.TopDownCharacter)
+  Graph: EventGraph
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set InterpValue.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Activate
+Target is Actor Component.execute
+    Node: Switch Cameras if HMD is enabled (EdGraphNode_Comment)
+    Node: Get Camera1 (K2Node_VariableGet)
+      Pin: Camera1 (object) Dir=Out
+        -> Activate
+Target is Actor Component.self
+      Pin: self (object) Dir=In
+    Node: Activate
+Target is Actor Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Camera1.Camera1
+      Pin: bReset (bool) Dir=In
+    Node: Add Controller Yaw Input
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set InterpValue.then
+      Pin: then (exec) Dir=Out
+        -> Set InterpValue_0.execute
+      Pin: self (object) Dir=In
+      Pin: Val (real) Dir=In
+        -> Set InterpValue.Output_Get
+    Node: Gamepad input (EdGraphNode_Comment)
+    Node: Mouse input (EdGraphNode_Comment)
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Make Literal Float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Set TurnAxis.TurnAxis
+    Node: Make Literal Float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.B
+    Node: Gamepad Right Thumbstick X-Axis (K2Node_InputAxisKeyEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: AxisValue (real) Dir=Out
+        -> float * float.A
+    Node: Set TurnAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: TurnAxis (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set InterpValue (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Add Controller Yaw Input
+Target is Pawn.execute
+      Pin: InterpValue (real) Dir=In
+        -> Finterpolate.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> Add Controller Yaw Input
+Target is Pawn.Val
+      Pin: self (object) Dir=In
+    Node: Get InterpValue (K2Node_VariableGet)
+      Pin: InterpValue (real) Dir=Out
+        -> Finterpolate.Current
+      Pin: self (object) Dir=In
+    Node: Get TurnAxis (K2Node_VariableGet)
+      Pin: TurnAxis (real) Dir=Out
+        -> Finterpolate.Target
+      Pin: self (object) Dir=In
+    Node: Finterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get InterpValue.InterpValue
+      Pin: Target (real) Dir=In
+        -> Get TurnAxis.TurnAxis
+      Pin: InterpSpeed (real) Dir=In
+      Pin: InterpConstant (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set InterpValue.InterpValue
+    Node: Set TurnAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: TurnAxis (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Mouse X (K2Node_InputAxisKeyEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: AxisValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get BaseTurnRate (K2Node_VariableGet)
+      Pin: BaseTurnRate (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Gamepad Right Thumbstick X-Axis.AxisValue
+      Pin: B (real) Dir=In
+        -> Get BaseTurnRate.BaseTurnRate
+      Pin: ReturnValue (real) Dir=Out
+        -> Set TurnAxis.TurnAxis
+      Pin: C (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.C
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Mouse X.AxisValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Get Input Type (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InputType (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get Input Type.InputType
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Gamepad Right Thumbstick X-Axis.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set TurnAxis.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Input Type (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: InputType (byte) Dir=Out
+        -> Equal (Enum).A
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: A (byte) Dir=In
+        -> Get Input Type.InputType
+      Pin: B (byte) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Mouse X.then
+      Pin: Condition (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set TurnAxis.execute
+      Pin: else (exec) Dir=Out
+    Node: Add Movement Input
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set InterpValue_0.then
+      Pin: then (exec) Dir=Out
+        -> Set InterpValue_1.execute
+      Pin: self (object) Dir=In
+      Pin: WorldDirection (struct) Dir=In
+        -> GetForward
+Collapsed Graph.ReturnValue
+      Pin: ScaleValue (real) Dir=In
+        -> Set InterpValue_0.Output_Get
+      Pin: bForce (bool) Dir=In
+    Node: GetForward
+Collapsed Graph (K2Node_Composite)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Movement Input
+Target is Pawn.WorldDirection
+    Node: Add Movement Input
+Target is Pawn (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set InterpValue_1.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldDirection (struct) Dir=In
+        -> GetRight
+Collapsed Graph.ReturnValue
+      Pin: ScaleValue (real) Dir=In
+        -> Set InterpValue_1.Output_Get
+      Pin: bForce (bool) Dir=In
+    Node: GetRight
+Collapsed Graph (K2Node_Composite)
+      Pin: ReturnValue (struct) Dir=Out
+        -> Add Movement Input
+Target is Pawn.WorldDirection
+    Node: Set FwdAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> W
+Collapsed Graph.then2
+        -> S
+Collapsed Graph.then2
+      Pin: then (exec) Dir=Out
+      Pin: FwdAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FwdAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> S
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+      Pin: FwdAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FwdAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> W
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+      Pin: FwdAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FwdAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> LThumbstickYAxis
+Collapsed Graph.Pressed
+      Pin: then (exec) Dir=Out
+      Pin: FwdAxis (real) Dir=In
+        -> LThumbstickYAxis
+Collapsed Graph.AxisValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set FwdAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> LThumbstickYAxis
+Collapsed Graph.Released
+      Pin: then (exec) Dir=Out
+      Pin: FwdAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: W
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set FwdAxis.execute
+      Pin: then2 (exec) Dir=Out
+        -> Set FwdAxis.execute
+    Node: S
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set FwdAxis.execute
+      Pin: then2 (exec) Dir=Out
+        -> Set FwdAxis.execute
+    Node: Set InterpValue_0 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Controller Yaw Input
+Target is Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Add Movement Input
+Target is Pawn.execute
+      Pin: InterpValue_0 (real) Dir=In
+        -> Finterpolate.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> Add Movement Input
+Target is Pawn.ScaleValue
+      Pin: self (object) Dir=In
+    Node: Get InterpValue_0 (K2Node_VariableGet)
+      Pin: InterpValue_0 (real) Dir=Out
+        -> Finterpolate.Current
+      Pin: self (object) Dir=In
+    Node: Get FwdAxis (K2Node_VariableGet)
+      Pin: FwdAxis (real) Dir=Out
+        -> Finterpolate.Target
+      Pin: self (object) Dir=In
+    Node: Finterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get InterpValue_0.InterpValue_0
+      Pin: Target (real) Dir=In
+        -> Get FwdAxis.FwdAxis
+      Pin: InterpSpeed (real) Dir=In
+      Pin: InterpConstant (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set InterpValue_0.InterpValue_0
+    Node: LThumbstickYAxis
+Collapsed Graph (K2Node_Composite)
+      Pin: Pressed (exec) Dir=Out
+        -> Set FwdAxis.execute
+      Pin: Released (exec) Dir=Out
+        -> Set FwdAxis.execute
+      Pin: AxisValue (real) Dir=Out
+        -> Set FwdAxis.FwdAxis
+    Node: Set RAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> A
+Collapsed Graph.then2
+        -> D
+Collapsed Graph.then2
+      Pin: then (exec) Dir=Out
+      Pin: RAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> D
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+      Pin: RAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> A
+Collapsed Graph.then
+      Pin: then (exec) Dir=Out
+      Pin: RAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> LThumbstickXAxis
+Collapsed Graph.Pressed
+      Pin: then (exec) Dir=Out
+      Pin: RAxis (real) Dir=In
+        -> LThumbstickXAxis
+Collapsed Graph.AxisValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set RAxis (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> LThumbstickXAxis
+Collapsed Graph.Released
+      Pin: then (exec) Dir=Out
+      Pin: RAxis (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: A
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set RAxis.execute
+      Pin: then2 (exec) Dir=Out
+        -> Set RAxis.execute
+    Node: D
+Collapsed Graph (K2Node_Composite)
+      Pin: then (exec) Dir=Out
+        -> Set RAxis.execute
+      Pin: then2 (exec) Dir=Out
+        -> Set RAxis.execute
+    Node: LThumbstickXAxis
+Collapsed Graph (K2Node_Composite)
+      Pin: Pressed (exec) Dir=Out
+        -> Set RAxis.execute
+      Pin: Released (exec) Dir=Out
+        -> Set RAxis.execute
+      Pin: AxisValue (real) Dir=Out
+        -> Set RAxis.RAxis
+    Node: Set InterpValue_1 (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add Movement Input
+Target is Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Add Movement Input
+Target is Pawn.execute
+      Pin: InterpValue_1 (real) Dir=In
+        -> Finterpolate.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+        -> Add Movement Input
+Target is Pawn.ScaleValue
+      Pin: self (object) Dir=In
+    Node: Get InterpValue_1 (K2Node_VariableGet)
+      Pin: InterpValue_1 (real) Dir=Out
+        -> Finterpolate.Current
+      Pin: self (object) Dir=In
+    Node: Get RAxis (K2Node_VariableGet)
+      Pin: RAxis (real) Dir=Out
+        -> Finterpolate.Target
+      Pin: self (object) Dir=In
+    Node: Finterpolate (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Current (real) Dir=In
+        -> Get InterpValue_1.InterpValue_1
+      Pin: Target (real) Dir=In
+        -> Get RAxis.RAxis
+      Pin: InterpSpeed (real) Dir=In
+      Pin: InterpConstant (bool) Dir=In
+      Pin: __WorldContext (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Set InterpValue_1.InterpValue_1
+    Node: Movement (EdGraphNode_Comment)
+    Node: Tick (EdGraphNode_Comment)
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

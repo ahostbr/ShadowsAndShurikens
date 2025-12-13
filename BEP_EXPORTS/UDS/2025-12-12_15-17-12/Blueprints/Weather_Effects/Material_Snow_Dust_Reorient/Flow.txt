@@ -1,0 +1,409 @@
+Blueprint: Material_Snow_Dust_Reorient (/Game/SOTS/ThirdParty/Systems/UltraDynamicSky/Blueprints/Weather_Effects/Material_Snow_Dust_Reorient.Material_Snow_Dust_Reorient)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Timer for Next Tick by Function Name.execute
+    Node: Set Timer for Next Tick by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+  Graph: Check for Snow Reorient
+    Node: Check for Snow Reorient (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Unrotate Vector.B
+    Node: Unrotate Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.B
+    Node: Get Snow Up Vector (K2Node_VariableGet)
+      Pin: Snow Up Vector (struct) Dir=Out
+        -> Dot Product.A
+      Pin: self (object) Dir=In
+    Node: Dot Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Snow Up Vector.Snow Up Vector
+      Pin: B (struct) Dir=In
+        -> Unrotate Vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Acos (Degrees).A
+    Node: Acos (Degrees) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Dot Product.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Acos (Degrees).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Reorientation Needed Threshold.Reorientation Needed Threshold
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Reorient Snow
+Target is Material Snow Dust Reorient.execute
+      Pin: else (exec) Dir=Out
+    Node: Reorient Snow
+Target is Material Snow Dust Reorient (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Check for Snow Reorient.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Reorienting Snow (K2Node_VariableGet)
+      Pin: Reorienting Snow (bool) Dir=Out
+        -> NOT Boolean.A
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get Reorienting Snow.Reorienting Snow
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Reorientation Needed Threshold (K2Node_VariableGet)
+      Pin: Reorientation Needed Threshold (real) Dir=Out
+        -> float > float.B
+      Pin: self (object) Dir=In
+  Graph: Reorient Snow
+    Node: Reorient Snow (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Snow Up Vector.execute
+    Node: Get Dynamic Material Instances (K2Node_VariableGet)
+      Pin: Dynamic Material Instances (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Snow Up Vector.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Get Dynamic Material Instances.Dynamic Material Instances
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> To LinearColor (Vector).ReturnValue
+    Node: To LinearColor (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Set Snow Up Vector (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reorient Snow.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Snow Up Vector (struct) Dir=In
+        -> Get Up Vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Snow Up Vector (K2Node_VariableGet)
+      Pin: Snow Up Vector (struct) Dir=Out
+        -> Normalize.A
+      Pin: self (object) Dir=In
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Snow Up Vector.Snow Up Vector
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> To LinearColor (Vector).InVec
+    Node: Lerp (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Make Rot from Z.ReturnValue
+      Pin: B (struct) Dir=In
+        -> Make Rot from Z.ReturnValue
+      Pin: Alpha (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: bShortestPath (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Up Vector.InRot
+    Node: Get Up Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Lerp (Rotator).ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Snow Up Vector.Snow Up Vector
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Safe Divide.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Lerp (Rotator).Alpha
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Unrotate Vector.B
+    Node: Unrotate Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Rot from Z.Z
+        -> Dot Product.B
+    Node: Get Snow Up Vector (K2Node_VariableGet)
+      Pin: Snow Up Vector (struct) Dir=Out
+        -> Make Rot from Z.Z
+        -> Dot Product.A
+      Pin: self (object) Dir=In
+    Node: Get Snow/Dust Reorient Speed (K2Node_VariableGet)
+      Pin: Snow/Dust Reorient Speed (real) Dir=Out
+        -> float * float.B
+      Pin: self (object) Dir=In
+    Node: Make Rot from Z (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Z (struct) Dir=In
+        -> Get Snow Up Vector.Snow Up Vector
+      Pin: ReturnValue (struct) Dir=Out
+        -> Lerp (Rotator).A
+    Node: Make Rot from Z (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Z (struct) Dir=In
+        -> Unrotate Vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Lerp (Rotator).B
+    Node: Dot Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Snow Up Vector.Snow Up Vector
+      Pin: B (struct) Dir=In
+        -> Unrotate Vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Acos (Degrees).A
+    Node: Acos (Degrees) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Dot Product.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.B
+    Node: Get World Delta Seconds (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Max (Float).A
+    Node: Max (Float) (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get World Delta Seconds.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Snow/Dust Reorient Update Period.Snow/Dust Reorient Update Period
+      Pin: ReturnValue (real) Dir=Out
+        -> float * float.A
+    Node: Get Snow/Dust Reorient Update Period (K2Node_VariableGet)
+      Pin: Snow/Dust Reorient Update Period (real) Dir=Out
+        -> Max (Float).B
+      Pin: self (object) Dir=In
+    Node: float * float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Max (Float).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Snow/Dust Reorient Speed.Snow/Dust Reorient Speed
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.A
+    Node: Safe Divide (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: B (real) Dir=In
+        -> Acos (Degrees).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: Condition (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: else (exec) Dir=Out
+        -> Set Reorienting Snow.execute
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Unrotate Vector.B
+    Node: Unrotate Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Dot Product.B
+    Node: Get Snow Up Vector (K2Node_VariableGet)
+      Pin: Snow Up Vector (struct) Dir=Out
+        -> Dot Product.A
+      Pin: self (object) Dir=In
+    Node: Dot Product (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Snow Up Vector.Snow Up Vector
+      Pin: B (struct) Dir=In
+        -> Unrotate Vector.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Acos (Degrees).A
+    Node: Acos (Degrees) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Dot Product.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Acos (Degrees).ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Reorienting Snow.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Get Snow/Dust Reorient Update Period.Snow/Dust Reorient Update Period
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Snow/Dust Reorient Update Period (K2Node_VariableGet)
+      Pin: Snow/Dust Reorient Update Period (real) Dir=Out
+        -> Set Timer by Function Name.Time
+      Pin: self (object) Dir=In
+    Node: Set Reorienting Snow (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Timer by Function Name.then
+      Pin: then (exec) Dir=Out
+      Pin: Reorienting Snow (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Reorienting Snow (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: Reorienting Snow (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Startup
+    Node: Startup (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Snow Up Vector.execute
+    Node: Get Snow/Dust Reorient Check Period (K2Node_VariableGet)
+      Pin: Snow/Dust Reorient Check Period (real) Dir=Out
+        -> Set Timer by Function Name.Time
+      Pin: self (object) Dir=In
+    Node: Set Timer by Function Name (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+      Pin: FunctionName (string) Dir=In
+      Pin: Time (real) Dir=In
+        -> Get Snow/Dust Reorient Check Period.Snow/Dust Reorient Check Period
+      Pin: bLooping (bool) Dir=In
+      Pin: bMaxOncePerFrame (bool) Dir=In
+      Pin: InitialStartDelay (real) Dir=In
+      Pin: InitialStartDelayVariance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+    Node: Get Dynamic Material Instances (K2Node_VariableGet)
+      Pin: Dynamic Material Instances (object) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.self
+      Pin: self (object) Dir=In
+    Node: Set Vector Parameter Value
+Target is Material Instance Dynamic (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Snow Up Vector.then
+      Pin: then (exec) Dir=Out
+        -> Set Timer by Function Name.execute
+      Pin: self (object) Dir=In
+        -> Get Dynamic Material Instances.Dynamic Material Instances
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> To LinearColor (Vector).ReturnValue
+    Node: To LinearColor (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.Value
+    Node: Get Snow Up Vector (K2Node_VariableGet)
+      Pin: Snow Up Vector (struct) Dir=Out
+        -> Normalize.A
+      Pin: self (object) Dir=In
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Snow Up Vector.Snow Up Vector
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> To LinearColor (Vector).InVec
+    Node: Get World Rotation
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Unrotate Vector.B
+    Node: Unrotate Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+      Pin: B (struct) Dir=In
+        -> Get World Rotation
+Target is Scene Component.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Snow Up Vector.Snow Up Vector
+    Node: Set Snow Up Vector (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Startup.then
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value
+Target is Material Instance Dynamic.execute
+      Pin: Snow Up Vector (struct) Dir=In
+        -> Unrotate Vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
