@@ -37,6 +37,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Debug")
 	bool bEnableBridgeTelemetry = false;
 
+	// Adds sun direction vector + actor name to telemetry lines.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Debug")
+	bool bEnableVerboseTelemetry = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Debug")
 	float TelemetryIntervalSeconds = 2.0f;
 

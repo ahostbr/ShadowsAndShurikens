@@ -5,6 +5,16 @@
 #include "SOTS_UDSBridgeSubsystem.generated.h"
 
 class USOTS_UDSBridgeConfig;
+class USOTS_GlobalStealthManagerSubsystem;
+class IConsoleObject;
+
+// DLWE application path chosen at runtime.
+enum class EDLWEApplyMode : uint8
+{
+	None,
+	SettingsAsset,
+	ToggleFunctions
+};
 
 /**
  * Timer-driven bridge scaffold for UDS; SPINE1 focuses on discovery + telemetry only.
@@ -19,9 +29,21 @@ public:
 	virtual void Deinitialize() override;
 
 private:
+	// Console command entry point (registered during Initialize).
+	void Console_ForceRefresh();
+
+private:
 	// Config
 	UPROPERTY()
 	TObjectPtr<USOTS_UDSBridgeConfig> Config = nullptr;
+
+	/*
+	 * Handoff notes for operators:
+	 * - UDS discovery: prefer soft reference; fallback to tag/name contains.
+	 * - Weather mapping: set bool property names or dot-paths for Snow/Rain/Dust and sun direction sources (function, light ref, or rotator).
+	 * - DLWE mapping: either a settings asset surface (single UObject* function) or per-toggle bool functions.
+	 * - This bridge only drives UDS DLWE_Interaction state; it does not draw effects or trails.
+	 */
 
 	struct FSOTS_UDSBridgeState
 	{
@@ -49,14 +71,28 @@ private:
 	bool bWarnedNoDLWE = false;
 	bool bWarnedNoGSM = false;
 	bool bWarnedNoDLWESurface = false;
+	bool bWarnedMissingUDSOnce = false;
+	bool bWarnedMissingDLWEOnce = false;
+	bool bWarnedMissingGSMOnce = false;
+	bool bWarnedMissingDLWESurfaceOnce = false;
 
 	// Timers
 	FTimerHandle UpdateTimerHandle;
 	double NextTelemetryTimeSeconds = 0.0;
+	double NextWarningTimeSeconds = 0.0;
+	EDLWEApplyMode ActiveApplyMode = EDLWEApplyMode::None;
+	bool bHasSnowToggle = false;
+	bool bHasRainToggle = false;
+	bool bHasDustToggle = false;
+	bool bHasSettingsSurface = false;
+	bool bValidatedDLWEFunctions = false;
+	TWeakObjectPtr<USOTS_GlobalStealthManagerSubsystem> CachedGSMSubsystem;
+	IConsoleObject* ForceRefreshConsoleCmd = nullptr;
 
 	// Core loop
 	void TickBridge();
 	void RefreshCachedRefs(bool bForce);
+	void RefreshCachedGSM();
 
 	// Discovery helpers
 	AActor* FindUDSActor();
@@ -65,9 +101,14 @@ private:
 	bool ValidateDLWEComponent(UActorComponent* DLWEComp, FString& OutInfo);
 	void PushSunDirToGSM(const FSOTS_UDSBridgeState& State);
 	void ApplyDLWEPolicy(const FSOTS_UDSBridgeState& State);
+	void UpdateApplyMode(UActorComponent* DLWEComp);
 
 	// Debug
 	void EmitTelemetry(double NowSeconds);
+	void EmitWarningOnce(const TCHAR* Message, bool& bWarnedFlag, bool& bWarnedOnceFlag, double NowSeconds);
+	bool ShouldThrottleWarning(double NowSeconds);
+	USOTS_GlobalStealthManagerSubsystem* GetGSMSubsystem();
+	double GetWorldTimeSecondsSafe() const;
 
 	// Config helpers
 	float GetJitteredInterval() const;
@@ -81,4 +122,6 @@ private:
 	bool TryReadRotatorProperty(UObject* Obj, FName PropName, FRotator& OutRot) const;
 	bool CallDLWE_BoolFunction(UObject* DLWEComp, FName FuncName, bool bValue) const;
 	bool CallDLWE_SettingsFunction(UObject* DLWEComp, FName FuncName, UObject* SettingsObj) const;
+	bool IsSingleBoolParamFunction(UFunction* Fn) const;
+	bool IsSingleObjectParamFunction(UFunction* Fn) const;
 };
