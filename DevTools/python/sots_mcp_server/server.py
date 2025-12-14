@@ -249,7 +249,7 @@ mcp = FastMCP(
 )
 
 @mcp.tool(
-    name="sots.run_devtool",
+    name="sots_run_devtool",
     description="Run an allowlisted SOTS DevTools Python script and return stdout/stderr. Read-only.",
     annotations={"readOnlyHint": True, "title": "Run SOTS DevTool (allowlisted)"},
 )
@@ -266,7 +266,7 @@ def run_devtool(name: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
     return _run_python(script, args)
 
 @mcp.tool(
-    name="sots.list_reports",
+    name="sots_list_reports",
     description="List files under DevTools/reports. Read-only.",
     annotations={"readOnlyHint": True, "title": "List SOTS Reports"},
 )
@@ -274,7 +274,7 @@ def list_reports(max_items: int = 200) -> Dict[str, Any]:
     return {"ok": True, "reports": _list_reports(max_items=max_items)}
 
 @mcp.tool(
-    name="sots.read_report",
+    name="sots_read_report",
     description="Read a text report under DevTools/reports (UTF-8). Read-only.",
     annotations={"readOnlyHint": True, "title": "Read SOTS Report"},
 )
@@ -283,7 +283,7 @@ def read_report(path: str, max_chars: int = 20000) -> Dict[str, Any]:
     return _read_text_file(path, max_chars=max_chars)
 
 @mcp.tool(
-    name="sots.search",
+    name="sots_search",
     description="Search for text across a safe subtree (Plugins/DevTools/Source/Config/Content). Read-only.",
     annotations={"readOnlyHint": True, "title": "Search SOTS Workspace"},
 )
@@ -305,7 +305,7 @@ def search(
     )
 
 @mcp.tool(
-    name="sots.server_info",
+    name="sots_server_info",
     description="Return basic server info, roots, and allowlists. Read-only.",
     annotations={"readOnlyHint": True, "title": "SOTS MCP Server Info"},
 )
