@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "SOTS_GlobalStealthManagerModule.h"
 #include "SOTS_PlayerStealthComponent.h"
+#include "SOTS_TagLibrary.h"
 #include "DrawDebugHelpers.h"
 
 USOTS_GlobalStealthManagerSubsystem::USOTS_GlobalStealthManagerSubsystem()
@@ -353,28 +354,65 @@ void USOTS_GlobalStealthManagerSubsystem::RecomputeGlobalScore()
 
 void USOTS_GlobalStealthManagerSubsystem::UpdateGameplayTags()
 {
-    // NOTE: Integration with the existing CGF / Global Gameplay Tag Manager
-    // is intentionally left as a TODO here, because that plugin is not part
-    // of this repository. The intended behavior is:
-    //
-    // - Set exactly one of:
-    //     SOTS.Stealth.State.Hidden
-    //     SOTS.Stealth.State.Cautious
-    //     SOTS.Stealth.State.Danger
-    //     SOTS.Stealth.State.Compromised
-    //   on the player, plus
-    // - SOTS.Stealth.Light.Bright when LightLevel01 > 0.6
-    // - SOTS.Stealth.Light.Dark when ShadowLevel01 > 0.6
-    //
-    // For now we just log the tier to aid tuning; callers that rely on tags
-    // can hook this subsystem up to CGF in project-specific code.
+    AActor* PlayerActor = FindPlayerActor();
+    if (!PlayerActor)
+    {
+        return;
+    }
 
-    UE_LOG(LogSOTSGlobalStealth, VeryVerbose,
-        TEXT("Stealth state updated: Score=%.2f Tier=%d Light=%.2f Shadow=%.2f"),
-        CurrentState.GlobalStealthScore01,
-        static_cast<int32>(CurrentState.StealthTier),
-        CurrentState.LightLevel01,
-        CurrentState.ShadowLevel01);
+    static const FName HiddenTag(TEXT("SOTS.Stealth.State.Hidden"));
+    static const FName CautiousTag(TEXT("SOTS.Stealth.State.Cautious"));
+    static const FName DangerTag(TEXT("SOTS.Stealth.State.Danger"));
+    static const FName CompromisedTag(TEXT("SOTS.Stealth.State.Compromised"));
+
+    static const FName BrightTag(TEXT("SOTS.Stealth.Light.Bright"));
+    static const FName DarkTag(TEXT("SOTS.Stealth.Light.Dark"));
+
+    // Clear all state tags first
+    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, HiddenTag);
+    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, CautiousTag);
+    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, DangerTag);
+    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, CompromisedTag);
+
+    // Apply current state tag
+    switch (CurrentState.StealthTier)
+    {
+    case ESOTS_StealthTier::Hidden:
+        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, HiddenTag);
+        break;
+    case ESOTS_StealthTier::Cautious:
+        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, CautiousTag);
+        break;
+    case ESOTS_StealthTier::Danger:
+        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, DangerTag);
+        break;
+    case ESOTS_StealthTier::Compromised:
+        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, CompromisedTag);
+        break;
+    default:
+        break;
+    }
+
+    const bool bBright = CurrentState.LightLevel01 > 0.6f;
+    const bool bDark = CurrentState.ShadowLevel01 > 0.6f;
+
+    if (bBright)
+    {
+        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, BrightTag);
+    }
+    else
+    {
+        USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, BrightTag);
+    }
+
+    if (bDark)
+    {
+        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, DarkTag);
+    }
+    else
+    {
+        USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, DarkTag);
+    }
 }
 
 USOTS_PlayerStealthComponent* USOTS_GlobalStealthManagerSubsystem::FindPlayerStealthComponent() const
@@ -692,4 +730,14 @@ void USOTS_GlobalStealthManagerSubsystem::PopStealthConfig()
         StealthConfigStack.Num());
 
     RecomputeGlobalScore();
+}
+
+void USOTS_GlobalStealthManagerSubsystem::BuildProfileData(FSOTS_GSMProfileData& OutData) const
+{
+    OutData = FSOTS_GSMProfileData();
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ApplyProfileData(const FSOTS_GSMProfileData& InData)
+{
+    (void)InData;
 }

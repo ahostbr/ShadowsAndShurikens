@@ -12,14 +12,7 @@ void ASOTS_CharacterBase::BuildCharacterStateSnapshot(FSOTS_CharacterStateData& 
 {
     OutData.Transform = GetActorTransform();
 
-    if (StatsComponent)
-    {
-        OutData.StatValues = StatsComponent->GetAllStats();
-    }
-    else
-    {
-        OutData.StatValues.Reset();
-    }
+    WriteStatsToCharacterState(OutData);
 
     OutData.MovementStateTags.Reset();
     OutData.EquippedAbilityTags.Reset();
@@ -29,9 +22,22 @@ void ASOTS_CharacterBase::ApplyCharacterStateSnapshot(const FSOTS_CharacterState
 {
     SetActorTransform(InData.Transform);
 
+    ReadStatsFromCharacterState(InData);
+}
+
+void ASOTS_CharacterBase::WriteStatsToCharacterState(FSOTS_CharacterStateData& InOutState) const
+{
     if (StatsComponent)
     {
-        StatsComponent->SetAllStats(InData.StatValues);
+        StatsComponent->WriteToCharacterState(InOutState);
+    }
+}
+
+void ASOTS_CharacterBase::ReadStatsFromCharacterState(const FSOTS_CharacterStateData& InState)
+{
+    if (StatsComponent)
+    {
+        StatsComponent->ReadFromCharacterState(InState);
     }
 }
 

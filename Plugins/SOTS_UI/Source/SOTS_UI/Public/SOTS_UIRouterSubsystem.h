@@ -6,11 +6,13 @@
 #include "SOTS_WidgetRegistryTypes.h"
 #include "SOTS_UIPayloadTypes.h"
 #include "SOTS_UIModalResultTypes.h"
+#include "SOTS_InteractionViewTypes.h"
 #include "SOTS_UIRouterSubsystem.generated.h"
 
 class USOTS_WidgetRegistryDataAsset;
 class USOTS_ProHUDAdapter;
 class USOTS_InvSPAdapter;
+class USOTS_InteractionEssentialsAdapter;
 class UUserWidget;
 class AActor;
 struct F_SOTS_UIConfirmDialogPayload;
@@ -133,6 +135,7 @@ public:
 
 	// Modal result channel
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnModalResult, const F_SOTS_UIModalResult&, Result);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnReturnToMainMenuRequested);
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
 	FGuid MakeRequestId() const { return FGuid::NewGuid(); }
@@ -143,6 +146,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
 	bool ShowConfirmDialog(const F_SOTS_UIConfirmDialogPayload& Payload);
 
+	// Interaction intents (payload via FInstancedStruct)
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Interaction")
+	bool HandleInteractionIntent(FGameplayTag IntentTag, FInstancedStruct Payload);
+
+	// System flows
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|System", meta = (AutoCreateRefTerm = "MessageOverride"))
+	bool RequestReturnToMainMenu(const FText& MessageOverride);
+
 protected:
 	UPROPERTY(EditAnywhere, Config, Category = "SOTS|UI")
 	TSoftObjectPtr<USOTS_WidgetRegistryDataAsset> WidgetRegistry;
@@ -152,6 +163,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Config, Category = "SOTS|UI")
 	TSubclassOf<USOTS_InvSPAdapter> InvSPAdapterClass;
+
+	UPROPERTY(EditAnywhere, Config, Category = "SOTS|UI")
+	TSubclassOf<USOTS_InteractionEssentialsAdapter> InteractionAdapterClass;
 
 private:
 	bool PushOrReplaceWidget(FGameplayTag WidgetId, FInstancedStruct Payload, bool bReplaceTop);
@@ -167,6 +181,7 @@ private:
 	void CacheWidgetIfNeeded(const FSOTS_WidgetRegistryEntry& Entry, UUserWidget* Widget);
 	APlayerController* GetPlayerController() const;
 	void EnsureAdapters();
+	void EnsureInteractionAdapter();
 	bool ExecuteSystemAction(FGameplayTag ActionTag);
 	FGameplayTag GetDefaultConfirmDialogTag() const;
 	FGameplayTag ResolveFirstValidTag(const TArray<FName>& Names) const;
@@ -175,6 +190,10 @@ private:
 	bool PopWidgetById(FGameplayTag WidgetId);
 	bool IsWidgetActive(FGameplayTag WidgetId, ESOTS_UILayer* OutLayer = nullptr) const;
 	bool PopFirstMatchingFromLayer(ESOTS_UILayer Layer, FGameplayTag WidgetId);
+	bool DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload);
+	bool DispatchInteractionMarkerIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload);
+	bool HandleReturnToMainMenuAction();
+	F_SOTS_UIConfirmDialogPayload BuildReturnToMainMenuPayload(const FText& MessageOverride) const;
 
 private:
 	UPROPERTY()
@@ -187,6 +206,9 @@ private:
 	TObjectPtr<USOTS_InvSPAdapter> InvSPAdapter;
 
 	UPROPERTY()
+	TObjectPtr<USOTS_InteractionEssentialsAdapter> InteractionAdapter;
+
+	UPROPERTY()
 	TMap<ESOTS_UILayer, FSOTS_LayerStack> ActiveLayerStacks;
 
 	UPROPERTY()
@@ -195,6 +217,9 @@ private:
 public:
 	UPROPERTY(BlueprintAssignable, Category = "SOTS|UI|Modal")
 	FSOTS_OnModalResult OnModalResult;
+
+	UPROPERTY(BlueprintAssignable, Category = "SOTS|UI|System")
+	FSOTS_OnReturnToMainMenuRequested OnReturnToMainMenuRequested;
 
 private:
 	bool bGamePausedForUI = false;

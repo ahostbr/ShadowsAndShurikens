@@ -167,6 +167,10 @@ namespace
             return;
         }
 
+#if (UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        return;
+#endif
+
         const FColor Color = Request.DebugOptions.Color.ToFColor(true);
         const float Lifetime  = Request.DebugOptions.Lifetime;
         const float Thickness = Request.DebugOptions.Thickness;

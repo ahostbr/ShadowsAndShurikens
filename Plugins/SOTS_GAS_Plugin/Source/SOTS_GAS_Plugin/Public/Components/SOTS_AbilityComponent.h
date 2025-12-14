@@ -10,6 +10,7 @@
 class USOTS_AbilityRegistrySubsystem;
 class USOTS_AbilityBase;
 class USOTS_AbilitySubsystem;
+class UInvSP_InventoryComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_AbilitySimpleSignature, FGameplayTag, AbilityTag, F_SOTS_AbilityHandle, Handle);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_AbilityFailedSignature, FGameplayTag, AbilityTag, E_SOTS_AbilityActivationResult, Result);
@@ -158,9 +159,11 @@ protected:
     void BroadcastAbilityListChanged();
     void BroadcastAbilityStateChanged(FGameplayTag AbilityTag);
 
+    UInvSP_InventoryComponent* ResolveInventoryComponent() const;
+
 protected:
     UPROPERTY()
-    UActorComponent* InventoryComponent = nullptr;
+    mutable TWeakObjectPtr<UInvSP_InventoryComponent> InventoryComponent;
 
     UPROPERTY()
     USOTS_AbilitySubsystem* AbilitySubsystem = nullptr;

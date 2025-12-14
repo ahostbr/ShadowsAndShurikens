@@ -81,18 +81,18 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "SOTS|KEM|Debug")
     bool IsKEMAnchorOverlayVisible() const;
 
+    UFUNCTION()
+    void ShowKEMAnchorOverlay();
+
+    UFUNCTION()
+    void HideKEMAnchorOverlay();
+
 protected:
     // Small helpers
     AActor* GetPlayerPawn() const;
 
     UPROPERTY(EditAnywhere, Category = "SOTS|KEM|Debug", meta = (DisplayName = "KEM Anchor Overlay"))
     TSubclassOf<USOTS_KillExecutionManagerKEMAnchorDebugWidget> KEMAnchorDebugWidgetClass;
-
-    UFUNCTION()
-    void ShowKEMAnchorOverlay();
-
-    UFUNCTION()
-    void HideKEMAnchorOverlay();
 
 private:
     TWeakObjectPtr<USOTS_KillExecutionManagerKEMAnchorDebugWidget> KEMAnchorDebugWidgetInstance;

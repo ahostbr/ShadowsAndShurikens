@@ -40,4 +40,29 @@ namespace SOTS_UIIntentTags
 	{
 		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.CGF.Modal.DialogPrompt")), false);
 	}
+
+	static FORCEINLINE FGameplayTag GetInteractionShowTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Interaction.Show")), false);
+	}
+
+	static FORCEINLINE FGameplayTag GetInteractionUpdateTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Interaction.Update")), false);
+	}
+
+	static FORCEINLINE FGameplayTag GetInteractionHideTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Interaction.Hide")), false);
+	}
+
+	static FORCEINLINE FGameplayTag GetInteractionMarkerAddTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Interaction.Marker.AddOrUpdate")), false);
+	}
+
+	static FORCEINLINE FGameplayTag GetInteractionMarkerRemoveTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Interaction.Marker.Remove")), false);
+	}
 }

@@ -19,7 +19,8 @@ public class SOTS_UI : ModuleRules
 				"SlateCore",
 				"GameplayTags",
 				"SOTS_TagManager",
-				"DeveloperSettings"
+				"DeveloperSettings",
+				"InputCore"
 			}
 		);
 

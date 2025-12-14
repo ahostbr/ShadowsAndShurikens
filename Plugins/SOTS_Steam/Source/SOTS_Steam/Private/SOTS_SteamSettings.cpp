@@ -3,6 +3,9 @@
 USOTS_SteamSettings::USOTS_SteamSettings(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
+    bEnableSteam = true;
+    bRequireSteamSubsystem = false;
+    PreferredSubsystemName = FName(TEXT("STEAM"));
     bEnableSteamIntegration = false;
     bUseSteamForAchievements = true;
     bUseSteamForLeaderboards = true;

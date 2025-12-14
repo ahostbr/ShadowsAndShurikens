@@ -4,6 +4,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerController.h"
 #include "SOTS_CharacterBase.h"
+#include "SOTS_GlobalStealthManagerSubsystem.h"
 #include "SOTS_FXManagerSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "SOTS_MissionDirectorSubsystem.h"
@@ -83,6 +84,11 @@ void USOTS_ProfileSubsystem::BuildSnapshotFromWorld(FSOTS_ProfileSnapshot& OutSn
 
     if (UGameInstance* GameInstance = GetGameInstance())
     {
+        if (USOTS_GlobalStealthManagerSubsystem* GSMSubsystem = GameInstance->GetSubsystem<USOTS_GlobalStealthManagerSubsystem>())
+        {
+            GSMSubsystem->BuildProfileData(OutSnapshot.GSM);
+        }
+
         if (USOTS_MissionDirectorSubsystem* MissionSubsystem = GameInstance->GetSubsystem<USOTS_MissionDirectorSubsystem>())
         {
             MissionSubsystem->BuildProfileData(OutSnapshot.Missions);
@@ -120,6 +126,11 @@ void USOTS_ProfileSubsystem::ApplySnapshotToWorld(const FSOTS_ProfileSnapshot& I
 
     if (UGameInstance* GameInstance = GetGameInstance())
     {
+        if (USOTS_GlobalStealthManagerSubsystem* GSMSubsystem = GameInstance->GetSubsystem<USOTS_GlobalStealthManagerSubsystem>())
+        {
+            GSMSubsystem->ApplyProfileData(InSnapshot.GSM);
+        }
+
         if (USOTS_MissionDirectorSubsystem* MissionSubsystem = GameInstance->GetSubsystem<USOTS_MissionDirectorSubsystem>())
         {
             MissionSubsystem->ApplyProfileData(InSnapshot.Missions);

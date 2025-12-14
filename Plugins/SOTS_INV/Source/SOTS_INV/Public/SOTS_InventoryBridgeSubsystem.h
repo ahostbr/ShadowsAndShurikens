@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "InvSPInventoryComponent.h"
+#include "Interfaces/SOTS_InventoryProviderInterface.h"
+#include "GameplayTagContainer.h"
 #include "SOTS_ProfileTypes.h"
 #include "SOTS_InventoryBridgeSubsystem.generated.h"
 
@@ -32,6 +34,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SOTS|Inventory")
 	void ClearQuickSlots();
 
+	UFUNCTION(BlueprintCallable, Category = "SOTS|Inventory")
+	bool HasItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count = 1) const;
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|Inventory")
+	int32 GetItemCountByTag(AActor* Owner, FGameplayTag ItemTag) const;
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|Inventory")
+	bool TryConsumeItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count = 1);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|Inventory")
+	bool GetEquippedItemTag(AActor* Owner, FGameplayTag& OutItemTag) const;
+
 	int32 GetCarriedItemCountByTags(const FGameplayTagContainer& Tags) const;
 	bool ConsumeCarriedItemsByTags(const FGameplayTagContainer& Tags, int32 Count);
 
@@ -56,4 +70,8 @@ protected:
 
     int32 GetItemCountByTags(const FGameplayTagContainer& Tags, bool bStash = false) const;
 	bool ConsumeItemsByTagsInternal(const FGameplayTagContainer& Tags, int32 Count, bool bStash = false);
+
+	UObject* ResolveInventoryProvider(const AActor* Owner) const;
+	int32 CountItemsOnInvComponent(UInvSP_InventoryComponent* InvComp, FGameplayTag ItemTag) const;
+	bool ConsumeItemsOnInvComponent(UInvSP_InventoryComponent* InvComp, FGameplayTag ItemTag, int32 Count);
 };

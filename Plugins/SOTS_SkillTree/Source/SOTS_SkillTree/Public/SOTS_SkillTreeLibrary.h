@@ -29,6 +29,16 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree", meta=(WorldContext="WorldContextObject"))
     static bool SOTS_PlayerHasSkillTag(const UObject* WorldContextObject, FGameplayTag SkillTag);
 
+    // Blessed gating helpers (read-only)
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree|Gating", meta=(WorldContext="WorldContextObject"))
+    static bool SkillTree_IsNodeUnlocked(const UObject* WorldContextObject, FGameplayTag NodeTag);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree|Gating", meta=(WorldContext="WorldContextObject"))
+    static bool SkillTree_AreAllNodesUnlocked(const UObject* WorldContextObject, const TArray<FGameplayTag>& NodeTags);
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree|Gating", meta=(WorldContext="WorldContextObject"))
+    static bool SkillTree_IsAnyNodeUnlocked(const UObject* WorldContextObject, const TArray<FGameplayTag>& NodeTags);
+
 private:
     static USOTS_SkillTreeSubsystem* GetSkillTreeSubsystem(const UObject* WorldContextObject);
 };

@@ -17,8 +17,23 @@
 
 #include "TimerManager.h"
 #include "GameFramework/PlayerController.h"
+#include "HAL/IConsoleManager.h"
 
 #include "Runtime/Launch/Resources/Version.h"
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+static TAutoConsoleVariable<int32> CVarLightProbeDebugWidget(
+    TEXT("lightprobe.DebugWidget"),
+    0,
+    TEXT("Enable the LightProbe debug viewport widget (dev only)."),
+    ECVF_Default
+);
+
+static bool AreDebugWidgetsAllowed()
+{
+    return CVarLightProbeDebugWidget.GetValueOnGameThread() != 0;
+}
+#endif
 
 
 ULightLevelProbeComponent::ULightLevelProbeComponent()
@@ -211,7 +226,8 @@ void ULightLevelProbeComponent::InitializeProbe()
     }
 
     // --- Debug widget ---
-    if (bShowDebugWidget && RenderTarget && Owner->GetNetMode() != NM_DedicatedServer)
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bShowDebugWidget && RenderTarget && !DebugWidget && Owner->GetNetMode() != NM_DedicatedServer && AreDebugWidgetsAllowed())
     {
         if (UWorld* World = GetWorld())
         {
@@ -228,6 +244,7 @@ void ULightLevelProbeComponent::InitializeProbe()
             }
         }
     }
+#endif
 }
 
 void ULightLevelProbeComponent::ShutdownProbe()

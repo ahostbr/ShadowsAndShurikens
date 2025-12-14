@@ -34,6 +34,18 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Leaderboards", meta=(ToolTip="Enable local leaderboard tracking within the SOTS_Steam subsystem."))
     bool bEnableLeaderboards = true;
 
+    // Global Steam enable/disable gate.
+    UPROPERTY(EditAnywhere, Config, Category="Steam", meta=(ToolTip="Enable Steam integration when available. If false, SOTS_Steam will no-op without errors."))
+    bool bEnableSteam = true;
+
+    // Optional strict requirement: when true, warns once if the active OnlineSubsystem is not Steam.
+    UPROPERTY(EditAnywhere, Config, Category="Steam", meta=(ToolTip="If true, log a warning and disable Steam features when the active OnlineSubsystem is not Steam. If false, non-Steam runs quietly no-op."))
+    bool bRequireSteamSubsystem = false;
+
+    // Preferred OnlineSubsystem name (default Steam). Used when resolving OnlineSubsystem at runtime.
+    UPROPERTY(EditAnywhere, Config, Category="Steam", meta=(ToolTip="Preferred OnlineSubsystem name for Steam integration (e.g., STEAM)."))
+    FName PreferredSubsystemName = FName(TEXT("STEAM"));
+
     UPROPERTY(EditAnywhere, Config, Category="Steam", meta=(ToolTip="If true, SOTS_Steam will talk to OnlineSubsystemSteam (when available) to mirror progress."))
     bool bEnableSteamIntegration = false;
 

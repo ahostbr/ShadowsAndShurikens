@@ -99,6 +99,15 @@ public:
                           const USOTS_KEM_ExecutionDefinition* ExecutionOverride = nullptr,
                           const FString& SourceLabel = TEXT("Blueprint"));
 
+    /** Unified, blessed entrypoint for executions from player/dragon/cutscene/Sequencer. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|KEM", meta=(WorldContext="WorldContextObject"))
+    bool RequestExecution_Blessed(UObject* WorldContextObject,
+                                  AActor* InstigatorActor,
+                                  AActor* TargetActor,
+                                  FGameplayTag ExecutionTag,
+                                  FName ContextReason = NAME_None,
+                                  bool bAllowFallback = true);
+
     UFUNCTION(BlueprintCallable, Category="SOTS|KEM")
     bool RequestExecution_FromPlayer(AActor* Instigator, AActor* Target);
 
@@ -340,7 +349,8 @@ protected:
                                   AActor* Target,
                                   const FGameplayTagContainer& ContextTags,
                                   const USOTS_KEM_ExecutionDefinition* ExecutionOverride,
-                                  const FString& SourceLabel);
+                                  const FString& SourceLabel,
+                                  bool bAllowFallback = true);
 
 
     void FindNearbyExecutionAnchors(AActor* Instigator,

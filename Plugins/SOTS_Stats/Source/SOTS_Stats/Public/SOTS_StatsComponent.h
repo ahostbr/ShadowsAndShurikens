@@ -39,6 +39,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SOTS|Stats")
     void SetAllStats(const TMap<FGameplayTag, float>& NewStats);
 
+    UFUNCTION(BlueprintCallable, Category="SOTS|Stats|Snapshot")
+    void WriteToCharacterState(UPARAM(ref) FSOTS_CharacterStateData& InOutState) const;
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|Stats|Snapshot")
+    void ReadFromCharacterState(const FSOTS_CharacterStateData& InState);
+
     void BuildCharacterStateData(struct FSOTS_CharacterStateData& OutState) const;
     void ApplyCharacterStateData(const struct FSOTS_CharacterStateData& InState);
 

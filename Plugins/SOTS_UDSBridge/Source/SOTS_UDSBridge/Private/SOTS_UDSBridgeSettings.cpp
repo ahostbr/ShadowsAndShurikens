@@ -4,6 +4,6 @@
 
 USOTS_UDSBridgeSettings::USOTS_UDSBridgeSettings()
 {
-	CategoryName = TEXT("Game");
-	SectionName = TEXT("SOTS UDS Bridge");
+	CategoryName = TEXT("SOTS");
+	SectionName = TEXT("UDS Bridge");
 }

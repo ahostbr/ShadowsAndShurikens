@@ -14,6 +14,7 @@
 #include "SOTS_UDSBridgeSettings.h"
 #include "UObject/Class.h"
 #include "TimerManager.h"
+#include "DrawDebugHelpers.h"
 #include "Perception/AISense_Hearing.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UDSBridge, Log, All);
@@ -29,6 +30,12 @@ void USOTS_UDSBridgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	EnsureConfig();
+
+	const USOTS_UDSBridgeSettings* Settings = GetDefault<USOTS_UDSBridgeSettings>();
+	if (!Settings || !Settings->bEnableUDSBridge)
+	{
+		return;
+	}
 
 	ForceRefreshConsoleCmd = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("SOTS.UDSBridge.Refresh"),
@@ -87,6 +94,8 @@ void USOTS_UDSBridgeSubsystem::TickBridge()
 	BuildStateFromCaches(State);
 	LastState = State;
 
+	PollObservedState();
+
 	PushSunDirToGSM(State);
 	ApplyDLWEPolicy(State);
 	TrySpawnTrailBreadcrumb(State);
@@ -95,6 +104,10 @@ void USOTS_UDSBridgeSubsystem::TickBridge()
 	{
 		const double Now = World->GetTimeSeconds();
 		EmitTelemetry(Now);
+		if (Config->bDebugDrawBreadcrumbs)
+		{
+			DebugDrawBreadcrumbChain(Now);
+		}
 
 		// Re-jitter the interval each tick.
 		World->GetTimerManager().SetTimer(UpdateTimerHandle, this, &USOTS_UDSBridgeSubsystem::TickBridge, GetJitteredInterval(), false);
@@ -140,6 +153,12 @@ void USOTS_UDSBridgeSubsystem::RefreshCachedRefs(bool bForce)
 	}
 }
 
+bool USOTS_UDSBridgeSubsystem::IsUDSBridgeActive() const
+{
+	const USOTS_UDSBridgeSettings* Settings = GetDefault<USOTS_UDSBridgeSettings>();
+	return Settings && Settings->bEnableUDSBridge;
+}
+
 void USOTS_UDSBridgeSubsystem::RefreshCachedGSM()
 {
 	if (!CachedGSMSubsystem.IsValid())
@@ -171,6 +190,53 @@ void USOTS_UDSBridgeSubsystem::BuildStateFromCaches(FSOTS_UDSBridgeState& OutSta
 	{
 		const double Now = GetWorldTimeSecondsSafe();
 		EmitWarningOnce(TEXT("UDSBridge: UDS actor not found; weather/sun data unavailable."), bWarnedNoUDS, bWarnedMissingUDSOnce, Now);
+	}
+}
+
+void USOTS_UDSBridgeSubsystem::PollObservedState()
+{
+	const USOTS_UDSBridgeSettings* Settings = GetDefault<USOTS_UDSBridgeSettings>();
+	if (!Settings || !Settings->bEnableUDSBridge)
+	{
+		return;
+	}
+
+	FSOTS_UDSObservedState NewState;
+	NewState.bHasUDS = CachedUDSActor.IsValid();
+
+	AActor* OwnerActor = nullptr;
+	if (CachedPlayerPawn.IsValid())
+	{
+		OwnerActor = CachedPlayerPawn.Get();
+	}
+	else if (APawn* Pawn = GetPlayerPawn())
+	{
+		OwnerActor = Pawn;
+	}
+
+	if (UActorComponent* DLWEComp = FindDLWEComponent(OwnerActor))
+	{
+		NewState.bHasDLWE = true;
+		TryReadDLWEState(DLWEComp, NewState);
+	}
+
+	auto FloatChanged = [](float A, float B)
+	{
+		return !FMath::IsNearlyEqual(A, B, 0.01f);
+	};
+
+	const bool bChanged =
+		(LastObservedState.bHasUDS != NewState.bHasUDS) ||
+		(LastObservedState.bHasDLWE != NewState.bHasDLWE) ||
+		FloatChanged(LastObservedState.SnowAmount01, NewState.SnowAmount01) ||
+		FloatChanged(LastObservedState.Wetness01, NewState.Wetness01) ||
+		FloatChanged(LastObservedState.TimeOfDay01, NewState.TimeOfDay01) ||
+		(LastObservedState.bIsNight != NewState.bIsNight);
+
+	if (bChanged)
+	{
+		LastObservedState = NewState;
+		OnUDSStateChanged.Broadcast(LastObservedState);
 	}
 }
 
@@ -278,29 +344,37 @@ APawn* USOTS_UDSBridgeSubsystem::GetPlayerPawn()
 	return nullptr;
 }
 
-UActorComponent* USOTS_UDSBridgeSubsystem::FindDLWEComponent(APawn* Pawn)
+UActorComponent* USOTS_UDSBridgeSubsystem::FindDLWEComponent(AActor* Owner) const
 {
-	if (!Pawn || !Config)
+	if (!Owner)
 	{
 		return nullptr;
 	}
 
-	const FString& NameContains = Config->DLWEComponentNameContains;
-	if (NameContains.IsEmpty())
+	const USOTS_UDSBridgeSettings* Settings = GetDefault<USOTS_UDSBridgeSettings>();
+	if (!Settings)
 	{
 		return nullptr;
 	}
 
-	const TInlineComponentArray<UActorComponent*> Components(Pawn);
-	for (UActorComponent* Component : Components)
+	const FName DesiredClassName = Settings->DLWEComponentClassName;
+	if (!DesiredClassName.IsValid())
 	{
-		if (Component && Component->GetName().Contains(NameContains))
+		return nullptr;
+	}
+
+	UClass* DLWEClass = FindObject<UClass>(nullptr, *DesiredClassName.ToString());
+	if (!DLWEClass)
+	{
+		if (Settings->bLogOnceWhenUDSAbsent && !bLoggedMissingUDSClassOnce)
 		{
-			return Component;
+			bLoggedMissingUDSClassOnce = true;
+			UE_LOG(LogSOTS_UDSBridge, Warning, TEXT("UDSBridge: DLWE class '%s' not found; bridge will no-op until available."), *DesiredClassName.ToString());
 		}
+		return nullptr;
 	}
 
-	return nullptr;
+	return Owner->GetComponentByClass(DLWEClass);
 }
 
 void USOTS_UDSBridgeSubsystem::EmitTelemetry(double NowSeconds)
@@ -362,7 +436,11 @@ void USOTS_UDSBridgeSubsystem::EmitTelemetry(double NowSeconds)
 
 float USOTS_UDSBridgeSubsystem::GetJitteredInterval() const
 {
-	const float Base = Config ? Config->UpdateIntervalSeconds : 0.35f;
+	float Base = Config ? Config->UpdateIntervalSeconds : 0.35f;
+	if (const USOTS_UDSBridgeSettings* Settings = GetDefault<USOTS_UDSBridgeSettings>())
+	{
+		Base = Settings->PollIntervalSeconds;
+	}
 	const float Jitter = Config ? Config->IntervalJitterSeconds : 0.05f;
 	return FMath::Max(0.01f, Base + FMath::FRandRange(-Jitter, Jitter));
 }
@@ -403,6 +481,26 @@ bool USOTS_UDSBridgeSubsystem::TryReadBoolProperty(UObject* Obj, FName PropName,
 	if (const FBoolProperty* BoolProp = FindFProperty<FBoolProperty>(Obj->GetClass(), PropName))
 	{
 		OutValue = BoolProp->GetPropertyValue_InContainer(Obj);
+		return true;
+	}
+
+	return false;
+}
+
+bool USOTS_UDSBridgeSubsystem::TryReadFloatProperty(UObject* Obj, FName PropName, float& OutValue, bool bClamp01) const
+{
+	if (!Obj || !PropName.IsValid())
+	{
+		return false;
+	}
+
+	if (const FFloatProperty* FloatProp = FindFProperty<FFloatProperty>(Obj->GetClass(), PropName))
+	{
+		OutValue = FloatProp->GetPropertyValue_InContainer(Obj);
+		if (bClamp01)
+		{
+			OutValue = FMath::Clamp(OutValue, 0.f, 1.f);
+		}
 		return true;
 	}
 
@@ -471,6 +569,75 @@ bool USOTS_UDSBridgeSubsystem::TryReadBoolByPath(UObject* Obj, const FString& Pa
 	}
 
 	return false;
+}
+
+bool USOTS_UDSBridgeSubsystem::TryReadDLWEState(UActorComponent* DLWEComp, FSOTS_UDSObservedState& OutState) const
+{
+	if (!DLWEComp)
+	{
+		return false;
+	}
+
+	const TArray<FName> SnowCandidates = {
+		FName(TEXT("SnowAmount")),
+		FName(TEXT("SnowAmount01")),
+		FName(TEXT("Snow_Amount")),
+		FName(TEXT("SnowIntensity")),
+		FName(TEXT("SnowStrength"))
+	};
+
+	const TArray<FName> WetnessCandidates = {
+		FName(TEXT("Wetness")),
+		FName(TEXT("Wetness01")),
+		FName(TEXT("LandscapeWetness")),
+		FName(TEXT("WetnessAmount")),
+		FName(TEXT("WetnessStrength"))
+	};
+
+	const TArray<FName> TimeCandidates = {
+		FName(TEXT("TimeOfDay")),
+		FName(TEXT("TimeOfDay01")),
+		FName(TEXT("NormalizedTimeOfDay"))
+	};
+
+	const TArray<FName> NightCandidates = {
+		FName(TEXT("bIsNight")),
+		FName(TEXT("IsNight")),
+		FName(TEXT("bNight"))
+	};
+
+	auto TryFloatFromCandidates = [this, DLWEComp](const TArray<FName>& Names, float& OutValue)
+	{
+		for (const FName& Candidate : Names)
+		{
+			const FString CandidateStr = Candidate.ToString();
+			const bool bClamp = CandidateStr.Contains(TEXT("01"), ESearchCase::IgnoreCase) || CandidateStr.Contains(TEXT("Normalized"), ESearchCase::IgnoreCase);
+			if (TryReadFloatProperty(DLWEComp, Candidate, OutValue, bClamp))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto TryBoolFromCandidates = [this, DLWEComp](const TArray<FName>& Names, bool& OutValue)
+	{
+		for (const FName& Candidate : Names)
+		{
+			if (TryReadBoolProperty(DLWEComp, Candidate, OutValue))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	TryFloatFromCandidates(SnowCandidates, OutState.SnowAmount01);
+	TryFloatFromCandidates(WetnessCandidates, OutState.Wetness01);
+	TryFloatFromCandidates(TimeCandidates, OutState.TimeOfDay01);
+	TryBoolFromCandidates(NightCandidates, OutState.bIsNight);
+
+	return true;
 }
 
 bool USOTS_UDSBridgeSubsystem::TryCallVectorFunction(UObject* Obj, FName FuncName, FVector& OutVec) const
@@ -1154,4 +1321,56 @@ void USOTS_UDSBridgeSubsystem::OnBreadcrumbDestroyed(AActor* DestroyedActor)
 	}
 
 	AliveBreadcrumbCount = FMath::Max(0, AliveBreadcrumbCount - 1);
+}
+
+void USOTS_UDSBridgeSubsystem::DebugDrawBreadcrumbChain(double NowSeconds)
+{
+	#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	if (!Config || !Config->bDebugDrawBreadcrumbs)
+	{
+		return;
+	}
+
+	if (NowSeconds < NextBreadcrumbDebugDrawTimeSeconds)
+	{
+		return;
+	}
+
+	NextBreadcrumbDebugDrawTimeSeconds = NowSeconds + Config->BreadcrumbDebugDrawInterval;
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const float Duration = Config->BreadcrumbDebugDrawDuration;
+	const int32 MaxDraw = FMath::Clamp(Config->BreadcrumbDebugMaxToDraw, 1, 64);
+	int32 Drawn = 0;
+
+	FColor Color = FColor::Cyan;
+	ASOTS_TrailBreadcrumb* Node = BreadcrumbTail.Get();
+	while (Node && Drawn < MaxDraw)
+	{
+		const FVector Loc = Node->GetActorLocation();
+		DrawDebugSphere(World, Loc, 12.f, 8, Color, false, Duration);
+
+		if (Config->bDebugDrawBreadcrumbLines && Node->Prev.Get())
+		{
+			DrawDebugLine(World, Node->Prev->GetActorLocation(), Loc, Color, false, Duration, 0, 1.5f);
+		}
+
+		if (Config->bDebugDrawBreadcrumbText)
+		{
+			const double Age = NowSeconds - Node->SpawnTimeSeconds;
+			const bool bHasPrev = (Node->Prev.Get() != nullptr);
+			const bool bHasNext = (Node->Next.Get() != nullptr);
+			const FString Text = FString::Printf(TEXT("Age: %.1fs\nPrev=%d Next=%d"), Age, bHasPrev ? 1 : 0, bHasNext ? 1 : 0);
+			DrawDebugString(World, Loc + FVector(0.f, 0.f, 24.f), Text, nullptr, Color, Duration, true);
+		}
+
+		Node = Node->Prev.Get();
+		++Drawn;
+	}
+	#endif
 }

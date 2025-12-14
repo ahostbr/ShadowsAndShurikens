@@ -139,6 +139,7 @@ void USOTS_GlobalStealthDebugLibrary::RunSOTS_GSM_DebugSample(
         Score,
         static_cast<int32>(Level));
 
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (GEngine)
     {
         GEngine->AddOnScreenDebugMessage(
@@ -151,4 +152,5 @@ void USOTS_GlobalStealthDebugLibrary::RunSOTS_GSM_DebugSample(
                 NearestDistance,
                 Speed));
     }
+#endif
 }

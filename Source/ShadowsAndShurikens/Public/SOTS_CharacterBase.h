@@ -24,6 +24,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SOTS|Profile")
     void ApplyCharacterStateSnapshot(const FSOTS_CharacterStateData& InData);
 
+    UFUNCTION(BlueprintCallable, Category="SOTS|Profile|Snapshot")
+    void WriteStatsToCharacterState(UPARAM(ref) FSOTS_CharacterStateData& InOutState) const;
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|Profile|Snapshot")
+    void ReadStatsFromCharacterState(const FSOTS_CharacterStateData& InState);
+
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SOTS|Components", meta = (AllowPrivateAccess = "true"))
     USOTS_StatsComponent* StatsComponent;

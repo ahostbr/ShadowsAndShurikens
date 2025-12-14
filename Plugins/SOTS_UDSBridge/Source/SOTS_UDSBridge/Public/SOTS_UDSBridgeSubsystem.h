@@ -2,12 +2,26 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "GameplayTagContainer.h"
 #include "SOTS_UDSBridgeSubsystem.generated.h"
 
 class USOTS_UDSBridgeConfig;
 class USOTS_GlobalStealthManagerSubsystem;
 class IConsoleObject;
 class ASOTS_TrailBreadcrumb;
+
+USTRUCT(BlueprintType)
+struct FSOTS_UDSObservedState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category="SOTS|UDSBridge") bool bHasUDS = false;
+	UPROPERTY(BlueprintReadOnly, Category="SOTS|UDSBridge") bool bHasDLWE = false;
+	UPROPERTY(BlueprintReadOnly, Category="SOTS|UDSBridge") float SnowAmount01 = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category="SOTS|UDSBridge") float Wetness01 = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category="SOTS|UDSBridge") float TimeOfDay01 = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category="SOTS|UDSBridge") bool bIsNight = false;
+};
 
 // DLWE application path chosen at runtime.
 enum class EDLWEApplyMode : uint8
@@ -29,6 +43,8 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUDSStateChanged, const FSOTS_UDSObservedState&, NewState);
+
 	// BP/externally callable helpers
 	bool GetBridgeStateSnapshot(
 		bool& bOutHasUDS,
@@ -40,6 +56,15 @@ public:
 		bool& bOutHasSunDir,
 		FVector& OutSunDirWS);
 
+	UFUNCTION(BlueprintCallable, Category="SOTS|UDSBridge|State")
+	FSOTS_UDSObservedState GetLastUDSState() const { return LastObservedState; }
+
+	UFUNCTION(BlueprintCallable, Category="SOTS|UDSBridge|State")
+	bool IsUDSBridgeActive() const;
+
+	UPROPERTY(BlueprintAssignable, Category="SOTS|UDSBridge|State")
+	FOnUDSStateChanged OnUDSStateChanged;
+
 	void ForceRefreshAndApply();
 
 private:
@@ -47,6 +72,9 @@ private:
 	void Console_ForceRefresh();
 
 private:
+	FSOTS_UDSObservedState LastObservedState;
+	mutable bool bLoggedMissingUDSClassOnce = false;
+
 	// Config
 	UPROPERTY()
 	TObjectPtr<USOTS_UDSBridgeConfig> Config = nullptr;
@@ -108,11 +136,14 @@ private:
 	void RefreshCachedRefs(bool bForce);
 	void RefreshCachedGSM();
 	void BuildStateFromCaches(FSOTS_UDSBridgeState& OutState);
+	void PollObservedState();
 
 	// Discovery helpers
 	AActor* FindUDSActor();
 	APawn* GetPlayerPawn();
-	UActorComponent* FindDLWEComponent(APawn* Pawn);
+	UActorComponent* FindDLWEComponent(AActor* Owner) const;
+	bool TryReadDLWEState(UActorComponent* DLWEComp, FSOTS_UDSObservedState& OutState) const;
+	bool TryReadFloatProperty(UObject* Obj, FName PropName, float& OutValue, bool bClamp01 = false) const;
 	bool ValidateDLWEComponent(UActorComponent* DLWEComp, FString& OutInfo);
 	void PushSunDirToGSM(const FSOTS_UDSBridgeState& State);
 	void ApplyDLWEPolicy(const FSOTS_UDSBridgeState& State);
@@ -120,6 +151,7 @@ private:
 	void TrySpawnTrailBreadcrumb(const FSOTS_UDSBridgeState& State);
 	UFUNCTION()
 	void OnBreadcrumbDestroyed(AActor* DestroyedActor);
+	void DebugDrawBreadcrumbChain(double NowSeconds);
 
 	// Debug
 	void EmitTelemetry(double NowSeconds);
@@ -149,4 +181,5 @@ private:
 	FVector LastBreadcrumbLocation = FVector::ZeroVector;
 	double LastBreadcrumbSpawnTime = 0.0;
 	int32 AliveBreadcrumbCount = 0;
+	double NextBreadcrumbDebugDrawTimeSeconds = 0.0;
 };

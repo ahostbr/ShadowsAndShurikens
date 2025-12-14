@@ -21,7 +21,7 @@ public class SOTS_INV : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				// TODO: add InventorySystemPro module once available
+				// SOTS_INV is a SOTS-side bridge; InvSP integrates via Blueprint adapters and does not require InvSP C++ modules.
 			}
 		);
 	}

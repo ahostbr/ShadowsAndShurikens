@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
+#include "HAL/IConsoleManager.h"
 #include "SOTS_TagAccessHelpers.h"
 #include "SOTS_MissionDirectorSubsystem.h"
 #include "SOTS_MMSSSubsystem.h"
@@ -16,6 +17,51 @@
 #include "SOTS_GameplayTagManagerSubsystem.h"
 #include "SOTS_FXManagerSubsystem.h"
 #include "SOTS_KillExecutionManagerKEMAnchorDebugWidget.h"
+#include "Engine/Engine.h"
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+// Console toggle for all SOTS debug widgets (dev builds only, default off)
+static TAutoConsoleVariable<int32> CVarSOTSDebugWidgets(
+    TEXT("sots.DebugWidgets"),
+    0,
+    TEXT("Enable SOTS debug widgets (0=off, 1=on)."),
+    ECVF_Default);
+
+static void HandleSOTSDebugWidgetsChanged()
+{
+    if (CVarSOTSDebugWidgets.GetValueOnAnyThread() != 0)
+    {
+        return;
+    }
+
+    if (GEngine)
+    {
+        for (const FWorldContext& Context : GEngine->GetWorldContexts())
+        {
+            if (UWorld* World = Context.World())
+            {
+                if (UGameInstance* GI = World->GetGameInstance())
+                {
+                    if (USOTS_SuiteDebugSubsystem* Subsys = GI->GetSubsystem<USOTS_SuiteDebugSubsystem>())
+                    {
+                        Subsys->HideKEMAnchorOverlay();
+                    }
+                }
+            }
+        }
+    }
+}
+
+static FAutoConsoleVariableSink SOTSDebugWidgetsSink(FConsoleCommandDelegate::CreateStatic(&HandleSOTSDebugWidgetsChanged));
+
+namespace
+{
+    inline bool AreDebugWidgetsEnabled()
+    {
+        return CVarSOTSDebugWidgets.GetValueOnAnyThread() != 0;
+    }
+}
+#endif
+
 #include "UObject/UnrealType.h"
 
 USOTS_SuiteDebugSubsystem* USOTS_SuiteDebugSubsystem::Get(const UObject* WorldContextObject)
@@ -226,11 +272,20 @@ void USOTS_SuiteDebugSubsystem::DumpSuiteStateToLog() const
 
 void USOTS_SuiteDebugSubsystem::ToggleKEMAnchorOverlay()
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     SetKEMAnchorOverlayEnabled(!IsKEMAnchorOverlayVisible());
+#endif
 }
 
 void USOTS_SuiteDebugSubsystem::SetKEMAnchorOverlayEnabled(bool bEnabled)
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!AreDebugWidgetsEnabled())
+    {
+        HideKEMAnchorOverlay();
+        return;
+    }
+
     if (bEnabled)
     {
         ShowKEMAnchorOverlay();
@@ -239,6 +294,7 @@ void USOTS_SuiteDebugSubsystem::SetKEMAnchorOverlayEnabled(bool bEnabled)
     {
         HideKEMAnchorOverlay();
     }
+#endif
 }
 
 bool USOTS_SuiteDebugSubsystem::IsKEMAnchorOverlayVisible() const
@@ -248,7 +304,13 @@ bool USOTS_SuiteDebugSubsystem::IsKEMAnchorOverlayVisible() const
 
 void USOTS_SuiteDebugSubsystem::ShowKEMAnchorOverlay()
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (IsKEMAnchorOverlayVisible())
+    {
+        return;
+    }
+
+    if (!AreDebugWidgetsEnabled())
     {
         return;
     }
@@ -272,13 +334,16 @@ void USOTS_SuiteDebugSubsystem::ShowKEMAnchorOverlay()
             KEMAnchorDebugWidgetInstance = Widget;
         }
     }
+#endif
 }
 
 void USOTS_SuiteDebugSubsystem::HideKEMAnchorOverlay()
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (USOTS_KillExecutionManagerKEMAnchorDebugWidget* Widget = KEMAnchorDebugWidgetInstance.Get())
     {
         Widget->RemoveFromParent();
         KEMAnchorDebugWidgetInstance.Reset();
     }
+#endif
 }

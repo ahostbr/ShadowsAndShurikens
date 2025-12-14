@@ -92,6 +92,16 @@ void USOTS_StatsComponent::SetAllStats(const TMap<FGameplayTag, float>& NewStats
     }
 }
 
+void USOTS_StatsComponent::WriteToCharacterState(FSOTS_CharacterStateData& InOutState) const
+{
+    InOutState.StatValues = StatValues;
+}
+
+void USOTS_StatsComponent::ReadFromCharacterState(const FSOTS_CharacterStateData& InState)
+{
+    StatValues = InState.StatValues;
+}
+
 void USOTS_StatsComponent::SetStatBounds(FGameplayTag StatTag, float MinValue, float MaxValue)
 {
     if (!StatTag.IsValid())

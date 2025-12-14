@@ -9,6 +9,7 @@
 #include "SOTS_HUDSubsystem.h"
 #include "SOTS_NotificationSubsystem.h"
 #include "SOTS_ProHUDAdapter.h"
+#include "Adapters/SOTS_InteractionEssentialsAdapter.h"
 #include "SOTS_UIIntentTags.h"
 #include "SOTS_UIModalResultTypes.h"
 #include "SOTS_UIPayloadTypes.h"
@@ -65,6 +66,11 @@ void USOTS_UIRouterSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			{
 				InvSPAdapterClass = Settings->InvSPAdapterClass;
 			}
+
+			if (!InteractionAdapterClass)
+			{
+				InteractionAdapterClass = Settings->InteractionAdapterClass;
+			}
 		}
 	}
 
@@ -102,6 +108,7 @@ void USOTS_UIRouterSubsystem::Deinitialize()
 	CachedWidgets.Empty();
 	ProHUDAdapter = nullptr;
 	InvSPAdapter = nullptr;
+	InteractionAdapter = nullptr;
 	LoadedRegistry = nullptr;
 	bGamePausedForUI = false;
 
@@ -445,6 +452,49 @@ bool USOTS_UIRouterSubsystem::ShowConfirmDialog(const F_SOTS_UIConfirmDialogPayl
 	return PushWidgetById(ModalTag, PayloadStruct);
 }
 
+F_SOTS_UIConfirmDialogPayload USOTS_UIRouterSubsystem::BuildReturnToMainMenuPayload(const FText& MessageOverride) const
+{
+	F_SOTS_UIConfirmDialogPayload Payload;
+	Payload.Title = NSLOCTEXT("SOTS", "UI_ReturnToMainMenu_Title", "Return to Main Menu");
+	Payload.Message = MessageOverride.IsEmpty()
+		? NSLOCTEXT("SOTS", "UI_ReturnToMainMenu_Body", "Return to the main menu? Unsaved progress may be lost.")
+		: MessageOverride;
+	Payload.ConfirmText = NSLOCTEXT("SOTS", "UI_ReturnToMainMenu_Confirm", "Yes");
+	Payload.CancelText = NSLOCTEXT("SOTS", "UI_ReturnToMainMenu_Cancel", "No");
+	Payload.ConfirmActionTag = SOTS_UIIntentTags::GetReturnToMainMenuTag();
+	Payload.CancelActionTag = SOTS_UIIntentTags::GetCloseTopModalTag();
+	Payload.bCloseOnConfirm = true;
+	Payload.bCloseOnCancel = true;
+	return Payload;
+}
+
+bool USOTS_UIRouterSubsystem::RequestReturnToMainMenu(const FText& MessageOverride)
+{
+	const F_SOTS_UIConfirmDialogPayload Payload = BuildReturnToMainMenuPayload(MessageOverride);
+	return ShowConfirmDialog(Payload);
+}
+
+bool USOTS_UIRouterSubsystem::HandleInteractionIntent(FGameplayTag IntentTag, FInstancedStruct Payload)
+{
+	if (!IntentTag.IsValid())
+	{
+		return false;
+	}
+
+	if (DispatchInteractionIntent(IntentTag, Payload))
+	{
+		return true;
+	}
+
+	if (DispatchInteractionMarkerIntent(IntentTag, Payload))
+	{
+		return true;
+	}
+
+	UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("Router: Interaction intent %s not handled."), *IntentTag.ToString());
+	return false;
+}
+
 bool USOTS_UIRouterSubsystem::PushOrReplaceWidget(FGameplayTag WidgetId, FInstancedStruct Payload, bool bReplaceTop)
 {
 	FSOTS_WidgetRegistryEntry Entry;
@@ -742,6 +792,113 @@ void USOTS_UIRouterSubsystem::EnsureAdapters()
 	{
 		InvSPAdapter = NewObject<USOTS_InvSPAdapter>(GetGameInstance(), InvSPAdapterClass);
 	}
+
+	EnsureInteractionAdapter();
+}
+
+void USOTS_UIRouterSubsystem::EnsureInteractionAdapter()
+{
+	if (!InteractionAdapter && InteractionAdapterClass)
+	{
+		InteractionAdapter = NewObject<USOTS_InteractionEssentialsAdapter>(GetGameInstance(), InteractionAdapterClass);
+	}
+}
+
+bool USOTS_UIRouterSubsystem::DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload)
+{
+	EnsureAdapters();
+
+	if (!InteractionAdapter)
+	{
+		return false;
+	}
+
+	if (IntentTag == SOTS_UIIntentTags::GetInteractionHideTag())
+	{
+		InteractionAdapter->HidePrompt();
+		return true;
+	}
+
+	const F_SOTS_InteractionPromptView* View = Payload.GetPtr<F_SOTS_InteractionPromptView>();
+	if (!View)
+	{
+		return false;
+	}
+
+	InteractionAdapter->EnsureViewportCreated();
+
+	if (IntentTag == SOTS_UIIntentTags::GetInteractionShowTag())
+	{
+		InteractionAdapter->ShowPrompt(*View);
+		return true;
+	}
+
+	if (IntentTag == SOTS_UIIntentTags::GetInteractionUpdateTag())
+	{
+		InteractionAdapter->UpdatePrompt(*View);
+		return true;
+	}
+
+	return false;
+}
+
+bool USOTS_UIRouterSubsystem::DispatchInteractionMarkerIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload)
+{
+	EnsureAdapters();
+
+	if (!InteractionAdapter)
+	{
+		return false;
+	}
+
+	const F_SOTS_InteractionMarkerView* MarkerView = Payload.GetPtr<F_SOTS_InteractionMarkerView>();
+
+	if (IntentTag == SOTS_UIIntentTags::GetInteractionMarkerAddTag())
+	{
+		if (!MarkerView)
+		{
+			return false;
+		}
+
+		InteractionAdapter->AddOrUpdateMarker(*MarkerView);
+		return true;
+	}
+
+	if (IntentTag == SOTS_UIIntentTags::GetInteractionMarkerRemoveTag())
+	{
+		FGuid MarkerId;
+		if (MarkerView)
+		{
+			MarkerId = MarkerView->MarkerId;
+		}
+		else if (const FGuid* GuidPtr = Payload.GetPtr<FGuid>())
+		{
+			MarkerId = *GuidPtr;
+		}
+
+		if (MarkerId.IsValid())
+		{
+			InteractionAdapter->RemoveMarker(MarkerId);
+			return true;
+		}
+
+		return false;
+	}
+
+	return false;
+}
+
+bool USOTS_UIRouterSubsystem::HandleReturnToMainMenuAction()
+{
+	const bool bHadListener = OnReturnToMainMenuRequested.IsBound();
+	OnReturnToMainMenuRequested.Broadcast();
+
+	if (!bHadListener)
+	{
+		UE_LOG(LogSOTS_UIRouter, Warning, TEXT("Router: ReturnToMainMenu requested but no listeners are bound to handle game flow."));
+	}
+
+	return true;
 }
 
 bool USOTS_UIRouterSubsystem::ExecuteSystemAction(FGameplayTag ActionTag)
@@ -789,8 +946,7 @@ bool USOTS_UIRouterSubsystem::ExecuteSystemAction(FGameplayTag ActionTag)
 
 	if (ActionTag == SOTS_UIIntentTags::GetReturnToMainMenuTag())
 	{
-		UE_LOG(LogSOTS_UIRouter, Log, TEXT("Router: ReturnToMainMenu action requested (TODO: hook into game flow)."));
-		return true;
+		return HandleReturnToMainMenuAction();
 	}
 
 	return false;

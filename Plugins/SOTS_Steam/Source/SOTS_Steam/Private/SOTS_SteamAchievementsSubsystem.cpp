@@ -232,6 +232,11 @@ FSOTS_SteamAchievementState* USOTS_SteamAchievementsSubsystem::FindOrAddState(FN
 
 bool USOTS_SteamAchievementsSubsystem::ShouldUseOnlineAchievements() const
 {
+    if (!IsSteamAvailable())
+    {
+        return false;
+    }
+
     const USOTS_SteamSettings* Settings = USOTS_SteamSettings::Get();
     if (!Settings)
     {
@@ -253,7 +258,7 @@ bool USOTS_SteamAchievementsSubsystem::ShouldUseOnlineAchievements() const
 
 IOnlineSubsystem* USOTS_SteamAchievementsSubsystem::GetOnlineSubsystemSteam() const
 {
-    return IOnlineSubsystem::Get(TEXT("STEAM"));
+    return GetOnlineSubsystemSafe();
 }
 
 IOnlineIdentityPtr USOTS_SteamAchievementsSubsystem::GetOnlineIdentityInterface() const

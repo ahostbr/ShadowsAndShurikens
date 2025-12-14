@@ -74,3 +74,54 @@ bool USOTS_SkillTreeLibrary::SOTS_PlayerHasSkillTag(
 
     return false;
 }
+
+bool USOTS_SkillTreeLibrary::SkillTree_IsNodeUnlocked(
+    const UObject* WorldContextObject,
+    FGameplayTag NodeTag)
+{
+    if (!NodeTag.IsValid())
+    {
+        return false;
+    }
+
+    if (USOTS_SkillTreeSubsystem* Subsys = GetSkillTreeSubsystem(WorldContextObject))
+    {
+        return Subsys->IsNodeUnlockedByTag(NodeTag);
+    }
+
+    return false;
+}
+
+bool USOTS_SkillTreeLibrary::SkillTree_AreAllNodesUnlocked(
+    const UObject* WorldContextObject,
+    const TArray<FGameplayTag>& NodeTags)
+{
+    if (NodeTags.Num() == 0)
+    {
+        return true;
+    }
+
+    if (USOTS_SkillTreeSubsystem* Subsys = GetSkillTreeSubsystem(WorldContextObject))
+    {
+        return Subsys->AreAllNodesUnlocked(NodeTags);
+    }
+
+    return false;
+}
+
+bool USOTS_SkillTreeLibrary::SkillTree_IsAnyNodeUnlocked(
+    const UObject* WorldContextObject,
+    const TArray<FGameplayTag>& NodeTags)
+{
+    if (NodeTags.Num() == 0)
+    {
+        return false;
+    }
+
+    if (USOTS_SkillTreeSubsystem* Subsys = GetSkillTreeSubsystem(WorldContextObject))
+    {
+        return Subsys->IsAnyNodeUnlocked(NodeTags);
+    }
+
+    return false;
+}

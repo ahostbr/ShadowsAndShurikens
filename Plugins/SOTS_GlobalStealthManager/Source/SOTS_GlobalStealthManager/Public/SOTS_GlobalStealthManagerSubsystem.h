@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SOTS_GlobalStealthTypes.h"
+#include "SOTS_ProfileTypes.h"
 #include "SOTS_StealthConfigDataAsset.h"
 #include "SOTS_GlobalStealthManagerSubsystem.generated.h"
 
@@ -187,6 +188,9 @@ public:
         bool& bOutCandidateValid,
         FVector& OutCandidatePoint,
         float& OutCandidateIllum01) const;
+
+    void BuildProfileData(FSOTS_GSMProfileData& OutData) const;
+    void ApplyProfileData(const FSOTS_GSMProfileData& InData);
 
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 

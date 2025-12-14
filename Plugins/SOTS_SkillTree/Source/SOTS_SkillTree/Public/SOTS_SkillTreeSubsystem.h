@@ -108,6 +108,17 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree")
     void GetAvailableNodes(FName TreeId, TArray<FName>& OutNodeIds) const;
 
+    // Blessed gating helpers (read-only). These operate on node gameplay tags
+    // authored on FSOTS_SkillNodeDefinition::SkillTag and never mutate state.
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree|Gating", meta=(DisplayName="Is Node Unlocked (Tag)"))
+    bool IsNodeUnlockedByTag(FGameplayTag NodeTag) const;
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree|Gating")
+    bool AreAllNodesUnlocked(const TArray<FGameplayTag>& NodeTags) const;
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree|Gating")
+    bool IsAnyNodeUnlocked(const TArray<FGameplayTag>& NodeTags) const;
+
     // Broadcast whenever a tree's runtime state changes.
     UPROPERTY(BlueprintAssignable, Category="SOTS|SkillTree")
     FOnSkillTreeStateChanged OnSkillTreeStateChanged;

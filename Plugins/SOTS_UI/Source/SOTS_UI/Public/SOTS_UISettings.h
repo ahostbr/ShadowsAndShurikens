@@ -5,6 +5,7 @@
 #include "SOTS_WidgetRegistryDataAsset.h"
 #include "SOTS_ProHUDAdapter.h"
 #include "SOTS_InvSPAdapter.h"
+#include "Adapters/SOTS_InteractionEssentialsAdapter.h"
 #include "UObject/SoftObjectPtr.h"
 #include "SOTS_UISettings.generated.h"
 
@@ -33,4 +34,7 @@ public:
 
     UPROPERTY(EditAnywhere, Config, Category="Adapters", meta=(ToolTip="Adapter used to bridge InventorySP into the router."))
     TSubclassOf<USOTS_InvSPAdapter> InvSPAdapterClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Adapters", meta=(ToolTip="Adapter used to bridge InteractionEssentials prompts/markers into the router."))
+    TSubclassOf<USOTS_InteractionEssentialsAdapter> InteractionAdapterClass;
 };

@@ -32,7 +32,8 @@ public class ShadowsAndShurikens : ModuleRules
 			"SOTS_MissionDirector",
 			"SOTS_KillExecutionManager",
 			"SOTS_Debug",
-			"SOTS_Parkour"
+			"SOTS_Parkour",
+			"SOTS_UI"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
@@ -40,7 +41,8 @@ public class ShadowsAndShurikens : ModuleRules
 			"AnimGraphRuntime",
 			"PoseSearch",
 			"BlendStack",
-			"Chooser"
+			"Chooser",
+			"EngineSettings"
 		});
 
 		// Uncomment if you are using Slate UI

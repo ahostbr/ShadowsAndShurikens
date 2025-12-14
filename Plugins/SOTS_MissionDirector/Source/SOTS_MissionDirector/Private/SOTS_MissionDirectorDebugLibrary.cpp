@@ -66,6 +66,7 @@ void USOTS_MissionDirectorDebugLibrary::RunSOTS_MissionDirector_DebugRun(
         Summary.OptionalObjectivesCompleted,
         Summary.EventLog.Num());
 
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (GEngine)
     {
         GEngine->AddOnScreenDebugMessage(
@@ -78,6 +79,7 @@ void USOTS_MissionDirectorDebugLibrary::RunSOTS_MissionDirector_DebugRun(
                 *Summary.FinalRank.ToString(),
                 Summary.EventLog.Num()));
     }
+#endif
 }
 
 void USOTS_MissionDirectorDebugLibrary::SOTS_MarkMissionStarted(

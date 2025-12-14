@@ -94,6 +94,79 @@ bool USOTS_SkillTreeSubsystem::IsNodeUnlocked(FName TreeId, FName NodeId) const
     return false;
 }
 
+bool USOTS_SkillTreeSubsystem::IsNodeUnlockedByTag(FGameplayTag NodeTag) const
+{
+    if (!NodeTag.IsValid())
+    {
+        return false;
+    }
+
+    for (const TPair<FName, FSOTS_SkillTreeRuntimeState>& Pair : RuntimeStates)
+    {
+        const FName TreeId = Pair.Key;
+        const FSOTS_SkillTreeRuntimeState& State = Pair.Value;
+
+        const TObjectPtr<USOTS_SkillTreeDefinition>* TreePtr = RegisteredTrees.Find(TreeId);
+        if (!TreePtr)
+        {
+            continue;
+        }
+
+        const USOTS_SkillTreeDefinition* Tree = TreePtr->Get();
+        if (!Tree)
+        {
+            continue;
+        }
+
+        for (const FSOTS_UnlockedSkillNode& Node : State.UnlockedNodes)
+        {
+            const FSOTS_SkillNodeDefinition* NodeDef = FindNodeDef(TreeId, Node.NodeId);
+            if (NodeDef && NodeDef->SkillTag == NodeTag)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool USOTS_SkillTreeSubsystem::AreAllNodesUnlocked(const TArray<FGameplayTag>& NodeTags) const
+{
+    if (NodeTags.Num() == 0)
+    {
+        return true;
+    }
+
+    for (const FGameplayTag& Tag : NodeTags)
+    {
+        if (!IsNodeUnlockedByTag(Tag))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool USOTS_SkillTreeSubsystem::IsAnyNodeUnlocked(const TArray<FGameplayTag>& NodeTags) const
+{
+    if (NodeTags.Num() == 0)
+    {
+        return false;
+    }
+
+    for (const FGameplayTag& Tag : NodeTags)
+    {
+        if (IsNodeUnlockedByTag(Tag))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool USOTS_SkillTreeSubsystem::CanUnlockNode(FName TreeId, FName NodeId) const
 {
     const FSOTS_SkillNodeDefinition* NodeDef = FindNodeDef(TreeId, NodeId);

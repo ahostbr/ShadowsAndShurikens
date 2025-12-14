@@ -472,6 +472,11 @@ FGameplayTagContainer USOTS_SteamLeaderboardsSubsystem::BuildMissionResultTags(c
 
 bool USOTS_SteamLeaderboardsSubsystem::ShouldUseOnlineLeaderboards() const
 {
+    if (!IsSteamAvailable())
+    {
+        return false;
+    }
+
     const USOTS_SteamSettings* Settings = USOTS_SteamSettings::Get();
     if (!Settings)
     {
@@ -493,7 +498,7 @@ bool USOTS_SteamLeaderboardsSubsystem::ShouldUseOnlineLeaderboards() const
 
 IOnlineSubsystem* USOTS_SteamLeaderboardsSubsystem::GetOnlineSubsystemSteam() const
 {
-    return IOnlineSubsystem::Get(TEXT("STEAM"));
+    return GetOnlineSubsystemSafe();
 }
 
 IOnlineIdentityPtr USOTS_SteamLeaderboardsSubsystem::GetOnlineIdentityInterface() const

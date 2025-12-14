@@ -15,6 +15,9 @@ Payload structs (instanced via `FInstancedStruct`):
 Modal result flow:
 - Requester -> `Router.ShowConfirmDialog` (payload becomes instanced) -> Modal widget -> `Router.SubmitModalResult` -> `OnModalResult` broadcast -> Router pops the top modal (visual only; input priority unchanged).
 
+Return to Main Menu flow:
+- `Router.RequestReturnToMainMenu(MessageOverride)` -> Confirm dialog (registry tag) -> `SubmitModalResult` -> `OnReturnToMainMenuRequested` broadcast for the game flow owner.
+
 Missing tags (set up in TagManager/DA):
 - Confirm dialog widget ids: `UI.Modals.DialogPrompt` (primary), `SAS.UI.CGF.Modal.DialogPrompt` (fallback).
 - System actions listed above (`SAS.UI.Action.*`).

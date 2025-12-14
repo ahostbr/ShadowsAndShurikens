@@ -20,9 +20,9 @@ ASOTS_TrailBreadcrumb::ASOTS_TrailBreadcrumb()
 
 	StimuliSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSource"));
 	StimuliSource->bAutoRegister = true;
-	StimuliSource->bAutoRegisterAsSource = true;
 	StimuliSource->RegisterForSense(UAISense_Hearing::StaticClass());
 	StimuliSource->RegisterForSense(UAISense_Sight::StaticClass());
+	StimuliSource->RegisterWithPerceptionSystem();
 }
 
 void ASOTS_TrailBreadcrumb::BeginPlay()

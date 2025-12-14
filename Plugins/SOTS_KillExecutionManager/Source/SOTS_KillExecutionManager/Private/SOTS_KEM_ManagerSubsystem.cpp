@@ -1552,7 +1552,56 @@ bool USOTS_KEMManagerSubsystem::RequestExecution(
                                     Target,
                                     ContextTags,
                                     ExecutionOverride,
-                                    SourceLabel);
+                                    SourceLabel,
+                                    true);
+}
+
+bool USOTS_KEMManagerSubsystem::RequestExecution_Blessed(UObject* WorldContextObject,
+                                                         AActor* InstigatorActor,
+                                                         AActor* TargetActor,
+                                                         FGameplayTag ExecutionTag,
+                                                         FName ContextReason,
+                                                         bool bAllowFallback)
+{
+    if (!WorldContextObject || !InstigatorActor || !TargetActor || !ExecutionTag.IsValid())
+    {
+        UE_LOG(LogSOTSKEM, VeryVerbose,
+            TEXT("RequestExecution_Blessed: invalid input (Ctx=%s Instigator=%s Target=%s Tag=%s)"),
+            *GetNameSafe(WorldContextObject),
+            *GetNameSafe(InstigatorActor),
+            *GetNameSafe(TargetActor),
+            *ExecutionTag.ToString());
+        return false;
+    }
+
+    FGameplayTagContainer ContextTagsToUse = PlayerContextTags;
+    if (ContextReason == FName(TEXT("Dragon")))
+    {
+        ContextTagsToUse = DragonContextTags;
+    }
+    else if (ContextReason == FName(TEXT("Cinematic")) ||
+             ContextReason == FName(TEXT("Cutscene"))  ||
+             ContextReason == FName(TEXT("Sequencer")))
+    {
+        ContextTagsToUse = CinematicContextTags;
+    }
+    else if (ContextReason == FName(TEXT("Player")))
+    {
+        ContextTagsToUse = PlayerContextTags;
+    }
+
+    USOTS_KEM_ExecutionDefinition* OverrideDef = FindExecutionDefinitionById(ExecutionTag.GetTagName());
+    const FString SourceLabel = ContextReason != NAME_None
+        ? ContextReason.ToString()
+        : ExecutionTag.ToString();
+
+    return RequestExecutionInternal(WorldContextObject,
+                                    InstigatorActor,
+                                    TargetActor,
+                                    ContextTagsToUse,
+                                    OverrideDef,
+                                    SourceLabel,
+                                    bAllowFallback);
 }
 
 bool USOTS_KEMManagerSubsystem::RequestExecution_FromPlayer(AActor* Instigator, AActor* Target)
@@ -1607,7 +1656,8 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
     AActor* Target,
     const FGameplayTagContainer& ContextTags,
     const USOTS_KEM_ExecutionDefinition* ExecutionOverride,
-    const FString& SourceLabel)
+    const FString& SourceLabel,
+    bool bAllowFallback)
 {
     ResetPendingTelemetry();
 
@@ -1832,7 +1882,7 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
                 CandidateRecords.Num());
         }
 
-        if (bWithinFallbackDistance && Instigator && TryPlayFallbackMontage(Instigator))
+        if (bAllowFallback && bWithinFallbackDistance && Instigator && TryPlayFallbackMontage(Instigator))
         {
             UE_LOG(LogSOTSKEM, Log,
                 TEXT("KEM: Fallback montage triggered for Instigator=%s"),
@@ -2151,6 +2201,10 @@ void USOTS_KEMManagerSubsystem::DrawAnchorDebugVisualization(AActor* CenterActor
     {
         return;
     }
+
+#if (UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    return;
+#endif
 
     UWorld* World = GetWorld();
     if (!World)

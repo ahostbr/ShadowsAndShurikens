@@ -10,6 +10,10 @@ void UOmniTraceDebugSubsystem::SetLastKEMTrace(const FSOTS_OmniTraceKEMDebugReco
 
 void UOmniTraceDebugSubsystem::OmniTrace_DrawLastKEMTrace()
 {
+#if (UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    return;
+#endif
+
     UWorld* World = GetWorld();
     if (!World)
     {

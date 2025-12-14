@@ -147,4 +147,23 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
 	bool bEmitBreadcrumbHearingEvent = true;
+
+	// Debug draw toggles
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs|Debug")
+	bool bDebugDrawBreadcrumbs = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs|Debug", meta = (ClampMin = "0.01", ClampMax = "10.0"))
+	float BreadcrumbDebugDrawDuration = 0.35f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs|Debug")
+	bool bDebugDrawBreadcrumbLines = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs|Debug")
+	bool bDebugDrawBreadcrumbText = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs|Debug", meta = (ClampMin = "1", ClampMax = "64"))
+	int32 BreadcrumbDebugMaxToDraw = 32;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs|Debug", meta = (ClampMin = "0.05", ClampMax = "5.0"))
+	float BreadcrumbDebugDrawInterval = 0.35f;
 };

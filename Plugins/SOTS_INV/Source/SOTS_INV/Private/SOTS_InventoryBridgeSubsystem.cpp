@@ -1,5 +1,6 @@
 #include "SOTS_InventoryBridgeSubsystem.h"
 
+#include "Interfaces/SOTS_InventoryProviderInterface.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
@@ -20,6 +21,99 @@ USOTS_InventoryBridgeSubsystem* USOTS_InventoryBridgeSubsystem::Get(const UObjec
     }
 
     return nullptr;
+}
+
+UObject* USOTS_InventoryBridgeSubsystem::ResolveInventoryProvider(const AActor* Owner) const
+{
+    if (!Owner)
+    {
+        return nullptr;
+    }
+
+    if (Owner->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        return const_cast<AActor*>(Owner);
+    }
+
+    TInlineComponentArray<UActorComponent*> Components;
+    Owner->GetComponents(Components);
+    for (UActorComponent* Component : Components)
+    {
+        if (Component && Component->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+        {
+            return Component;
+        }
+    }
+
+    return nullptr;
+}
+
+int32 USOTS_InventoryBridgeSubsystem::CountItemsOnInvComponent(UInvSP_InventoryComponent* InvComp, FGameplayTag ItemTag) const
+{
+    if (!InvComp || !ItemTag.IsValid())
+    {
+        return 0;
+    }
+
+    const FName TagName = ItemTag.GetTagName();
+    int32 TotalCount = 0;
+
+    for (const FSOTS_SerializedItem& Item : InvComp->GetCarriedItems())
+    {
+        if (Item.ItemId == TagName)
+        {
+            TotalCount += Item.Quantity;
+        }
+    }
+
+    return TotalCount;
+}
+
+bool USOTS_InventoryBridgeSubsystem::ConsumeItemsOnInvComponent(UInvSP_InventoryComponent* InvComp, FGameplayTag ItemTag, int32 Count)
+{
+    if (!InvComp || !ItemTag.IsValid() || Count <= 0)
+    {
+        return false;
+    }
+
+    TArray<FSOTS_SerializedItem> Items = InvComp->GetCarriedItems();
+    const FName TagName = ItemTag.GetTagName();
+
+    int32 Remaining = Count;
+    for (FSOTS_SerializedItem& Item : Items)
+    {
+        if (Remaining <= 0)
+        {
+            break;
+        }
+
+        if (Item.ItemId != TagName || Item.Quantity <= 0)
+        {
+            continue;
+        }
+
+        const int32 RemoveAmount = FMath::Min(Item.Quantity, Remaining);
+        Item.Quantity -= RemoveAmount;
+        Remaining -= RemoveAmount;
+    }
+
+    if (Remaining > 0)
+    {
+        return false;
+    }
+
+    Items.RemoveAll([](const FSOTS_SerializedItem& Item)
+    {
+        return Item.ItemId.IsNone() || Item.Quantity <= 0;
+    });
+
+    InvComp->ClearCarriedItems();
+    for (const FSOTS_SerializedItem& Item : Items)
+    {
+        InvComp->AddCarriedItem(Item.ItemId, Item.Quantity);
+    }
+
+    return true;
 }
 
 UActorComponent* USOTS_InventoryBridgeSubsystem::FindPlayerCarriedInventoryComponent() const
@@ -168,6 +262,101 @@ void USOTS_InventoryBridgeSubsystem::ClearQuickSlots()
 {
     ApplyQuickSlots({});
     CachedQuickSlots.Reset();
+}
+
+bool USOTS_InventoryBridgeSubsystem::HasItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count) const
+{
+    if (Count <= 0)
+    {
+        return true;
+    }
+
+    if (!ItemTag.IsValid())
+    {
+        return false;
+    }
+
+    if (UObject* Provider = ResolveInventoryProvider(Owner))
+    {
+        if (ISOTS_InventoryProviderInterface::Execute_HasItemByTag(Provider, ItemTag, Count))
+        {
+            return true;
+        }
+
+        const int32 ProviderCount = ISOTS_InventoryProviderInterface::Execute_GetItemCountByTag(Provider, ItemTag);
+        return ProviderCount >= Count;
+    }
+
+    if (Owner)
+    {
+        if (UInvSP_InventoryComponent* InvComp = Owner->FindComponentByClass<UInvSP_InventoryComponent>())
+        {
+            return CountItemsOnInvComponent(InvComp, ItemTag) >= Count;
+        }
+    }
+
+    return false;
+}
+
+int32 USOTS_InventoryBridgeSubsystem::GetItemCountByTag(AActor* Owner, FGameplayTag ItemTag) const
+{
+    if (!ItemTag.IsValid())
+    {
+        return 0;
+    }
+
+    if (UObject* Provider = ResolveInventoryProvider(Owner))
+    {
+        return ISOTS_InventoryProviderInterface::Execute_GetItemCountByTag(Provider, ItemTag);
+    }
+
+    if (Owner)
+    {
+        if (UInvSP_InventoryComponent* InvComp = Owner->FindComponentByClass<UInvSP_InventoryComponent>())
+        {
+            return CountItemsOnInvComponent(InvComp, ItemTag);
+        }
+    }
+
+    return 0;
+}
+
+bool USOTS_InventoryBridgeSubsystem::TryConsumeItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count)
+{
+    if (Count <= 0)
+    {
+        return false;
+    }
+
+    if (!ItemTag.IsValid())
+    {
+        return false;
+    }
+
+    if (UObject* Provider = ResolveInventoryProvider(Owner))
+    {
+        return ISOTS_InventoryProviderInterface::Execute_TryConsumeItemByTag(Provider, ItemTag, Count);
+    }
+
+    if (Owner)
+    {
+        if (UInvSP_InventoryComponent* InvComp = Owner->FindComponentByClass<UInvSP_InventoryComponent>())
+        {
+            return ConsumeItemsOnInvComponent(InvComp, ItemTag, Count);
+        }
+    }
+
+    return false;
+}
+
+bool USOTS_InventoryBridgeSubsystem::GetEquippedItemTag(AActor* Owner, FGameplayTag& OutItemTag) const
+{
+    if (UObject* Provider = ResolveInventoryProvider(Owner))
+    {
+        return ISOTS_InventoryProviderInterface::Execute_GetEquippedItemTag(Provider, OutItemTag);
+    }
+
+    return false;
 }
 
 void USOTS_InventoryBridgeSubsystem::ExtractItemsFromInventoryComponent(UActorComponent* Comp, TArray<FSOTS_SerializedItem>& OutItems, bool bStash) const
