@@ -31,5 +31,7 @@ void USOTS_DragonStealthComponent::EndPlay(const EEndPlayReason::Type EndPlayRea
 void USOTS_DragonStealthComponent::HandleStealthStateChanged(const FSOTS_PlayerStealthState& InState)
 {
     CachedState = InState;
+    LightLevel01 = FMath::Clamp(InState.LightLevel01, 0.0f, 1.0f);
+    AIPerceptionLevel01 = FMath::Clamp(InState.AISuspicion01, 0.0f, 1.0f);
+    OverallDetection01 = FMath::Clamp(InState.GlobalStealthScore01, 0.0f, 1.0f);
 }
-

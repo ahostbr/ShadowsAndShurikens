@@ -23,6 +23,7 @@ public:
     void UnregisterPerceptionComponent(USOTS_AIPerceptionComponent* Comp);
 
     // C++ entrypoint for noises (BP should use the Library wrapper).
+    bool TryReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag);
     void ReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag);
 
     // Optional query helpers.

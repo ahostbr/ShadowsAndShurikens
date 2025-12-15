@@ -105,19 +105,22 @@ void USOTS_InteractionDriverComponent::Driver_UpdateNow()
     }
 }
 
-void USOTS_InteractionDriverComponent::Driver_RequestInteract()
+FSOTS_InteractionResult USOTS_InteractionDriverComponent::Driver_RequestInteract()
 {
+    FSOTS_InteractionResult Result;
     if (Subsystem.IsValid() && CachedPC.IsValid())
     {
-        Subsystem->RequestInteraction(CachedPC.Get());
+        Result = Subsystem->RequestInteraction(CachedPC.Get());
     }
+    return Result;
 }
 
-bool USOTS_InteractionDriverComponent::Driver_ExecuteOption(FGameplayTag OptionTag)
+FSOTS_InteractionResult USOTS_InteractionDriverComponent::Driver_ExecuteOption(FGameplayTag OptionTag)
 {
+    FSOTS_InteractionResult Result;
     if (Subsystem.IsValid() && CachedPC.IsValid())
     {
-        return Subsystem->ExecuteInteractionOption(CachedPC.Get(), OptionTag);
+        Result = Subsystem->ExecuteInteractionOption(CachedPC.Get(), OptionTag);
     }
-    return false;
+    return Result;
 }

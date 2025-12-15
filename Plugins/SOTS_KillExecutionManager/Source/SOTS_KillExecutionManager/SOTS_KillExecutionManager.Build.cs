@@ -27,6 +27,8 @@ public class SOTS_KillExecutionManager : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
+                "LevelSequence",
+                "MovieScene",
                 "UMG",
                 "GameplayTags",
                 "ContextualAnimation",

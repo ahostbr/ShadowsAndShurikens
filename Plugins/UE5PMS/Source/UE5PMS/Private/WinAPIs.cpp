@@ -6,8 +6,13 @@
 #include "ADLXDefines.h"
 #include <cstdlib>
 
+#include "HAL/PlatformAtomics.h"
+
 #if defined(_WIN32) // Microsoft compiler
+#include "Windows/MinWindows.h"
+#include "Windows/AllowWindowsPlatformTypes.h"
 #include <Windows.h>
+#include "Windows/HideWindowsPlatformTypes.h"
 #else
 #error define your copiler
 #endif
@@ -19,7 +24,7 @@ static volatile uint64_t v = 0;
 adlx_long ADLX_CDECL_CALL adlx_atomic_inc (adlx_long* X)
 {
 #if defined(_WIN32) // Microsoft compiler
-    return InterlockedIncrement ((long*)X);
+    return static_cast<adlx_long>(FPlatformAtomics::InterlockedIncrement(reinterpret_cast<volatile int32*>(X)));
 #endif
 }
 
@@ -27,7 +32,7 @@ adlx_long ADLX_CDECL_CALL adlx_atomic_inc (adlx_long* X)
 adlx_long ADLX_CDECL_CALL adlx_atomic_dec (adlx_long* X)
 {
 #if defined(_WIN32) // Microsoft compiler
-    return InterlockedDecrement ((long*)X);
+    return static_cast<adlx_long>(FPlatformAtomics::InterlockedDecrement(reinterpret_cast<volatile int32*>(X)));
 #endif
 }
 
@@ -48,7 +53,7 @@ adlx_handle ADLX_CDECL_CALL adlx_load_library (const TCHAR* filename)
 int ADLX_CDECL_CALL adlx_free_library (adlx_handle module)
 {
 #if defined(_WIN32) // Microsoft compiler
-    return ::FreeLibrary ((HMODULE)module) == TRUE;
+    return ::FreeLibrary (reinterpret_cast<HMODULE>(module)) ? 1 : 0;
 #endif
 }
 

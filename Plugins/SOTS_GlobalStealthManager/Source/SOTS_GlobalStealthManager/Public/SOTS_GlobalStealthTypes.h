@@ -5,6 +5,8 @@
 #include "Engine/EngineTypes.h"
 #include "SOTS_GlobalStealthTypes.generated.h"
 
+class AActor;
+
 UENUM(BlueprintType)
 enum class ESOTSStealthLevel : uint8
 {
@@ -23,6 +25,299 @@ enum class ESOTS_StealthTier : uint8
     Cautious      UMETA(DisplayName="Cautious"),
     Danger        UMETA(DisplayName="Danger"),
     Compromised   UMETA(DisplayName="Compromised")
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_StealthInputType : uint8
+{
+    Unknown      UMETA(DisplayName="Unknown"),
+    Visibility   UMETA(DisplayName="Visibility"),
+    Light        UMETA(DisplayName="Light"),
+    Perception   UMETA(DisplayName="Perception"),
+    Noise        UMETA(DisplayName="Noise"),
+    Weather      UMETA(DisplayName="Weather"),
+    Custom       UMETA(DisplayName="Custom")
+};
+
+UENUM()
+enum class ESOTS_StealthIngestResult : uint8
+{
+    Accepted,
+    Dropped_Invalid,
+    Dropped_TooSoon,
+    Dropped_OutOfWindow,
+    Dropped_NoTarget,
+    Dropped_DisabledType,
+    Dropped_Internal
+};
+
+// Normalized, single-channel ingestion packet used by all GSM inputs.
+USTRUCT()
+struct FSOTS_StealthInputSample
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    ESOTS_StealthInputType Type = ESOTS_StealthInputType::Unknown;
+
+    // Caller-provided normalized strength (0..1). Clamped in ingestion.
+    UPROPERTY()
+    float StrengthNormalized = 0.0f;
+
+    // Optional confidence for sources that can provide it (0..1).
+    UPROPERTY()
+    float Confidence = 1.0f;
+
+    // Optional semantic tag for the source (e.g., Player.LightProbe).
+    UPROPERTY()
+    FGameplayTag SourceTag;
+
+    // Actor that produced the input (e.g., guard, sensor).
+    UPROPERTY()
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    // Actor the input is about (often the player).
+    UPROPERTY()
+    TWeakObjectPtr<AActor> TargetActor;
+
+    // Optional world location for spatialized inputs.
+    UPROPERTY()
+    FVector WorldLocation = FVector::ZeroVector;
+
+    // Absolute game time seconds when the sample was captured.
+    UPROPERTY()
+    double TimestampSeconds = 0.0;
+};
+
+USTRUCT()
+struct FSOTS_StealthIngestReport
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    ESOTS_StealthIngestResult Result = ESOTS_StealthIngestResult::Dropped_Internal;
+
+    UPROPERTY()
+    ESOTS_StealthInputType Type = ESOTS_StealthInputType::Unknown;
+
+    UPROPERTY()
+    float StrengthIn = 0.0f;
+
+    UPROPERTY()
+    float StrengthClamped = 0.0f;
+
+    UPROPERTY()
+    FString DebugReason;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_Handle
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Handle")
+    FGuid Id;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Handle")
+    FGameplayTag KindTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Handle")
+    FGameplayTag OwnerTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Handle")
+    double CreatedAtSeconds = 0.0;
+
+    bool IsValid() const { return Id.IsValid(); }
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_GSM_RemoveResult : uint8
+{
+    Removed,
+    NotFound,
+    WrongKind,
+    OwnerMismatch,
+    InvalidHandle,
+    InternalError
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_GSM_ResetReason : uint8
+{
+    Unknown,
+    Initialize,
+    ProfileLoaded,
+    MissionStart,
+    LevelTransition,
+    Manual
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_StealthScoreChange
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Score")
+    float OldScore = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Score")
+    float NewScore = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Score")
+    FGameplayTag ReasonTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Score")
+    double TimestampSeconds = 0.0;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_StealthIngestTuning
+{
+    GENERATED_BODY()
+
+    // Throttling and age guards (OFF by default to preserve existing behavior).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest")
+    bool bEnableIngestThrottle = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest")
+    bool bDropStaleSamples = false;
+
+    // Max allowed age before drop when bDropStaleSamples is true.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bDropStaleSamples", ClampMin="0.01"))
+    float MaxSampleAgeSeconds = 1.0f;
+
+    // Per-type throttles (seconds between accepted samples). 0 disables.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bEnableIngestThrottle", ClampMin="0.0"))
+    float MinSecondsBetweenVisibility = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bEnableIngestThrottle", ClampMin="0.0"))
+    float MinSecondsBetweenLight = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bEnableIngestThrottle", ClampMin="0.0"))
+    float MinSecondsBetweenPerception = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bEnableIngestThrottle", ClampMin="0.0"))
+    float MinSecondsBetweenNoise = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bEnableIngestThrottle", ClampMin="0.0"))
+    float MinSecondsBetweenWeather = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest", meta=(EditCondition="bEnableIngestThrottle", ClampMin="0.0"))
+    float MinSecondsBetweenCustom = 0.0f;
+
+    // Dev-only diagnostics (off by default).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest|Debug")
+    bool bDebugLogStealthIngest = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest|Debug")
+    bool bDebugLogStealthDrops = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest|Debug", meta=(ClampMin="0.0"))
+    float DebugLogThrottleSeconds = 1.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_TuningSummary
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float LightWeight = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float LOSWeight = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float DistanceWeight = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float NoiseWeight = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float LocalVisibilityWeight = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float AISuspicionWeight = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float CautiousMin = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float DangerMin = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Summary")
+    float CompromisedMin = 0.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_StealthTierTuning
+{
+    GENERATED_BODY()
+
+    // Thresholds for tier boundaries (Hidden->Cautious->Danger->Compromised).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float CautiousMin = 0.20f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float DangerMin = 0.50f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float CompromisedMin = 0.80f;
+
+    // Hysteresis to prevent flicker near thresholds.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier")
+    bool bEnableHysteresis = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0", ClampMax="0.5"))
+    float HysteresisPadding = 0.0f;
+
+    // Optional smoothing of the score used for tiering.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier")
+    bool bEnableScoreSmoothing = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0"))
+    float ScoreSmoothingHalfLifeSeconds = 0.0f;
+
+    // Optional minimum dwell time between tier changes.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0"))
+    float MinSecondsBetweenTierChanges = 0.0f;
+
+    // Optional calm decay to drift score toward 0 when not refreshed.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier")
+    bool bEnableCalmDecay = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0"))
+    float CalmDecayPerSecond = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier", meta=(ClampMin="0.0"))
+    float CalmDecayStartDelaySeconds = 0.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_StealthTierTransition
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    ESOTS_StealthTier OldTier = ESOTS_StealthTier::Hidden;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    ESOTS_StealthTier NewTier = ESOTS_StealthTier::Hidden;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    float OldScore = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    float NewScore = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    FGameplayTag ReasonTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    double TimestampSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="Stealth|Tier")
+    TArray<FGameplayTag> ActiveModifierOwners;
 };
 
 USTRUCT(BlueprintType)
@@ -141,6 +436,29 @@ struct FSOTS_StealthScoringConfig
     // Debug visualization for the cached shadow candidate (off by default).
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Shadow")
     bool bDebugShadowCandidateCache = false;
+
+    // Input ingestion tuning (throttle, age guards, dev diagnostics).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Ingest")
+    FSOTS_StealthIngestTuning IngestTuning;
+
+    // Tier stability/smoothing tuning (defaults preserve previous behavior).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Tier")
+    FSOTS_StealthTierTuning TierTuning;
+
+    // Dev-only diagnostics for stack resolution.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Debug")
+    bool bDebugDumpEffectiveTuning = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Debug")
+    bool bDebugLogStackOps = false;
+
+    // Optional repair path if tags drift away from the current tier (dev-only).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Debug")
+    bool bRepairStealthTagsIfDriftDetected = false;
+
+    // Optional reset logging (dev-only).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Debug")
+    bool bDebugLogStealthResets = false;
 };
 
 // Simple, additive stealth modifier applied on top of the raw state.

@@ -1,9 +1,12 @@
 #include "SOTS_InventoryBridgeSubsystem.h"
 
 #include "Interfaces/SOTS_InventoryProviderInterface.h"
+#include "Interfaces/SOTS_InventoryProvider.h"
+#include "InvSPInventoryProviderComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
+#include "TimerManager.h"
 
 USOTS_InventoryBridgeSubsystem* USOTS_InventoryBridgeSubsystem::Get(const UObject* WorldContextObject)
 {
@@ -23,6 +26,83 @@ USOTS_InventoryBridgeSubsystem* USOTS_InventoryBridgeSubsystem::Get(const UObjec
     return nullptr;
 }
 
+bool USOTS_InventoryBridgeSubsystem::TryResolveInventoryProviderNow(AActor* OwnerOverride)
+{
+    CachedProvider.Reset();
+    bProviderResolved = false;
+
+    const AActor* PreferredOwner = OwnerOverride;
+
+    if (!PreferredOwner)
+    {
+        if (UWorld* World = GetWorld())
+        {
+            if (APlayerController* PC = World->GetFirstPlayerController())
+            {
+                PreferredOwner = PC->GetPawn();
+            }
+        }
+    }
+
+    if (PreferredOwner)
+    {
+        if (UObject* ProviderObj = ResolveInventoryProvider(PreferredOwner))
+        {
+            CachedProvider = ProviderObj;
+            bProviderResolved = true;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bDebugLogProviderResolution)
+            {
+                UE_LOG(LogTemp, Log, TEXT("[SOTS_INV] Provider resolved: %s"), *GetNameSafe(ProviderObj));
+            }
+#endif
+            return true;
+        }
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const double Now = FPlatformTime::Seconds();
+    if (bWarnOnProviderMissing && Now >= NextProviderWarnTime)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] Inventory provider not found; operations will fail until resolved."));
+        NextProviderWarnTime = Now + 5.0; // throttle
+    }
+#endif
+
+    return false;
+}
+
+bool USOTS_InventoryBridgeSubsystem::EnsureProviderResolved(const AActor* Owner) const
+{
+    if (CachedProvider.IsValid() && bProviderResolved)
+    {
+        return true;
+    }
+
+    const_cast<USOTS_InventoryBridgeSubsystem*>(this)->TryResolveInventoryProviderNow(const_cast<AActor*>(Owner));
+    return CachedProvider.IsValid() && bProviderResolved;
+}
+
+UObject* USOTS_InventoryBridgeSubsystem::GetResolvedProvider(const AActor* Owner) const
+{
+    if (EnsureProviderResolved(Owner))
+    {
+        return CachedProvider.Get();
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const double Now = FPlatformTime::Seconds();
+    if (bWarnOnProviderNotReady && Now >= NextProviderWarnTime)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] Provider not ready for owner %s"), *GetNameSafe(Owner));
+        NextProviderWarnTime = Now + 5.0;
+    }
+#endif
+
+    return nullptr;
+}
+
 UObject* USOTS_InventoryBridgeSubsystem::ResolveInventoryProvider(const AActor* Owner) const
 {
     if (!Owner)
@@ -30,16 +110,28 @@ UObject* USOTS_InventoryBridgeSubsystem::ResolveInventoryProvider(const AActor* 
         return nullptr;
     }
 
-    if (Owner->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    if (Owner->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()) ||
+        Owner->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
     {
         return const_cast<AActor*>(Owner);
+    }
+
+    if (UInvSPInventoryProviderComponent* ProviderComp = Owner->FindComponentByClass<UInvSPInventoryProviderComponent>())
+    {
+        return ProviderComp;
     }
 
     TInlineComponentArray<UActorComponent*> Components;
     Owner->GetComponents(Components);
     for (UActorComponent* Component : Components)
     {
-        if (Component && Component->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+        if (!Component)
+        {
+            continue;
+        }
+
+        if (Component->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()) ||
+            Component->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
         {
             return Component;
         }
@@ -48,6 +140,267 @@ UObject* USOTS_InventoryBridgeSubsystem::ResolveInventoryProvider(const AActor* 
     return nullptr;
 }
 
+FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::MakeBaseReport(AActor* Owner, const FGameplayTag& ItemTag, int32 RequestedQty) const
+{
+    FSOTS_InventoryOpReport Report;
+    Report.ItemTag = ItemTag;
+    Report.RequestedQty = RequestedQty;
+    Report.RequestId = FGuid::NewGuid();
+    Report.OwnerActor = Owner;
+    return Report;
+}
+
+void USOTS_InventoryBridgeSubsystem::LogOpFailureIfNeeded(const FSOTS_InventoryOpReport& Report) const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!bDebugLogInventoryOpFailures)
+    {
+        return;
+    }
+    if (Report.Result == ESOTS_InventoryOpResult::Success)
+    {
+        return;
+    }
+    UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] Op failed Result=%d Tag=%s Req=%d Actual=%d Reason=%s"),
+        static_cast<int32>(Report.Result),
+        *Report.ItemTag.ToString(),
+        Report.RequestedQty,
+        Report.ActualQty,
+        *Report.DebugReason);
+#endif
+}
+
+FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::Op_HasItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count) const
+{
+    FSOTS_InventoryOpReport Report = MakeBaseReport(Owner, ItemTag, Count);
+
+    if (Count <= 0)
+    {
+        Report.Result = ESOTS_InventoryOpResult::Success;
+        return Report;
+    }
+
+    if (!ItemTag.IsValid())
+    {
+        Report.Result = ESOTS_InventoryOpResult::InvalidTag;
+        Report.DebugReason = TEXT("ItemTag invalid");
+        return Report;
+    }
+
+    UObject* Provider = GetResolvedProvider(Owner);
+    if (!Provider)
+    {
+        Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+        Report.DebugReason = TEXT("Provider missing");
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()))
+    {
+        if (!ISOTS_InventoryProvider::Execute_IsInventoryReady(Provider))
+        {
+            Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
+            Report.DebugReason = TEXT("Provider not ready");
+            return Report;
+        }
+
+        int32 Qty = 0;
+        const bool bHas = ISOTS_InventoryProvider::Execute_HasItemByTag(Provider, ItemTag, Count, Qty);
+        Report.ActualQty = Qty;
+        Report.Result = bHas
+            ? ESOTS_InventoryOpResult::Success
+            : (Qty > 0 ? ESOTS_InventoryOpResult::NotEnoughQuantity : ESOTS_InventoryOpResult::ItemNotFound);
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        const int32 Qty = ISOTS_InventoryProviderInterface::Execute_GetItemCountByTag(Provider, ItemTag);
+        Report.ActualQty = Qty;
+        const bool bHas = ISOTS_InventoryProviderInterface::Execute_HasItemByTag(Provider, ItemTag, Count);
+        Report.Result = bHas
+            ? ESOTS_InventoryOpResult::Success
+            : (Qty > 0 ? ESOTS_InventoryOpResult::NotEnoughQuantity : ESOTS_InventoryOpResult::ItemNotFound);
+        return Report;
+    }
+
+    Report.Result = ESOTS_InventoryOpResult::InternalError;
+    Report.DebugReason = TEXT("Unknown provider type");
+    return Report;
+}
+
+FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::Op_TryConsumeItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count)
+{
+    FSOTS_InventoryOpReport Report = MakeBaseReport(Owner, ItemTag, Count);
+
+    if (Count <= 0)
+    {
+        Report.Result = ESOTS_InventoryOpResult::InvalidTag;
+        Report.DebugReason = TEXT("Quantity <= 0");
+        return Report;
+    }
+
+    if (!ItemTag.IsValid())
+    {
+        Report.Result = ESOTS_InventoryOpResult::InvalidTag;
+        Report.DebugReason = TEXT("ItemTag invalid");
+        return Report;
+    }
+
+    UObject* Provider = GetResolvedProvider(Owner);
+    if (!Provider)
+    {
+        Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+        Report.DebugReason = TEXT("Provider missing");
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()))
+    {
+        if (!ISOTS_InventoryProvider::Execute_IsInventoryReady(Provider))
+        {
+            Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
+            Report.DebugReason = TEXT("Provider not ready");
+            return Report;
+        }
+        int32 Consumed = 0;
+        const bool bOk = ISOTS_InventoryProvider::Execute_TryConsumeItemByTag(Provider, ItemTag, Count, Consumed);
+        Report.ActualQty = Consumed;
+        Report.Result = bOk
+            ? ESOTS_InventoryOpResult::Success
+            : (Consumed > 0 ? ESOTS_InventoryOpResult::ConsumeRejected : ESOTS_InventoryOpResult::NotEnoughQuantity);
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        const bool bOk = ISOTS_InventoryProviderInterface::Execute_TryConsumeItemByTag(Provider, ItemTag, Count);
+        Report.Result = bOk ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::NotEnoughQuantity;
+        return Report;
+    }
+
+    Report.Result = ESOTS_InventoryOpResult::InternalError;
+    Report.DebugReason = TEXT("Unknown provider type");
+    return Report;
+}
+
+FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::Op_AddItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count)
+{
+    FSOTS_InventoryOpReport Report = MakeBaseReport(Owner, ItemTag, Count);
+
+    if (Count <= 0 || !ItemTag.IsValid())
+    {
+        Report.Result = ESOTS_InventoryOpResult::InvalidTag;
+        Report.DebugReason = TEXT("Invalid input");
+        return Report;
+    }
+
+    UObject* Provider = GetResolvedProvider(Owner);
+    if (!Provider)
+    {
+        Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()))
+    {
+        if (!ISOTS_InventoryProvider::Execute_IsInventoryReady(Provider))
+        {
+            Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
+            Report.DebugReason = TEXT("Provider not ready");
+            return Report;
+        }
+
+        const bool bOk = ISOTS_InventoryProvider::Execute_AddItemByTag(Provider, ItemTag, Count);
+        Report.Result = bOk ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::AddRejected;
+        Report.ActualQty = bOk ? Count : 0;
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        Report.Result = ESOTS_InventoryOpResult::InternalError;
+        Report.DebugReason = TEXT("Legacy provider lacks add by tag");
+        return Report;
+    }
+
+    Report.Result = ESOTS_InventoryOpResult::InternalError;
+    return Report;
+}
+
+FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::Op_RemoveItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count)
+{
+    FSOTS_InventoryOpReport Report = MakeBaseReport(Owner, ItemTag, Count);
+
+    if (Count <= 0 || !ItemTag.IsValid())
+    {
+        Report.Result = ESOTS_InventoryOpResult::InvalidTag;
+        Report.DebugReason = TEXT("Invalid input");
+        return Report;
+    }
+
+    UObject* Provider = GetResolvedProvider(Owner);
+    if (!Provider)
+    {
+        Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()))
+    {
+        if (!ISOTS_InventoryProvider::Execute_IsInventoryReady(Provider))
+        {
+            Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
+            Report.DebugReason = TEXT("Provider not ready");
+            return Report;
+        }
+
+        int32 Consumed = 0;
+        const bool bOk = ISOTS_InventoryProvider::Execute_TryConsumeItemByTag(Provider, ItemTag, Count, Consumed);
+        Report.ActualQty = Consumed;
+        Report.Result = bOk ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::RemoveRejected;
+        return Report;
+    }
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        const bool bOk = ISOTS_InventoryProviderInterface::Execute_TryConsumeItemByTag(Provider, ItemTag, Count);
+        Report.ActualQty = bOk ? Count : 0;
+        Report.Result = bOk ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::RemoveRejected;
+        return Report;
+    }
+
+    Report.Result = ESOTS_InventoryOpResult::InternalError;
+    return Report;
+}
+
+FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::Op_GetEquippedItem(AActor* Owner) const
+{
+    FSOTS_InventoryOpReport Report = MakeBaseReport(Owner, FGameplayTag(), 0);
+
+    UObject* Provider = GetResolvedProvider(Owner);
+    if (!Provider)
+    {
+        Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+        return Report;
+    }
+
+    FGameplayTag Equipped;
+    bool bOk = false;
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()))
+    {
+        bOk = ISOTS_InventoryProvider::Execute_GetEquippedItemTag(Provider, Equipped);
+    }
+    else if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        bOk = ISOTS_InventoryProviderInterface::Execute_GetEquippedItemTag(Provider, Equipped);
+    }
+
+    Report.ItemTag = Equipped;
+    Report.Result = bOk ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::ItemNotFound;
+    return Report;
+}
 int32 USOTS_InventoryBridgeSubsystem::CountItemsOnInvComponent(UInvSP_InventoryComponent* InvComp, FGameplayTag ItemTag) const
 {
     if (!InvComp || !ItemTag.IsValid())
@@ -153,10 +506,76 @@ void USOTS_InventoryBridgeSubsystem::BuildProfileData(FSOTS_InventoryProfileData
     }
 
     ExtractQuickSlots(OutData.QuickSlots);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bValidateInventorySnapshotOnBuild)
+    {
+        TArray<FString> Warnings;
+        TArray<FString> Errors;
+        ValidateInventorySnapshot(OutData, Warnings, Errors);
+        if (bDebugLogSnapshotValidation)
+        {
+            for (const FString& Warn : Warnings)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] BuildProfileData warning: %s"), *Warn);
+            }
+            for (const FString& Err : Errors)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] BuildProfileData error: %s"), *Err);
+            }
+        }
+    }
+#endif
 }
 
 void USOTS_InventoryBridgeSubsystem::ApplyProfileData(const FSOTS_InventoryProfileData& InData)
 {
+    TArray<FString> Warnings;
+    TArray<FString> Errors;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bValidateInventorySnapshotOnApply)
+    {
+        ValidateInventorySnapshot(InData, Warnings, Errors);
+        if (bDebugLogSnapshotValidation)
+        {
+            for (const FString& Warn : Warnings)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] ApplyProfileData warning: %s"), *Warn);
+            }
+            for (const FString& Err : Errors)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] ApplyProfileData error: %s"), *Err);
+            }
+        }
+        if (!Errors.IsEmpty())
+        {
+            return;
+        }
+    }
+#endif
+
+    if (!IsInventoryProviderReady())
+    {
+        if (bEnableDeferredProfileApply)
+        {
+            PendingSnapshot = InData;
+            bHasPendingSnapshot = true;
+            PendingApplyRetries = 0;
+            if (UWorld* World = GetWorld())
+            {
+                World->GetTimerManager().SetTimer(
+                    DeferredApplyTimerHandle,
+                    this,
+                    &USOTS_InventoryBridgeSubsystem::TryApplyPendingSnapshot,
+                    DeferredApplyRetryIntervalSeconds,
+                    true);
+            }
+            return;
+        }
+        return;
+    }
+
     if (UActorComponent* CarriedComp = FindPlayerCarriedInventoryComponent())
     {
         ClearInventoryComponent(CarriedComp);
@@ -174,6 +593,12 @@ void USOTS_InventoryBridgeSubsystem::ApplyProfileData(const FSOTS_InventoryProfi
     CachedCarriedItems = InData.CarriedItems;
     CachedStashItems = InData.StashItems;
     CachedQuickSlots = InData.QuickSlots;
+
+    bHasPendingSnapshot = false;
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(DeferredApplyTimerHandle);
+    }
 }
 
 void USOTS_InventoryBridgeSubsystem::ClearAllInventory()
@@ -266,96 +691,30 @@ void USOTS_InventoryBridgeSubsystem::ClearQuickSlots()
 
 bool USOTS_InventoryBridgeSubsystem::HasItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count) const
 {
-    if (Count <= 0)
-    {
-        return true;
-    }
-
-    if (!ItemTag.IsValid())
-    {
-        return false;
-    }
-
-    if (UObject* Provider = ResolveInventoryProvider(Owner))
-    {
-        if (ISOTS_InventoryProviderInterface::Execute_HasItemByTag(Provider, ItemTag, Count))
-        {
-            return true;
-        }
-
-        const int32 ProviderCount = ISOTS_InventoryProviderInterface::Execute_GetItemCountByTag(Provider, ItemTag);
-        return ProviderCount >= Count;
-    }
-
-    if (Owner)
-    {
-        if (UInvSP_InventoryComponent* InvComp = Owner->FindComponentByClass<UInvSP_InventoryComponent>())
-        {
-            return CountItemsOnInvComponent(InvComp, ItemTag) >= Count;
-        }
-    }
-
-    return false;
+    FSOTS_InventoryOpReport Report = HasItemByTag_WithReport(Owner, ItemTag, Count);
+    return Report.Result == ESOTS_InventoryOpResult::Success;
 }
 
 int32 USOTS_InventoryBridgeSubsystem::GetItemCountByTag(AActor* Owner, FGameplayTag ItemTag) const
 {
-    if (!ItemTag.IsValid())
-    {
-        return 0;
-    }
-
-    if (UObject* Provider = ResolveInventoryProvider(Owner))
-    {
-        return ISOTS_InventoryProviderInterface::Execute_GetItemCountByTag(Provider, ItemTag);
-    }
-
-    if (Owner)
-    {
-        if (UInvSP_InventoryComponent* InvComp = Owner->FindComponentByClass<UInvSP_InventoryComponent>())
-        {
-            return CountItemsOnInvComponent(InvComp, ItemTag);
-        }
-    }
-
-    return 0;
+    FSOTS_InventoryOpReport Report = HasItemByTag_WithReport(Owner, ItemTag, 0);
+    return Report.ActualQty;
 }
 
 bool USOTS_InventoryBridgeSubsystem::TryConsumeItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count)
 {
-    if (Count <= 0)
-    {
-        return false;
-    }
-
-    if (!ItemTag.IsValid())
-    {
-        return false;
-    }
-
-    if (UObject* Provider = ResolveInventoryProvider(Owner))
-    {
-        return ISOTS_InventoryProviderInterface::Execute_TryConsumeItemByTag(Provider, ItemTag, Count);
-    }
-
-    if (Owner)
-    {
-        if (UInvSP_InventoryComponent* InvComp = Owner->FindComponentByClass<UInvSP_InventoryComponent>())
-        {
-            return ConsumeItemsOnInvComponent(InvComp, ItemTag, Count);
-        }
-    }
-
-    return false;
+    FSOTS_InventoryOpReport Report = TryConsumeItemByTag_WithReport(Owner, ItemTag, Count);
+    return Report.Result == ESOTS_InventoryOpResult::Success;
 }
 
 bool USOTS_InventoryBridgeSubsystem::GetEquippedItemTag(AActor* Owner, FGameplayTag& OutItemTag) const
 {
-    if (UObject* Provider = ResolveInventoryProvider(Owner))
+    FSOTS_InventoryOpReport Report = GetEquippedItemTag_WithReport(Owner);
+    if (Report.Result == ESOTS_InventoryOpResult::Success)
     {
-        return ISOTS_InventoryProviderInterface::Execute_GetEquippedItemTag(Provider, OutItemTag);
+        OutItemTag = Report.ItemTag;
+        return true;
     }
-
     return false;
 }
 
@@ -575,4 +934,82 @@ bool USOTS_InventoryBridgeSubsystem::ConsumeItemsByTagsInternal(const FGameplayT
     }
 
     return true;
+}
+
+void USOTS_InventoryBridgeSubsystem::ValidateInventorySnapshot(const FSOTS_InventoryProfileData& InData, TArray<FString>& OutWarnings, TArray<FString>& OutErrors) const
+{
+    auto ValidateStackArray = [&](const TArray<FSOTS_SerializedItem>& Items, const TCHAR* Label)
+    {
+        TSet<FName> SeenIds;
+        for (const FSOTS_SerializedItem& Item : Items)
+        {
+            if (Item.ItemId.IsNone())
+            {
+                OutErrors.Add(FString::Printf(TEXT("%s contains None ItemId."), Label));
+                continue;
+            }
+            if (Item.Quantity <= 0)
+            {
+                OutErrors.Add(FString::Printf(TEXT("%s item %s has non-positive quantity %d."), Label, *Item.ItemId.ToString(), Item.Quantity));
+            }
+            if (SeenIds.Contains(Item.ItemId))
+            {
+                OutWarnings.Add(FString::Printf(TEXT("%s has duplicate ItemId %s; merge recommended."), Label, *Item.ItemId.ToString()));
+            }
+            SeenIds.Add(Item.ItemId);
+        }
+    };
+
+    ValidateStackArray(InData.CarriedItems, TEXT("CarriedItems"));
+    ValidateStackArray(InData.StashItems, TEXT("StashItems"));
+
+    for (const FSOTS_ItemSlotBinding& Binding : InData.QuickSlots)
+    {
+        if (Binding.SlotIndex < 0)
+        {
+            OutWarnings.Add(TEXT("QuickSlot binding has negative SlotIndex."));
+        }
+        if (Binding.ItemId.IsNone())
+        {
+            continue;
+        }
+        const bool bFoundInCarried = InData.CarriedItems.ContainsByPredicate([&](const FSOTS_SerializedItem& Item){ return Item.ItemId == Binding.ItemId; });
+        const bool bFoundInStash = InData.StashItems.ContainsByPredicate([&](const FSOTS_SerializedItem& Item){ return Item.ItemId == Binding.ItemId; });
+        if (!bFoundInCarried && !bFoundInStash)
+        {
+            OutWarnings.Add(FString::Printf(TEXT("QuickSlot references ItemId %s not present in snapshot items."), *Binding.ItemId.ToString()));
+        }
+    }
+}
+
+void USOTS_InventoryBridgeSubsystem::TryApplyPendingSnapshot()
+{
+    if (!bHasPendingSnapshot)
+    {
+        if (UWorld* World = GetWorld())
+        {
+            World->GetTimerManager().ClearTimer(DeferredApplyTimerHandle);
+        }
+        return;
+    }
+
+    if (IsInventoryProviderReady())
+    {
+        ApplyProfileData(PendingSnapshot);
+        bHasPendingSnapshot = false;
+        return;
+    }
+
+    PendingApplyRetries++;
+    if (PendingApplyRetries >= DeferredApplyMaxRetries)
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        UE_LOG(LogTemp, Warning, TEXT("[SOTS_INV] Deferred inventory apply timed out."));
+#endif
+        bHasPendingSnapshot = false;
+        if (UWorld* World = GetWorld())
+        {
+            World->GetTimerManager().ClearTimer(DeferredApplyTimerHandle);
+        }
+    }
 }

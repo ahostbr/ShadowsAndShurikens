@@ -8,6 +8,7 @@
 
 class USOTS_AIPerceptionConfig;
 class USkeletalMeshComponent;
+class USOTS_GlobalStealthManagerSubsystem;
 
 /**
  * Per-AI perception component. Tracks awareness of important targets
@@ -63,6 +64,22 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|AI")
     float GetCurrentSuspicion01() const;
 
+    // Lightweight Blueprint helpers for key telemetry without exposing internals.
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|AI")
+    bool IsDetected() const { return bIsDetected; }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|AI")
+    FGameplayTag GetReasonSenseTag() const { return LastStimulusCache.SenseTag; }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|AI")
+    FVector GetLastStimulusLocation() const { return LastStimulusCache.WorldLocation; }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|AI")
+    AActor* GetLastStimulusActor() const { return LastStimulusCache.SourceActor.Get(); }
+
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|AI")
+    double GetLastStimulusTimeSeconds() const { return LastStimulusCache.TimestampSeconds; }
+
     // --- SCRIPTED CONTROL ---
 
     UFUNCTION(BlueprintCallable, Category="SOTS|Perception")
@@ -73,6 +90,16 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="SOTS|Perception")
     void ForceForgetTarget(AActor* Target);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|Perception")
+    void ResetPerceptionState(ESOTS_AIPerceptionResetReason ResetReason = ESOTS_AIPerceptionResetReason::Manual);
+
+    // Convenience hooks so profile/mission systems can clear state explicitly.
+    UFUNCTION(BlueprintCallable, Category="SOTS|Perception")
+    void ResetForProfileLoaded() { ResetPerceptionState(ESOTS_AIPerceptionResetReason::ProfileLoaded); }
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|Perception")
+    void ResetForMissionStart() { ResetPerceptionState(ESOTS_AIPerceptionResetReason::MissionStart); }
 
     /**
      * Public hook for DevTools and other systems to report perception state
@@ -91,6 +118,13 @@ public:
 
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnPerceptionStateChanged, ESOTS_PerceptionState, NewState);
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_OnTargetPerceptionChanged, AActor*, Target, ESOTS_PerceptionState, NewState);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnTargetSpotted);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnTargetLost);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnSuspicionChanged, float, NewSuspicion01);
+
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnAIPerceptionSpotted, const FSOTS_AIPerceptionTelemetry&, Telemetry);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnAIPerceptionLost, const FSOTS_AIPerceptionTelemetry&, Telemetry);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnAIPerceptionSuspicionChanged, const FSOTS_AIPerceptionTelemetry&, Telemetry);
 
     UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
     FSOTS_OnPerceptionStateChanged OnPerceptionStateChanged;
@@ -98,14 +132,45 @@ public:
     UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
     FSOTS_OnTargetPerceptionChanged OnTargetPerceptionChanged;
 
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
+    FSOTS_OnTargetSpotted OnTargetSpotted;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
+    FSOTS_OnTargetLost OnTargetLost;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
+    FSOTS_OnSuspicionChanged OnSuspicionChanged;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
+    FSOTS_OnAIPerceptionSpotted OnAIPerceptionSpotted;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
+    FSOTS_OnAIPerceptionLost OnAIPerceptionLost;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Perception")
+    FSOTS_OnAIPerceptionSuspicionChanged OnAIPerceptionSuspicionChanged;
+
     // Internal: called by subsystem to apply noise stim.
     void HandleReportedNoise(const FVector& Location, float Loudness);
 
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    virtual void OnUnregister() override;
 
 private:
+    // Last reason used when clearing caches; useful for debugging lifecycle.
+    ESOTS_AIPerceptionResetReason LastResetReason = ESOTS_AIPerceptionResetReason::Unknown;
+
+    enum class ESOTS_LocalSense : uint8
+    {
+        Unknown,
+        Sight,
+        Hearing,
+        Shadow,
+        Damage
+    };
+
     void UpdatePerception();
 
     void UpdateSingleTarget(FSOTS_PerceivedTargetState& TargetState, float DeltaSeconds, bool bDebugDrawTargetPoints);
@@ -130,10 +195,25 @@ private:
     void ApplyStateTags();
     bool ShouldRunShadowAwareness(const USOTS_AIPerceptionConfig* Config, double NowSeconds);
     void LogTelemetrySnapshot(int32 NumTargets, int32 EvaluatedTargetsCount, int32 MaxTargetsToEvaluate, bool bHasLOSOnPrimary, const FSOTS_PerceivedTargetState* BestState, float SuspicionNormalized);
+    AActor* ResolvePrimaryTarget();
+    bool IsPrimaryTarget(const AActor* Actor) const;
+    void UpdateLastStimulusCache(ESOTS_LocalSense Sense, float Strength01, const FVector& WorldLocation, AActor* SourceActor, bool bSuccessfullySensed);
+    FGameplayTag MapSenseToReasonTag(ESOTS_LocalSense Sense) const;
+    void EvaluateStimuliForTarget(float SightStrength, float HearingStrength, float ShadowStrength, ESOTS_LocalSense& OutDominantSense, float& OutDominantStrength, bool& bOutHasStimulus) const;
+
+    void InitializePerceptionTimer();
+    void ClearPerceptionTimers();
+    void ResetInternalState(ESOTS_AIPerceptionResetReason ResetReason, bool bResetTargets);
 
     // Internal hook used to translate high-level perception state changes
     // into optional FX cues (and any future side-effects).
     void HandlePerceptionStateChanged(ESOTS_PerceptionState OldState, ESOTS_PerceptionState NewState);
+    float UpdateSuspicionModel(float DeltaSeconds, float SightStrength, float HearingStrength, float ShadowStrength, ESOTS_LocalSense DominantSense, FGameplayTag& OutDominantReasonTag, bool& bOutDetectedChanged, bool& bOutDetectedNow);
+    FSOTS_AIPerceptionTelemetry BuildTelemetrySnapshot(float SuspicionNormalized, const FGameplayTag& ReasonTag) const;
+    void BroadcastSuspicionTelemetry(const FSOTS_AIPerceptionTelemetry& Telemetry, bool bDetectedChanged);
+
+    USOTS_GlobalStealthManagerSubsystem* ResolveGSM();
+    void ReportSuspicionToGSM(float AISuspicion01, const FGameplayTag& ReasonTag, const FVector* OptionalLocation, bool bForceReport);
 
 private:
     UPROPERTY()
@@ -141,6 +221,8 @@ private:
 
     UPROPERTY()
     TMap<TWeakObjectPtr<AActor>, FSOTS_PerceivedTargetState> TargetStates;
+
+    TWeakObjectPtr<AActor> PrimaryTarget;
 
     FTimerHandle PerceptionTimerHandle;
     FTimerHandle SuppressionTimerHandle;
@@ -150,6 +232,17 @@ private:
     // Suspicion values for this guard, driven by GuardConfig.
     float CurrentSuspicion;
     float PreviousSuspicion;
+
+    // Suspicion stability bookkeeping.
+    double LastStimulusTimeSeconds = 0.0;
+    double LastDetectionChangeTimeSeconds = 0.0;
+    double LastDetectionEnterTimeSeconds = 0.0;
+    double LastSuspicionEventTimeSeconds = 0.0;
+    float LastSuspicionEventValue = -1.0f;
+    bool bIsDetected = false;
+    float PendingHearingStrength = 0.0f;
+    float LastSuspicionNormalized = 0.0f;
+    FSOTS_LastPerceptionStimulus LastStimulusCache;
 
     // Last perception state observed for this guard. Used to detect
     // transitions and drive optional FX cues.
@@ -181,4 +274,14 @@ private:
 
     // Telemetry scheduling.
     double NextTelemetryTimeSeconds = 0.0;
+
+    // GSM reporting throttle state.
+    TWeakObjectPtr<USOTS_GlobalStealthManagerSubsystem> CachedGSM;
+    double LastGSMReportTimeSeconds = 0.0;
+    float LastReportedSuspicion01 = -1.0f;
+    bool bForceNextGSMReport = false;
+    bool bHasPendingGSMLocation = false;
+    FVector PendingGSMLocation = FVector::ZeroVector;
+    FGameplayTag PendingGSMReasonTag;
+    FGameplayTag LastGSMReasonTag;
 };

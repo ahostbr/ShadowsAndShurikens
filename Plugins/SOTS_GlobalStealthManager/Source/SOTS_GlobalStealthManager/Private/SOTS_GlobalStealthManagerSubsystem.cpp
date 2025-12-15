@@ -9,12 +9,14 @@
 #include "SOTS_PlayerStealthComponent.h"
 #include "SOTS_TagLibrary.h"
 #include "DrawDebugHelpers.h"
+#include "HAL/PlatformTime.h"
 
 USOTS_GlobalStealthManagerSubsystem::USOTS_GlobalStealthManagerSubsystem()
     : CurrentStealthScore(0.0f)
     , CurrentStealthLevel(ESOTSStealthLevel::Undetected)
     , bPlayerDetected(false)
 {
+    LastAppliedTier = ESOTS_StealthTier::Hidden;
 }
 
 void USOTS_GlobalStealthManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -23,13 +25,19 @@ void USOTS_GlobalStealthManagerSubsystem::Initialize(FSubsystemCollectionBase& C
 
     // Start with default struct values.
     ActiveConfig = FSOTS_StealthScoringConfig();
+    BaseConfig = ActiveConfig;
+    ModifierEntries.Reset();
+    ConfigEntries.Reset();
 
     // If a default asset is assigned on the CDO, copy its config.
     if (DefaultConfigAsset)
     {
         ActiveStealthConfig = DefaultConfigAsset;
         ActiveConfig = DefaultConfigAsset->Config;
+        BaseConfig = ActiveConfig;
     }
+
+    ResetStealthState(ESOTS_GSM_ResetReason::Initialize);
 }
 
 USOTS_GlobalStealthManagerSubsystem* USOTS_GlobalStealthManagerSubsystem::Get(const UObject* WorldContextObject)
@@ -56,7 +64,30 @@ USOTS_GlobalStealthManagerSubsystem* USOTS_GlobalStealthManagerSubsystem::Get(co
 
 void USOTS_GlobalStealthManagerSubsystem::ReportStealthSample(const FSOTS_StealthSample& Sample)
 {
+    FSOTS_StealthInputSample Input;
+    Input.Type = ESOTS_StealthInputType::Visibility;
+    Input.StrengthNormalized = Sample.LightExposure;
+    Input.SourceTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.Stealth.Driver.Light")), false);
+    Input.TargetActor = FindPlayerActor();
+    Input.WorldLocation = Input.TargetActor.IsValid() ? Input.TargetActor->GetActorLocation() : FVector::ZeroVector;
+    Input.TimestampSeconds = Sample.TimeSeconds;
+
+    FSOTS_StealthIngestReport IngestReport;
+    if (!IngestSample(Input, IngestReport))
+    {
+        return;
+    }
+
+    if (Input.SourceTag.IsValid())
+    {
+        LastReasonTag = Input.SourceTag;
+    }
+
     LastSample = Sample;
+    if (Input.TimestampSeconds > 0.0)
+    {
+        LastSample.TimeSeconds = static_cast<float>(Input.TimestampSeconds);
+    }
 
     const FSOTS_StealthScoringConfig& Cfg = ActiveConfig;
 
@@ -135,6 +166,25 @@ void USOTS_GlobalStealthManagerSubsystem::ReportStealthSample(const FSOTS_Stealt
 
 void USOTS_GlobalStealthManagerSubsystem::ReportEnemyDetectionEvent(AActor* Source, bool bDetectedNow)
 {
+    FSOTS_StealthInputSample Input;
+    Input.Type = ESOTS_StealthInputType::Perception;
+    Input.StrengthNormalized = bDetectedNow ? 1.0f : 0.0f;
+    Input.InstigatorActor = Source;
+    Input.TargetActor = FindPlayerActor();
+    Input.TimestampSeconds = GetWorldTimeSecondsSafe();
+    Input.SourceTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.Stealth.Driver.LineOfSight")), false);
+
+    FSOTS_StealthIngestReport IngestReport;
+    if (!IngestSample(Input, IngestReport))
+    {
+        return;
+    }
+
+    if (Input.SourceTag.IsValid())
+    {
+        LastReasonTag = Input.SourceTag;
+    }
+
     UE_LOG(LogSOTSGlobalStealth, Log, TEXT("Enemy detection event from %s: %s"),
         Source ? *Source->GetName() : TEXT("Unknown"),
         bDetectedNow ? TEXT("DETECTED") : TEXT("LOST"));
@@ -163,6 +213,26 @@ void USOTS_GlobalStealthManagerSubsystem::ReportAISuspicion(AActor* GuardActor, 
     }
 
     const float ClampedSuspicion = FMath::Clamp(SuspicionNormalized, 0.0f, 1.0f);
+
+    FSOTS_StealthInputSample Input;
+    Input.Type = ESOTS_StealthInputType::Perception;
+    Input.StrengthNormalized = ClampedSuspicion;
+    Input.InstigatorActor = GuardActor;
+    Input.TargetActor = FindPlayerActor();
+    Input.WorldLocation = GuardActor->GetActorLocation();
+    Input.TimestampSeconds = GetWorldTimeSecondsSafe();
+    Input.SourceTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.AI")), false);
+
+    FSOTS_StealthIngestReport IngestReport;
+    if (!IngestSample(Input, IngestReport))
+    {
+        return;
+    }
+
+    if (Input.SourceTag.IsValid())
+    {
+        LastReasonTag = Input.SourceTag;
+    }
 
     // Update or add this guard's suspicion entry.
     GuardSuspicion.FindOrAdd(GuardActor) = ClampedSuspicion;
@@ -261,6 +331,8 @@ float USOTS_GlobalStealthManagerSubsystem::GetStealthScoreFor(const AActor* Acto
 
 void USOTS_GlobalStealthManagerSubsystem::RecomputeGlobalScore()
 {
+    ResolveEffectiveConfig();
+
     // Simple blend: configurable weights for local visibility vs AI suspicion.
     const float RawLocal = FMath::Clamp(CurrentState.LocalVisibility01, 0.0f, 1.0f);
     const float RawSusp  = FMath::Clamp(CurrentState.AISuspicion01, 0.0f, 1.0f);
@@ -282,8 +354,27 @@ void USOTS_GlobalStealthManagerSubsystem::RecomputeGlobalScore()
     float EffectiveVisibility = RawLocal;
     float EffectiveGlobal = Score;
 
-    for (const FSOTS_StealthModifier& Mod : ActiveModifiers)
+    // Sort modifiers by priority desc then creation time desc for deterministic application.
+    if (ModifierEntries.Num() > 1)
     {
+        ModifierEntries.StableSort([](const FGSM_ModifierEntry& A, const FGSM_ModifierEntry& B)
+        {
+            if (A.Priority != B.Priority)
+            {
+                return A.Priority > B.Priority;
+            }
+            return A.CreatedTime > B.CreatedTime;
+        });
+    }
+
+    for (const FGSM_ModifierEntry& Entry : ModifierEntries)
+    {
+        if (!Entry.bEnabled)
+        {
+            continue;
+        }
+
+        const FSOTS_StealthModifier& Mod = Entry.Modifier;
         EffectiveLight = EffectiveLight * Mod.LightMultiplier + Mod.LightOffset01;
         EffectiveVisibility = EffectiveVisibility * Mod.VisibilityMultiplier;
         EffectiveGlobal = EffectiveGlobal + Mod.GlobalScoreOffset01;
@@ -296,26 +387,136 @@ void USOTS_GlobalStealthManagerSubsystem::RecomputeGlobalScore()
     CurrentState.LightLevel01 = EffectiveLight;
     CurrentState.ShadowLevel01 = 1.0f - EffectiveLight;
     CurrentState.LocalVisibility01 = EffectiveVisibility;
-    CurrentState.GlobalStealthScore01 = EffectiveGlobal;
-    CurrentStealthScore = EffectiveGlobal;
+    float ScoreForTier = EffectiveGlobal;
+
+    const FSOTS_StealthTierTuning& TierTuning = ActiveConfig.TierTuning;
+
+    // Optional calm decay toward zero (OFF by default).
+    if (TierTuning.bEnableCalmDecay && TierTuning.CalmDecayPerSecond > 0.0f)
+    {
+        const double Now = GetWorldTimeSecondsSafe();
+        const double Dt = (LastScoreUpdateTimeSeconds > 0.0) ? (Now - LastScoreUpdateTimeSeconds) : 0.0;
+
+        // Treat any non-zero incoming score as alerting input.
+        if (EffectiveGlobal > KINDA_SMALL_NUMBER)
+        {
+            LastAlertingInputTimeSeconds = Now;
+        }
+
+        const double SinceAlert = (LastAlertingInputTimeSeconds > 0.0) ? (Now - LastAlertingInputTimeSeconds) : TNumericLimits<double>::Max();
+        if (Dt > 0.0 && SinceAlert >= static_cast<double>(TierTuning.CalmDecayStartDelaySeconds))
+        {
+            const float DecayAmount = TierTuning.CalmDecayPerSecond * static_cast<float>(Dt);
+            EffectiveGlobal = FMath::Max(0.0f, EffectiveGlobal - DecayAmount);
+        }
+    }
+
+    // Optional smoothing (OFF by default).
+    const double NowTime = GetWorldTimeSecondsSafe();
+    const double DtSmooth = (LastScoreUpdateTimeSeconds > 0.0) ? (NowTime - LastScoreUpdateTimeSeconds) : 0.0;
+    LastScoreUpdateTimeSeconds = NowTime;
+
+    if (TierTuning.bEnableScoreSmoothing && TierTuning.ScoreSmoothingHalfLifeSeconds > 0.0f && DtSmooth > 0.0)
+    {
+        const double Alpha = 1.0 - FMath::Exp(-FMath::Loge(2.0) * DtSmooth / static_cast<double>(TierTuning.ScoreSmoothingHalfLifeSeconds));
+        SmoothedStealthScore = FMath::Lerp(SmoothedStealthScore, EffectiveGlobal, static_cast<float>(Alpha));
+        ScoreForTier = SmoothedStealthScore;
+    }
+    else
+    {
+        SmoothedStealthScore = EffectiveGlobal;
+        ScoreForTier = EffectiveGlobal;
+    }
+
+    CurrentState.GlobalStealthScore01 = ScoreForTier;
+    CurrentStealthScore = ScoreForTier;
 
     // Map to the existing multi-level enum for backward compatibility.
-    const ESOTSStealthLevel NewLevel = EvaluateStealthLevelFromScore(EffectiveGlobal);
+    const ESOTSStealthLevel NewLevel = EvaluateStealthLevelFromScore(ScoreForTier);
     SetStealthLevel(NewLevel);
 
-    // Map into the simpler tier enum.
-    ESOTS_StealthTier NewTier = ESOTS_StealthTier::Hidden;
-    if (EffectiveGlobal >= 0.8f)
+    // Stable tier selection with hysteresis and min dwell.
+    const ESOTS_StealthTier OldTier = CurrentState.StealthTier;
+    ESOTS_StealthTier NewTier = OldTier;
+
+    auto ComputeTierFromScore = [](float InScore, const FSOTS_StealthTierTuning& Tuning, ESOTS_StealthTier Current) -> ESOTS_StealthTier
     {
-        NewTier = ESOTS_StealthTier::Compromised;
-    }
-    else if (EffectiveGlobal >= 0.5f)
+        const float CautiousMin = Tuning.CautiousMin;
+        const float DangerMin = Tuning.DangerMin;
+        const float CompromisedMin = Tuning.CompromisedMin;
+
+        if (!Tuning.bEnableHysteresis || Tuning.HysteresisPadding <= KINDA_SMALL_NUMBER)
+        {
+            if (InScore >= CompromisedMin)
+            {
+                return ESOTS_StealthTier::Compromised;
+            }
+            if (InScore >= DangerMin)
+            {
+                return ESOTS_StealthTier::Danger;
+            }
+            if (InScore >= CautiousMin)
+            {
+                return ESOTS_StealthTier::Cautious;
+            }
+            return ESOTS_StealthTier::Hidden;
+        }
+
+        const float Pad = Tuning.HysteresisPadding;
+
+        switch (Current)
+        {
+        case ESOTS_StealthTier::Hidden:
+            if (InScore >= CautiousMin + Pad)
+            {
+                return ESOTS_StealthTier::Cautious;
+            }
+            return Current;
+        case ESOTS_StealthTier::Cautious:
+            if (InScore >= DangerMin + Pad)
+            {
+                return ESOTS_StealthTier::Danger;
+            }
+            if (InScore < CautiousMin - Pad)
+            {
+                return ESOTS_StealthTier::Hidden;
+            }
+            return Current;
+        case ESOTS_StealthTier::Danger:
+            if (InScore >= CompromisedMin + Pad)
+            {
+                return ESOTS_StealthTier::Compromised;
+            }
+            if (InScore < DangerMin - Pad)
+            {
+                return ESOTS_StealthTier::Cautious;
+            }
+            return Current;
+        case ESOTS_StealthTier::Compromised:
+        default:
+            if (InScore < CompromisedMin - Pad)
+            {
+                return ESOTS_StealthTier::Danger;
+            }
+            return Current;
+        }
+    };
+
+    NewTier = ComputeTierFromScore(ScoreForTier, TierTuning, OldTier);
+
+    // Optional minimum time between tier changes.
+    if (NewTier != OldTier && TierTuning.MinSecondsBetweenTierChanges > 0.0f)
     {
-        NewTier = ESOTS_StealthTier::Danger;
-    }
-    else if (EffectiveGlobal >= 0.2f)
-    {
-        NewTier = ESOTS_StealthTier::Cautious;
+        const double Now = GetWorldTimeSecondsSafe();
+        if (LastTierChangeTimeSeconds > 0.0 &&
+            (Now - LastTierChangeTimeSeconds) < static_cast<double>(TierTuning.MinSecondsBetweenTierChanges))
+        {
+            NewTier = OldTier;
+        }
+        else
+        {
+            LastTierChangeTimeSeconds = Now;
+        }
     }
 
     CurrentState.StealthTier = NewTier;
@@ -335,16 +536,56 @@ void USOTS_GlobalStealthManagerSubsystem::RecomputeGlobalScore()
     CurrentBreakdown.StealthTier        = static_cast<int32>(CurrentState.StealthTier);
     CurrentBreakdown.ModifierMultiplier = ModifierMultiplier;
 
-    //  Hard debug ping so we know GSM is actually updating at runtime.
-    UE_LOG(LogSOTSGlobalStealth, Warning,
-        TEXT("[GSM] RecomputeGlobalScore: Light=%.3f Shadow=%.3f Vis=%.3f AISusp=%.3f Global=%.3f Tier=%d"),
-        CurrentBreakdown.Light01,
-        CurrentBreakdown.Shadow01,
-        CurrentBreakdown.Visibility01,
-        CurrentBreakdown.AISuspicion01,
-        CurrentBreakdown.CombinedScore01,
-        CurrentBreakdown.StealthTier);
+    //  Debug ping for development only.
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (ActiveConfig.bDebugLogStackOps)
+    {
+        UE_LOG(LogSOTSGlobalStealth, Warning,
+            TEXT("[GSM] RecomputeGlobalScore: Light=%.3f Shadow=%.3f Vis=%.3f AISusp=%.3f Global=%.3f Tier=%d"),
+            CurrentBreakdown.Light01,
+            CurrentBreakdown.Shadow01,
+            CurrentBreakdown.Visibility01,
+            CurrentBreakdown.AISuspicion01,
+            CurrentBreakdown.CombinedScore01,
+            CurrentBreakdown.StealthTier);
+    }
+#endif
 
+    // Build transition payload (even if tier unchanged, used for tag apply).
+    FSOTS_StealthTierTransition Transition;
+    Transition.OldTier = OldTier;
+    Transition.NewTier = NewTier;
+    Transition.OldScore = LastBroadcastStealthScore;
+    Transition.NewScore = CurrentStealthScore;
+    Transition.TimestampSeconds = LastScoreUpdateTimeSeconds;
+    Transition.ReasonTag = LastReasonTag;
+    for (const FGSM_ModifierEntry& Entry : ModifierEntries)
+    {
+        if (Entry.OwnerTag.IsValid())
+        {
+            Transition.ActiveModifierOwners.AddUnique(Entry.OwnerTag);
+        }
+    }
+
+    // Score change event (default fires whenever recompute runs).
+    if (!FMath::IsNearlyEqual(CurrentStealthScore, LastBroadcastStealthScore))
+    {
+        FSOTS_StealthScoreChange Change;
+        Change.OldScore = LastBroadcastStealthScore;
+        Change.NewScore = CurrentStealthScore;
+        Change.ReasonTag = LastReasonTag;
+        Change.TimestampSeconds = LastScoreUpdateTimeSeconds;
+        OnStealthScoreChanged.Broadcast(Change);
+        LastBroadcastStealthScore = CurrentStealthScore;
+    }
+
+    // Tier transition event.
+    if (NewTier != OldTier)
+    {
+        OnStealthTierChanged.Broadcast(Transition);
+    }
+
+    ApplyStealthStateTags(FindPlayerActor(), NewTier, CurrentStealthScore, Transition);
     UpdateGameplayTags();
     SyncPlayerStealthComponent();
     OnStealthStateChanged.Broadcast(CurrentState);
@@ -360,58 +601,34 @@ void USOTS_GlobalStealthManagerSubsystem::UpdateGameplayTags()
         return;
     }
 
-    static const FName HiddenTag(TEXT("SOTS.Stealth.State.Hidden"));
-    static const FName CautiousTag(TEXT("SOTS.Stealth.State.Cautious"));
-    static const FName DangerTag(TEXT("SOTS.Stealth.State.Danger"));
-    static const FName CompromisedTag(TEXT("SOTS.Stealth.State.Compromised"));
-
-    static const FName BrightTag(TEXT("SOTS.Stealth.Light.Bright"));
-    static const FName DarkTag(TEXT("SOTS.Stealth.Light.Dark"));
-
-    // Clear all state tags first
-    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, HiddenTag);
-    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, CautiousTag);
-    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, DangerTag);
-    USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, CompromisedTag);
-
-    // Apply current state tag
-    switch (CurrentState.StealthTier)
-    {
-    case ESOTS_StealthTier::Hidden:
-        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, HiddenTag);
-        break;
-    case ESOTS_StealthTier::Cautious:
-        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, CautiousTag);
-        break;
-    case ESOTS_StealthTier::Danger:
-        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, DangerTag);
-        break;
-    case ESOTS_StealthTier::Compromised:
-        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, CompromisedTag);
-        break;
-    default:
-        break;
-    }
+    static const FGameplayTag BrightTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.Light.Bright")), false);
+    static const FGameplayTag DarkTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.Light.Dark")), false);
 
     const bool bBright = CurrentState.LightLevel01 > 0.6f;
     const bool bDark = CurrentState.ShadowLevel01 > 0.6f;
 
-    if (bBright)
+    if (BrightTag.IsValid())
     {
-        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, BrightTag);
-    }
-    else
-    {
-        USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, BrightTag);
+        if (bBright)
+        {
+            USOTS_TagLibrary::AddTagToActor(this, PlayerActor, BrightTag);
+        }
+        else
+        {
+            USOTS_TagLibrary::RemoveTagFromActor(this, PlayerActor, BrightTag);
+        }
     }
 
-    if (bDark)
+    if (DarkTag.IsValid())
     {
-        USOTS_TagLibrary::AddTagToActorByName(this, PlayerActor, DarkTag);
-    }
-    else
-    {
-        USOTS_TagLibrary::RemoveTagFromActorByName(this, PlayerActor, DarkTag);
+        if (bDark)
+        {
+            USOTS_TagLibrary::AddTagToActor(this, PlayerActor, DarkTag);
+        }
+        else
+        {
+            USOTS_TagLibrary::RemoveTagFromActor(this, PlayerActor, DarkTag);
+        }
     }
 }
 
@@ -504,6 +721,377 @@ void USOTS_GlobalStealthManagerSubsystem::GetShadowCandidateDebugState(
     bOutCandidateValid = CachedPlayerShadowCandidate.bValid;
     OutCandidatePoint = CachedPlayerShadowCandidate.ShadowPointWS;
     OutCandidateIllum01 = CachedPlayerShadowCandidate.Illumination01;
+}
+
+double USOTS_GlobalStealthManagerSubsystem::GetWorldTimeSecondsSafe() const
+{
+    if (const UWorld* World = GetWorld())
+    {
+        return World->GetTimeSeconds();
+    }
+
+    return FPlatformTime::Seconds();
+}
+
+float USOTS_GlobalStealthManagerSubsystem::GetMinSecondsBetweenType(const FSOTS_StealthIngestTuning& Tuning, ESOTS_StealthInputType Type) const
+{
+    switch (Type)
+    {
+    case ESOTS_StealthInputType::Visibility:
+        return Tuning.MinSecondsBetweenVisibility;
+    case ESOTS_StealthInputType::Light:
+        return Tuning.MinSecondsBetweenLight;
+    case ESOTS_StealthInputType::Perception:
+        return Tuning.MinSecondsBetweenPerception;
+    case ESOTS_StealthInputType::Noise:
+        return Tuning.MinSecondsBetweenNoise;
+    case ESOTS_StealthInputType::Weather:
+        return Tuning.MinSecondsBetweenWeather;
+    case ESOTS_StealthInputType::Custom:
+        return Tuning.MinSecondsBetweenCustom;
+    default:
+        return 0.0f;
+    }
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ResolveEffectiveConfig()
+{
+    // Base config (from default asset or SetStealthConfig).
+    FSOTS_StealthScoringConfig Resolved = BaseConfig;
+    ActiveStealthConfig = nullptr;
+
+    // Choose top config by priority then creation time (latest wins on ties).
+    if (ConfigEntries.Num() > 0)
+    {
+        ConfigEntries.StableSort([](const FGSM_ConfigEntry& A, const FGSM_ConfigEntry& B)
+        {
+            if (A.Priority != B.Priority)
+            {
+                return A.Priority > B.Priority;
+            }
+            return A.CreatedTime > B.CreatedTime;
+        });
+
+        for (const FGSM_ConfigEntry& Entry : ConfigEntries)
+        {
+            if (!Entry.bEnabled)
+            {
+                continue;
+            }
+
+            if (Entry.Asset)
+            {
+                Resolved = Entry.Asset->Config;
+                ActiveStealthConfig = Entry.Asset;
+                break;
+            }
+        }
+    }
+
+    ActiveConfig = Resolved;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (ActiveConfig.bDebugDumpEffectiveTuning)
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log,
+            TEXT("[GSM] ResolveEffectiveConfig | Light=%.3f LOS=%.3f Dist=%.3f Noise=%.3f VisW=%.3f AIW=%.3f Tier=(%.2f,%.2f,%.2f)"),
+            ActiveConfig.LightWeight,
+            ActiveConfig.LOSWeight,
+            ActiveConfig.DistanceWeight,
+            ActiveConfig.NoiseWeight,
+            ActiveConfig.LocalVisibilityWeight,
+            ActiveConfig.AISuspicionWeight,
+            ActiveConfig.TierTuning.CautiousMin,
+            ActiveConfig.TierTuning.DangerMin,
+            ActiveConfig.TierTuning.CompromisedMin);
+    }
+
+    if (ActiveConfig.bDebugLogStackOps)
+    {
+        DebugDumpStackToLog();
+    }
+#endif
+}
+
+void USOTS_GlobalStealthManagerSubsystem::GetActiveModifierHandles(TArray<FSOTS_GSM_Handle>& OutHandles) const
+{
+    OutHandles.Reset();
+    for (const FGSM_ModifierEntry& Entry : ModifierEntries)
+    {
+        if (Entry.Handle.IsValid())
+        {
+            OutHandles.Add(Entry.Handle);
+        }
+    }
+}
+
+void USOTS_GlobalStealthManagerSubsystem::GetActiveConfigHandles(TArray<FSOTS_GSM_Handle>& OutHandles) const
+{
+    OutHandles.Reset();
+    for (const FGSM_ConfigEntry& Entry : ConfigEntries)
+    {
+        if (Entry.Handle.IsValid())
+        {
+            OutHandles.Add(Entry.Handle);
+        }
+    }
+}
+
+FSOTS_GSM_TuningSummary USOTS_GlobalStealthManagerSubsystem::GetEffectiveTuningSummary() const
+{
+    FSOTS_GSM_TuningSummary Summary;
+    Summary.LightWeight = ActiveConfig.LightWeight;
+    Summary.LOSWeight = ActiveConfig.LOSWeight;
+    Summary.DistanceWeight = ActiveConfig.DistanceWeight;
+    Summary.NoiseWeight = ActiveConfig.NoiseWeight;
+    Summary.LocalVisibilityWeight = ActiveConfig.LocalVisibilityWeight;
+    Summary.AISuspicionWeight = ActiveConfig.AISuspicionWeight;
+    Summary.CautiousMin = ActiveConfig.TierTuning.CautiousMin;
+    Summary.DangerMin = ActiveConfig.TierTuning.DangerMin;
+    Summary.CompromisedMin = ActiveConfig.TierTuning.CompromisedMin;
+    return Summary;
+}
+
+void USOTS_GlobalStealthManagerSubsystem::DebugDumpStackToLog() const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!ActiveConfig.bDebugLogStackOps)
+    {
+        return;
+    }
+
+    UE_LOG(LogSOTSGlobalStealth, Log, TEXT("[GSM] BaseConfig set (Light=%.3f LOS=%.3f Dist=%.3f Noise=%.3f)"),
+        BaseConfig.LightWeight,
+        BaseConfig.LOSWeight,
+        BaseConfig.DistanceWeight,
+        BaseConfig.NoiseWeight);
+
+    if (ConfigEntries.Num() == 0)
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log, TEXT("[GSM] No config overrides active."));
+    }
+    else
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log, TEXT("[GSM] Config overrides (priority desc, created desc):"));
+        for (const FGSM_ConfigEntry& Entry : ConfigEntries)
+        {
+            UE_LOG(LogSOTSGlobalStealth, Log,
+                TEXT("  Config=%s Priority=%d Owner=%s Created=%.3f Enabled=%d"),
+                *GetNameSafe(Entry.Asset),
+                Entry.Priority,
+                Entry.OwnerTag.IsValid() ? *Entry.OwnerTag.ToString() : TEXT("-"),
+                Entry.CreatedTime,
+                Entry.bEnabled ? 1 : 0);
+        }
+    }
+
+    if (ModifierEntries.Num() == 0)
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log, TEXT("[GSM] No modifiers active."));
+    }
+    else
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log, TEXT("[GSM] Modifiers (priority desc, created desc):"));
+        for (const FGSM_ModifierEntry& Entry : ModifierEntries)
+        {
+            UE_LOG(LogSOTSGlobalStealth, Log,
+                TEXT("  Source=%s Priority=%d Owner=%s Mul(Light=%.2f Vis=%.2f) Add(Light=%.2f Global=%.2f) Enabled=%d"),
+                *Entry.Modifier.SourceId.ToString(),
+                Entry.Priority,
+                Entry.OwnerTag.IsValid() ? *Entry.OwnerTag.ToString() : TEXT("-"),
+                Entry.Modifier.LightMultiplier,
+                Entry.Modifier.VisibilityMultiplier,
+                Entry.Modifier.LightOffset01,
+                Entry.Modifier.GlobalScoreOffset01,
+                Entry.bEnabled ? 1 : 0);
+        }
+    }
+#endif
+}
+
+FGameplayTag USOTS_GlobalStealthManagerSubsystem::GetTierTag(ESOTS_StealthTier Tier) const
+{
+    switch (Tier)
+    {
+    case ESOTS_StealthTier::Hidden:
+        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Hidden")), false);
+    case ESOTS_StealthTier::Cautious:
+        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Cautious")), false);
+    case ESOTS_StealthTier::Danger:
+        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Danger")), false);
+    case ESOTS_StealthTier::Compromised:
+        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Compromised")), false);
+    default:
+        return FGameplayTag();
+    }
+}
+
+bool USOTS_GlobalStealthManagerSubsystem::ActorHasTag(AActor* Actor, const FGameplayTag& Tag) const
+{
+    if (!Actor || !Tag.IsValid())
+    {
+        return false;
+    }
+
+    return USOTS_TagLibrary::ActorHasTag(this, Actor, Tag);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ApplyStealthStateTags(AActor* TargetActor, ESOTS_StealthTier NewTier, float NewScore, const FSOTS_StealthTierTransition& Transition)
+{
+    if (!TargetActor)
+    {
+        return;
+    }
+
+    const FGameplayTag NewTag = GetTierTag(NewTier);
+    if (!NewTag.IsValid())
+    {
+        return;
+    }
+
+    const bool bTierChanged = (NewTier != LastAppliedTier);
+    const bool bTagDrifted = ActiveConfig.bRepairStealthTagsIfDriftDetected && !ActorHasTag(TargetActor, NewTag);
+
+    if (!bTierChanged && !bTagDrifted)
+    {
+        return;
+    }
+
+    // Remove old tier tags.
+    const FGameplayTag Hidden = GetTierTag(ESOTS_StealthTier::Hidden);
+    const FGameplayTag Cautious = GetTierTag(ESOTS_StealthTier::Cautious);
+    const FGameplayTag Danger = GetTierTag(ESOTS_StealthTier::Danger);
+    const FGameplayTag Compromised = GetTierTag(ESOTS_StealthTier::Compromised);
+
+    if (Hidden.IsValid()) { USOTS_TagLibrary::RemoveTagFromActor(this, TargetActor, Hidden); }
+    if (Cautious.IsValid()) { USOTS_TagLibrary::RemoveTagFromActor(this, TargetActor, Cautious); }
+    if (Danger.IsValid()) { USOTS_TagLibrary::RemoveTagFromActor(this, TargetActor, Danger); }
+    if (Compromised.IsValid()) { USOTS_TagLibrary::RemoveTagFromActor(this, TargetActor, Compromised); }
+
+    // Apply new tier tag.
+    USOTS_TagLibrary::AddTagToActor(this, TargetActor, NewTag);
+
+    LastAppliedTier = NewTier;
+    LastAppliedTierTag = NewTag;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (ActiveConfig.bDebugLogStackOps)
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log,
+            TEXT("[GSM] ApplyStealthStateTags Tier=%d Tag=%s Score=%.3f Reason=%s"),
+            static_cast<int32>(NewTier),
+            *NewTag.ToString(),
+            NewScore,
+            Transition.ReasonTag.IsValid() ? *Transition.ReasonTag.ToString() : TEXT("-"));
+    }
+#endif
+}
+
+void USOTS_GlobalStealthManagerSubsystem::LogIngestDecision(const FSOTS_StealthIngestReport& Report, const FSOTS_StealthInputSample& Sample, bool bAccepted)
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const FSOTS_StealthIngestTuning& Tuning = ActiveConfig.IngestTuning;
+    const bool bWantsLog = bAccepted ? Tuning.bDebugLogStealthIngest : Tuning.bDebugLogStealthDrops;
+    if (!bWantsLog)
+    {
+        return;
+    }
+
+    const double Now = GetWorldTimeSecondsSafe();
+    TMap<ESOTS_StealthInputType, double>& LastLogMap = bAccepted ? LastLoggedIngestTime : LastLoggedDropTime;
+    const double LastLog = LastLogMap.FindRef(Report.Type);
+    const double ThrottleSeconds = FMath::Max(0.0f, Tuning.DebugLogThrottleSeconds);
+    if (ThrottleSeconds > 0.0 && LastLog > 0.0 && (Now - LastLog) < ThrottleSeconds)
+    {
+        return;
+    }
+
+    LastLogMap.FindOrAdd(Report.Type) = Now;
+
+    const TCHAR* ResultStr = bAccepted ? TEXT("ACCEPT") : TEXT("DROP");
+    const FString Reason = Report.DebugReason.IsEmpty() ? TEXT("-") : Report.DebugReason;
+
+    UE_LOG(LogSOTSGlobalStealth, Log,
+        TEXT("[GSM Ingest] %s Type=%d StrengthIn=%.3f StrengthClamped=%.3f Reason=%s Source=%s Target=%s Time=%.3f"),
+        ResultStr,
+        static_cast<int32>(Report.Type),
+        Report.StrengthIn,
+        Report.StrengthClamped,
+        *Reason,
+        *GetNameSafe(Sample.InstigatorActor.Get()),
+        *GetNameSafe(Sample.TargetActor.Get()),
+        Sample.TimestampSeconds);
+#endif
+}
+
+bool USOTS_GlobalStealthManagerSubsystem::IngestSample(const FSOTS_StealthInputSample& Sample, FSOTS_StealthIngestReport& OutReport)
+{
+    FSOTS_StealthInputSample WorkingSample = Sample;
+
+    OutReport = FSOTS_StealthIngestReport();
+    OutReport.Type = WorkingSample.Type;
+    OutReport.StrengthIn = WorkingSample.StrengthNormalized;
+
+    // Ensure timestamp is valid.
+    double Timestamp = WorkingSample.TimestampSeconds;
+    if (!FMath::IsFinite(Timestamp) || Timestamp <= 0.0)
+    {
+        Timestamp = GetWorldTimeSecondsSafe();
+    }
+    if (!FMath::IsFinite(Timestamp) || Timestamp <= 0.0)
+    {
+        Timestamp = FPlatformTime::Seconds();
+    }
+    WorkingSample.TimestampSeconds = Timestamp;
+
+    // Validate normalized strength.
+    if (!FMath::IsFinite(WorkingSample.StrengthNormalized))
+    {
+        OutReport.Result = ESOTS_StealthIngestResult::Dropped_Invalid;
+        OutReport.DebugReason = TEXT("Strength NaN/Inf");
+        LogIngestDecision(OutReport, WorkingSample, false);
+        return false;
+    }
+
+    WorkingSample.StrengthNormalized = FMath::Clamp(WorkingSample.StrengthNormalized, 0.0f, 1.0f);
+    OutReport.StrengthClamped = WorkingSample.StrengthNormalized;
+
+    const FSOTS_StealthIngestTuning& Tuning = ActiveConfig.IngestTuning;
+
+    // Optional stale drop.
+    if (Tuning.bDropStaleSamples && Tuning.MaxSampleAgeSeconds > 0.0f)
+    {
+        const double AgeSeconds = GetWorldTimeSecondsSafe() - WorkingSample.TimestampSeconds;
+        if (AgeSeconds > static_cast<double>(Tuning.MaxSampleAgeSeconds))
+        {
+            OutReport.Result = ESOTS_StealthIngestResult::Dropped_OutOfWindow;
+            OutReport.DebugReason = TEXT("Sample stale");
+            LogIngestDecision(OutReport, WorkingSample, false);
+            return false;
+        }
+    }
+
+    // Optional throttling per type.
+    if (Tuning.bEnableIngestThrottle)
+    {
+        const float MinGap = GetMinSecondsBetweenType(Tuning, WorkingSample.Type);
+        if (MinGap > 0.0f)
+        {
+            const double LastTime = LastAcceptedSampleTime.FindRef(WorkingSample.Type);
+            if (LastTime > 0.0 && (WorkingSample.TimestampSeconds - LastTime) < static_cast<double>(MinGap))
+            {
+                OutReport.Result = ESOTS_StealthIngestResult::Dropped_TooSoon;
+                OutReport.DebugReason = FString::Printf(TEXT("Throttle %.2fs"), MinGap);
+                LogIngestDecision(OutReport, WorkingSample, false);
+                return false;
+            }
+        }
+    }
+
+    OutReport.Result = ESOTS_StealthIngestResult::Accepted;
+    LastAcceptedSampleTime.FindOrAdd(WorkingSample.Type) = WorkingSample.TimestampSeconds;
+    LogIngestDecision(OutReport, WorkingSample, true);
+    return true;
 }
 
 void USOTS_GlobalStealthManagerSubsystem::UpdateShadowCandidateForPlayerIfNeeded()
@@ -610,44 +1198,105 @@ void USOTS_GlobalStealthManagerSubsystem::UpdateShadowCandidateForPlayerIfNeeded
 #endif
 }
 
-void USOTS_GlobalStealthManagerSubsystem::AddStealthModifier(const FSOTS_StealthModifier& Modifier)
+FSOTS_GSM_Handle USOTS_GlobalStealthManagerSubsystem::AddStealthModifier(const FSOTS_StealthModifier& Modifier, FGameplayTag OwnerTag, int32 Priority)
 {
+    FSOTS_GSM_Handle Handle;
+    Handle.Id = FGuid::NewGuid();
+    Handle.KindTag = FGameplayTag::RequestGameplayTag(FName(TEXT("GSM.Handle.Modifier")), false);
+    Handle.OwnerTag = OwnerTag;
+    Handle.CreatedAtSeconds = GetWorldTimeSecondsSafe();
+
+    // Replace any existing modifier from the same SourceId.
     if (!Modifier.SourceId.IsNone())
     {
-        // Replace any existing modifier from the same source.
-        for (FSOTS_StealthModifier& Existing : ActiveModifiers)
+        for (FGSM_ModifierEntry& Entry : ModifierEntries)
         {
-            if (Existing.SourceId == Modifier.SourceId)
+            if (Entry.Modifier.SourceId == Modifier.SourceId)
             {
-                Existing = Modifier;
+                Entry.Modifier = Modifier;
+                Entry.Handle = Handle;
+                Entry.CreatedTime = Handle.CreatedAtSeconds;
+                Entry.OwnerTag = OwnerTag;
                 RecomputeGlobalScore();
-                return;
+                return Handle;
             }
         }
     }
 
-    ActiveModifiers.Add(Modifier);
+    FGSM_ModifierEntry Entry;
+    Entry.Modifier = Modifier;
+    Entry.Handle = Handle;
+    Entry.Priority = Priority;
+    Entry.CreatedTime = Handle.CreatedAtSeconds;
+    Entry.OwnerTag = OwnerTag;
+    ModifierEntries.Add(Entry);
     RecomputeGlobalScore();
+    return Handle;
 }
 
-void USOTS_GlobalStealthManagerSubsystem::RemoveStealthModifierBySource(FName SourceId)
+ESOTS_GSM_RemoveResult USOTS_GlobalStealthManagerSubsystem::RemoveStealthModifierByHandle(const FSOTS_GSM_Handle& Handle, FGameplayTag RequesterTag)
 {
-    if (SourceId.IsNone() || ActiveModifiers.Num() == 0)
+    if (!Handle.IsValid())
     {
-        return;
+        return ESOTS_GSM_RemoveResult::InvalidHandle;
     }
 
-    ActiveModifiers.RemoveAll([SourceId](const FSOTS_StealthModifier& Mod)
-        {
-            return Mod.SourceId == SourceId;
-        });
+    const FGameplayTag ExpectedKind = FGameplayTag::RequestGameplayTag(FName(TEXT("GSM.Handle.Modifier")));
+    if (Handle.KindTag != ExpectedKind)
+    {
+        return ESOTS_GSM_RemoveResult::WrongKind;
+    }
 
-    RecomputeGlobalScore();
+    for (int32 Index = 0; Index < ModifierEntries.Num(); ++Index)
+    {
+        if (ModifierEntries[Index].Handle.Id == Handle.Id)
+        {
+            if (Handle.OwnerTag.IsValid() && ModifierEntries[Index].OwnerTag.IsValid() && Handle.OwnerTag != ModifierEntries[Index].OwnerTag)
+            {
+                if (!RequesterTag.IsValid() || RequesterTag != ModifierEntries[Index].OwnerTag)
+                {
+                    return ESOTS_GSM_RemoveResult::OwnerMismatch;
+                }
+            }
+
+            ModifierEntries.RemoveAt(Index);
+            RecomputeGlobalScore();
+            return ESOTS_GSM_RemoveResult::Removed;
+        }
+    }
+
+    return ESOTS_GSM_RemoveResult::NotFound;
+}
+
+int32 USOTS_GlobalStealthManagerSubsystem::RemoveStealthModifierBySource(FName SourceId)
+{
+    if (SourceId.IsNone() || ModifierEntries.Num() == 0)
+    {
+        return 0;
+    }
+
+    int32 Removed = 0;
+    for (int32 Index = ModifierEntries.Num() - 1; Index >= 0; --Index)
+    {
+        if (ModifierEntries[Index].Modifier.SourceId == SourceId)
+        {
+            ModifierEntries.RemoveAt(Index);
+            ++Removed;
+        }
+    }
+
+    if (Removed > 0)
+    {
+        RecomputeGlobalScore();
+    }
+
+    return Removed;
 }
 
 void USOTS_GlobalStealthManagerSubsystem::SetStealthConfig(const FSOTS_StealthScoringConfig& InConfig)
 {
-    ActiveConfig = InConfig;
+    BaseConfig = InConfig;
+    ResolveEffectiveConfig();
     RecomputeGlobalScore();
 }
 
@@ -659,85 +1308,138 @@ void USOTS_GlobalStealthManagerSubsystem::SetStealthConfigAsset(USOTS_StealthCon
     }
 
     DefaultConfigAsset = InAsset;
-
-    // If there is no active override, also adopt this as the active asset.
-    if (!ActiveStealthConfig)
-    {
-        ActiveStealthConfig = InAsset;
-    }
-
-    if (ActiveStealthConfig)
-    {
-        ActiveConfig = ActiveStealthConfig->Config;
-    }
-    else
-    {
-        ActiveConfig = InAsset->Config;
-    }
-
+    BaseConfig = InAsset->Config;
+    ResolveEffectiveConfig();
     RecomputeGlobalScore();
 }
 
-void USOTS_GlobalStealthManagerSubsystem::PushStealthConfig(USOTS_StealthConfigDataAsset* NewConfig)
+FSOTS_GSM_Handle USOTS_GlobalStealthManagerSubsystem::PushStealthConfig(USOTS_StealthConfigDataAsset* NewConfig, int32 Priority, FGameplayTag OwnerTag)
 {
     if (!NewConfig)
     {
-        return;
+        return FSOTS_GSM_Handle();
     }
 
-    // Remember the previous active asset (may be null) so we can restore exactly.
-    StealthConfigStack.Add(ActiveStealthConfig);
+    FSOTS_GSM_Handle Handle;
+    Handle.Id = FGuid::NewGuid();
+    Handle.KindTag = FGameplayTag::RequestGameplayTag(FName(TEXT("GSM.Handle.Config")), false);
+    Handle.OwnerTag = OwnerTag;
+    Handle.CreatedAtSeconds = GetWorldTimeSecondsSafe();
 
-    ActiveStealthConfig = NewConfig;
-    ActiveConfig = NewConfig->Config;
+    FGSM_ConfigEntry Entry;
+    Entry.Asset = NewConfig;
+    Entry.Handle = Handle;
+    Entry.Priority = Priority;
+    Entry.CreatedTime = Handle.CreatedAtSeconds;
+    Entry.OwnerTag = OwnerTag;
+    ConfigEntries.Add(Entry);
 
     UE_LOG(LogSOTSGlobalStealth, Log,
-        TEXT("PushStealthConfig: ActiveStealthConfig set to '%s' (stack depth=%d)"),
-        *GetNameSafe(ActiveStealthConfig),
-        StealthConfigStack.Num());
+        TEXT("PushStealthConfig: Added '%s' (priority=%d, total=%d)"),
+        *GetNameSafe(NewConfig),
+        Priority,
+        ConfigEntries.Num());
 
+    ResolveEffectiveConfig();
     RecomputeGlobalScore();
+    return Handle;
 }
 
-void USOTS_GlobalStealthManagerSubsystem::PopStealthConfig()
+ESOTS_GSM_RemoveResult USOTS_GlobalStealthManagerSubsystem::PopStealthConfig(const FSOTS_GSM_Handle& Handle, FGameplayTag RequesterTag)
 {
-    if (StealthConfigStack.Num() == 0)
+    if (!Handle.IsValid())
     {
-        UE_LOG(LogSOTSGlobalStealth, Warning,
-            TEXT("PopStealthConfig: Stack is empty; ignoring pop."));
-        return;
+        return ESOTS_GSM_RemoveResult::InvalidHandle;
     }
 
-    // Restore the previous asset (may be null).
-    ActiveStealthConfig = StealthConfigStack.Pop();
-
-    if (ActiveStealthConfig)
+    const FGameplayTag ExpectedKind = FGameplayTag::RequestGameplayTag(FName(TEXT("GSM.Handle.Config")), false);
+    if (Handle.KindTag.IsValid() && ExpectedKind.IsValid() && Handle.KindTag != ExpectedKind)
     {
-        ActiveConfig = ActiveStealthConfig->Config;
-    }
-    else if (DefaultConfigAsset)
-    {
-        ActiveConfig = DefaultConfigAsset->Config;
-    }
-    else
-    {
-        ActiveConfig = FSOTS_StealthScoringConfig();
+        return ESOTS_GSM_RemoveResult::WrongKind;
     }
 
-    UE_LOG(LogSOTSGlobalStealth, Log,
-        TEXT("PopStealthConfig: ActiveStealthConfig restored to '%s' (stack depth=%d)"),
-        *GetNameSafe(ActiveStealthConfig),
-        StealthConfigStack.Num());
+    for (int32 Index = 0; Index < ConfigEntries.Num(); ++Index)
+    {
+        if (ConfigEntries[Index].Handle.Id == Handle.Id)
+        {
+            if (Handle.OwnerTag.IsValid() && ConfigEntries[Index].OwnerTag.IsValid() && Handle.OwnerTag != ConfigEntries[Index].OwnerTag)
+            {
+                if (!RequesterTag.IsValid() || RequesterTag != ConfigEntries[Index].OwnerTag)
+                {
+                    return ESOTS_GSM_RemoveResult::OwnerMismatch;
+                }
+            }
 
-    RecomputeGlobalScore();
+            ConfigEntries.RemoveAt(Index);
+
+            UE_LOG(LogSOTSGlobalStealth, Log,
+                TEXT("PopStealthConfig: Removed handle %s (remaining=%d)"),
+                *Handle.Id.ToString(),
+                ConfigEntries.Num());
+
+            ResolveEffectiveConfig();
+            RecomputeGlobalScore();
+            return ESOTS_GSM_RemoveResult::Removed;
+        }
+    }
+
+    return ESOTS_GSM_RemoveResult::NotFound;
 }
 
 void USOTS_GlobalStealthManagerSubsystem::BuildProfileData(FSOTS_GSMProfileData& OutData) const
 {
+    // Stateless by design: always serialize defaults.
     OutData = FSOTS_GSMProfileData();
 }
 
 void USOTS_GlobalStealthManagerSubsystem::ApplyProfileData(const FSOTS_GSMProfileData& InData)
 {
     (void)InData;
+    ResetStealthState(ESOTS_GSM_ResetReason::ProfileLoaded);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ResetStealthState(ESOTS_GSM_ResetReason Reason)
+{
+    // Clear dynamic stacks (modifiers/config overrides) but preserve BaseConfig/default asset.
+    ModifierEntries.Reset();
+    ConfigEntries.Reset();
+    ActiveStealthConfig = DefaultConfigAsset;
+    ActiveConfig = BaseConfig;
+    ResolveEffectiveConfig();
+
+    LastSample = FSOTS_StealthSample();
+    CurrentState = FSOTS_PlayerStealthState();
+    CurrentStealthScore = 0.0f;
+    CurrentStealthLevel = ESOTSStealthLevel::Undetected;
+    bPlayerDetected = false;
+    CurrentBreakdown = FSOTS_StealthScoreBreakdown();
+    SmoothedStealthScore = 0.0f;
+    LastBroadcastStealthScore = 0.0f;
+    LastReasonTag = FGameplayTag();
+    LastTierChangeTimeSeconds = 0.0;
+    LastScoreUpdateTimeSeconds = GetWorldTimeSecondsSafe();
+    LastAlertingInputTimeSeconds = 0.0;
+    LastAppliedTier = ESOTS_StealthTier::Hidden;
+    LastAppliedTierTag = GetTierTag(LastAppliedTier);
+
+    FSOTS_StealthTierTransition Transition;
+    Transition.OldTier = LastAppliedTier;
+    Transition.NewTier = LastAppliedTier;
+    Transition.OldScore = 0.0f;
+    Transition.NewScore = 0.0f;
+    Transition.TimestampSeconds = LastScoreUpdateTimeSeconds;
+    Transition.ReasonTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.Debug")), false);
+
+    ApplyStealthStateTags(FindPlayerActor(), LastAppliedTier, 0.0f, Transition);
+    UpdateGameplayTags();
+    SyncPlayerStealthComponent();
+    OnStealthStateChanged.Broadcast(CurrentState);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (ActiveConfig.bDebugLogStealthResets)
+    {
+        UE_LOG(LogSOTSGlobalStealth, Log,
+            TEXT("[GSM] ResetStealthState Reason=%d"), static_cast<int32>(Reason));
+    }
+#endif
 }

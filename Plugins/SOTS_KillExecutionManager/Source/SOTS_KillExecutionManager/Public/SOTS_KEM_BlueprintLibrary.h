@@ -48,7 +48,7 @@ public:
         FTransform& OutTransform);
 
 /** Helper to build CAS binding contexts with KEM ContextTags injected as ExternalGameplayTags. */
-    UFUNCTION(BlueprintCallable, Category="KEM|CAS")
+    UFUNCTION(BlueprintCallable, Category="KEM|CAS", meta=(DeprecatedFunction, DeprecationMessage="Use KEM_BuildCASBindingContextsForDefinition which mirrors runtime CAS binding."))
     static void KEM_BuildCASBindingContexts(
         AActor* Instigator,
         AActor* Target,
@@ -56,4 +56,20 @@ public:
         FContextualAnimSceneBindingContext& OutInstigatorBinding,
         FContextualAnimSceneBindingContext& OutTargetBinding);
 
+    /** Build CAS binding contexts for a specific execution definition (mirrors runtime path). */
+    UFUNCTION(BlueprintCallable, Category="KEM|CAS", meta=(WorldContext="WorldContextObject"))
+    static bool KEM_BuildCASBindingContextsForDefinition(
+        const UObject* WorldContextObject,
+        const USOTS_KEM_ExecutionDefinition* ExecutionDefinition,
+        AActor* Instigator,
+        AActor* Target,
+        const FGameplayTagContainer& ContextTags,
+        FContextualAnimSceneBindingContext& OutInstigatorBinding,
+        FContextualAnimSceneBindingContext& OutTargetBinding);
+
+#if WITH_EDITOR
+    /** Editor-only: validate coverage for loaded KEM definitions and report missing families/positions. */
+    UFUNCTION(BlueprintCallable, Category="KEM|Validation", meta=(WorldContext="WorldContextObject"))
+    static void KEM_ValidateRegistryCoverage(const UObject* WorldContextObject, TArray<FString>& OutWarnings);
+#endif
 };

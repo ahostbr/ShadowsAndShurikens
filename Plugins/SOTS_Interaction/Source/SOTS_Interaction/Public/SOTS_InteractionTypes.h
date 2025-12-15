@@ -9,6 +9,50 @@ class AActor;
 class APawn;
 class APlayerController;
 
+UENUM(BlueprintType)
+enum class ESOTS_InteractionNoCandidateReason : uint8
+{
+    None            UMETA(DisplayName="None"),
+    NoHits          UMETA(DisplayName="No Hits"),
+    NotInteractable UMETA(DisplayName="Not Interactable"),
+    BlockedByTags   UMETA(DisplayName="Blocked By Tags"),
+    OutOfRange      UMETA(DisplayName="Out Of Range"),
+    BlockedByLOS    UMETA(DisplayName="Blocked By LOS"),
+    MissingInterface UMETA(DisplayName="Missing Interface"),
+    Unknown         UMETA(DisplayName="Unknown")
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_InteractionResultCode : uint8
+{
+    Success             UMETA(DisplayName="Success"),
+    PromptedForOptions  UMETA(DisplayName="Prompted For Options"),
+    NoCandidate         UMETA(DisplayName="No Candidate"),
+    CandidateInvalid    UMETA(DisplayName="Candidate Invalid"),
+    OptionNotFound      UMETA(DisplayName="Option Not Found"),
+    NotInRange          UMETA(DisplayName="Not In Range"),
+    BlockedByLOS        UMETA(DisplayName="Blocked By LOS"),
+    MissingInterface    UMETA(DisplayName="Missing Interface"),
+    MissingComponent    UMETA(DisplayName="Missing Component")
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_InteractionExecuteResult : uint8
+{
+    Success                     UMETA(DisplayName="Success"),
+    NoCandidate                 UMETA(DisplayName="No Candidate"),
+    CandidateInvalid            UMETA(DisplayName="Candidate Invalid"),
+    CandidateOutOfRange         UMETA(DisplayName="Candidate Out Of Range"),
+    CandidateNoLineOfSight      UMETA(DisplayName="Candidate No Line Of Sight"),
+    CandidateBlocked            UMETA(DisplayName="Candidate Blocked By Tags"),
+    MissingInteractableInterface UMETA(DisplayName="Missing Interactable Interface"),
+    MissingInteractableComponent UMETA(DisplayName="Missing Interactable Component"),
+    OptionNotFound              UMETA(DisplayName="Option Not Found"),
+    OptionNotAvailable          UMETA(DisplayName="Option Not Available"),
+    ExecutionRejectedByTarget   UMETA(DisplayName="Execution Rejected By Target"),
+    InternalError               UMETA(DisplayName="Internal Error")
+};
+
 /**
  * A single selectable interaction option for a target (e.g., "Open", "Loot", "Drag Body").
  */
@@ -82,4 +126,52 @@ struct FSOTS_InteractionContext
         , Distance(0.f)
         , HitResult()
     {}
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_InteractionResult
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    ESOTS_InteractionResultCode Result = ESOTS_InteractionResultCode::NoCandidate;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    FGameplayTag FailReasonTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    FGameplayTag ExecutedOptionTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    FSOTS_InteractionContext Context;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    bool bUsedOmniTrace = false;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_InteractionExecuteReport
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    ESOTS_InteractionExecuteResult Result = ESOTS_InteractionExecuteResult::NoCandidate;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    int32 SequenceId = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    TWeakObjectPtr<AActor> Instigator;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    TWeakObjectPtr<AActor> Target;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    FGameplayTag OptionTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    float Distance = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    FString DebugReason;
 };

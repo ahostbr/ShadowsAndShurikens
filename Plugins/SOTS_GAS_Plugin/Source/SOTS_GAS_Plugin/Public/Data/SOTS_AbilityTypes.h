@@ -53,6 +53,71 @@ enum class E_SOTS_AbilityActivationPolicy : uint8
     Passive
 };
 
+UENUM(BlueprintType)
+enum class E_SOTS_AbilityActivateResult : uint8
+{
+    Success,
+    RegistryNotReady,
+    AbilityNotFound,
+    AbilityLocked,
+    SkillTreeMissing,
+    SkillNotUnlocked,
+    SkillPrereqNotMet,
+    BlockedByState,
+    CooldownActive,
+    NotEnoughCharges,
+    MissingRequiredItem,
+    CostApplyDeferred,
+    CostApplyFailed,
+    InvalidOwner,
+    InvalidContext,
+    InternalError
+};
+
+UENUM(BlueprintType)
+enum class E_SOTS_AbilityEndReason : uint8
+{
+    Completed,
+    Cancelled,
+    Interrupted,
+    FailedToStart,
+    OwnerDestroyed,
+    Unknown
+};
+
+USTRUCT(BlueprintType)
+struct SOTS_GAS_PLUGIN_API FSOTS_AbilityActivateReport
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    E_SOTS_AbilityActivateResult Result = E_SOTS_AbilityActivateResult::InternalError;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FGameplayTag AbilityTag;
+
+    // Optional: the skill tag that failed gating (if any).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FGameplayTag BlockingSkillTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FGuid ActivationId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    float TimestampSeconds = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 RemainingCharges = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    float CooldownRemaining = 0.0f;
+
+    // Dev-only hint string. Left empty in shipping builds unless explicitly filled.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FString DebugReason;
+};
+
 USTRUCT(BlueprintType)
 struct SOTS_GAS_PLUGIN_API F_SOTS_AbilityHandle
 {
@@ -224,6 +289,9 @@ public:
     bool bIsActive = false;
 
     UPROPERTY()
+    FGuid ActivationId;
+
+    UPROPERTY()
     int32 CurrentCharges = 0;
 
     UPROPERTY()
@@ -256,6 +324,85 @@ public:
     float RemainingCooldown = 0.0f;
 };
 
+// Versioned, deterministic runtime snapshot entry for a single ability.
+USTRUCT(BlueprintType)
+struct SOTS_GAS_PLUGIN_API FSOTS_AbilityRuntimeEntry
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FGameplayTag AbilityTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    bool bGranted = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    bool bWasActive = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 CurrentCharges = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    float CooldownRemainingSeconds = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FGameplayTagContainer RuntimeFlags;
+};
+
+// Container that wraps a versioned runtime snapshot for deterministic save/load.
+USTRUCT(BlueprintType)
+struct SOTS_GAS_PLUGIN_API FSOTS_AbilityRuntimeSnapshot
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 SchemaVersion = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    double SavedAtTimeSeconds = 0.0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FGuid ProfileId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    TArray<FSOTS_AbilityRuntimeEntry> Entries;
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_AbilityApplyResult : uint8
+{
+    Applied,
+    DeferredRegistryNotReady,
+    ValidationFailed,
+    PartialApplied,
+    NoOp
+};
+
+// Apply-time diagnostics for snapshot round-trips.
+USTRUCT(BlueprintType)
+struct SOTS_GAS_PLUGIN_API FSOTS_AbilityApplyReport
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    ESOTS_AbilityApplyResult Result = ESOTS_AbilityApplyResult::NoOp;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 AppliedCount = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 SkippedMissingDefs = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 SkippedInvalidEntries = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    FString DebugReason;
+};
+
 // Serialized representation of an ability component's state. This is intended
 // for profile / mission saves and can be round-tripped back into the ability
 // component without requiring any level-specific wiring.
@@ -265,6 +412,9 @@ struct SOTS_GAS_PLUGIN_API F_SOTS_AbilityComponentSaveData
     GENERATED_BODY()
 
 public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GAS|Ability")
+    FSOTS_AbilityRuntimeSnapshot Snapshot;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GAS|Ability")
     TArray<F_SOTS_AbilityStateSnapshot> SavedAbilities;
 };

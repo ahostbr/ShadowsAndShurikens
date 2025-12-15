@@ -20,6 +20,22 @@ USOTS_InteractionSubsystem::USOTS_InteractionSubsystem()
     DistanceScoreWeight = 1.0f;
     FacingScoreWeight = 0.75f;
     bEnableDebug = false;
+    bForceLegacyTraces = false;
+    ThrottleBypassViewDotThreshold = 0.98f;
+    ThrottleBypassLocationThreshold = 35.f;
+    bLogScoreDebug = false;
+    bDebugDrawInteractionTraces = false;
+    bDebugLogInteractionTraceHits = false;
+    bDebugLogInteractionExecutionFailures = false;
+    bWarnOnUnboundInteractionIntents = false;
+    bWarnOnLegacyIntentUsage = false;
+    bDebugLogIntentPayloads = false;
+    WarnIntentCooldownSeconds = 2.0f;
+    bWarnOnUnboundUIIntent = true;
+
+    InteractionSequenceCounter = 1;
+    LastWarnUnboundIntentTime = 0.0;
+    LastWarnLegacyIntentTime = 0.0;
 
     UIIntent_InteractionPrompt = FGameplayTag();
     UIIntent_InteractionOptions = FGameplayTag();
@@ -43,16 +59,26 @@ void USOTS_InteractionSubsystem::UpdateCandidateThrottled(APlayerController* Pla
     UWorld* World = GetWorld();
     if (!World) return;
 
+    FVector ViewLoc; FRotator ViewRot;
+    if (!BuildViewContext(PlayerController, ViewLoc, ViewRot))
+    {
+        return;
+    }
+
     FSOTS_InteractionCandidateState& State = CandidateStates.FindOrAdd(PlayerController);
 
     const double Now = World->GetTimeSeconds();
-    if (Now < State.NextAllowedUpdateTimeSeconds)
+    const bool bBypassThrottle = ShouldBypassThrottle(State, ViewLoc, ViewRot);
+    if (!bBypassThrottle && Now < State.NextAllowedUpdateTimeSeconds)
     {
         return;
     }
 
     State.NextAllowedUpdateTimeSeconds = Now + FMath::Max(0.0f, UpdateIntervalSeconds);
-    UpdateCandidateNow(PlayerController);
+    State.LastViewLocation = ViewLoc;
+    State.LastViewRotation = ViewRot;
+
+    UpdateCandidateInternal(PlayerController, ViewLoc, ViewRot);
 }
 
 void USOTS_InteractionSubsystem::UpdateCandidateNow(APlayerController* PlayerController)
@@ -65,11 +91,24 @@ void USOTS_InteractionSubsystem::UpdateCandidateNow(APlayerController* PlayerCon
         return;
     }
 
+    FSOTS_InteractionCandidateState& State = CandidateStates.FindOrAdd(PlayerController);
+    State.LastViewLocation = ViewLoc;
+    State.LastViewRotation = ViewRot;
+
+    UpdateCandidateInternal(PlayerController, ViewLoc, ViewRot);
+}
+
+void USOTS_InteractionSubsystem::UpdateCandidateInternal(APlayerController* PlayerController, const FVector& ViewLoc, const FRotator& ViewRot)
+{
     FSOTS_InteractionContext Best;
     bool bHasBest = false;
-    FindBestCandidate(PlayerController, ViewLoc, ViewRot, Best, bHasBest);
+    ESOTS_InteractionNoCandidateReason NoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
+    bool bUsedOmniTrace = false;
+    FindBestCandidate(PlayerController, ViewLoc, ViewRot, Best, bHasBest, NoCandidateReason, bUsedOmniTrace);
 
     FSOTS_InteractionCandidateState& State = CandidateStates.FindOrAdd(PlayerController);
+    State.LastNoCandidateReason = NoCandidateReason;
+    State.bLastUsedOmniTrace = bUsedOmniTrace;
 
     const bool bChanged =
         (State.bHasCandidate != bHasBest) ||
@@ -102,6 +141,8 @@ void USOTS_InteractionSubsystem::ClearCandidate(APlayerController* PlayerControl
 
     State.bHasCandidate = false;
     State.Current = FSOTS_InteractionContext();
+    State.LastNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
+    State.bLastUsedOmniTrace = false;
 
     if (bWas)
     {
@@ -132,13 +173,229 @@ bool USOTS_InteractionSubsystem::GetCurrentCandidate(APlayerController* PlayerCo
     return true;
 }
 
-void USOTS_InteractionSubsystem::RequestInteraction(APlayerController* PlayerController)
+FSOTS_InteractionResult USOTS_InteractionSubsystem::RequestInteraction(APlayerController* PlayerController)
 {
-    if (!PlayerController) return;
+    FSOTS_InteractionResult Result;
+
+    if (!PlayerController)
+    {
+        return Result;
+    }
+
+    FSOTS_InteractionExecuteReport Report = RequestInteraction_WithResult(PlayerController);
+
+    const FSOTS_InteractionCandidateState* State = CandidateStates.Find(PlayerController);
+    Result.bUsedOmniTrace = State ? State->bLastUsedOmniTrace : false;
+
+    // Map new report to legacy result struct for back-compat.
+    Result.Context = Report.Target.IsValid() ? Result.Context : FSOTS_InteractionContext();
+    Result.ExecutedOptionTag = Report.OptionTag;
+    switch (Report.Result)
+    {
+    case ESOTS_InteractionExecuteResult::Success:
+        Result.Result = ESOTS_InteractionResultCode::Success;
+        break;
+    case ESOTS_InteractionExecuteResult::NoCandidate:
+        Result.Result = ESOTS_InteractionResultCode::NoCandidate;
+        Result.FailReasonTag = UIFailReason_NoCandidate;
+        break;
+    case ESOTS_InteractionExecuteResult::OptionNotFound:
+    case ESOTS_InteractionExecuteResult::OptionNotAvailable:
+        Result.Result = ESOTS_InteractionResultCode::OptionNotFound;
+        break;
+    case ESOTS_InteractionExecuteResult::CandidateNoLineOfSight:
+        Result.Result = ESOTS_InteractionResultCode::BlockedByLOS;
+        break;
+    case ESOTS_InteractionExecuteResult::MissingInteractableInterface:
+        Result.Result = ESOTS_InteractionResultCode::MissingInterface;
+        break;
+    case ESOTS_InteractionExecuteResult::MissingInteractableComponent:
+        Result.Result = ESOTS_InteractionResultCode::MissingComponent;
+        break;
+    default:
+        Result.Result = ESOTS_InteractionResultCode::CandidateInvalid;
+        break;
+    }
+
+    // Preserve legacy UI behavior already handled by RequestInteraction_WithResult.
+    return Result;
+}
+
+FSOTS_InteractionResult USOTS_InteractionSubsystem::ExecuteInteractionOption(APlayerController* PlayerController, FGameplayTag OptionTag)
+{
+    FSOTS_InteractionResult Result;
+    if (!PlayerController) return Result;
+
+    FSOTS_InteractionExecuteReport Report = ExecuteInteractionOption_WithResult(PlayerController, OptionTag);
+
+    const FSOTS_InteractionCandidateState* State = CandidateStates.Find(PlayerController);
+    Result.bUsedOmniTrace = State ? State->bLastUsedOmniTrace : false;
+
+    Result.ExecutedOptionTag = Report.OptionTag;
+    switch (Report.Result)
+    {
+    case ESOTS_InteractionExecuteResult::Success:
+        Result.Result = ESOTS_InteractionResultCode::Success;
+        break;
+    case ESOTS_InteractionExecuteResult::NoCandidate:
+        Result.Result = ESOTS_InteractionResultCode::NoCandidate;
+        Result.FailReasonTag = UIFailReason_NoCandidate;
+        break;
+    case ESOTS_InteractionExecuteResult::CandidateNoLineOfSight:
+        Result.Result = ESOTS_InteractionResultCode::BlockedByLOS;
+        break;
+    case ESOTS_InteractionExecuteResult::MissingInteractableInterface:
+        Result.Result = ESOTS_InteractionResultCode::MissingInterface;
+        break;
+    case ESOTS_InteractionExecuteResult::MissingInteractableComponent:
+        Result.Result = ESOTS_InteractionResultCode::MissingComponent;
+        break;
+    case ESOTS_InteractionExecuteResult::OptionNotFound:
+    case ESOTS_InteractionExecuteResult::OptionNotAvailable:
+        Result.Result = ESOTS_InteractionResultCode::OptionNotFound;
+        break;
+    default:
+        Result.Result = ESOTS_InteractionResultCode::CandidateInvalid;
+        break;
+    }
+    return Result;
+}
+
+FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::BuildExecuteReport(int32 SequenceId, ESOTS_InteractionExecuteResult Result, const FSOTS_InteractionContext& Context, const FGameplayTag& OptionTag, const FString& DebugReason) const
+{
+    FSOTS_InteractionExecuteReport Report;
+    Report.SequenceId = SequenceId;
+    Report.Result = Result;
+    Report.OptionTag = OptionTag;
+    Report.DebugReason = DebugReason;
+    Report.Target = Context.TargetActor;
+    Report.Distance = Context.Distance;
+
+    if (Context.PlayerPawn.IsValid())
+    {
+        Report.Instigator = Context.PlayerPawn.Get();
+    }
+    else if (Context.PlayerController.IsValid())
+    {
+        Report.Instigator = Context.PlayerController.Get();
+    }
+    return Report;
+}
+
+FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInternal(const FSOTS_InteractionContext& Context, const FGameplayTag& OptionTag)
+{
+    const int32 SeqId = InteractionSequenceCounter++;
+    FSOTS_InteractionExecuteReport Report = BuildExecuteReport(SeqId, ESOTS_InteractionExecuteResult::InternalError, Context, OptionTag, TEXT(""));
+
+    if (!Context.TargetActor.IsValid())
+    {
+        Report.Result = ESOTS_InteractionExecuteResult::CandidateInvalid;
+        Report.DebugReason = TEXT("Target invalid");
+        return Report;
+    }
+
+    USOTS_InteractableComponent* Interactable = Context.TargetActor->FindComponentByClass<USOTS_InteractableComponent>();
+    if (!Interactable)
+    {
+        Report.Result = ESOTS_InteractionExecuteResult::MissingInteractableComponent;
+        Report.DebugReason = TEXT("Missing interactable component");
+        return Report;
+    }
+
+    FGameplayTag FailReason;
+    if (!PassesTagGates(Context.PlayerController.Get(), Interactable, FailReason))
+    {
+        Report.Result = ESOTS_InteractionExecuteResult::CandidateBlocked;
+        Report.DebugReason = FailReason.IsValid() ? FailReason.ToString() : TEXT("Tag gate failed");
+        return Report;
+    }
+
+    if (Interactable->MaxDistance > 0.f && Context.Distance > Interactable->MaxDistance)
+    {
+        Report.Result = ESOTS_InteractionExecuteResult::CandidateOutOfRange;
+        Report.DebugReason = TEXT("Out of range");
+        return Report;
+    }
+
+    if (Interactable->bRequiresLineOfSight)
+    {
+        FVector ViewLoc = Context.HitResult.TraceStart;
+        FRotator ViewRot = FRotator::ZeroRotator;
+        if (ViewLoc.IsNearlyZero() && Context.PlayerController.IsValid())
+        {
+            BuildViewContext(Context.PlayerController.Get(), ViewLoc, ViewRot);
+        }
+
+        bool bUsedOmniTrace = false;
+        if (!PassesLOS(Context.PlayerController.Get(), ViewLoc, Context.TargetActor.Get(), Context.HitResult, bUsedOmniTrace))
+        {
+            Report.Result = ESOTS_InteractionExecuteResult::CandidateNoLineOfSight;
+            Report.DebugReason = TEXT("LOS blocked");
+            return Report;
+        }
+    }
+
+    TArray<FSOTS_InteractionOption> Options;
+    GatherOptions(Context, Options);
+    if (Options.Num() > 0)
+    {
+        const FSOTS_InteractionOption* FoundOpt = Options.FindByPredicate([&OptionTag](const FSOTS_InteractionOption& Opt)
+        {
+            return Opt.OptionTag == OptionTag || (!Opt.OptionTag.IsValid() && !OptionTag.IsValid());
+        });
+
+        if (!FoundOpt)
+        {
+            Report.Result = ESOTS_InteractionExecuteResult::OptionNotFound;
+            Report.DebugReason = TEXT("Option not found");
+            return Report;
+        }
+
+        if (FoundOpt->BlockedReasonTag.IsValid())
+        {
+            Report.Result = ESOTS_InteractionExecuteResult::OptionNotAvailable;
+            Report.DebugReason = FoundOpt->BlockedReasonTag.ToString();
+            return Report;
+        }
+    }
+
+    UObject* Implementer = ResolveInteractableImplementer(Context);
+    if (!Implementer)
+    {
+        Report.Result = ESOTS_InteractionExecuteResult::MissingInteractableInterface;
+        Report.DebugReason = TEXT("No interactable implementer");
+        return Report;
+    }
+
+    // Respect CanInteract contract if present.
+    if (!ISOTS_InteractableInterface::Execute_CanInteract(Implementer, Context, FailReason))
+    {
+        Report.Result = ESOTS_InteractionExecuteResult::ExecutionRejectedByTarget;
+        Report.DebugReason = FailReason.IsValid() ? FailReason.ToString() : TEXT("CanInteract rejected");
+        return Report;
+    }
+
+    ISOTS_InteractableInterface::Execute_ExecuteInteraction(Implementer, Context, OptionTag);
+
+    Report.Result = ESOTS_InteractionExecuteResult::Success;
+    return Report;
+}
+
+FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::RequestInteraction_WithResult(APlayerController* PlayerController)
+{
+    const int32 SeqId = InteractionSequenceCounter++;
+    FSOTS_InteractionExecuteReport Report = BuildExecuteReport(SeqId, ESOTS_InteractionExecuteResult::NoCandidate, FSOTS_InteractionContext(), FGameplayTag(), TEXT(""));
+
+    if (!PlayerController)
+    {
+        return Report;
+    }
 
     FSOTS_InteractionContext Context;
     if (!GetCurrentCandidate(PlayerController, Context))
     {
+        Report.DebugReason = TEXT("No candidate");
+        OnInteractionExecuted.Broadcast(Report);
         if (UIIntent_InteractionFail.IsValid())
         {
             FSOTS_InteractionUIIntentPayload Payload;
@@ -146,82 +403,136 @@ void USOTS_InteractionSubsystem::RequestInteraction(APlayerController* PlayerCon
             Payload.FailReasonTag = UIFailReason_NoCandidate;
             BroadcastUIIntent(PlayerController, Payload);
         }
-        return;
+        return Report;
     }
 
-    FGameplayTag FailReason;
-    if (!ValidateCanInteract(Context, FailReason))
-    {
-        if (UIIntent_InteractionFail.IsValid())
-        {
-            FSOTS_InteractionUIIntentPayload Payload;
-            Payload.IntentTag = UIIntent_InteractionFail;
-            Payload.Context = Context;
-            Payload.FailReasonTag = FailReason.IsValid() ? FailReason : UIFailReason_InterfaceDenied;
-            if (!Payload.FailReasonTag.IsValid())
-            {
-                Payload.FailReasonTag = UIFailReason_BlockedByTags;
-            }
-            BroadcastUIIntent(PlayerController, Payload);
-        }
-        return;
-    }
+    // Refresh report with candidate context.
+    Report = BuildExecuteReport(SeqId, ESOTS_InteractionExecuteResult::NoCandidate, Context, FGameplayTag(), TEXT(""));
 
     TArray<FSOTS_InteractionOption> Options;
     GatherOptions(Context, Options);
-
     if (Options.Num() == 0)
     {
         FSOTS_InteractionOption DefaultOpt;
         DefaultOpt.OptionTag = Context.InteractionTypeTag;
-        DefaultOpt.DisplayText = FText::GetEmpty();
         Options.Add(DefaultOpt);
     }
 
     if (Options.Num() == 1)
     {
-        ExecuteOptionInternal(Context, Options[0].OptionTag);
-        return;
+        Report = ExecuteInteractionInternal(Context, Options[0].OptionTag);
+    }
+    else
+    {
+        Report = BuildExecuteReport(SeqId, ESOTS_InteractionExecuteResult::OptionNotAvailable, Context, FGameplayTag(), TEXT("Multiple options presented"));
+        if (UIIntent_InteractionOptions.IsValid())
+        {
+            FSOTS_InteractionUIIntentPayload Payload;
+            Payload.IntentTag = UIIntent_InteractionOptions;
+            Payload.Context = Context;
+            Payload.Options = Options;
+            BroadcastUIIntent(PlayerController, Payload);
+        }
     }
 
-    if (UIIntent_InteractionOptions.IsValid())
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogInteractionExecutionFailures && Report.Result != ESOTS_InteractionExecuteResult::Success)
     {
-        FSOTS_InteractionUIIntentPayload Payload;
-        Payload.IntentTag = UIIntent_InteractionOptions;
-        Payload.Context = Context;
-        Payload.Options = Options;
-        BroadcastUIIntent(PlayerController, Payload);
+        const FString InstigatorName = Report.Instigator.IsValid() ? Report.Instigator->GetName() : TEXT("None");
+        const FString TargetName = Report.Target.IsValid() ? Report.Target->GetName() : TEXT("None");
+        UE_LOG(LogSOTSInteraction, Verbose, TEXT("[Exec] Result=%d Instigator=%s Target=%s Option=%s Reason=%s"),
+            static_cast<int32>(Report.Result), *InstigatorName, *TargetName, *Report.OptionTag.ToString(), *Report.DebugReason);
     }
+#endif
+
+    OnInteractionExecuted.Broadcast(Report);
+    return Report;
 }
 
-bool USOTS_InteractionSubsystem::ExecuteInteractionOption(APlayerController* PlayerController, FGameplayTag OptionTag)
+FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionOption_WithResult(APlayerController* PlayerController, FGameplayTag OptionTag)
 {
-    if (!PlayerController) return false;
+    const int32 SeqId = InteractionSequenceCounter++;
+    FSOTS_InteractionExecuteReport Report = BuildExecuteReport(SeqId, ESOTS_InteractionExecuteResult::NoCandidate, FSOTS_InteractionContext(), OptionTag, TEXT(""));
+
+    if (!PlayerController)
+    {
+        Report.DebugReason = TEXT("No player controller");
+        OnInteractionExecuted.Broadcast(Report);
+        return Report;
+    }
 
     FSOTS_InteractionContext Context;
     if (!GetCurrentCandidate(PlayerController, Context))
     {
-        return false;
+        Report.DebugReason = TEXT("No candidate");
+        OnInteractionExecuted.Broadcast(Report);
+        return Report;
     }
 
-    FGameplayTag FailReason;
-    if (!ValidateCanInteract(Context, FailReason))
+    Report = BuildExecuteReport(SeqId, ESOTS_InteractionExecuteResult::NoCandidate, Context, OptionTag, TEXT(""));
+
+    // Ensure the requested option exists and is available before executing.
+    TArray<FSOTS_InteractionOption> Options;
+    GatherOptions(Context, Options);
+    if (Options.Num() > 0)
     {
-        return false;
+        const FSOTS_InteractionOption* FoundOpt = Options.FindByPredicate([&OptionTag](const FSOTS_InteractionOption& Opt)
+        {
+            return Opt.OptionTag == OptionTag || (!Opt.OptionTag.IsValid() && !OptionTag.IsValid());
+        });
+
+        if (!FoundOpt)
+        {
+            Report.Result = ESOTS_InteractionExecuteResult::OptionNotFound;
+            Report.DebugReason = TEXT("Option not found");
+            OnInteractionExecuted.Broadcast(Report);
+            return Report;
+        }
+
+        if (FoundOpt->BlockedReasonTag.IsValid())
+        {
+            Report.Result = ESOTS_InteractionExecuteResult::OptionNotAvailable;
+            Report.DebugReason = FoundOpt->BlockedReasonTag.ToString();
+            OnInteractionExecuted.Broadcast(Report);
+            return Report;
+        }
     }
 
-    return ExecuteOptionInternal(Context, OptionTag);
+    Report = ExecuteInteractionInternal(Context, OptionTag);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogInteractionExecutionFailures && Report.Result != ESOTS_InteractionExecuteResult::Success)
+    {
+        const FString InstigatorName = Report.Instigator.IsValid() ? Report.Instigator->GetName() : TEXT("None");
+        const FString TargetName = Report.Target.IsValid() ? Report.Target->GetName() : TEXT("None");
+        UE_LOG(LogSOTSInteraction, Verbose, TEXT("[Exec] Result=%d Instigator=%s Target=%s Option=%s Reason=%s"),
+            static_cast<int32>(Report.Result), *InstigatorName, *TargetName, *Report.OptionTag.ToString(), *Report.DebugReason);
+    }
+#endif
+
+    OnInteractionExecuted.Broadcast(Report);
+    return Report;
 }
 
-void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const FVector& ViewLoc, const FRotator& ViewRot, FSOTS_InteractionContext& OutBest, bool& bOutHasBest) const
+void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const FVector& ViewLoc, const FRotator& ViewRot, FSOTS_InteractionContext& OutBest, bool& bOutHasBest, ESOTS_InteractionNoCandidateReason& OutNoCandidateReason, bool& bOutUsedOmniTrace) const
 {
     bOutHasBest = false;
+    OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
+    bOutUsedOmniTrace = false;
 
     UWorld* World = GetWorld();
-    if (!World || !PC) return;
+    if (!World || !PC)
+    {
+        OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::Unknown;
+        return;
+    }
 
     APawn* Pawn = PC->GetPawn();
-    if (!Pawn) return;
+    if (!Pawn)
+    {
+        OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::Unknown;
+        return;
+    }
 
     const FVector ViewDir = ViewRot.Vector();
     const FVector Start = ViewLoc;
@@ -231,6 +542,7 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
     TArray<const AActor*> Ignore;
     Ignore.Add(Pawn);
 
+    bool bSweepUsedOmniTrace = false;
     const bool bHit = SOTSInteractionTrace::SphereSweepMulti(
         World,
         Hits,
@@ -239,15 +551,21 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
         SearchRadius,
         ECC_Visibility,
         Ignore,
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        bEnableDebug
-#else
+        bForceLegacyTraces,
+        bSweepUsedOmniTrace,
+    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        bDebugDrawInteractionTraces,
+        bDebugLogInteractionTraceHits
+    #else
+        false,
         false
-#endif
+    #endif
     );
+    bOutUsedOmniTrace = bOutUsedOmniTrace || bSweepUsedOmniTrace;
 
     if (!bHit)
     {
+        OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::NoHits;
         return;
     }
 
@@ -256,42 +574,67 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
     for (const FHitResult& Hit : Hits)
     {
         AActor* HitActor = Hit.GetActor();
-        if (!HitActor) continue;
+        if (!HitActor)
+        {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::NotInteractable;
+            continue;
+        }
 
         USOTS_InteractableComponent* Interactable = HitActor->FindComponentByClass<USOTS_InteractableComponent>();
-        if (!Interactable) continue;
+        if (!Interactable)
+        {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::NotInteractable;
+            continue;
+        }
 
         FGameplayTag FailReason;
         if (!PassesTagGates(PC, Interactable, FailReason))
         {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::BlockedByTags;
             continue;
         }
 
         FSOTS_InteractionContext Ctx;
         if (!MakeContextForActor(PC, Pawn, HitActor, ViewLoc, ViewRot, Hit, Ctx))
         {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::Unknown;
             continue;
         }
 
         // Gate by component max distance
         if (Interactable->MaxDistance > 0.f && Ctx.Distance > Interactable->MaxDistance)
         {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::OutOfRange;
             continue;
         }
 
         // Gate by LOS if required
-        if (Interactable->bRequiresLineOfSight && !PassesLOS(PC, ViewLoc, HitActor, Hit))
+        bool bLosUsedOmni = false;
+        if (Interactable->bRequiresLineOfSight && !PassesLOS(PC, ViewLoc, HitActor, Hit, bLosUsedOmni))
         {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::BlockedByLOS;
+            bOutUsedOmniTrace = bOutUsedOmniTrace || bLosUsedOmni;
             continue;
         }
+        bOutUsedOmniTrace = bOutUsedOmniTrace || bLosUsedOmni;
 
         const float Score = ScoreCandidate(ViewLoc, ViewDir, Ctx);
+        if (bLogScoreDebug)
+        {
+            LogCandidateScoreDebug(Ctx, Score);
+        }
         if (Score > BestScore)
         {
             BestScore = Score;
             OutBest = Ctx;
             bOutHasBest = true;
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
         }
+    }
+
+    if (!bOutHasBest && OutNoCandidateReason == ESOTS_InteractionNoCandidateReason::None)
+    {
+        OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::Unknown;
     }
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
@@ -327,10 +670,12 @@ bool USOTS_InteractionSubsystem::MakeContextForActor(APlayerController* PC, APaw
     return true;
 }
 
-bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector& ViewLoc, AActor* Target, const FHitResult& CandidateHit) const
+bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector& ViewLoc, AActor* Target, const FHitResult& CandidateHit, bool& bOutUsedOmniTrace) const
 {
     UWorld* World = GetWorld();
     if (!World || !PC || !Target) return false;
+
+    bOutUsedOmniTrace = false;
 
     FVector TargetLoc = CandidateHit.ImpactPoint;
     if (TargetLoc.IsNearlyZero())
@@ -343,6 +688,7 @@ bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector&
     Ignore.Add(PC->GetPawn());
     Ignore.Add(Target);
 
+    bool bLineUsedOmniTrace = false;
     const bool bBlocked = SOTSInteractionTrace::LineTraceBlocked(
         World,
         LOSHit,
@@ -350,12 +696,17 @@ bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector&
         TargetLoc,
         ECC_Visibility,
         Ignore,
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        bEnableDebug
-#else
+        bForceLegacyTraces,
+        bLineUsedOmniTrace,
+    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        bDebugDrawInteractionTraces,
+        bDebugLogInteractionTraceHits
+    #else
+        false,
         false
-#endif
+    #endif
     );
+    bOutUsedOmniTrace = bLineUsedOmniTrace;
     return !bBlocked;
 }
 
@@ -374,6 +725,33 @@ float USOTS_InteractionSubsystem::ScoreCandidate(const FVector& ViewLoc, const F
     const float FacingScore = FMath::Clamp(Dot, 0.f, 1.f) * FacingScoreWeight;
 
     return DistanceScore + FacingScore;
+}
+
+bool USOTS_InteractionSubsystem::ShouldBypassThrottle(const FSOTS_InteractionCandidateState& State, const FVector& ViewLoc, const FRotator& ViewRot) const
+{
+    if (State.LastViewLocation.IsNearlyZero() && State.LastViewRotation.IsNearlyZero())
+    {
+        return false;
+    }
+
+    const float ViewDot = FVector::DotProduct(State.LastViewRotation.Vector(), ViewRot.Vector());
+    const bool bViewChanged = ViewDot < ThrottleBypassViewDotThreshold;
+    const bool bMovedFar = FVector::DistSquared(State.LastViewLocation, ViewLoc) > FMath::Square(ThrottleBypassLocationThreshold);
+
+    return bViewChanged || bMovedFar;
+}
+
+void USOTS_InteractionSubsystem::LogCandidateScoreDebug(const FSOTS_InteractionContext& Context, float Score) const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const AActor* Target = Context.TargetActor.Get();
+    const FString TargetName = Target ? Target->GetName() : TEXT("None");
+    const FString TagString = Context.InteractionTypeTag.IsValid() ? Context.InteractionTypeTag.ToString() : TEXT("<None>");
+    UE_LOG(LogSOTSInteraction, Verbose, TEXT("[Interaction] Candidate %s Score=%.3f Dist=%.1f Tag=%s"), *TargetName, Score, Context.Distance, *TagString);
+#else
+    (void)Context;
+    (void)Score;
+#endif
 }
 
 bool USOTS_InteractionSubsystem::AreSameTarget(const FSOTS_InteractionContext& A, const FSOTS_InteractionContext& B)
@@ -510,11 +888,44 @@ bool USOTS_InteractionSubsystem::ExecuteOptionInternal(const FSOTS_InteractionCo
 
 void USOTS_InteractionSubsystem::BroadcastUIIntent(APlayerController* PlayerController, const FSOTS_InteractionUIIntentPayload& Payload)
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const double NowSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
+    const FString InstigatorName = Payload.Context.PlayerController.IsValid() ? Payload.Context.PlayerController->GetName() : TEXT("None");
+    const FString TargetName = Payload.Context.TargetActor.IsValid() ? Payload.Context.TargetActor->GetName() : TEXT("None");
+    const float Distance = Payload.Context.Distance;
+
+    if (bWarnOnUnboundInteractionIntents && !OnUIIntentPayload.IsBound() && !OnUIIntent.IsBound())
+    {
+        if (NowSeconds - LastWarnUnboundIntentTime > WarnIntentCooldownSeconds)
+        {
+            UE_LOG(LogSOTSInteraction, Warning, TEXT("[Intent] Dropped (no listeners) Intent=%s Instigator=%s Target=%s Dist=%.1f"), *Payload.IntentTag.ToString(), *InstigatorName, *TargetName, Distance);
+            LastWarnUnboundIntentTime = NowSeconds;
+        }
+    }
+
+    if (bDebugLogIntentPayloads)
+    {
+        const int32 OptionCount = Payload.Options.Num();
+        UE_LOG(LogSOTSInteraction, Verbose, TEXT("[Intent] Broadcast Intent=%s Instigator=%s Target=%s Dist=%.1f Options=%d ShowPrompt=%s"), *Payload.IntentTag.ToString(), *InstigatorName, *TargetName, Distance, OptionCount, Payload.bShowPrompt ? TEXT("true") : TEXT("false"));
+    }
+#endif
+
     OnUIIntentPayload.Broadcast(PlayerController, Payload);
 
     // Deprecated legacy broadcast for existing bindings.
     if (OnUIIntent.IsBound())
     {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bWarnOnLegacyIntentUsage)
+        {
+            const double NowSecondsLegacy = GetWorld() ? GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
+            if (NowSecondsLegacy - LastWarnLegacyIntentTime > WarnIntentCooldownSeconds)
+            {
+                UE_LOG(LogSOTSInteraction, Warning, TEXT("[Intent] Legacy delegate used for %s"), *Payload.IntentTag.ToString());
+                LastWarnLegacyIntentTime = NowSecondsLegacy;
+            }
+        }
+#endif
         OnUIIntent.Broadcast(PlayerController, Payload.IntentTag, Payload.Context, Payload.Options);
     }
 }

@@ -12,6 +12,8 @@ class USOTS_PlayerStealthComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSOTS_StealthLevelChangedSignature, ESOTSStealthLevel, OldLevel, ESOTSStealthLevel, NewLevel, float, NewScore);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_PlayerDetectionStateChangedSignature, bool, bDetected);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_StealthScoreChangedSignature, const FSOTS_StealthScoreChange&, Change);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_StealthTierTransitionSignature, const FSOTS_StealthTierTransition&, Transition);
 
 /**
  * Global, non-ticking stealth aggregator.
@@ -60,6 +62,14 @@ public:
     // Broadcast when the stealth level changes (e.g., for dragon visibility or radial vignette).
     UPROPERTY(BlueprintAssignable, Category="Stealth")
     FSOTS_StealthLevelChangedSignature OnStealthLevelChanged;
+
+    // Broadcast when the score changes.
+    UPROPERTY(BlueprintAssignable, Category="Stealth")
+    FSOTS_StealthScoreChangedSignature OnStealthScoreChanged;
+
+    // Broadcast when the tier changes with transition context.
+    UPROPERTY(BlueprintAssignable, Category="Stealth")
+    FSOTS_StealthTierTransitionSignature OnStealthTierChanged;
 
     // Broadcast when the binary detection state changes.
     UPROPERTY(BlueprintAssignable, Category="Stealth")
@@ -136,9 +146,33 @@ private:
     USOTS_PlayerStealthComponent* FindPlayerStealthComponent() const;
     void SyncPlayerStealthComponent();
 
+    struct FGSM_ModifierEntry
+    {
+        FSOTS_StealthModifier Modifier;
+        FSOTS_GSM_Handle Handle;
+        int32 Priority = 0;
+        double CreatedTime = 0.0;
+        FGameplayTag OwnerTag;
+        bool bEnabled = true;
+    };
+
+    struct FGSM_ConfigEntry
+    {
+        TObjectPtr<USOTS_StealthConfigDataAsset> Asset = nullptr;
+        FSOTS_GSM_Handle Handle;
+        int32 Priority = 0;
+        double CreatedTime = 0.0;
+        FGameplayTag OwnerTag;
+        bool bEnabled = true;
+    };
+
     // Active modifiers applied on top of raw state.
-    UPROPERTY()
-    TArray<FSOTS_StealthModifier> ActiveModifiers;
+    TArray<FGSM_ModifierEntry> ModifierEntries;
+
+    // Ingestion bookkeeping for throttling/logging.
+    TMap<ESOTS_StealthInputType, double> LastAcceptedSampleTime;
+    TMap<ESOTS_StealthInputType, double> LastLoggedDropTime;
+    TMap<ESOTS_StealthInputType, double> LastLoggedIngestTime;
 
     // Per-guard AI suspicion (normalized [0..1]) used to build the
     // aggregated AISuspicion term in the stealth score.
@@ -146,19 +180,22 @@ private:
     TMap<TWeakObjectPtr<AActor>, float> GuardSuspicion;
 
     // Stack of config assets used for scoped overrides (e.g., per-mission).
-    UPROPERTY()
-    TArray<TObjectPtr<USOTS_StealthConfigDataAsset>> StealthConfigStack;
+    TArray<FGSM_ConfigEntry> ConfigEntries;
 
     // Currently active config asset driving ActiveConfig (may be null to mean "no override").
     UPROPERTY()
     TObjectPtr<USOTS_StealthConfigDataAsset> ActiveStealthConfig = nullptr;
+    FSOTS_StealthScoringConfig BaseConfig;
 
 public:
     UFUNCTION(BlueprintCallable, Category="Stealth|Modifiers")
-    void AddStealthModifier(const FSOTS_StealthModifier& Modifier);
+    FSOTS_GSM_Handle AddStealthModifier(const FSOTS_StealthModifier& Modifier, FGameplayTag OwnerTag = FGameplayTag(), int32 Priority = 0);
 
     UFUNCTION(BlueprintCallable, Category="Stealth|Modifiers")
-    void RemoveStealthModifierBySource(FName SourceId);
+    ESOTS_GSM_RemoveResult RemoveStealthModifierByHandle(const FSOTS_GSM_Handle& Handle, FGameplayTag RequesterTag = FGameplayTag());
+
+    UFUNCTION(BlueprintCallable, Category="Stealth|Modifiers")
+    int32 RemoveStealthModifierBySource(FName SourceId);
 
     // Config API for Mission Director / difficulty systems.
     UFUNCTION(BlueprintCallable, Category="Stealth|Config")
@@ -169,10 +206,26 @@ public:
 
     // Scoped config override API (e.g., used by MissionDirector).
     UFUNCTION(BlueprintCallable, Category="SOTS|Stealth")
-    void PushStealthConfig(USOTS_StealthConfigDataAsset* NewConfig);
+    FSOTS_GSM_Handle PushStealthConfig(USOTS_StealthConfigDataAsset* NewConfig, int32 Priority = 0, FGameplayTag OwnerTag = FGameplayTag());
 
     UFUNCTION(BlueprintCallable, Category="SOTS|Stealth")
-    void PopStealthConfig();
+    ESOTS_GSM_RemoveResult PopStealthConfig(const FSOTS_GSM_Handle& Handle, FGameplayTag RequesterTag = FGameplayTag());
+
+    UFUNCTION(BlueprintCallable, Category="Stealth")
+    void ResetStealthState(ESOTS_GSM_ResetReason Reason);
+
+    // Introspection helpers (dev-safe, no logging).
+    UFUNCTION(BlueprintCallable, Category="Stealth|Debug")
+    void GetActiveModifierHandles(TArray<FSOTS_GSM_Handle>& OutHandles) const;
+
+    UFUNCTION(BlueprintCallable, Category="Stealth|Debug")
+    void GetActiveConfigHandles(TArray<FSOTS_GSM_Handle>& OutHandles) const;
+
+    UFUNCTION(BlueprintCallable, Category="Stealth|Debug")
+    FSOTS_GSM_TuningSummary GetEffectiveTuningSummary() const;
+
+    UFUNCTION(BlueprintCallable, Category="Stealth|Debug")
+    void DebugDumpStackToLog() const;
 
     UFUNCTION(BlueprintCallable, Category="Stealth|Lighting")
     void SetDominantDirectionalLightDirectionWS(FVector InDirWS, bool bValid);
@@ -189,12 +242,27 @@ public:
         FVector& OutCandidatePoint,
         float& OutCandidateIllum01) const;
 
+    UFUNCTION(BlueprintPure, Category="Stealth|Debug")
+    FGameplayTag GetLastReasonTag() const { return LastReasonTag; }
+
+    UFUNCTION(BlueprintPure, Category="Stealth|Tags")
+    FGameplayTag GetTierTag(ESOTS_StealthTier Tier) const;
+
     void BuildProfileData(FSOTS_GSMProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_GSMProfileData& InData);
 
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 private:
+    bool IngestSample(const FSOTS_StealthInputSample& Sample, FSOTS_StealthIngestReport& OutReport);
+    void LogIngestDecision(const FSOTS_StealthIngestReport& Report, const FSOTS_StealthInputSample& Sample, bool bAccepted);
+    double GetWorldTimeSecondsSafe() const;
+    float GetMinSecondsBetweenType(const FSOTS_StealthIngestTuning& Tuning, ESOTS_StealthInputType Type) const;
+    void ResolveEffectiveConfig();
+    void DebugDumpStackToLog() const;
+    void ApplyStealthStateTags(AActor* TargetActor, ESOTS_StealthTier NewTier, float NewScore, const FSOTS_StealthTierTransition& Transition);
+    bool ActorHasTag(AActor* Actor, const FGameplayTag& Tag) const;
+
     void UpdateShadowCandidateForPlayerIfNeeded();
     AActor* FindPlayerActor() const;
 
@@ -202,6 +270,14 @@ private:
     FSOTS_ShadowCandidate CachedPlayerShadowCandidate;
     double NextShadowCandidateUpdateTimeSeconds = 0.0;
     double NextShadowCandidateDebugDrawTimeSeconds = 0.0;
+    double LastTierChangeTimeSeconds = 0.0;
+    double LastScoreUpdateTimeSeconds = 0.0;
+    double LastAlertingInputTimeSeconds = 0.0;
+    float SmoothedStealthScore = 0.0f;
+    float LastBroadcastStealthScore = 0.0f;
+    FGameplayTag LastReasonTag;
+    ESOTS_StealthTier LastAppliedTier = ESOTS_StealthTier::Hidden;
+    FGameplayTag LastAppliedTierTag;
 
     FVector DominantDirectionalLightDirWS = FVector::ForwardVector;
     bool bHasDominantDirectionalLightDir = false;

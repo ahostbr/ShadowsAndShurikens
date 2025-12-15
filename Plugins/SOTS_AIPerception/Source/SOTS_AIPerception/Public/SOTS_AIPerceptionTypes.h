@@ -3,7 +3,11 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
+#include "Logging/LogMacros.h"
 #include "SOTS_AIPerceptionTypes.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogSOTS_AIPerception, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogSOTS_AIPerceptionTelemetry, Log, All);
 
 class AActor;
 
@@ -14,6 +18,18 @@ enum class ESOTS_PerceptionState : uint8
     SoftSuspicious  UMETA(DisplayName="Soft Suspicious"),
     HardSuspicious  UMETA(DisplayName="Hard Suspicious"),
     Alerted         UMETA(DisplayName="Alerted")
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_AIPerceptionResetReason : uint8
+{
+    Unknown     UMETA(DisplayName="Unknown"),
+    BeginPlay   UMETA(DisplayName="Begin Play"),
+    EndPlay     UMETA(DisplayName="End Play"),
+    TargetChanged UMETA(DisplayName="Target Changed"),
+    MissionStart UMETA(DisplayName="Mission Start"),
+    ProfileLoaded UMETA(DisplayName="Profile Loaded"),
+    Manual      UMETA(DisplayName="Manual")
 };
 
 USTRUCT(BlueprintType)
@@ -78,6 +94,35 @@ struct FSOTS_TargetPointVisibilityResult
 };
 
 USTRUCT(BlueprintType)
+struct FSOTS_LastPerceptionStimulus
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    float Strength01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    FGameplayTag SenseTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    FVector WorldLocation = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    TWeakObjectPtr<AActor> SourceActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    double TimestampSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    bool bSuccessfullySensed = false;
+
+    double GetAgeSeconds(double NowSeconds) const
+    {
+        return (NowSeconds > TimestampSeconds) ? (NowSeconds - TimestampSeconds) : 0.0;
+    }
+};
+
+USTRUCT(BlueprintType)
 struct FSOTS_AIGuardPerceptionConfig
 {
     GENERATED_BODY()
@@ -113,6 +158,112 @@ struct FSOTS_AIGuardPerceptionConfig
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Perception|FX")
     FGameplayTag FXTag_OnLostSight;
+
+    // --- Suspicion tuning (stability / hysteresis) ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion")
+    float RampUpPerSecond_Sight = 0.25f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion")
+    float RampUpPerSecond_Hearing = 0.75f; // 0.75 * 0.2s ~= 0.15 per noise event (matches prior default).
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion")
+    float RampUpPerSecond_Shadow = 0.12f; // matches previous ShadowSuspicionGainPerSecond.
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion")
+    float RampUpPerSecond_Damage = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion")
+    float DecayPerSecond = 0.1f; // matches previous SuspicionDecayPerSecond.
+
+    // Detection hysteresis thresholds (normalized 0..1).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float SpottedThreshold01 = 0.9f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float LostThreshold01 = 0.85f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion")
+    bool bEnableHysteresis = true;
+
+    // Optional dwell/flip gates (default OFF to preserve feel).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0"))
+    float MinSecondsInSpottedState = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0"))
+    float MinSecondsBetweenStateFlips = 0.0f;
+
+    // Delay before decay begins after last stimulus (0 = immediate, matches prior behavior).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0"))
+    float StimulusForgetDelaySeconds = 0.0f;
+
+    // Event throttles for future SPINE_3 payloads.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float SuspicionChangeEpsilon01 = 0.01f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Suspicion", meta=(ClampMin="0.0"))
+    float SuspicionEventMinIntervalSeconds = 0.10f;
+
+    // GSM reporting controls (normalized AISuspicion01 feed).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM")
+    bool bEnableGSMReporting = true;
+
+    // Minimum time between GSM reports (seconds).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM", meta=(ClampMin="0.0"))
+    float GSMReportMinIntervalSeconds = 0.15f;
+
+    // Minimum delta in suspicion01 required to trigger a report.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM", meta=(ClampMin="0.0"))
+    float GSMReportMinDelta01 = 0.01f;
+
+    // Optional sense reason tags forwarded with GSM reports (all optional/empty by default).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Tags")
+    FGameplayTag ReasonTag_Sight;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Tags")
+    FGameplayTag ReasonTag_Hearing;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Tags")
+    FGameplayTag ReasonTag_Shadow;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Tags")
+    FGameplayTag ReasonTag_Damage;
+
+    // Fallback when no specific sense tag is set.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Tags")
+    FGameplayTag ReasonTag_Generic;
+
+    // Dev-only: emit a verbose log if GSM cannot be resolved (off by default).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Debug")
+    bool bDebugLogMissingGSM = false;
+
+    // Dev-only: emit perception event logs (spotted/lost/suspicion changed). Off by default.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Debug")
+    bool bDebugLogAIPerceptionEvents = false;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_AIPerceptionTelemetry
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Perception")
+    float Suspicion01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Perception")
+    bool bDetected = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Perception")
+    FGameplayTag ReasonSenseTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Perception")
+    FVector LastStimulusWorldLocation = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Perception")
+    TWeakObjectPtr<AActor> LastStimulusActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Perception")
+    double LastStimulusTimeSeconds = 0.0;
 };
 
 /**

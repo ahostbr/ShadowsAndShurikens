@@ -27,15 +27,17 @@ void USOTS_AIPerceptionSubsystem::UnregisterPerceptionComponent(USOTS_AIPercepti
     });
 }
 
-void USOTS_AIPerceptionSubsystem::ReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag)
+bool USOTS_AIPerceptionSubsystem::TryReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag)
 {
     UWorld* World = GetWorld();
     if (!World)
     {
-        return;
+        return false;
     }
 
     const float ClampedLoudness = FMath::Clamp(Loudness, 0.0f, 1.0f);
+
+    bool bDelivered = false;
 
     for (const TWeakObjectPtr<USOTS_AIPerceptionComponent>& CompPtr : RegisteredComponents)
     {
@@ -48,7 +50,15 @@ void USOTS_AIPerceptionSubsystem::ReportNoise(AActor* Instigator, const FVector&
         // Let the component decide how to interpret the noise based on
         // its configuration and distance.
         Comp->HandleReportedNoise(Location, ClampedLoudness);
+        bDelivered = true;
     }
+
+    return bDelivered;
+}
+
+void USOTS_AIPerceptionSubsystem::ReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag)
+{
+    TryReportNoise(Instigator, Location, Loudness, NoiseTag);
 }
 
 TArray<USOTS_AIPerceptionComponent*> USOTS_AIPerceptionSubsystem::GetAlertedAI() const

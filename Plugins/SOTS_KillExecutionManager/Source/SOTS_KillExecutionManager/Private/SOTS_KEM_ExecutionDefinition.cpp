@@ -89,10 +89,7 @@ FSOTS_KEMValidationResult USOTS_KEM_ExecutionDefinition::ValidateDefinition() co
         break;
 
     case ESOTS_KEM_BackendType::AIS:
-        if (!AISConfig.BehaviorTag.IsValid())
-        {
-            Result.AddWarning(TEXT("AIS backend has no BehaviorTag."));
-        }
+        Result.AddError(TEXT("AIS backend is retired and not supported."));
         break;
 
     default:

@@ -5,18 +5,20 @@
 #include "GameplayTagContainer.h"
 #include "Data/SOTS_AbilityTypes.h"
 #include "Interfaces/SOTS_AbilityInterfaces.h"
+#include "Misc/Guid.h"
 #include "SOTS_AbilityComponent.generated.h"
 
 class USOTS_AbilityRegistrySubsystem;
 class USOTS_AbilityBase;
 class USOTS_AbilitySubsystem;
-class UInvSP_InventoryComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_AbilitySimpleSignature, FGameplayTag, AbilityTag, F_SOTS_AbilityHandle, Handle);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_AbilityFailedSignature, FGameplayTag, AbilityTag, E_SOTS_AbilityActivationResult, Result);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSOTS_AbilityActivatedWithContextSignature, FGameplayTag, AbilityTag, F_SOTS_AbilityHandle, Handle, const F_SOTS_AbilityActivationContext&, Context);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_AbilityListChangedSignature, UAC_SOTS_Abilitys*, AbilityComponent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_AbilityStateChangedSignature, FGameplayTag, AbilityTag, F_SOTS_AbilityStateSnapshot, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_AbilityActivationReportSignature, const FSOTS_AbilityActivateReport&, Report);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSOTS_AbilityActivationEndedSignature, FGameplayTag, AbilityTag, FGuid, ActivationId, E_SOTS_AbilityEndReason, EndReason);
 
 /**
  * Main, Blueprint-facing ability component for SOTS.
@@ -66,6 +68,16 @@ public:
     UPROPERTY(BlueprintAssignable, Category="SOTS Ability|Events")
     FSOTS_AbilityStateChangedSignature OnAbilityStateChanged;
 
+    // Structured lifecycle events for activation pipeline
+    UPROPERTY(BlueprintAssignable, Category="SOTS Ability|Events")
+    FSOTS_AbilityActivationReportSignature OnSOTSAbilityActivationStarted;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS Ability|Events")
+    FSOTS_AbilityActivationReportSignature OnSOTSAbilityActivationFailed;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS Ability|Events")
+    FSOTS_AbilityActivationEndedSignature OnSOTSAbilityActivationEnded;
+
     UFUNCTION(BlueprintCallable, Category="SOTS Ability")
     bool GrantAbility(FGameplayTag AbilityTag, const F_SOTS_AbilityGrantOptions& Options, F_SOTS_AbilityHandle& OutHandle);
 
@@ -74,6 +86,10 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="SOTS Ability")
     bool TryActivateAbilityByTag(FGameplayTag AbilityTag, const F_SOTS_AbilityActivationContext& Context, E_SOTS_AbilityActivationResult& OutResult);
+
+    /** Activation with explicit report payload. */
+    UFUNCTION(BlueprintCallable, Category="SOTS Ability")
+    FSOTS_AbilityActivateReport TryActivateAbilityByTag_WithReport(FGameplayTag AbilityTag, const F_SOTS_AbilityActivationContext& Context);
 
     UFUNCTION(BlueprintCallable, Category="SOTS Ability")
     void CancelAllAbilities();
@@ -108,6 +124,31 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS Ability")
     bool ActivateAbility(FGameplayTag AbilityTag, const F_SOTS_AbilityActivationContext& Context, FText& OutFailureReason);
 
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Save")
+    bool bValidateAbilitySnapshotOnSave = false;
+
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Save")
+    bool bValidateAbilitySnapshotOnLoad = false;
+
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Save")
+    bool bDebugLogAbilitySnapshot = false;
+
+    /** Optional dev-only logging (default off). */
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Debug")
+    bool bDebugLogAbilityGrants = false;
+
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Debug")
+    bool bDebugLogAbilityActivationStarts = false;
+
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Debug")
+    bool bDebugLogAbilityActivationFailures = false;
+
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Debug")
+    bool bDebugLogAbilityInventoryCosts = false;
+
+    UPROPERTY(EditAnywhere, Category="SOTS Ability|Debug")
+    bool bDebugLogAbilitySkillGates = false;
+
     // Grant/remove without skill gating. Intended for systems such as SkillTree
     // or MissionDirector that need to override normal gating rules.
     UFUNCTION(BlueprintCallable, Category="SOTS Ability")
@@ -120,7 +161,13 @@ public:
     void PushProfileStateToSubsystem();
 
     UFUNCTION(BlueprintCallable, Category="SOTS Ability|Profile")
+    bool PushProfileStateToSubsystem_WithResult();
+
+    UFUNCTION(BlueprintCallable, Category="SOTS Ability|Profile")
     void PullProfileStateFromSubsystem();
+
+    UFUNCTION(BlueprintCallable, Category="SOTS Ability|Profile")
+    bool PullProfileStateFromSubsystem_WithResult();
 
     // Serialize / restore the component's runtime state for save systems.
     UFUNCTION(BlueprintCallable, Category="SOTS Ability|Save")
@@ -128,6 +175,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="SOTS Ability|Save")
     void ApplySerializedState(const F_SOTS_AbilityComponentSaveData& InData);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS Ability|Save")
+    FSOTS_AbilityApplyReport ApplySerializedState_WithReport(const F_SOTS_AbilityComponentSaveData& InData);
 
 protected:
     virtual void BeginPlay() override;
@@ -137,14 +187,11 @@ protected:
     bool InternalGetDefinition(FGameplayTag AbilityTag, F_SOTS_AbilityDefinition& OutDef) const;
 
     bool PassesOwnerTagGate(const F_SOTS_AbilityDefinition& Def) const;
-    bool PassesSkillGate(const F_SOTS_AbilityDefinition& Def) const;
-    bool PassesInventoryGate(const F_SOTS_AbilityDefinition& Def) const;
 
     bool HasSufficientCharges(const F_SOTS_AbilityDefinition& Def) const;
     void ConsumeChargesOnActivation(const F_SOTS_AbilityDefinition& Def);
 
     int32 QueryInventoryItemCount(const FGameplayTagContainer& Tags) const;
-    bool ConsumeInventoryItems(const FGameplayTagContainer& Tags, int32 Count) const;
 
     float GetWorldTime() const;
 
@@ -158,13 +205,27 @@ protected:
 
     void BroadcastAbilityListChanged();
     void BroadcastAbilityStateChanged(FGameplayTag AbilityTag);
+    void BroadcastActivationStarted(const FSOTS_AbilityActivateReport& Report);
+    void BroadcastActivationFailed(const FSOTS_AbilityActivateReport& Report);
+    void BroadcastActivationEnded(FGameplayTag AbilityTag, const FGuid& ActivationId, E_SOTS_AbilityEndReason EndReason);
 
-    UInvSP_InventoryComponent* ResolveInventoryComponent() const;
+    struct FSOTS_AbilityActivationParams
+    {
+        FGameplayTag AbilityTag;
+        F_SOTS_AbilityActivationContext Context;
+        bool bCommit = true;
+    };
+
+    FSOTS_AbilityActivateReport ProcessActivationRequest(const FSOTS_AbilityActivationParams& Params);
+    void FinalizeActivation(FGameplayTag AbilityTag, F_SOTS_AbilityRuntimeState& State, E_SOTS_AbilityEndReason EndReason);
+
+        FSOTS_AbilityRuntimeSnapshot BuildRuntimeSnapshot() const;
+        bool ValidateAbilitySnapshot(const FSOTS_AbilityRuntimeSnapshot& Snapshot, TArray<FString>& OutWarnings, TArray<FString>& OutErrors) const;
+        FSOTS_AbilityRuntimeSnapshot BuildRuntimeSnapshotFromLegacyArray(const TArray<F_SOTS_AbilityStateSnapshot>& LegacySnapshots) const;
+        FSOTS_AbilityApplyReport ApplyRuntimeSnapshot(const FSOTS_AbilityRuntimeSnapshot& Snapshot);
+        void LogSnapshotMessages(const TCHAR* Prefix, const TArray<FString>& Warnings, const TArray<FString>& Errors) const;
 
 protected:
-    UPROPERTY()
-    mutable TWeakObjectPtr<UInvSP_InventoryComponent> InventoryComponent;
-
     UPROPERTY()
     USOTS_AbilitySubsystem* AbilitySubsystem = nullptr;
 

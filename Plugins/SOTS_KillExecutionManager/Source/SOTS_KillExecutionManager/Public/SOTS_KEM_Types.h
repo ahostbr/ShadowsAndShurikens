@@ -9,11 +9,13 @@
 #include "SOTS_GlobalStealthTypes.h"
 #include "Data/SOTS_AbilityTypes.h"
 #include "SOTS_OmniTraceKEMPresetLibrary.h"
+#include "MovieSceneSequencePlayer.h"
 
 #include "SOTS_KEMAuthoringTypes.h"
 #include "SOTS_KEM_Types.generated.h"
 
 class UContextualAnimSceneAsset;
+class ULevelSequence;
 
 // ExecutionFamily is design language that complements PositionTag without replacing it.
 UENUM(BlueprintType)
@@ -21,7 +23,7 @@ enum class ESOTS_KEM_BackendType : uint8
 {
     CAS             UMETA(DisplayName="CAS"),
     LevelSequence   UMETA(DisplayName="Level Sequence"),
-    AIS             UMETA(DisplayName="AIS"),
+    AIS             UMETA(DisplayName="AIS (Deprecated)", Hidden, DeprecationMessage="AIS backend retired"),
     SpawnActor      UMETA(DisplayName="Spawn Actor")
 };
 
@@ -391,6 +393,14 @@ struct FSOTS_KEM_CASConfig
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="CAS", meta=(ClampMin="0.0"))
     float MaxSamePlaneHeightDelta = 15.f;
 
+    // Minimum vertical delta required for Vertical-only executions. Backward compatible default mirrors MaxSamePlaneHeightDelta.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="CAS", meta=(ClampMin="0.0"))
+    float MinVerticalHeightDelta = 15.f;
+
+    // Optional ceiling for vertical checks. 0 = no ceiling.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="CAS", meta=(ClampMin="0.0"))
+    float MaxVerticalHeightDelta = 0.f;
+
     // Distance window
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="CAS", meta=(ClampMin="0.0"))
     float MinDistance = 0.f;
@@ -498,26 +508,34 @@ struct FSOTS_KEM_LevelSequenceConfig
 {
     GENERATED_BODY()
 
-    /** Generic sequence asset reference (e.g. LevelSequence) to drive cinematic executions. */
+    /** Sequence asset reference to drive cinematic executions. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="LevelSequence")
-    TSoftObjectPtr<UObject> SequenceAsset;
+    TSoftObjectPtr<ULevelSequence> SequenceAsset;
 
-    /** Optional binding name for the instigator within the sequence. */
+    /** Optional binding tag/name for the instigator within the sequence. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="LevelSequence")
     FName InstigatorBindingName;
 
-    /** Optional binding name for the target within the sequence. */
+    /** Optional binding tag/name for the target within the sequence. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="LevelSequence")
     FName TargetBindingName;
+
+    /** Playback settings forwarded to ULevelSequencePlayer creation. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="LevelSequence")
+    FMovieSceneSequencePlaybackSettings PlaybackSettings;
+
+    /** Destroy the spawned LevelSequenceActor when playback ends. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="LevelSequence")
+    bool bDestroySequenceActorOnFinish = true;
 };
 
-// AIS / ability backend config – intentionally lightweight and tag-driven.
+// AIS / ability backend config (legacy placeholder; AIS backend retired).
 USTRUCT(BlueprintType)
 struct FSOTS_KEM_AISConfig
 {
     GENERATED_BODY()
 
-    /** High-level behavior tag used by your AI / ability systems to decide what to run. */
+    /** Legacy placeholder for retired AIS backend. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="AIS")
     FGameplayTag BehaviorTag;
 };

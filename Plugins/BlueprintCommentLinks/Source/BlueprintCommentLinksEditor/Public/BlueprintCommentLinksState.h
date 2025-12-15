@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-class SBlueprintCommentLinksGraphNode;
+class SGraphNode;
 
 /**
  * Transient singleton mapping from comment GUIDs to Slate widgets.
@@ -15,11 +15,11 @@ public:
     static void TearDown();
 
     /** Map from comment node guid to the associated Slate widget. */
-    TMap<FGuid, TWeakPtr<SBlueprintCommentLinksGraphNode>> CommentToWidget;
+    TMap<FGuid, TWeakPtr<SGraphNode>> CommentToWidget;
 
-    void RegisterCommentWidget(const FGuid& CommentGuid, TSharedPtr<SBlueprintCommentLinksGraphNode> Widget);
+    void RegisterCommentWidget(const FGuid& CommentGuid, TSharedPtr<SGraphNode> Widget);
     void UnregisterCommentWidget(const FGuid& CommentGuid);
 
-    TSharedPtr<SBlueprintCommentLinksGraphNode> GetCommentWidget(const FGuid& CommentGuid) const;
+    TSharedPtr<SGraphNode> GetCommentWidget(const FGuid& CommentGuid) const;
     bool HasRegisteredComment(const FGuid& CommentGuid) const;
 };

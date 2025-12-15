@@ -8,7 +8,8 @@
 #include "SOTS_FXManagerSubsystem.h"
 #include "SOTS_UIAbilityLibrary.h"
 #include "SOTS_InventoryBridgeSubsystem.h"
-#include "InvSPInventoryComponent.h"
+#include "SOTS_InventoryTypes.h"
+#include "SOTS_SkillTreeSubsystem.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 
@@ -33,6 +34,276 @@ namespace SOTSAbilityUIHelpers
 		const FString Reason = SOTSAbilityUIHelpers::GetActivationResultName(Result);
 		USOTS_UIAbilityLibrary::NotifyAbilityEvent(OwnerComponent, AbilityTag, bSuccess, FText::FromString(Reason));
 	}
+}
+
+namespace
+{
+    static FString ResultToString(E_SOTS_AbilityActivateResult Result)
+    {
+        if (const UEnum* Enum = StaticEnum<E_SOTS_AbilityActivateResult>())
+        {
+            return Enum->GetNameStringByValue(static_cast<int64>(Result));
+        }
+        return TEXT("Unknown");
+    }
+
+    static E_SOTS_AbilityActivationResult MapReportToLegacy(const FSOTS_AbilityActivateReport& Report)
+    {
+        switch (Report.Result)
+        {
+            case E_SOTS_AbilityActivateResult::Success:
+                return E_SOTS_AbilityActivationResult::Success;
+            case E_SOTS_AbilityActivateResult::CooldownActive:
+                return E_SOTS_AbilityActivationResult::Failed_Cooldown;
+            case E_SOTS_AbilityActivateResult::NotEnoughCharges:
+                return E_SOTS_AbilityActivationResult::Failed_ChgDepleted;
+            case E_SOTS_AbilityActivateResult::MissingRequiredItem:
+                return E_SOTS_AbilityActivationResult::Failed_InventoryGate;
+            case E_SOTS_AbilityActivateResult::AbilityLocked:
+            case E_SOTS_AbilityActivateResult::SkillTreeMissing:
+            case E_SOTS_AbilityActivateResult::SkillNotUnlocked:
+            case E_SOTS_AbilityActivateResult::SkillPrereqNotMet:
+                return E_SOTS_AbilityActivationResult::Failed_SkillGate;
+            case E_SOTS_AbilityActivateResult::BlockedByState:
+                return E_SOTS_AbilityActivationResult::Failed_OwnerTags;
+            default:
+                return E_SOTS_AbilityActivationResult::Failed_CustomCondition;
+        }
+    }
+
+    static FString InventoryResultToString(ESOTS_InventoryOpResult Result)
+    {
+        if (const UEnum* Enum = StaticEnum<ESOTS_InventoryOpResult>())
+        {
+            return Enum->GetNameStringByValue(static_cast<int64>(Result));
+        }
+        return TEXT("Unknown");
+    }
+}
+
+namespace SOTSAbilityInventoryCosts
+{
+    static FGameplayTag SelectPrimaryTag(const FGameplayTagContainer& Tags)
+    {
+        for (const FGameplayTag& Tag : Tags)
+        {
+            if (Tag.IsValid())
+            {
+                return Tag;
+            }
+        }
+        return FGameplayTag();
+    }
+
+    static FSOTS_InventoryOpReport MakeFallbackReport(AActor* Owner, const FGameplayTag& ItemTag, int32 Count, ESOTS_InventoryOpResult Result, const FString& Reason)
+    {
+        FSOTS_InventoryOpReport Report;
+        Report.OwnerActor = Owner;
+        Report.ItemTag = ItemTag;
+        Report.RequestedQty = Count;
+        Report.Result = Result;
+        Report.RequestId = FGuid::NewGuid();
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        Report.DebugReason = Reason;
+#endif
+        return Report;
+    }
+
+    static void MaybeLogInventoryReport(bool bEnabled, const TCHAR* Prefix, const FSOTS_InventoryOpReport& Report)
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (!bEnabled)
+        {
+            return;
+        }
+
+        UE_LOG(LogSOTSGAS, Log, TEXT("[AbilityComponent][Inventory] %s Tag=%s Qty=%d Result=%s Debug=%s"),
+               Prefix,
+               *Report.ItemTag.ToString(),
+               Report.RequestedQty,
+               *InventoryResultToString(Report.Result),
+               *Report.DebugReason);
+#endif
+    }
+
+    static FSOTS_InventoryOpReport HasRequiredItem(UAC_SOTS_Abilitys* Component, AActor* Owner, const FGameplayTagContainer& Tags, int32 Count, bool bDebugLog)
+    {
+        const FGameplayTag ItemTag = SelectPrimaryTag(Tags);
+        if (!ItemTag.IsValid())
+        {
+            return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::InvalidTag, TEXT("No inventory tag configured"));
+        }
+
+        if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(Component))
+        {
+            FSOTS_InventoryOpReport Report = Bridge->HasItemByTag_WithReport(Owner, ItemTag, Count);
+            MaybeLogInventoryReport(bDebugLog, TEXT("HasItem"), Report);
+            return Report;
+        }
+
+        return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::ProviderMissing, TEXT("Inventory bridge missing"));
+    }
+
+    static FSOTS_InventoryOpReport ConsumeItem(UAC_SOTS_Abilitys* Component, AActor* Owner, const FGameplayTagContainer& Tags, int32 Count, bool bDebugLog)
+    {
+        const FGameplayTag ItemTag = SelectPrimaryTag(Tags);
+        if (!ItemTag.IsValid())
+        {
+            return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::InvalidTag, TEXT("No inventory tag configured"));
+        }
+
+        if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(Component))
+        {
+            FSOTS_InventoryOpReport Report = Bridge->TryConsumeItemByTag_WithReport(Owner, ItemTag, Count);
+            MaybeLogInventoryReport(bDebugLog, TEXT("Consume"), Report);
+            return Report;
+        }
+
+        return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::ProviderMissing, TEXT("Inventory bridge missing"));
+    }
+
+    static E_SOTS_AbilityActivateResult MapToAbilityResult(const FSOTS_InventoryOpReport& Report)
+    {
+        switch (Report.Result)
+        {
+            case ESOTS_InventoryOpResult::Success:
+                return E_SOTS_AbilityActivateResult::Success;
+            case ESOTS_InventoryOpResult::ProviderMissing:
+            case ESOTS_InventoryOpResult::ProviderNotReady:
+            case ESOTS_InventoryOpResult::InvalidTag:
+            case ESOTS_InventoryOpResult::ItemNotFound:
+            case ESOTS_InventoryOpResult::NotEnoughQuantity:
+                return E_SOTS_AbilityActivateResult::MissingRequiredItem;
+            case ESOTS_InventoryOpResult::ConsumeRejected:
+            case ESOTS_InventoryOpResult::RemoveRejected:
+            case ESOTS_InventoryOpResult::LockedOrBlocked:
+                return E_SOTS_AbilityActivateResult::CostApplyFailed;
+            default:
+                return E_SOTS_AbilityActivateResult::InternalError;
+        }
+    }
+}
+
+namespace SOTSSkillGate
+{
+    enum class ESkillGateResult : uint8
+    {
+        Allowed,
+        SkillTreeMissing,
+        NotUnlocked,
+        MissingPrereq,
+        InvalidDefinition
+    };
+
+    struct FSkillGateReport
+    {
+        ESkillGateResult Result = ESkillGateResult::InvalidDefinition;
+        FGameplayTag BlockingSkillTag;
+        FString DebugReason;
+
+        bool IsAllowed() const { return Result == ESkillGateResult::Allowed; }
+    };
+
+    static USOTS_SkillTreeSubsystem* ResolveSkillTreeSubsystem(const UAC_SOTS_Abilitys* Component)
+    {
+        if (!Component)
+        {
+            return nullptr;
+        }
+
+        if (const UWorld* World = Component->GetWorld())
+        {
+            if (UGameInstance* GI = World->GetGameInstance())
+            {
+                return GI->GetSubsystem<USOTS_SkillTreeSubsystem>();
+            }
+        }
+
+        return nullptr;
+    }
+
+    static FSkillGateReport Evaluate(const UAC_SOTS_Abilitys* Component, const F_SOTS_AbilityDefinition& Def)
+    {
+        FSkillGateReport Report;
+
+        // If no gating is configured, allow.
+        if (Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::None || Def.RequiredSkillTags.Num() == 0)
+        {
+            Report.Result = ESkillGateResult::Allowed;
+            return Report;
+        }
+
+        if (!Component || !Component->GetOwner())
+        {
+            Report.Result = ESkillGateResult::SkillTreeMissing;
+            Report.DebugReason = TEXT("No ability component owner");
+            return Report;
+        }
+
+        if (USOTS_SkillTreeSubsystem* SkillTree = ResolveSkillTreeSubsystem(Component))
+        {
+            for (const FGameplayTag& SkillTag : Def.RequiredSkillTags)
+            {
+                if (!SkillTag.IsValid())
+                {
+                    Report.Result = ESkillGateResult::InvalidDefinition;
+                    Report.BlockingSkillTag = SkillTag;
+                    Report.DebugReason = TEXT("Invalid skill tag in definition");
+                    return Report;
+                }
+
+                if (!SkillTree->HasSkillTag(SkillTag))
+                {
+                    Report.Result = ESkillGateResult::NotUnlocked;
+                    Report.BlockingSkillTag = SkillTag;
+                    Report.DebugReason = TEXT("Required skill not unlocked");
+                    return Report;
+                }
+            }
+
+            Report.Result = ESkillGateResult::Allowed;
+            return Report;
+        }
+
+        Report.Result = ESkillGateResult::SkillTreeMissing;
+        Report.DebugReason = TEXT("SkillTree subsystem missing");
+        return Report;
+    }
+
+    static E_SOTS_AbilityActivateResult MapToActivationResult(const FSkillGateReport& Report)
+    {
+        switch (Report.Result)
+        {
+            case ESkillGateResult::Allowed:
+                return E_SOTS_AbilityActivateResult::Success;
+            case ESkillGateResult::SkillTreeMissing:
+                return E_SOTS_AbilityActivateResult::SkillTreeMissing;
+            case ESkillGateResult::NotUnlocked:
+                return E_SOTS_AbilityActivateResult::SkillNotUnlocked;
+            case ESkillGateResult::MissingPrereq:
+                return E_SOTS_AbilityActivateResult::SkillPrereqNotMet;
+            case ESkillGateResult::InvalidDefinition:
+            default:
+                return E_SOTS_AbilityActivateResult::InternalError;
+        }
+    }
+
+    static void MaybeLogSkillGate(bool bEnabled, const TCHAR* Prefix, FGameplayTag AbilityTag, const FSkillGateReport& Report)
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (!bEnabled)
+        {
+            return;
+        }
+
+        UE_LOG(LogSOTSGAS, Log, TEXT("[AbilityComponent][SkillGate] %s Ability=%s Skill=%s Result=%d Reason=%s"),
+               Prefix,
+               *AbilityTag.ToString(),
+               *Report.BlockingSkillTag.ToString(),
+               static_cast<int32>(Report.Result),
+               *Report.DebugReason);
+#endif
+    }
 }
 
 namespace SOTSAbilityInventory
@@ -127,31 +398,10 @@ void UAC_SOTS_Abilitys::BeginPlay()
 {
     Super::BeginPlay();
 
-    InventoryComponent = ResolveInventoryComponent();
-
     if (!AbilitySubsystem)
     {
         AbilitySubsystem = USOTS_AbilitySubsystem::Get(this);
     }
-}
-
-UInvSP_InventoryComponent* UAC_SOTS_Abilitys::ResolveInventoryComponent() const
-{
-    if (InventoryComponent.IsValid())
-    {
-        return InventoryComponent.Get();
-    }
-
-    if (const AActor* OwnerActor = GetOwner())
-    {
-        if (UInvSP_InventoryComponent* Found = OwnerActor->FindComponentByClass<UInvSP_InventoryComponent>())
-        {
-            const_cast<UAC_SOTS_Abilitys*>(this)->InventoryComponent = Found;
-            return Found;
-        }
-    }
-
-    return nullptr;
 }
 
 USOTS_AbilityRegistrySubsystem* UAC_SOTS_Abilitys::GetRegistry() const
@@ -193,36 +443,6 @@ bool UAC_SOTS_Abilitys::PassesOwnerTagGate(const F_SOTS_AbilityDefinition& /*Def
     return true;
 }
 
-bool UAC_SOTS_Abilitys::PassesSkillGate(const F_SOTS_AbilityDefinition& Def) const
-{
-    if (Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::None || Def.RequiredSkillTags.Num() == 0)
-    {
-        return true;
-    }
-
-    AActor* OwnerActor = GetOwner();
-    if (!OwnerActor)
-    {
-        return false;
-    }
-
-    if (!OwnerActor->GetClass()->ImplementsInterface(UBPI_SOTS_SkillTreeAccess::StaticClass()))
-    {
-        return false;
-    }
-
-    for (const FGameplayTag& SkillTag : Def.RequiredSkillTags)
-    {
-        const bool bUnlocked = IBPI_SOTS_SkillTreeAccess::Execute_IsSkillUnlocked(OwnerActor, SkillTag);
-        if (!bUnlocked)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 int32 UAC_SOTS_Abilitys::QueryInventoryItemCount(const FGameplayTagContainer& Tags) const
 {
     if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(this))
@@ -230,73 +450,7 @@ int32 UAC_SOTS_Abilitys::QueryInventoryItemCount(const FGameplayTagContainer& Ta
         return Bridge->GetCarriedItemCountByTags(Tags);
     }
 
-    // Preferred path: let the owning actor implement the inventory interface.
-    if (AActor* OwnerActor = GetOwner())
-    {
-        if (OwnerActor->GetClass()->ImplementsInterface(UBPI_SOTS_InventoryAccess::StaticClass()))
-        {
-            return IBPI_SOTS_InventoryAccess::Execute_GetInventoryItemCountByTags(OwnerActor, Tags);
-        }
-    }
-
-    if (const UInvSP_InventoryComponent* InvComp = ResolveInventoryComponent())
-    {
-        return SOTSAbilityInventory::CountItemsByTags(InvComp->GetCarriedItems(), Tags);
-    }
-
     return 0;
-}
-
-bool UAC_SOTS_Abilitys::ConsumeInventoryItems(const FGameplayTagContainer& Tags, int32 Count) const
-{
-    if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(this))
-    {
-        return Bridge->ConsumeCarriedItemsByTags(Tags, Count);
-    }
-
-    // Preferred path: let the owning actor implement the inventory interface.
-    if (AActor* OwnerActor = GetOwner())
-    {
-        if (OwnerActor->GetClass()->ImplementsInterface(UBPI_SOTS_InventoryAccess::StaticClass()))
-        {
-            return IBPI_SOTS_InventoryAccess::Execute_ConsumeInventoryItemsByTags(OwnerActor, Tags, Count);
-        }
-    }
-
-    if (UInvSP_InventoryComponent* InvComp = ResolveInventoryComponent())
-    {
-        TArray<FSOTS_SerializedItem> Items = InvComp->GetCarriedItems();
-        if (!SOTSAbilityInventory::ConsumeItemsByTags(Items, Tags, Count))
-        {
-            return false;
-        }
-
-        InvComp->ClearCarriedItems();
-        for (const FSOTS_SerializedItem& Item : Items)
-        {
-            InvComp->AddCarriedItem(Item.ItemId, Item.Quantity);
-        }
-
-        return true;
-    }
-
-    return false;
-}
-
-bool UAC_SOTS_Abilitys::PassesInventoryGate(const F_SOTS_AbilityDefinition& Def) const
-{
-    if (Def.InventoryMode == E_SOTS_AbilityInventoryMode::None)
-    {
-        return true;
-    }
-
-    if (Def.RequiredInventoryTags.Num() == 0)
-    {
-        return true;
-    }
-
-    const int32 Count = QueryInventoryItemCount(Def.RequiredInventoryTags);
-    return Count > 0;
 }
 
 bool UAC_SOTS_Abilitys::HasSufficientCharges(const F_SOTS_AbilityDefinition& Def) const
@@ -379,13 +533,7 @@ void UAC_SOTS_Abilitys::ConsumeChargesOnActivation(const F_SOTS_AbilityDefinitio
         }
 
         case E_SOTS_AbilityChargeMode::InventoryLinked:
-        {
-            if (Def.InventoryMode == E_SOTS_AbilityInventoryMode::RequireAndConsume)
-            {
-                ConsumeInventoryItems(Def.RequiredInventoryTags, 1);
-            }
             break;
-        }
 
         case E_SOTS_AbilityChargeMode::Hybrid:
         {
@@ -393,11 +541,6 @@ void UAC_SOTS_Abilitys::ConsumeChargesOnActivation(const F_SOTS_AbilityDefinitio
             if (Def.MaxCharges > 0 && State->CurrentCharges > 0)
             {
                 --State->CurrentCharges;
-            }
-
-            if (Def.InventoryMode == E_SOTS_AbilityInventoryMode::RequireAndConsume)
-            {
-                ConsumeInventoryItems(Def.RequiredInventoryTags, 1);
             }
             break;
         }
@@ -423,11 +566,13 @@ bool UAC_SOTS_Abilitys::GrantAbility(FGameplayTag AbilityTag, const F_SOTS_Abili
         return false;
     }
 
-    // Skill-gate on grant if required
-    if (Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForGrant ||
-        Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForBoth)
+    const bool bEnforceGrantGate = (Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForGrant ||
+                                    Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForBoth);
+    if (bEnforceGrantGate)
     {
-        if (!PassesSkillGate(Def))
+        const SOTSSkillGate::FSkillGateReport GateReport = SOTSSkillGate::Evaluate(this, Def);
+        SOTSSkillGate::MaybeLogSkillGate(bDebugLogAbilitySkillGates, TEXT("Grant"), AbilityTag, GateReport);
+        if (!GateReport.IsAllowed())
         {
             return false;
         }
@@ -493,11 +638,16 @@ bool UAC_SOTS_Abilitys::GrantAbility(FGameplayTag AbilityTag, const F_SOTS_Abili
         }
     }
 
-    UE_LOG(LogSOTSGAS, Log,
-           TEXT("[AbilityComponent] Granted ability '%s' to '%s' (HandleId=%d)."),
-           *AbilityTag.ToString(),
-           *GetOwner()->GetName(),
-           State.Handle.InternalId);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogAbilityGrants)
+    {
+        UE_LOG(LogSOTSGAS, Log,
+               TEXT("[AbilityComponent] Granted ability '%s' to '%s' (HandleId=%d)."),
+               *AbilityTag.ToString(),
+               *GetOwner()->GetName(),
+               State.Handle.InternalId);
+    }
+#endif
 
     BroadcastAbilityListChanged();
     BroadcastAbilityStateChanged(AbilityTag);
@@ -523,10 +673,15 @@ bool UAC_SOTS_Abilitys::RevokeAbilityByTag(FGameplayTag AbilityTag)
 
     if (RemovedCount > 0 || bHadRuntimeState)
     {
-        UE_LOG(LogSOTSGAS, Log,
-               TEXT("[AbilityComponent] Revoked ability '%s' from '%s'."),
-               *AbilityTag.ToString(),
-               *GetOwner()->GetName());
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bDebugLogAbilityGrants)
+        {
+            UE_LOG(LogSOTSGAS, Log,
+                   TEXT("[AbilityComponent] Revoked ability '%s' from '%s'."),
+                   *AbilityTag.ToString(),
+                   *GetOwner()->GetName());
+        }
+#endif
 
         BroadcastAbilityListChanged();
         BroadcastAbilityStateChanged(AbilityTag);
@@ -537,188 +692,281 @@ bool UAC_SOTS_Abilitys::RevokeAbilityByTag(FGameplayTag AbilityTag)
 
 bool UAC_SOTS_Abilitys::TryActivateAbilityByTag(FGameplayTag AbilityTag, const F_SOTS_AbilityActivationContext& Context, E_SOTS_AbilityActivationResult& OutResult)
 {
-    OutResult = E_SOTS_AbilityActivationResult::Failed_CustomCondition;
+    const FSOTS_AbilityActivateReport Report = ProcessActivationRequest({ AbilityTag, Context, /*bCommit*/ true });
+
+    switch (Report.Result)
+    {
+        case E_SOTS_AbilityActivateResult::Success:
+            OutResult = E_SOTS_AbilityActivationResult::Success;
+            return true;
+        case E_SOTS_AbilityActivateResult::CooldownActive:
+            OutResult = E_SOTS_AbilityActivationResult::Failed_Cooldown;
+            break;
+        case E_SOTS_AbilityActivateResult::NotEnoughCharges:
+            OutResult = E_SOTS_AbilityActivationResult::Failed_ChgDepleted;
+            break;
+        case E_SOTS_AbilityActivateResult::MissingRequiredItem:
+            OutResult = E_SOTS_AbilityActivationResult::Failed_InventoryGate;
+            break;
+        case E_SOTS_AbilityActivateResult::AbilityLocked:
+            OutResult = E_SOTS_AbilityActivationResult::Failed_SkillGate;
+            break;
+        case E_SOTS_AbilityActivateResult::BlockedByState:
+            OutResult = E_SOTS_AbilityActivationResult::Failed_OwnerTags;
+            break;
+        default:
+            OutResult = E_SOTS_AbilityActivationResult::Failed_CustomCondition;
+            break;
+    }
+
+    return false;
+}
+
+FSOTS_AbilityActivateReport UAC_SOTS_Abilitys::TryActivateAbilityByTag_WithReport(FGameplayTag AbilityTag, const F_SOTS_AbilityActivationContext& Context)
+{
+    return ProcessActivationRequest({ AbilityTag, Context, /*bCommit*/ true });
+}
+
+FSOTS_AbilityActivateReport UAC_SOTS_Abilitys::ProcessActivationRequest(const FSOTS_AbilityActivationParams& Params)
+{
+    FSOTS_AbilityActivateReport Report;
+    Report.AbilityTag = Params.AbilityTag;
+    Report.TimestampSeconds = GetWorldTime();
+
+    if (!Params.AbilityTag.IsValid())
+    {
+        Report.Result = E_SOTS_AbilityActivateResult::AbilityNotFound;
+        Report.DebugReason = TEXT("Invalid ability tag");
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
+    }
+
+    if (!GetOwner())
+    {
+        Report.Result = E_SOTS_AbilityActivateResult::InvalidOwner;
+        Report.DebugReason = TEXT("Missing owner");
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
+    }
+
+    USOTS_AbilityRegistrySubsystem* Registry = GetRegistry();
+    if (!Registry || !Registry->IsAbilityRegistryReady())
+    {
+        Report.Result = E_SOTS_AbilityActivateResult::RegistryNotReady;
+        Report.DebugReason = TEXT("Ability registry not ready");
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
+    }
 
     F_SOTS_AbilityDefinition Def;
-    if (!InternalGetDefinition(AbilityTag, Def))
+    if (!Registry->GetAbilityDefinitionByTag(Params.AbilityTag, Def))
     {
-        return false;
+        Report.Result = E_SOTS_AbilityActivateResult::AbilityNotFound;
+        Report.DebugReason = TEXT("Definition not found in registry");
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
     }
 
-    // Optional authored requirements on the definition (skill tags, player
-    // tags, stealth state). These are evaluated via the shared requirement
-    // library and are kept data-only so they can be reused by other systems.
-    if (!EvaluateAbilityRequirementsForDefinition(Def, nullptr))
+    FText FailureReason;
+    if (!EvaluateAbilityRequirementsForDefinition(Def, &FailureReason))
     {
-        OutResult = E_SOTS_AbilityActivationResult::Failed_CustomCondition;
-        OnAbilityFailed.Broadcast(AbilityTag, OutResult);
+        Report.Result = E_SOTS_AbilityActivateResult::AbilityLocked;
+        Report.DebugReason = FailureReason.IsEmpty() ? TEXT("Requirements failed") : FailureReason.ToString();
 
-        UE_LOG(LogSOTSGAS, Log,
-               TEXT("[AbilityComponent] Activation of '%s' on '%s' failed ability requirements."),
-               *AbilityTag.ToString(),
-               *GetOwner()->GetName());
-
-        if (Def.FXTag_OnFailRequirements.IsValid())
+        if (Params.bCommit && Def.FXTag_OnFailRequirements.IsValid())
         {
-            if (USOTS_FXManagerSubsystem* FX = USOTS_FXManagerSubsystem::Get())
+            USOTS_GAS_AbilityRequirementLibrary::TriggerFailureFX(GetOwner(), Def.FXTag_OnFailRequirements);
+        }
+
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
+    }
+
+    bool bIsOnCooldown = false;
+    float RemainingCooldown = 0.0f;
+    IsAbilityOnCooldown(Params.AbilityTag, bIsOnCooldown, RemainingCooldown);
+    if (bIsOnCooldown)
+    {
+        Report.Result = E_SOTS_AbilityActivateResult::CooldownActive;
+        Report.DebugReason = FString::Printf(TEXT("Cooldown active (%.2fs remaining)"), RemainingCooldown);
+        Report.RemainingCooldown = RemainingCooldown;
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
+    }
+
+    if (!HasSufficientCharges(Def))
+    {
+        Report.Result = E_SOTS_AbilityActivateResult::NotEnoughCharges;
+        Report.DebugReason = TEXT("Insufficient charges");
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
+    }
+
+    const bool bHasInventoryRequirement = (Def.InventoryMode != E_SOTS_AbilityInventoryMode::None) && (Def.RequiredInventoryTags.Num() > 0);
+    if (bHasInventoryRequirement)
+    {
+        const int32 RequiredCount = 1; // current authored abilities use single-item requirements
+        const FSOTS_InventoryOpReport InventoryCheck = SOTSAbilityInventoryCosts::HasRequiredItem(this, GetOwner(), Def.RequiredInventoryTags, RequiredCount, bDebugLogAbilityInventoryCosts);
+        const E_SOTS_AbilityActivateResult InventoryResult = SOTSAbilityInventoryCosts::MapToAbilityResult(InventoryCheck);
+
+        if (InventoryResult != E_SOTS_AbilityActivateResult::Success)
+        {
+            Report.Result = InventoryResult;
+            Report.DebugReason = FString::Printf(TEXT("Inventory require %s x%d -> %s (%s)"),
+                                                 *InventoryCheck.ItemTag.ToString(),
+                                                 InventoryCheck.RequestedQty,
+                                                 *ResultToString(InventoryResult),
+                                                 *InventoryCheck.DebugReason);
+            if (Params.bCommit)
             {
-                AActor* OwnerActor = GetOwner();
-                AActor* InstigatorActor = Context.Instigator ? Context.Instigator : OwnerActor;
-                AActor* TargetActor = Context.TargetActor;
-
-                FVector Location = Context.TargetLocation;
-                if (Location.IsNearlyZero())
-                {
-                    if (TargetActor)
-                    {
-                        Location = TargetActor->GetActorLocation();
-                    }
-                    else if (InstigatorActor)
-                    {
-                        Location = InstigatorActor->GetActorLocation();
-                    }
-                }
-
-                const FRotator Rotation = InstigatorActor ? InstigatorActor->GetActorRotation() : FRotator::ZeroRotator;
-
-                FX->TriggerFXByTag(OwnerActor, Def.FXTag_OnFailRequirements, InstigatorActor, TargetActor, Location, Rotation);
+                BroadcastActivationFailed(Report);
             }
+            return Report;
         }
-
-        SOTSAbilityUIHelpers::NotifyAbilityEvent(this, AbilityTag, false, OutResult);
-
-        return false;
     }
 
-    F_SOTS_AbilityRuntimeState& State = RuntimeStates.FindOrAdd(AbilityTag);
-    if (!State.Handle.bIsValid)
+    if (!PassesOwnerTagGate(Def))
     {
-        State.Handle.AbilityTag = AbilityTag;
-        State.Handle.InternalId = NextInternalHandleId++;
-        State.Handle.bIsValid = true;
+        Report.Result = E_SOTS_AbilityActivateResult::BlockedByState;
+        Report.DebugReason = TEXT("Blocked by owner tags/state");
+        if (Params.bCommit)
+        {
+            BroadcastActivationFailed(Report);
+        }
+        return Report;
     }
-
-    const float WorldTime = GetWorldTime();
-        if (State.CooldownEndTime > 0.0f && WorldTime < State.CooldownEndTime)
-        {
-            OutResult = E_SOTS_AbilityActivationResult::Failed_Cooldown;
-            OnAbilityFailed.Broadcast(AbilityTag, OutResult);
-
-            UE_LOG(LogSOTSGAS, Log,
-                   TEXT("[AbilityComponent] Activation of '%s' on '%s' failed: cooldown."),
-                   *AbilityTag.ToString(),
-                   *GetOwner()->GetName());
-            SOTSAbilityUIHelpers::NotifyAbilityEvent(this, AbilityTag, false, OutResult);
-            return false;
-        }
-
-        if (!HasSufficientCharges(Def))
-        {
-            OutResult = E_SOTS_AbilityActivationResult::Failed_ChgDepleted;
-            OnAbilityFailed.Broadcast(AbilityTag, OutResult);
-
-            UE_LOG(LogSOTSGAS, Log,
-                   TEXT("[AbilityComponent] Activation of '%s' on '%s' failed: charges depleted."),
-                   *AbilityTag.ToString(),
-                   *GetOwner()->GetName());
-            SOTSAbilityUIHelpers::NotifyAbilityEvent(this, AbilityTag, false, OutResult);
-            return false;
-        }
-
-        if (!PassesOwnerTagGate(Def))
-        {
-            OutResult = E_SOTS_AbilityActivationResult::Failed_OwnerTags;
-            OnAbilityFailed.Broadcast(AbilityTag, OutResult);
-
-            UE_LOG(LogSOTSGAS, Log,
-                   TEXT("[AbilityComponent] Activation of '%s' on '%s' failed: owner tag gate."),
-                   *AbilityTag.ToString(),
-                   *GetOwner()->GetName());
-            SOTSAbilityUIHelpers::NotifyAbilityEvent(this, AbilityTag, false, OutResult);
-            return false;
-        }
 
     if (Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForActivate ||
         Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForBoth)
     {
-        if (!PassesSkillGate(Def))
-        {
-            OutResult = E_SOTS_AbilityActivationResult::Failed_SkillGate;
-            OnAbilityFailed.Broadcast(AbilityTag, OutResult);
+        const SOTSSkillGate::FSkillGateReport GateReport = SOTSSkillGate::Evaluate(this, Def);
+        const E_SOTS_AbilityActivateResult GateResult = SOTSSkillGate::MapToActivationResult(GateReport);
+        SOTSSkillGate::MaybeLogSkillGate(bDebugLogAbilitySkillGates, TEXT("Activate"), Params.AbilityTag, GateReport);
 
-            UE_LOG(LogSOTSGAS, Log,
-                   TEXT("[AbilityComponent] Activation of '%s' on '%s' failed: skill gate."),
-                   *AbilityTag.ToString(),
-                   *GetOwner()->GetName());
-            SOTSAbilityUIHelpers::NotifyAbilityEvent(this, AbilityTag, false, OutResult);
-            return false;
+        if (GateResult != E_SOTS_AbilityActivateResult::Success)
+        {
+            Report.Result = GateResult;
+            Report.BlockingSkillTag = GateReport.BlockingSkillTag;
+            Report.DebugReason = FString::Printf(TEXT("Skill gate failed (%s): %s"),
+                                                 *GateReport.BlockingSkillTag.ToString(),
+                                                 *GateReport.DebugReason);
+            if (Params.bCommit)
+            {
+                BroadcastActivationFailed(Report);
+            }
+            return Report;
         }
     }
 
-    if (!PassesInventoryGate(Def))
+    if (!Params.bCommit)
     {
-        OutResult = E_SOTS_AbilityActivationResult::Failed_InventoryGate;
-        OnAbilityFailed.Broadcast(AbilityTag, OutResult);
-
-        UE_LOG(LogSOTSGAS, Log,
-               TEXT("[AbilityComponent] Activation of '%s' on '%s' failed: inventory gate."),
-               *AbilityTag.ToString(),
-               *GetOwner()->GetName());
-        return false;
+        Report.Result = E_SOTS_AbilityActivateResult::Success;
+        return Report;
     }
 
+    F_SOTS_AbilityRuntimeState& State = RuntimeStates.FindOrAdd(Params.AbilityTag);
+    if (!State.Handle.bIsValid)
+    {
+        State.Handle.AbilityTag = Params.AbilityTag;
+        State.Handle.InternalId = NextInternalHandleId++;
+        State.Handle.bIsValid   = true;
+    }
+
+    if (bHasInventoryRequirement && Def.InventoryMode == E_SOTS_AbilityInventoryMode::RequireAndConsume)
+    {
+        const int32 ConsumeCount = 1;
+        const FSOTS_InventoryOpReport ConsumeReport = SOTSAbilityInventoryCosts::ConsumeItem(this, GetOwner(), Def.RequiredInventoryTags, ConsumeCount, bDebugLogAbilityInventoryCosts);
+        const E_SOTS_AbilityActivateResult ConsumeResult = SOTSAbilityInventoryCosts::MapToAbilityResult(ConsumeReport);
+
+        if (ConsumeResult != E_SOTS_AbilityActivateResult::Success)
+        {
+            Report.Result = ConsumeResult;
+            Report.DebugReason = FString::Printf(TEXT("Inventory consume %s x%d -> %s (%s)"),
+                                                 *ConsumeReport.ItemTag.ToString(),
+                                                 ConsumeReport.RequestedQty,
+                                                 *ResultToString(ConsumeResult),
+                                                 *ConsumeReport.DebugReason);
+            BroadcastActivationFailed(Report);
+            return Report;
+        }
+    }
+
+    // Commit: consume resources and spin up the instance.
     ConsumeChargesOnActivation(Def);
+    State.ActivationId = FGuid::NewGuid();
+    State.bIsActive    = true;
 
-    State.bIsActive = true;
-    OnAbilityActivated.Broadcast(AbilityTag, State.Handle);
-    OnAbilityActivatedWithContext.Broadcast(AbilityTag, State.Handle, Context);
+    // Compute remaining charges post-consumption.
+    int32 RemainingCharges = 0;
+    int32 MaxCharges = 0;
+    GetAbilityCharges(Params.AbilityTag, RemainingCharges, MaxCharges);
+    Report.RemainingCharges = RemainingCharges;
+    Report.MaxCharges = MaxCharges;
 
-    if (USOTS_AbilityBase** FoundAbility = AbilityInstances.Find(AbilityTag))
+    float CooldownRemaining = 0.0f;
+    bool bCooldownNow = false;
+    IsAbilityOnCooldown(Params.AbilityTag, bCooldownNow, CooldownRemaining);
+    Report.RemainingCooldown = CooldownRemaining;
+    Report.ActivationId = State.ActivationId;
+    Report.Result = E_SOTS_AbilityActivateResult::Success;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogAbilityActivationStarts)
     {
-        if (USOTS_AbilityBase* Ability = *FoundAbility)
-        {
-            Ability->K2_ActivateAbility(Context);
-        }
+        UE_LOG(LogSOTSGAS, Log, TEXT("[AbilityComponent] Activation start %s (%s)"),
+               *Params.AbilityTag.ToString(), *State.ActivationId.ToString(EGuidFormats::DigitsWithHyphensInBraces));
+    }
+#endif
+
+    USOTS_AbilityBase* AbilityInstance = AbilityInstances.FindRef(Params.AbilityTag);
+    if (!AbilityInstance)
+    {
+        AbilityInstance = USOTS_AbilityBase::GetAbilityInstance(this, Def);
+        AbilityInstances.Add(Params.AbilityTag, AbilityInstance);
     }
 
-    UE_LOG(LogSOTSGAS, Log,
-           TEXT("[AbilityComponent] Activation of '%s' on '%s' succeeded."),
-           *AbilityTag.ToString(),
-           *GetOwner()->GetName());
+    OnAbilityActivated.Broadcast(Params.AbilityTag, State.Handle);
+    OnAbilityActivatedWithContext.Broadcast(Params.AbilityTag, State.Handle, Params.Context);
+    BroadcastActivationStarted(Report);
 
+    if (AbilityInstance)
+    {
+        AbilityInstance->K2_ActivateAbility(Params.Context);
+    }
+
+    if (USOTS_AbilityFXSubsystem* FXSubsystem = USOTS_AbilityFXSubsystem::Get(this))
+    {
         if (Def.FXTag_OnActivate.IsValid())
         {
-            if (USOTS_FXManagerSubsystem* FX = USOTS_FXManagerSubsystem::Get())
-            {
-            AActor* OwnerActor = GetOwner();
-            AActor* InstigatorActor = Context.Instigator ? Context.Instigator : OwnerActor;
-            AActor* TargetActor = Context.TargetActor;
-
-            FVector Location = Context.TargetLocation;
-            if (Location.IsNearlyZero())
-            {
-                if (TargetActor)
-                {
-                    Location = TargetActor->GetActorLocation();
-                }
-                else if (InstigatorActor)
-                {
-                    Location = InstigatorActor->GetActorLocation();
-                }
-            }
-
-            const FRotator Rotation = InstigatorActor ? InstigatorActor->GetActorRotation() : FRotator::ZeroRotator;
-
-                FX->TriggerFXByTag(OwnerActor, Def.FXTag_OnActivate, InstigatorActor, TargetActor, Location, Rotation);
-            }
+            FXSubsystem->TriggerAbilityFX(Def.FXTag_OnActivate, Params.AbilityTag, GetOwner());
         }
+    }
 
-        SOTSAbilityUIHelpers::NotifyAbilityEvent(this, AbilityTag, true, E_SOTS_AbilityActivationResult::Success);
+    SOTSAbilityUIHelpers::NotifyAbilityEvent(this, Params.AbilityTag, /*bActivated*/ true, E_SOTS_AbilityActivationResult::Success);
+    BroadcastAbilityStateChanged(Params.AbilityTag);
 
-        BroadcastAbilityStateChanged(AbilityTag);
-
-    OutResult = E_SOTS_AbilityActivationResult::Success;
-    return true;
+    return Report;
 }
 
 void UAC_SOTS_Abilitys::CancelAllAbilities()
@@ -730,20 +978,28 @@ void UAC_SOTS_Abilitys::CancelAllAbilities()
 
         if (State.bIsActive)
         {
-            State.bIsActive = false;
-
-            if (USOTS_AbilityBase** FoundAbility = AbilityInstances.Find(AbilityTag))
-            {
-                if (USOTS_AbilityBase* Ability = *FoundAbility)
-                {
-                    Ability->K2_EndAbility();
-                }
-            }
-
-            OnAbilityEnded.Broadcast(AbilityTag, State.Handle);
-            BroadcastAbilityStateChanged(AbilityTag);
+            FinalizeActivation(AbilityTag, State, E_SOTS_AbilityEndReason::Cancelled);
         }
     }
+}
+
+void UAC_SOTS_Abilitys::FinalizeActivation(FGameplayTag AbilityTag, F_SOTS_AbilityRuntimeState& State, E_SOTS_AbilityEndReason EndReason)
+{
+    if (USOTS_AbilityBase** FoundAbility = AbilityInstances.Find(AbilityTag))
+    {
+        if (USOTS_AbilityBase* Ability = *FoundAbility)
+        {
+            Ability->K2_EndAbility();
+        }
+    }
+
+    const FGuid ActivationId = State.ActivationId;
+    State.bIsActive = false;
+    State.ActivationId.Invalidate();
+
+    OnAbilityEnded.Broadcast(AbilityTag, State.Handle);
+    BroadcastActivationEnded(AbilityTag, ActivationId, EndReason);
+    BroadcastAbilityStateChanged(AbilityTag);
 }
 
 void UAC_SOTS_Abilitys::GetAbilityCharges(FGameplayTag AbilityTag, int32& OutCurrentCharges, int32& OutMaxCharges) const
@@ -842,104 +1098,108 @@ bool UAC_SOTS_Abilitys::CanActivateAbility(FGameplayTag AbilityTag, FText& OutFa
 {
     OutFailureReason = FText::GetEmpty();
 
-    if (!AbilityTag.IsValid())
+    const FSOTS_AbilityActivateReport Report = const_cast<UAC_SOTS_Abilitys*>(this)->ProcessActivationRequest({ AbilityTag, F_SOTS_AbilityActivationContext(), /*bCommit*/ false });
+
+    if (Report.Result == E_SOTS_AbilityActivateResult::Success)
     {
-        OutFailureReason = FText::FromString(TEXT("Invalid ability tag."));
-        return false;
+        return true;
     }
 
-    F_SOTS_AbilityDefinition Def;
-    if (!const_cast<UAC_SOTS_Abilitys*>(this)->InternalGetDefinition(AbilityTag, Def))
+    switch (Report.Result)
     {
-        OutFailureReason = FText::FromString(TEXT("Ability definition not found."));
-        return false;
-    }
-
-    // Requirements (skill / global tags / stealth).
-    if (!EvaluateAbilityRequirementsForDefinition(Def, &OutFailureReason))
-    {
-        return false;
-    }
-
-    // Cooldown.
-    bool bIsOnCooldown = false;
-    float RemainingTime = 0.0f;
-    IsAbilityOnCooldown(AbilityTag, bIsOnCooldown, RemainingTime);
-    if (bIsOnCooldown)
-    {
-        OutFailureReason = FText::FromString(TEXT("Ability is on cooldown."));
-        return false;
-    }
-
-    // Charges / inventory gates.
-    if (!HasSufficientCharges(Def))
-    {
-        OutFailureReason = FText::FromString(TEXT("No charges remaining."));
-        return false;
-    }
-
-    if (!PassesInventoryGate(Def))
-    {
-        OutFailureReason = FText::FromString(TEXT("Required inventory items missing."));
-        return false;
-    }
-
-    if (!PassesOwnerTagGate(Def))
-    {
-        OutFailureReason = FText::FromString(TEXT("Ability blocked by owner tags."));
-        return false;
-    }
-
-    if (Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForActivate ||
-        Def.SkillGateMode == E_SOTS_AbilitySkillGateMode::RequireForBoth)
-    {
-        if (!PassesSkillGate(Def))
-        {
+        case E_SOTS_AbilityActivateResult::AbilityNotFound:
+            OutFailureReason = FText::FromString(TEXT("Ability definition not found."));
+            break;
+        case E_SOTS_AbilityActivateResult::InvalidOwner:
+            OutFailureReason = FText::FromString(TEXT("Invalid ability owner."));
+            break;
+        case E_SOTS_AbilityActivateResult::RegistryNotReady:
+            OutFailureReason = FText::FromString(TEXT("Ability registry not ready."));
+            break;
+        case E_SOTS_AbilityActivateResult::CooldownActive:
+            OutFailureReason = FText::FromString(TEXT("Ability is on cooldown."));
+            break;
+        case E_SOTS_AbilityActivateResult::NotEnoughCharges:
+            OutFailureReason = FText::FromString(TEXT("No charges remaining."));
+            break;
+        case E_SOTS_AbilityActivateResult::MissingRequiredItem:
+            OutFailureReason = FText::FromString(TEXT("Required inventory items missing."));
+            break;
+        case E_SOTS_AbilityActivateResult::BlockedByState:
+            OutFailureReason = FText::FromString(TEXT("Ability blocked by owner tags."));
+            break;
+        case E_SOTS_AbilityActivateResult::AbilityLocked:
             OutFailureReason = FText::FromString(TEXT("Required skills not unlocked."));
-            return false;
-        }
+            break;
+        case E_SOTS_AbilityActivateResult::SkillTreeMissing:
+            OutFailureReason = FText::FromString(TEXT("Skill tree subsystem unavailable."));
+            break;
+        case E_SOTS_AbilityActivateResult::SkillNotUnlocked:
+            OutFailureReason = FText::FromString(TEXT("Required skills not unlocked."));
+            break;
+        case E_SOTS_AbilityActivateResult::SkillPrereqNotMet:
+            OutFailureReason = FText::FromString(TEXT("Skill prerequisites not met."));
+            break;
+        default:
+            OutFailureReason = FText::FromString(Report.DebugReason);
+            break;
     }
 
-    return true;
+    return false;
 }
 
 bool UAC_SOTS_Abilitys::ActivateAbility(FGameplayTag AbilityTag, const F_SOTS_AbilityActivationContext& Context, FText& OutFailureReason)
 {
     OutFailureReason = FText::GetEmpty();
 
-    if (!CanActivateAbility(AbilityTag, OutFailureReason))
+    const FSOTS_AbilityActivateReport Report = ProcessActivationRequest({ AbilityTag, Context, /*bCommit*/ true });
+
+    if (Report.Result == E_SOTS_AbilityActivateResult::Success)
     {
-        return false;
+        return true;
     }
 
-    E_SOTS_AbilityActivationResult Result = E_SOTS_AbilityActivationResult::Failed_CustomCondition;
-    if (!TryActivateAbilityByTag(AbilityTag, Context, Result))
+    switch (Report.Result)
     {
-        if (Result == E_SOTS_AbilityActivationResult::Failed_Cooldown)
-        {
+        case E_SOTS_AbilityActivateResult::CooldownActive:
             OutFailureReason = FText::FromString(TEXT("Ability is on cooldown."));
-        }
-        else if (Result == E_SOTS_AbilityActivationResult::Failed_ChgDepleted)
-        {
+            break;
+        case E_SOTS_AbilityActivateResult::NotEnoughCharges:
             OutFailureReason = FText::FromString(TEXT("No charges remaining."));
-        }
-        else if (Result == E_SOTS_AbilityActivationResult::Failed_InventoryGate)
-        {
+            break;
+        case E_SOTS_AbilityActivateResult::MissingRequiredItem:
             OutFailureReason = FText::FromString(TEXT("Required inventory items missing."));
-        }
-        else if (Result == E_SOTS_AbilityActivationResult::Failed_OwnerTags)
-        {
+            break;
+        case E_SOTS_AbilityActivateResult::BlockedByState:
             OutFailureReason = FText::FromString(TEXT("Ability blocked by owner tags."));
-        }
-        else if (Result == E_SOTS_AbilityActivationResult::Failed_SkillGate)
-        {
+            break;
+        case E_SOTS_AbilityActivateResult::AbilityLocked:
             OutFailureReason = FText::FromString(TEXT("Required skills not unlocked."));
-        }
-
-        return false;
+            break;
+        case E_SOTS_AbilityActivateResult::SkillTreeMissing:
+            OutFailureReason = FText::FromString(TEXT("Skill tree subsystem unavailable."));
+            break;
+        case E_SOTS_AbilityActivateResult::SkillNotUnlocked:
+            OutFailureReason = FText::FromString(TEXT("Required skills not unlocked."));
+            break;
+        case E_SOTS_AbilityActivateResult::SkillPrereqNotMet:
+            OutFailureReason = FText::FromString(TEXT("Skill prerequisites not met."));
+            break;
+        case E_SOTS_AbilityActivateResult::RegistryNotReady:
+            OutFailureReason = FText::FromString(TEXT("Ability registry not ready."));
+            break;
+        case E_SOTS_AbilityActivateResult::InvalidOwner:
+            OutFailureReason = FText::FromString(TEXT("Invalid ability owner."));
+            break;
+        case E_SOTS_AbilityActivateResult::AbilityNotFound:
+            OutFailureReason = FText::FromString(TEXT("Ability definition not found."));
+            break;
+        default:
+            OutFailureReason = FText::FromString(Report.DebugReason);
+            break;
     }
 
-    return true;
+    return false;
 }
 
 bool UAC_SOTS_Abilitys::ForceGrantAbility(FGameplayTag AbilityTag, const F_SOTS_AbilityGrantOptions& Options, F_SOTS_AbilityHandle& OutHandle)
@@ -982,11 +1242,24 @@ bool UAC_SOTS_Abilitys::ForceRemoveAbility(FGameplayTag AbilityTag)
 
 void UAC_SOTS_Abilitys::GetSerializedState(F_SOTS_AbilityComponentSaveData& OutData) const
 {
+    OutData.Snapshot = BuildRuntimeSnapshot();
+
+    if (bValidateAbilitySnapshotOnSave)
+    {
+        TArray<FString> Warnings;
+        TArray<FString> Errors;
+        ValidateAbilitySnapshot(OutData.Snapshot, Warnings, Errors);
+        LogSnapshotMessages(TEXT("Save"), Warnings, Errors);
+    }
+
     OutData.SavedAbilities.Reset();
 
-    for (const TPair<FGameplayTag, F_SOTS_AbilityRuntimeState>& Pair : RuntimeStates)
+    TArray<FGameplayTag> SortedAbilityTags;
+    RuntimeStates.GetKeys(SortedAbilityTags);
+    SortedAbilityTags.Sort([](const FGameplayTag& A, const FGameplayTag& B){ return A.ToString() < B.ToString(); });
+
+    for (const FGameplayTag& AbilityTag : SortedAbilityTags)
     {
-        const FGameplayTag& AbilityTag = Pair.Key;
         F_SOTS_AbilityStateSnapshot Snapshot = BuildStateSnapshot(AbilityTag);
         OutData.SavedAbilities.Add(Snapshot);
     }
@@ -994,41 +1267,29 @@ void UAC_SOTS_Abilitys::GetSerializedState(F_SOTS_AbilityComponentSaveData& OutD
 
 void UAC_SOTS_Abilitys::ApplySerializedState(const F_SOTS_AbilityComponentSaveData& InData)
 {
-    RuntimeStates.Reset();
+    ApplySerializedState_WithReport(InData);
+}
 
-    for (const F_SOTS_AbilityStateSnapshot& Snapshot : InData.SavedAbilities)
+FSOTS_AbilityApplyReport UAC_SOTS_Abilitys::ApplySerializedState_WithReport(const F_SOTS_AbilityComponentSaveData& InData)
+{
+    FSOTS_AbilityRuntimeSnapshot SnapshotToApply = InData.Snapshot;
+
+    if (SnapshotToApply.Entries.Num() == 0 && InData.SavedAbilities.Num() > 0)
     {
-        if (!Snapshot.AbilityTag.IsValid())
-        {
-            continue;
-        }
-
-        F_SOTS_AbilityDefinition Def;
-        if (!InternalGetDefinition(Snapshot.AbilityTag, Def))
-        {
-            continue;
-        }
-
-        F_SOTS_AbilityRuntimeState& State = RuntimeStates.FindOrAdd(Snapshot.AbilityTag);
-        if (!State.Handle.bIsValid)
-        {
-            State.Handle.AbilityTag = Snapshot.AbilityTag;
-            State.Handle.InternalId = NextInternalHandleId++;
-            State.Handle.bIsValid   = true;
-        }
-
-        State.bIsActive      = Snapshot.bIsActive;
-        State.CurrentCharges = Snapshot.CurrentCharges;
-
-        const float WorldTime = GetWorldTime();
-        State.CooldownEndTime = (Snapshot.bIsOnCooldown && Snapshot.RemainingCooldown > 0.0f)
-                                ? WorldTime + Snapshot.RemainingCooldown
-                                : 0.0f;
-
-        BroadcastAbilityStateChanged(Snapshot.AbilityTag);
+        SnapshotToApply = BuildRuntimeSnapshotFromLegacyArray(InData.SavedAbilities);
     }
 
-    BroadcastAbilityListChanged();
+    const FSOTS_AbilityApplyReport Report = ApplyRuntimeSnapshot(SnapshotToApply);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogAbilitySnapshot)
+    {
+        UE_LOG(LogSOTSGAS, Log, TEXT("[AbilityComponent] ApplySerializedState Result=%d Applied=%d MissingDefs=%d Invalid=%d Reason=%s"),
+               static_cast<int32>(Report.Result), Report.AppliedCount, Report.SkippedMissingDefs, Report.SkippedInvalidEntries, *Report.DebugReason);
+    }
+#endif
+
+    return Report;
 }
 
 bool UAC_SOTS_Abilitys::EvaluateAbilityRequirementsForDefinition(const F_SOTS_AbilityDefinition& Def, FText* OutFailureReason) const
@@ -1078,6 +1339,224 @@ F_SOTS_AbilityStateSnapshot UAC_SOTS_Abilitys::BuildStateSnapshot(FGameplayTag A
     return Snapshot;
 }
 
+FSOTS_AbilityRuntimeSnapshot UAC_SOTS_Abilitys::BuildRuntimeSnapshot() const
+{
+    FSOTS_AbilityRuntimeSnapshot Snapshot;
+    Snapshot.SchemaVersion = 1;
+    Snapshot.SavedAtTimeSeconds = GetWorldTime();
+
+    TArray<FGameplayTag> SortedAbilityTags;
+    RuntimeStates.GetKeys(SortedAbilityTags);
+    SortedAbilityTags.Sort([](const FGameplayTag& A, const FGameplayTag& B){ return A.ToString() < B.ToString(); });
+
+    for (const FGameplayTag& AbilityTag : SortedAbilityTags)
+    {
+        FSOTS_AbilityRuntimeEntry Entry;
+        Entry.AbilityTag = AbilityTag;
+        Entry.bGranted = true;
+
+        const F_SOTS_AbilityRuntimeState* State = RuntimeStates.Find(AbilityTag);
+        Entry.bWasActive = State ? State->bIsActive : false;
+        Entry.CurrentCharges = State ? State->CurrentCharges : 0;
+
+        bool bIsOnCooldown = false;
+        float RemainingCooldown = 0.0f;
+        IsAbilityOnCooldown(AbilityTag, bIsOnCooldown, RemainingCooldown);
+        Entry.CooldownRemainingSeconds = bIsOnCooldown ? RemainingCooldown : 0.0f;
+
+        Snapshot.Entries.Add(Entry);
+    }
+
+    return Snapshot;
+}
+
+FSOTS_AbilityRuntimeSnapshot UAC_SOTS_Abilitys::BuildRuntimeSnapshotFromLegacyArray(const TArray<F_SOTS_AbilityStateSnapshot>& LegacySnapshots) const
+{
+    FSOTS_AbilityRuntimeSnapshot Snapshot;
+    Snapshot.SchemaVersion = 1;
+    Snapshot.SavedAtTimeSeconds = GetWorldTime();
+
+    for (const F_SOTS_AbilityStateSnapshot& Legacy : LegacySnapshots)
+    {
+        if (!Legacy.AbilityTag.IsValid())
+        {
+            continue;
+        }
+
+        FSOTS_AbilityRuntimeEntry Entry;
+        Entry.AbilityTag = Legacy.AbilityTag;
+        Entry.bGranted = true;
+        Entry.bWasActive = Legacy.bIsActive;
+        Entry.CurrentCharges = Legacy.CurrentCharges;
+        Entry.CooldownRemainingSeconds = Legacy.bIsOnCooldown ? Legacy.RemainingCooldown : 0.0f;
+
+        Snapshot.Entries.Add(Entry);
+    }
+
+    return Snapshot;
+}
+
+bool UAC_SOTS_Abilitys::ValidateAbilitySnapshot(const FSOTS_AbilityRuntimeSnapshot& Snapshot, TArray<FString>& OutWarnings, TArray<FString>& OutErrors) const
+{
+    if (Snapshot.SchemaVersion <= 0)
+    {
+        OutErrors.Add(TEXT("Snapshot schema version must be > 0."));
+    }
+
+    if (Snapshot.SchemaVersion > 1)
+    {
+        OutWarnings.Add(FString::Printf(TEXT("Snapshot schema version %d is newer than supported version 1. Attempting best-effort apply."), Snapshot.SchemaVersion));
+    }
+
+    TSet<FGameplayTag> SeenTags;
+    for (const FSOTS_AbilityRuntimeEntry& Entry : Snapshot.Entries)
+    {
+        if (!Entry.AbilityTag.IsValid())
+        {
+            OutErrors.Add(TEXT("Snapshot entry has invalid ability tag."));
+            continue;
+        }
+
+        if (SeenTags.Contains(Entry.AbilityTag))
+        {
+            OutWarnings.Add(FString::Printf(TEXT("Duplicate snapshot entry for %s. Last entry wins."), *Entry.AbilityTag.ToString()));
+        }
+        SeenTags.Add(Entry.AbilityTag);
+
+        if (Entry.CurrentCharges < 0)
+        {
+            OutWarnings.Add(FString::Printf(TEXT("Snapshot charges clamped to 0 for %s (was %d)."), *Entry.AbilityTag.ToString(), Entry.CurrentCharges));
+        }
+
+        if (Entry.CooldownRemainingSeconds < 0.0f)
+        {
+            OutWarnings.Add(FString::Printf(TEXT("Snapshot cooldown clamped to 0 for %s (was %.2f)."), *Entry.AbilityTag.ToString(), Entry.CooldownRemainingSeconds));
+        }
+    }
+
+    return OutErrors.IsEmpty();
+}
+
+FSOTS_AbilityApplyReport UAC_SOTS_Abilitys::ApplyRuntimeSnapshot(const FSOTS_AbilityRuntimeSnapshot& Snapshot)
+{
+    FSOTS_AbilityApplyReport Report;
+
+    if (!GetRegistry())
+    {
+        Report.Result = ESOTS_AbilityApplyResult::DeferredRegistryNotReady;
+        Report.DebugReason = TEXT("Ability registry not ready");
+        return Report;
+    }
+
+    TArray<FString> Warnings;
+    TArray<FString> Errors;
+    if (bValidateAbilitySnapshotOnLoad && !ValidateAbilitySnapshot(Snapshot, Warnings, Errors))
+    {
+        Report.Result = ESOTS_AbilityApplyResult::ValidationFailed;
+        Report.SkippedInvalidEntries = Errors.Num();
+        Report.DebugReason = Errors.Num() > 0 ? Errors[0] : TEXT("Snapshot validation failed");
+        LogSnapshotMessages(TEXT("Apply"), Warnings, Errors);
+        return Report;
+    }
+
+    LogSnapshotMessages(TEXT("Apply"), Warnings, Errors);
+
+    TMap<FGameplayTag, FSOTS_AbilityRuntimeEntry> DedupedEntries;
+    for (const FSOTS_AbilityRuntimeEntry& Entry : Snapshot.Entries)
+    {
+        if (!Entry.AbilityTag.IsValid())
+        {
+            Report.SkippedInvalidEntries++;
+            continue;
+        }
+
+        DedupedEntries.Add(Entry.AbilityTag, Entry); // last-wins determinism
+    }
+
+    TArray<FGameplayTag> SortedTags;
+    DedupedEntries.GetKeys(SortedTags);
+    SortedTags.Sort([](const FGameplayTag& A, const FGameplayTag& B){ return A.ToString() < B.ToString(); });
+
+    RuntimeStates.Reset();
+
+    const float WorldTime = GetWorldTime();
+
+    for (const FGameplayTag& AbilityTag : SortedTags)
+    {
+        const FSOTS_AbilityRuntimeEntry& Entry = DedupedEntries[AbilityTag];
+
+        if (!Entry.bGranted)
+        {
+            continue;
+        }
+
+        F_SOTS_AbilityDefinition Def;
+        if (!InternalGetDefinition(AbilityTag, Def))
+        {
+            Report.SkippedMissingDefs++;
+            continue;
+        }
+
+        F_SOTS_AbilityRuntimeState& State = RuntimeStates.FindOrAdd(AbilityTag);
+        if (!State.Handle.bIsValid)
+        {
+            State.Handle.AbilityTag = AbilityTag;
+            State.Handle.InternalId = NextInternalHandleId++;
+            State.Handle.bIsValid   = true;
+        }
+
+        State.bIsActive = false; // clear mid-activation
+        State.ActivationId.Invalidate();
+
+        const int32 MaxCharges = (Def.ChargeMode == E_SOTS_AbilityChargeMode::InventoryLinked) ? INT32_MAX : Def.MaxCharges;
+        const int32 ClampedCharges = FMath::Clamp(Entry.CurrentCharges, 0, MaxCharges > 0 ? MaxCharges : INT32_MAX);
+        State.CurrentCharges = ClampedCharges;
+
+        const float ClampedCooldown = FMath::Max(0.0f, Entry.CooldownRemainingSeconds);
+        State.CooldownEndTime = ClampedCooldown > 0.0f ? WorldTime + ClampedCooldown : 0.0f;
+
+        Report.AppliedCount++;
+        BroadcastAbilityStateChanged(AbilityTag);
+    }
+
+    BroadcastAbilityListChanged();
+
+    if (Report.AppliedCount == 0 && Report.SkippedMissingDefs == 0 && Report.SkippedInvalidEntries == 0)
+    {
+        Report.Result = ESOTS_AbilityApplyResult::NoOp;
+    }
+    else if (Report.SkippedMissingDefs > 0 || Report.SkippedInvalidEntries > 0)
+    {
+        Report.Result = ESOTS_AbilityApplyResult::PartialApplied;
+    }
+    else
+    {
+        Report.Result = ESOTS_AbilityApplyResult::Applied;
+    }
+
+    return Report;
+}
+
+void UAC_SOTS_Abilitys::LogSnapshotMessages(const TCHAR* Prefix, const TArray<FString>& Warnings, const TArray<FString>& Errors) const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!bDebugLogAbilitySnapshot)
+    {
+        return;
+    }
+
+    for (const FString& Warning : Warnings)
+    {
+        UE_LOG(LogSOTSGAS, Warning, TEXT("[AbilityComponent][%s] %s"), Prefix, *Warning);
+    }
+
+    for (const FString& Error : Errors)
+    {
+        UE_LOG(LogSOTSGAS, Error, TEXT("[AbilityComponent][%s] %s"), Prefix, *Error);
+    }
+#endif
+}
+
 void UAC_SOTS_Abilitys::BroadcastAbilityListChanged()
 {
     OnAbilitiesChanged.Broadcast(this);
@@ -1089,7 +1568,39 @@ void UAC_SOTS_Abilitys::BroadcastAbilityStateChanged(FGameplayTag AbilityTag)
     OnAbilityStateChanged.Broadcast(AbilityTag, Snapshot);
 }
 
+void UAC_SOTS_Abilitys::BroadcastActivationStarted(const FSOTS_AbilityActivateReport& Report)
+{
+    OnSOTSAbilityActivationStarted.Broadcast(Report);
+}
+
+void UAC_SOTS_Abilitys::BroadcastActivationFailed(const FSOTS_AbilityActivateReport& Report)
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogAbilityActivationFailures)
+    {
+        UE_LOG(LogSOTSGAS, Warning, TEXT("[AbilityComponent] Activation failed %s (%s)"),
+               *Report.AbilityTag.ToString(), *Report.DebugReason);
+    }
+#endif
+
+    OnSOTSAbilityActivationFailed.Broadcast(Report);
+
+    const E_SOTS_AbilityActivationResult LegacyResult = MapReportToLegacy(Report);
+    OnAbilityFailed.Broadcast(Report.AbilityTag, LegacyResult);
+    SOTSAbilityUIHelpers::NotifyAbilityEvent(this, Report.AbilityTag, /*bActivated*/ false, LegacyResult);
+}
+
+void UAC_SOTS_Abilitys::BroadcastActivationEnded(FGameplayTag AbilityTag, const FGuid& ActivationId, E_SOTS_AbilityEndReason EndReason)
+{
+    OnSOTSAbilityActivationEnded.Broadcast(AbilityTag, ActivationId, EndReason);
+}
+
 void UAC_SOTS_Abilitys::PushProfileStateToSubsystem()
+{
+    PushProfileStateToSubsystem_WithResult();
+}
+
+bool UAC_SOTS_Abilitys::PushProfileStateToSubsystem_WithResult()
 {
     if (!AbilitySubsystem)
     {
@@ -1098,15 +1609,21 @@ void UAC_SOTS_Abilitys::PushProfileStateToSubsystem()
 
     if (!AbilitySubsystem)
     {
-        return;
+        return false;
     }
 
     FSOTS_AbilityProfileData Data;
     GetKnownAbilities(Data.GrantedAbilityTags);
     AbilitySubsystem->ApplyProfileData(Data);
+    return true;
 }
 
 void UAC_SOTS_Abilitys::PullProfileStateFromSubsystem()
+{
+    PullProfileStateFromSubsystem_WithResult();
+}
+
+bool UAC_SOTS_Abilitys::PullProfileStateFromSubsystem_WithResult()
 {
     if (!AbilitySubsystem)
     {
@@ -1115,15 +1632,21 @@ void UAC_SOTS_Abilitys::PullProfileStateFromSubsystem()
 
     if (!AbilitySubsystem)
     {
-        return;
+        return false;
     }
 
     FSOTS_AbilityProfileData Data;
     AbilitySubsystem->BuildProfileData(Data);
 
+    bool bAllGranted = true;
     for (const FGameplayTag& AbilityTag : Data.GrantedAbilityTags)
     {
         F_SOTS_AbilityHandle Handle;
-        GrantAbility(AbilityTag, F_SOTS_AbilityGrantOptions(), Handle);
+        if (!GrantAbility(AbilityTag, F_SOTS_AbilityGrantOptions(), Handle))
+        {
+            bAllGranted = false;
+        }
     }
+
+    return bAllGranted;
 }

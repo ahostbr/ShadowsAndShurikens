@@ -1,47 +1,48 @@
 #include "SOTS_AIPerceptionComponent.h"
 
-#include "SOTS_GlobalStealthManagerSubsystem.h"
-#include "SOTS_AIPerceptionConfig.h"
-#include "SOTS_AIPerceptionSubsystem.h"
-#include "SOTS_AIPerceptionTypes.h"
-#include "SOTS_FXManagerSubsystem.h"
-#include "SOTS_TagAccessHelpers.h"
-#include "SOTS_GlobalStealthTypes.h"
-
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "Engine/World.h"
-#include "GameFramework/Character.h"
-#include "Kismet/GameplayStatics.h"
+#include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "SOTS_AIGuardPerceptionDataAsset.h"
+#include "SOTS_AIPerceptionConfig.h"
+#include "SOTS_AIPerceptionSubsystem.h"
+#include "SOTS_FXManagerSubsystem.h"
+#include "SOTS_GameplayTagManagerSubsystem.h"
+#include "SOTS_GlobalStealthManagerSubsystem.h"
+#include "TimerManager.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogSOTS_AIPerceptionTelemetry, Log, Verbose);
-
-namespace SOTS_AIPerception_BBKeys
-{
-    static const FName TargetActor(TEXT("BB_SOTS_TargetActor"));
-    static const FName HasLOSToTarget(TEXT("BB_SOTS_HasLOSToTarget"));
-    static const FName LastKnownTargetLocation(TEXT("BB_SOTS_LastKnownTargetLocation"));
-    static const FName Awareness(TEXT("BB_SOTS_Awareness"));
-    static const FName PerceptionState(TEXT("BB_SOTS_PerceptionState"));
-}
+DEFINE_LOG_CATEGORY(LogSOTS_AIPerception);
+DEFINE_LOG_CATEGORY(LogSOTS_AIPerceptionTelemetry);
 
 USOTS_AIPerceptionComponent::USOTS_AIPerceptionComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-
     PerceptionUpdateInterval = 0.2f;
+
     CurrentState = ESOTS_PerceptionState::Unaware;
-    bPerceptionSuppressed = false;
-    StealthCurveCached = nullptr;
+    PreviousState = ESOTS_PerceptionState::Unaware;
+
     CurrentSuspicion = 0.0f;
     PreviousSuspicion = 0.0f;
+    bPerceptionSuppressed = false;
+    bIsDetected = false;
+    PendingHearingStrength = 0.0f;
+    LastSuspicionNormalized = 0.0f;
+    LastSuspicionEventValue = -1.0f;
 }
 
 void USOTS_AIPerceptionComponent::BeginPlay()
 {
     Super::BeginPlay();
+
+    ResetPerceptionState(ESOTS_AIPerceptionResetReason::BeginPlay);
+    InitializePerceptionTimer();
 
     if (UWorld* World = GetWorld())
     {
@@ -49,48 +50,44 @@ void USOTS_AIPerceptionComponent::BeginPlay()
         {
             Subsys->RegisterPerceptionComponent(this);
         }
-
-        if (PerceptionUpdateInterval > 0.f)
-        {
-            World->GetTimerManager().SetTimer(
-                PerceptionTimerHandle,
-                this,
-                &USOTS_AIPerceptionComponent::UpdatePerception,
-                PerceptionUpdateInterval,
-                true);
-        }
-
-        if (PerceptionConfig && PerceptionConfig->ShadowCheckInterval > 0.0f)
-        {
-            const double Now = World->GetTimeSeconds();
-            NextShadowCheckTimeSeconds = Now + FMath::FRandRange(0.0f, PerceptionConfig->ShadowCheckInterval);
-        }
     }
-
-    RefreshWatchedTargets();
 }
 
 void USOTS_AIPerceptionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ClearPerceptionTimers();
+
     if (UWorld* World = GetWorld())
     {
-        World->GetTimerManager().ClearTimer(PerceptionTimerHandle);
-        World->GetTimerManager().ClearTimer(SuppressionTimerHandle);
-
         if (USOTS_AIPerceptionSubsystem* Subsys = World->GetSubsystem<USOTS_AIPerceptionSubsystem>())
         {
             Subsys->UnregisterPerceptionComponent(this);
         }
     }
 
+    ResetInternalState(ESOTS_AIPerceptionResetReason::EndPlay, true);
+
     Super::EndPlay(EndPlayReason);
+}
+
+void USOTS_AIPerceptionComponent::OnUnregister()
+{
+    ClearPerceptionTimers();
+    ResetInternalState(ESOTS_AIPerceptionResetReason::EndPlay, true);
+    Super::OnUnregister();
+}
+
+void USOTS_AIPerceptionComponent::ResetPerceptionState(ESOTS_AIPerceptionResetReason ResetReason)
+{
+    ResetInternalState(ResetReason, true);
+    UpdateBlackboardAndTags();
 }
 
 float USOTS_AIPerceptionComponent::GetAwarenessForTarget(AActor* Target) const
 {
     if (!Target)
     {
-        return 0.f;
+        return 0.0f;
     }
 
     if (const FSOTS_PerceivedTargetState* State = TargetStates.Find(Target))
@@ -98,7 +95,7 @@ float USOTS_AIPerceptionComponent::GetAwarenessForTarget(AActor* Target) const
         return State->Awareness;
     }
 
-    return 0.f;
+    return 0.0f;
 }
 
 bool USOTS_AIPerceptionComponent::HasLineOfSightToTarget(AActor* Target) const
@@ -110,7 +107,7 @@ bool USOTS_AIPerceptionComponent::HasLineOfSightToTarget(AActor* Target) const
 
     if (const FSOTS_PerceivedTargetState* State = TargetStates.Find(Target))
     {
-        return State->SightScore > 0.f;
+        return State->SightScore > 0.0f || State->LastVisiblePoints > 0;
     }
 
     return false;
@@ -120,13 +117,15 @@ FSOTS_PerceivedTargetState USOTS_AIPerceptionComponent::GetTargetState(AActor* T
 {
     bFound = false;
 
-    if (Target)
+    if (!Target)
     {
-        if (const FSOTS_PerceivedTargetState* State = TargetStates.Find(Target))
-        {
-            bFound = true;
-            return *State;
-        }
+        return FSOTS_PerceivedTargetState();
+    }
+
+    if (const FSOTS_PerceivedTargetState* State = TargetStates.Find(Target))
+    {
+        bFound = true;
+        return *State;
     }
 
     return FSOTS_PerceivedTargetState();
@@ -134,15 +133,14 @@ FSOTS_PerceivedTargetState USOTS_AIPerceptionComponent::GetTargetState(AActor* T
 
 float USOTS_AIPerceptionComponent::GetCurrentSuspicion01() const
 {
-    if (!GuardConfig)
+    if (!FMath::IsFinite(CurrentSuspicion))
     {
         return 0.0f;
     }
 
-    const float MaxSuspicion =
-        (GuardConfig->Config.MaxSuspicion > 0.0f)
-            ? GuardConfig->Config.MaxSuspicion
-            : 1.0f;
+    const float MaxSuspicion = (GuardConfig && GuardConfig->Config.MaxSuspicion > 0.0f)
+        ? GuardConfig->Config.MaxSuspicion
+        : 1.0f;
 
     if (MaxSuspicion <= 0.0f)
     {
@@ -150,6 +148,93 @@ float USOTS_AIPerceptionComponent::GetCurrentSuspicion01() const
     }
 
     return FMath::Clamp(CurrentSuspicion / MaxSuspicion, 0.0f, 1.0f);
+}
+
+void USOTS_AIPerceptionComponent::InitializePerceptionTimer()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    FTimerManager& TimerManager = World->GetTimerManager();
+    TimerManager.ClearTimer(PerceptionTimerHandle);
+
+    const float Interval = FMath::Max(PerceptionUpdateInterval, 0.01f);
+    TimerManager.SetTimer(PerceptionTimerHandle, this, &USOTS_AIPerceptionComponent::UpdatePerception, Interval, true);
+}
+
+void USOTS_AIPerceptionComponent::ClearPerceptionTimers()
+{
+    if (UWorld* World = GetWorld())
+    {
+        FTimerManager& TimerManager = World->GetTimerManager();
+        TimerManager.ClearTimer(PerceptionTimerHandle);
+        TimerManager.ClearTimer(SuppressionTimerHandle);
+    }
+}
+
+void USOTS_AIPerceptionComponent::ResetInternalState(ESOTS_AIPerceptionResetReason ResetReason, bool bResetTargets)
+{
+    LastResetReason = ResetReason;
+
+    bPerceptionSuppressed = false;
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(SuppressionTimerHandle);
+    }
+
+    if (bResetTargets)
+    {
+        WatchedActors.Reset();
+        TargetStates.Reset();
+        PrimaryTarget = nullptr;
+    }
+
+    CurrentSuspicion = 0.0f;
+    PreviousSuspicion = 0.0f;
+    LastStimulusTimeSeconds = 0.0;
+    LastDetectionChangeTimeSeconds = 0.0;
+    LastDetectionEnterTimeSeconds = 0.0;
+    LastSuspicionEventTimeSeconds = 0.0;
+    LastSuspicionEventValue = -1.0f;
+    bIsDetected = false;
+    PendingHearingStrength = 0.0f;
+    LastSuspicionNormalized = 0.0f;
+    LastStimulusCache = FSOTS_LastPerceptionStimulus();
+
+    TracesUsedThisUpdate = 0;
+    TargetRoundRobinIndex = 0;
+    NextShadowCheckTimeSeconds = 0.0;
+    ShadowTracesUsedThisSecond = 0;
+    ShadowTraceSecondStamp = 0;
+
+    NextTelemetryTimeSeconds = 0.0;
+
+    CachedGSM.Reset();
+    LastGSMReportTimeSeconds = 0.0;
+    LastReportedSuspicion01 = -1.0f;
+    bForceNextGSMReport = false;
+    bHasPendingGSMLocation = false;
+    PendingGSMLocation = FVector::ZeroVector;
+    PendingGSMReasonTag = FGameplayTag();
+    LastGSMReasonTag = FGameplayTag();
+
+    StealthCurveCached = nullptr;
+
+    if (CurrentState == ESOTS_PerceptionState::Unaware)
+    {
+        ApplyPerceptionStateTags(CurrentState);
+    }
+    else
+    {
+        SetPerceptionState(ESOTS_PerceptionState::Unaware);
+    }
+
+    PreviousState = ESOTS_PerceptionState::Unaware;
+    ApplyLOSStateTags(false);
 }
 
 void USOTS_AIPerceptionComponent::SuppressPerceptionForDuration(float Seconds)
@@ -508,17 +593,31 @@ void USOTS_AIPerceptionComponent::HandleReportedNoise(const FVector& Location, f
     // Simple hearing bump for the primary target (usually player).
     const float Delta = FMath::Clamp(1.0f - (Distance / Radius), 0.0f, 1.0f);
 
-    for (auto& Pair : TargetStates)
+    AActor* PrimaryTargetActor = ResolvePrimaryTarget();
+    if (!PrimaryTargetActor)
     {
-        FSOTS_PerceivedTargetState& State = Pair.Value;
-        State.HearingScore = FMath::Clamp(State.HearingScore + Delta, 0.0f, 1.0f);
+        return;
     }
 
-    // Suspicion bump from hearing event.
+    FSOTS_PerceivedTargetState& State = TargetStates.FindOrAdd(PrimaryTargetActor);
+    State.Target = PrimaryTargetActor;
+    State.HearingScore = FMath::Clamp(State.HearingScore + Delta, 0.0f, 1.0f);
+
+    // Suspicion bump from hearing event is now handled in UpdateSuspicionModel via PendingHearingStrength.
     if (GuardConfig)
     {
-        PreviousSuspicion = CurrentSuspicion;
-        CurrentSuspicion += GuardConfig->Config.HearingSuspicionPerEvent;
+        const float DeltaStrength = FMath::Clamp(1.0f - (Distance / Radius), 0.0f, 1.0f);
+        PendingHearingStrength = FMath::Max(PendingHearingStrength, DeltaStrength);
+
+        UpdateLastStimulusCache(ESOTS_LocalSense::Hearing, DeltaStrength, Location, PrimaryTargetActor, true);
+
+        // Force a GSM report with a clear hearing reason and location.
+        PendingGSMReasonTag = GuardConfig->Config.ReasonTag_Hearing.IsValid()
+            ? GuardConfig->Config.ReasonTag_Hearing
+            : GuardConfig->Config.ReasonTag_Generic;
+        PendingGSMLocation = Location;
+        bHasPendingGSMLocation = true;
+        bForceNextGSMReport = true;
     }
 }
 
@@ -526,7 +625,12 @@ void USOTS_AIPerceptionComponent::RefreshWatchedTargets()
 {
     WatchedActors.Reset();
 
-    if (UWorld* World = GetWorld())
+    if (AActor* PrimaryTargetActor = ResolvePrimaryTarget())
+    {
+        WatchedActors.Add(PrimaryTargetActor);
+        TargetStates.FindOrAdd(PrimaryTargetActor).Target = PrimaryTargetActor;
+    }
+    else if (UWorld* World = GetWorld())
     {
         for (TSubclassOf<AActor> Class : WatchedActorClasses)
         {
@@ -542,9 +646,25 @@ void USOTS_AIPerceptionComponent::RefreshWatchedTargets()
             {
                 if (Actor)
                 {
-                    WatchedActors.AddUnique(Actor);
+                    PrimaryTarget = Actor;
+                    WatchedActors.Add(Actor);
+                    TargetStates.FindOrAdd(Actor).Target = Actor;
+                    break;
                 }
             }
+
+            if (PrimaryTarget.IsValid())
+            {
+                break;
+            }
+        }
+    }
+
+    for (auto It = TargetStates.CreateIterator(); It; ++It)
+    {
+        if (!IsPrimaryTarget(It.Key().Get()))
+        {
+            It.RemoveCurrent();
         }
     }
 }
@@ -582,6 +702,12 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
         {
             TargetStates.FindOrAdd(Target).Target = Target;
         }
+    }
+
+    if (WatchedActors.Num() == 0)
+    {
+        CurrentSuspicion = FMath::Max(0.0f, CurrentSuspicion - PerceptionConfig->SuspicionDecayPerSecond * DeltaSeconds);
+        return;
     }
 
     ESOTS_PerceptionState HighestState = ESOTS_PerceptionState::Unaware;
@@ -679,6 +805,14 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
     {
         PreviousSuspicion = CurrentSuspicion;
 
+        float SightStrength = 0.0f;
+        float HearingStrength = PendingHearingStrength;
+        float ShadowStrength = 0.0f;
+        ESOTS_LocalSense DominantSenseHint = ESOTS_LocalSense::Unknown;
+
+        FGameplayTag AccumulatedReasonTag = PendingGSMReasonTag;
+        bool bForceReportThisFrame = bForceNextGSMReport;
+
         // Choose primary target (highest awareness) for suspicion purposes.
         float BestAwareness = -1.0f;
 
@@ -694,7 +828,7 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
 
         const FSOTS_AIGuardPerceptionConfig& Cfg = GuardConfig->Config;
 
-        // Increase suspicion when we have clear LOS to the primary target.
+        // Sight stimulus: normalize using target-point visibility if available.
         if (BestState && BestState->SightScore > 0.0f)
         {
             float VisibilityMultiplier = 1.0f;
@@ -710,11 +844,23 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
                 VisibilityMultiplier = ComputeVisibilitySuspicionMultiplier(Vis, PerceptionConfig);
             }
 
-            CurrentSuspicion += Cfg.SightSuspicionPerSecond * DeltaSeconds * VisibilityMultiplier;
+            SightStrength = FMath::Clamp(VisibilityMultiplier, 0.0f, 1.0f);
+            DominantSenseHint = ESOTS_LocalSense::Sight;
+
+            if (!AccumulatedReasonTag.IsValid())
+            {
+                AccumulatedReasonTag = Cfg.ReasonTag_Sight.IsValid() ? Cfg.ReasonTag_Sight : Cfg.ReasonTag_Generic;
+            }
+
+            if (AActor* SightActor = BestState->Target.Get())
+            {
+                UpdateLastStimulusCache(ESOTS_LocalSense::Sight, SightStrength, BestState->LastKnownLocation, SightActor, true);
+            }
+
             bHasLOSOnPrimary = true;
         }
 
-        // Optional shadow awareness (secondary bump via GSM cached shadow point; never enumerates lights).
+        // Optional shadow awareness (secondary stimulus via GSM cached shadow point; never enumerates lights).
         if (PerceptionConfig->bEnableShadowAwareness)
         {
             UWorld* World = GetWorld();
@@ -765,11 +911,15 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
 
                                     if (bShadowVisible)
                                     {
-                                        if (FSOTS_PerceivedTargetState* PlayerState = TargetStates.Find(PlayerActor))
+                                        ShadowStrength = 1.0f;
+                                        DominantSenseHint = (SightStrength > ShadowStrength) ? DominantSenseHint : ESOTS_LocalSense::Shadow;
+
+                                        if (!AccumulatedReasonTag.IsValid())
                                         {
-                                            const float ShadowDelta = PerceptionConfig->ShadowSuspicionGainPerSecond * DeltaSeconds;
-                                            CurrentSuspicion += ShadowDelta;
+                                            AccumulatedReasonTag = Cfg.ReasonTag_Shadow.IsValid() ? Cfg.ReasonTag_Shadow : Cfg.ReasonTag_Generic;
                                         }
+
+                                        UpdateLastStimulusCache(ESOTS_LocalSense::Shadow, ShadowStrength, Cand.ShadowPointWS, PlayerActor, true);
                                     }
 
                                 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
@@ -789,31 +939,41 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
             }
         }
 
-        // Passive decay each update.
-        CurrentSuspicion -= Cfg.SuspicionDecayPerSecond * DeltaSeconds;
+        // Centralized suspicion update (ramps, decay, hysteresis, clamps).
+        bool bDetectedChanged = false;
+        bool bDetectedNow = false;
+        SuspicionNormalized = UpdateSuspicionModel(
+            DeltaSeconds,
+            SightStrength,
+            HearingStrength,
+            ShadowStrength,
+            DominantSenseHint,
+            AccumulatedReasonTag,
+            bDetectedChanged,
+            bDetectedNow);
 
-        // Clamp to [0, MaxSuspicion].
-        const float MaxSuspicion =
-            (Cfg.MaxSuspicion > 0.0f) ? Cfg.MaxSuspicion : 1.0f;
+        // Consume one-shot hearing stimulus after application.
+        PendingHearingStrength = 0.0f;
 
-        CurrentSuspicion = FMath::Clamp(CurrentSuspicion, 0.0f, MaxSuspicion);
-
-        // Fold normalized suspicion into the global stealth manager.
-        SuspicionNormalized =
-            (MaxSuspicion > 0.0f)
-                ? FMath::Clamp(CurrentSuspicion / MaxSuspicion, 0.0f, 1.0f)
-                : 0.0f;
-
-        if (USOTS_GlobalStealthManagerSubsystem* GSM =
-                USOTS_GlobalStealthManagerSubsystem::Get(this))
+        if (HighestState != CurrentState)
         {
-            if (AActor* OwnerActor = GetOwner())
-            {
-                GSM->ReportAISuspicion(OwnerActor, SuspicionNormalized);
-            }
+            bForceReportThisFrame = true;
         }
 
+        if (!AccumulatedReasonTag.IsValid())
+        {
+            AccumulatedReasonTag = Cfg.ReasonTag_Generic;
+        }
+
+        const FVector* ReportLocationPtr = bHasPendingGSMLocation ? &PendingGSMLocation : nullptr;
+        ReportSuspicionToGSM(SuspicionNormalized, AccumulatedReasonTag, ReportLocationPtr, bForceReportThisFrame);
+
+        bForceNextGSMReport = false;
+        bHasPendingGSMLocation = false;
+        PendingGSMReasonTag = FGameplayTag();
+
         // Tag transitions: fully alerted / lost sight thresholds.
+        const float MaxSuspicion = (Cfg.MaxSuspicion > 0.0f) ? Cfg.MaxSuspicion : 1.0f;
         const float CalmThreshold = MaxSuspicion * 0.2f;
 
         if (AActor* OwnerActor = GetOwner())
@@ -884,6 +1044,7 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
     LogTelemetrySnapshot(NumTargets, EvaluatedTargetsCount, MaxTargetsToEvaluate, bHasLOSOnPrimary, BestState, SuspicionNormalized);
 
     // Optional debug correlation between local suspicion and GSM aggregate.
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bDebugSuspicion)
     {
         AActor* OwnerActor = GetOwner();
@@ -894,7 +1055,7 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
             GlobalAISusp01 = GSM->GetCurrentStealthBreakdown().AISuspicion01;
         }
 
-        UE_LOG(LogTemp, Verbose,
+        UE_LOG(LogSOTS_AIPerceptionTelemetry, Verbose,
             TEXT("[AIPerc] Guard=%s Susp=%.2f Norm=%.2f GlobalAISusp=%.2f State=%d HasLOS=%s"),
             *GetNameSafe(OwnerActor),
             CurrentSuspicion,
@@ -903,6 +1064,7 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
             static_cast<int32>(CurrentState),
             bHasLOSOnPrimary ? TEXT("true") : TEXT("false"));
     }
+#endif
 
     UpdateBlackboardAndTags();
 }
@@ -1168,6 +1330,7 @@ void USOTS_AIPerceptionComponent::UpdateBlackboardAndTags()
         BlackboardComp->SetValueAsObject(SOTS_AIPerception_BBKeys::TargetActor, nullptr);
         BlackboardComp->SetValueAsBool(SOTS_AIPerception_BBKeys::HasLOSToTarget, false);
         BlackboardComp->SetValueAsFloat(SOTS_AIPerception_BBKeys::Awareness, 0.0f);
+        BlackboardComp->SetValueAsEnum(SOTS_AIPerception_BBKeys::PerceptionState, static_cast<uint8>(CurrentState));
         // Keep last perception state for BT logic.
         return;
     }
@@ -1333,6 +1496,7 @@ void USOTS_AIPerceptionComponent::LogTelemetrySnapshot(
     const FSOTS_PerceivedTargetState* BestState,
     float SuspicionNormalized)
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (!PerceptionConfig || !PerceptionConfig->bEnablePerceptionTelemetry)
     {
         return;
@@ -1403,6 +1567,118 @@ void USOTS_AIPerceptionComponent::LogTelemetrySnapshot(
     }
 
     UE_LOG(LogSOTS_AIPerceptionTelemetry, Verbose, TEXT("%s"), *Message);
+#else
+    (void)NumTargets;
+    (void)EvaluatedTargetsCount;
+    (void)MaxTargetsToEvaluate;
+    (void)bHasLOSOnPrimary;
+    (void)BestState;
+    (void)SuspicionNormalized;
+#endif
+}
+
+AActor* USOTS_AIPerceptionComponent::ResolvePrimaryTarget()
+{
+    if (PrimaryTarget.IsValid())
+    {
+        return PrimaryTarget.Get();
+    }
+
+    if (UWorld* World = GetWorld())
+    {
+        if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(World, 0))
+        {
+            PrimaryTarget = PlayerPawn;
+            return PlayerPawn;
+        }
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (GuardConfig && GuardConfig->Config.bDebugLogAIPerceptionEvents)
+    {
+        UE_LOG(LogSOTS_AIPerception, Verbose, TEXT("[AIPerc] Primary target not resolved for %s"), *GetNameSafe(GetOwner()));
+    }
+#endif
+
+    return nullptr;
+}
+
+bool USOTS_AIPerceptionComponent::IsPrimaryTarget(const AActor* Actor) const
+{
+    return PrimaryTarget.IsValid() && Actor == PrimaryTarget.Get();
+}
+
+void USOTS_AIPerceptionComponent::UpdateLastStimulusCache(ESOTS_LocalSense Sense, float Strength01, const FVector& WorldLocation, AActor* SourceActor, bool bSuccessfullySensed)
+{
+    if (!SourceActor || !IsPrimaryTarget(SourceActor))
+    {
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    const double Now = World ? World->GetTimeSeconds() : 0.0;
+    const bool bSameTimestamp = FMath::IsNearlyEqual(static_cast<float>(Now), static_cast<float>(LastStimulusCache.TimestampSeconds), KINDA_SMALL_NUMBER);
+
+    const bool bPreferThis = bSuccessfullySensed
+        ? (!LastStimulusCache.bSuccessfullySensed || !bSameTimestamp || Strength01 >= LastStimulusCache.Strength01)
+        : (!LastStimulusCache.bSuccessfullySensed && (!bSameTimestamp || Strength01 >= LastStimulusCache.Strength01));
+
+    if (!bPreferThis)
+    {
+        return;
+    }
+
+    LastStimulusCache.Strength01 = Strength01;
+    LastStimulusCache.SenseTag = MapSenseToReasonTag(Sense);
+    LastStimulusCache.WorldLocation = WorldLocation;
+    LastStimulusCache.SourceActor = SourceActor;
+    LastStimulusCache.TimestampSeconds = Now;
+    LastStimulusCache.bSuccessfullySensed = bSuccessfullySensed;
+}
+
+FGameplayTag USOTS_AIPerceptionComponent::MapSenseToReasonTag(ESOTS_LocalSense Sense) const
+{
+    if (!GuardConfig)
+    {
+        return FGameplayTag();
+    }
+
+    const FSOTS_AIGuardPerceptionConfig& Cfg = GuardConfig->Config;
+
+    switch (Sense)
+    {
+    case ESOTS_LocalSense::Sight:
+        return Cfg.ReasonTag_Sight.IsValid() ? Cfg.ReasonTag_Sight : Cfg.ReasonTag_Generic;
+    case ESOTS_LocalSense::Hearing:
+        return Cfg.ReasonTag_Hearing.IsValid() ? Cfg.ReasonTag_Hearing : Cfg.ReasonTag_Generic;
+    case ESOTS_LocalSense::Shadow:
+        return Cfg.ReasonTag_Shadow.IsValid() ? Cfg.ReasonTag_Shadow : Cfg.ReasonTag_Generic;
+    case ESOTS_LocalSense::Damage:
+        return Cfg.ReasonTag_Damage.IsValid() ? Cfg.ReasonTag_Damage : Cfg.ReasonTag_Generic;
+    default:
+        return Cfg.ReasonTag_Generic;
+    }
+}
+
+void USOTS_AIPerceptionComponent::EvaluateStimuliForTarget(float SightStrength, float HearingStrength, float ShadowStrength, ESOTS_LocalSense& OutDominantSense, float& OutDominantStrength, bool& bOutHasStimulus) const
+{
+    OutDominantSense = ESOTS_LocalSense::Unknown;
+    OutDominantStrength = 0.0f;
+
+    const auto ConsiderSense = [&](ESOTS_LocalSense Sense, float Strength)
+    {
+        if (Strength > OutDominantStrength)
+        {
+            OutDominantStrength = Strength;
+            OutDominantSense = Sense;
+        }
+    };
+
+    ConsiderSense(ESOTS_LocalSense::Sight, SightStrength);
+    ConsiderSense(ESOTS_LocalSense::Hearing, HearingStrength);
+    ConsiderSense(ESOTS_LocalSense::Shadow, ShadowStrength);
+
+    bOutHasStimulus = OutDominantStrength > 0.0f;
 }
 
 bool USOTS_AIPerceptionComponent::ShouldRunShadowAwareness(const USOTS_AIPerceptionConfig* Config, double NowSeconds)
@@ -1479,4 +1755,316 @@ float USOTS_AIPerceptionComponent::ComputeVisibilitySuspicionMultiplier(
     }
 
     return Multiplier;
+}
+
+float USOTS_AIPerceptionComponent::UpdateSuspicionModel(
+    float DeltaSeconds,
+    float SightStrength,
+    float HearingStrength,
+    float ShadowStrength,
+    ESOTS_LocalSense DominantSense,
+    FGameplayTag& OutDominantReasonTag,
+    bool& bOutDetectedChanged,
+    bool& bOutDetectedNow)
+{
+    bOutDetectedChanged = false;
+    bOutDetectedNow = bIsDetected;
+    OutDominantReasonTag = FGameplayTag();
+
+    if (!GuardConfig)
+    {
+        return 0.0f;
+    }
+
+    const FSOTS_AIGuardPerceptionConfig& Cfg = GuardConfig->Config;
+
+    UWorld* World = GetWorld();
+    const double NowSeconds = World ? World->GetTimeSeconds() : 0.0;
+
+    const bool bHasStimulus = (SightStrength > 0.0f) || (HearingStrength > 0.0f) || (ShadowStrength > 0.0f);
+
+    // Dominant sense selection for reason tagging and ramp choice.
+    float DominantStrength = 0.0f;
+    float RampRatePerSecond = 0.0f;
+
+    switch (DominantSense)
+    {
+    case ESOTS_LocalSense::Sight:
+        DominantStrength = SightStrength;
+        RampRatePerSecond = Cfg.RampUpPerSecond_Sight;
+        break;
+    case ESOTS_LocalSense::Hearing:
+        DominantStrength = HearingStrength;
+        RampRatePerSecond = Cfg.RampUpPerSecond_Hearing;
+        break;
+    case ESOTS_LocalSense::Shadow:
+        DominantStrength = ShadowStrength;
+        RampRatePerSecond = Cfg.RampUpPerSecond_Shadow;
+        break;
+    case ESOTS_LocalSense::Damage:
+        DominantStrength = 1.0f;
+        RampRatePerSecond = Cfg.RampUpPerSecond_Damage;
+        break;
+    default:
+        if (SightStrength >= HearingStrength && SightStrength >= ShadowStrength)
+        {
+            DominantSense = ESOTS_LocalSense::Sight;
+            DominantStrength = SightStrength;
+            RampRatePerSecond = Cfg.RampUpPerSecond_Sight;
+        }
+        else if (HearingStrength >= ShadowStrength)
+        {
+            DominantSense = ESOTS_LocalSense::Hearing;
+            DominantStrength = HearingStrength;
+            RampRatePerSecond = Cfg.RampUpPerSecond_Hearing;
+        }
+        else
+        {
+            DominantSense = ESOTS_LocalSense::Shadow;
+            DominantStrength = ShadowStrength;
+            RampRatePerSecond = Cfg.RampUpPerSecond_Shadow;
+        }
+        break;
+    }
+
+    OutDominantReasonTag = MapSenseToReasonTag(DominantSense);
+
+    if (bHasStimulus)
+    {
+        LastStimulusTimeSeconds = NowSeconds;
+        const float RampDelta = RampRatePerSecond * FMath::Clamp(DominantStrength, 0.0f, 1.0f) * DeltaSeconds;
+        CurrentSuspicion += RampDelta;
+    }
+    else
+    {
+        const double SinceStimulus = NowSeconds - LastStimulusTimeSeconds;
+        if (SinceStimulus >= Cfg.StimulusForgetDelaySeconds)
+        {
+            CurrentSuspicion -= Cfg.DecayPerSecond * DeltaSeconds;
+        }
+    }
+
+    const float MaxSuspicion = (Cfg.MaxSuspicion > 0.0f) ? Cfg.MaxSuspicion : 1.0f;
+
+    if (!FMath::IsFinite(CurrentSuspicion))
+    {
+        CurrentSuspicion = 0.0f;
+    }
+
+    CurrentSuspicion = FMath::Clamp(CurrentSuspicion, 0.0f, MaxSuspicion);
+
+    const float SuspicionNormalized = (MaxSuspicion > 0.0f)
+        ? FMath::Clamp(CurrentSuspicion / MaxSuspicion, 0.0f, 1.0f)
+        : 0.0f;
+
+    LastSuspicionNormalized = SuspicionNormalized;
+
+    // Detection hysteresis and min-time gates.
+    const float SpottedThreshold = FMath::Clamp(Cfg.SpottedThreshold01, 0.0f, 1.0f);
+    const float LostThreshold = Cfg.bEnableHysteresis
+        ? FMath::Clamp(Cfg.LostThreshold01, 0.0f, SpottedThreshold)
+        : SpottedThreshold;
+
+    const double SinceLastChange = NowSeconds - LastDetectionChangeTimeSeconds;
+    const double SinceEnter = NowSeconds - LastDetectionEnterTimeSeconds;
+
+    if (!bIsDetected)
+    {
+        if (SuspicionNormalized >= SpottedThreshold)
+        {
+            const bool bPassMinBetween = Cfg.MinSecondsBetweenStateFlips <= 0.0 || SinceLastChange >= Cfg.MinSecondsBetweenStateFlips;
+            if (bPassMinBetween)
+            {
+                bIsDetected = true;
+                bOutDetectedChanged = true;
+                bOutDetectedNow = true;
+                LastDetectionChangeTimeSeconds = NowSeconds;
+                LastDetectionEnterTimeSeconds = NowSeconds;
+                OnTargetSpotted.Broadcast();
+            }
+        }
+    }
+    else
+    {
+        const bool bPassMinBetween = Cfg.MinSecondsBetweenStateFlips <= 0.0 || SinceLastChange >= Cfg.MinSecondsBetweenStateFlips;
+        const bool bPassMinDwell = Cfg.MinSecondsInSpottedState <= 0.0 || SinceEnter >= Cfg.MinSecondsInSpottedState;
+
+        if (SuspicionNormalized <= LostThreshold && bPassMinBetween && bPassMinDwell)
+        {
+            bIsDetected = false;
+            bOutDetectedChanged = true;
+            bOutDetectedNow = false;
+            LastDetectionChangeTimeSeconds = NowSeconds;
+            OnTargetLost.Broadcast();
+        }
+    }
+
+    // Suspicion change event throttling.
+    const float Epsilon = FMath::Clamp(Cfg.SuspicionChangeEpsilon01, 0.0f, 1.0f);
+    const double EventInterval = FMath::Max(Cfg.SuspicionEventMinIntervalSeconds, 0.0f);
+    const double SinceLastEvent = NowSeconds - LastSuspicionEventTimeSeconds;
+
+    const bool bShouldBroadcastSuspicion = (SinceLastEvent >= EventInterval) && (FMath::Abs(SuspicionNormalized - LastSuspicionEventValue) >= Epsilon);
+
+    if (bShouldBroadcastSuspicion)
+    {
+        OnSuspicionChanged.Broadcast(SuspicionNormalized);
+        LastSuspicionEventValue = SuspicionNormalized;
+        LastSuspicionEventTimeSeconds = NowSeconds;
+    }
+
+    const FSOTS_AIPerceptionTelemetry Telemetry = BuildTelemetrySnapshot(SuspicionNormalized, OutDominantReasonTag);
+
+    if (bOutDetectedChanged)
+    {
+        BroadcastSuspicionTelemetry(Telemetry, true);
+    }
+
+    if (bShouldBroadcastSuspicion)
+    {
+        BroadcastSuspicionTelemetry(Telemetry, false);
+    }
+
+    return SuspicionNormalized;
+}
+
+FSOTS_AIPerceptionTelemetry USOTS_AIPerceptionComponent::BuildTelemetrySnapshot(float SuspicionNormalized, const FGameplayTag& ReasonTag) const
+{
+    FSOTS_AIPerceptionTelemetry Telemetry;
+    Telemetry.Suspicion01 = SuspicionNormalized;
+    Telemetry.bDetected = bIsDetected;
+    Telemetry.ReasonSenseTag = ReasonTag.IsValid() ? ReasonTag : LastStimulusCache.SenseTag;
+    Telemetry.LastStimulusWorldLocation = LastStimulusCache.WorldLocation;
+    Telemetry.LastStimulusActor = LastStimulusCache.SourceActor.Get();
+    Telemetry.LastStimulusTimeSeconds = LastStimulusCache.TimestampSeconds;
+    return Telemetry;
+}
+
+void USOTS_AIPerceptionComponent::BroadcastSuspicionTelemetry(const FSOTS_AIPerceptionTelemetry& Telemetry, bool bDetectedChanged)
+{
+    if (OnAIPerceptionSuspicionChanged.IsBound())
+    {
+        OnAIPerceptionSuspicionChanged.Broadcast(Telemetry);
+    }
+
+    if (bDetectedChanged)
+    {
+        if (Telemetry.bDetected)
+        {
+            OnAIPerceptionSpotted.Broadcast(Telemetry);
+        }
+        else
+        {
+            OnAIPerceptionLost.Broadcast(Telemetry);
+        }
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (GuardConfig && GuardConfig->Config.bDebugLogAIPerceptionEvents)
+    {
+        const FString ActorName = Telemetry.LastStimulusActor ? Telemetry.LastStimulusActor->GetName() : TEXT("None");
+        UE_LOG(LogSOTS_AIPerception, Verbose, TEXT("[AIPerc/Telem] Susp=%.2f Detected=%s Sense=%s StimActor=%s StimLoc=%s StimTime=%.2f"),
+            Telemetry.Suspicion01,
+            Telemetry.bDetected ? TEXT("true") : TEXT("false"),
+            *Telemetry.ReasonSenseTag.ToString(),
+            *ActorName,
+            *Telemetry.LastStimulusWorldLocation.ToString(),
+            Telemetry.LastStimulusTimeSeconds);
+    }
+#endif
+}
+
+USOTS_GlobalStealthManagerSubsystem* USOTS_AIPerceptionComponent::ResolveGSM()
+{
+    if (CachedGSM.IsValid())
+    {
+        return CachedGSM.Get();
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    if (USOTS_GlobalStealthManagerSubsystem* GSM = World->GetSubsystem<USOTS_GlobalStealthManagerSubsystem>())
+    {
+        CachedGSM = GSM;
+        return GSM;
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (GuardConfig && GuardConfig->Config.bDebugLogMissingGSM)
+    {
+        UE_LOG(LogSOTS_AIPerceptionTelemetry, Verbose, TEXT("[AIPerc/GSM] Missing GSM for %s"), *GetNameSafe(GetOwner()));
+    }
+#endif
+
+    return nullptr;
+}
+
+void USOTS_AIPerceptionComponent::ReportSuspicionToGSM(
+    float AISuspicion01,
+    const FGameplayTag& ReasonTag,
+    const FVector* OptionalLocation,
+    bool bForceReport)
+{
+    if (!GuardConfig || !GuardConfig->Config.bEnableGSMReporting)
+    {
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    const float ClampedSuspicion = FMath::Clamp(AISuspicion01, 0.0f, 1.0f);
+    const double NowSeconds = World->GetTimeSeconds();
+
+    const float MinDelta = FMath::Max(GuardConfig->Config.GSMReportMinDelta01, 0.0f);
+    const double MinInterval = FMath::Max(GuardConfig->Config.GSMReportMinIntervalSeconds, 0.0f);
+
+    const float DeltaSinceLast = FMath::Abs(ClampedSuspicion - LastReportedSuspicion01);
+    const double Elapsed = NowSeconds - LastGSMReportTimeSeconds;
+
+    bool bShouldSend = bForceReport;
+    if (!bShouldSend)
+    {
+        bShouldSend = (Elapsed >= MinInterval) && (DeltaSinceLast >= MinDelta);
+    }
+
+    if (!bShouldSend)
+    {
+        return;
+    }
+
+    if (USOTS_GlobalStealthManagerSubsystem* GSM = ResolveGSM())
+    {
+        if (AActor* OwnerActor = GetOwner())
+        {
+            LastGSMReportTimeSeconds = NowSeconds;
+            LastReportedSuspicion01 = ClampedSuspicion;
+            LastGSMReasonTag = ReasonTag;
+
+            GSM->ReportAISuspicion(OwnerActor, ClampedSuspicion);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (PerceptionConfig && PerceptionConfig->bEnablePerceptionTelemetry)
+            {
+                const FString ReasonStr = ReasonTag.IsValid() ? ReasonTag.ToString() : TEXT("<None>");
+                const FString LocationStr = OptionalLocation
+                    ? FString::Printf(TEXT(" loc=(%.1f,%.1f,%.1f)"), OptionalLocation->X, OptionalLocation->Y, OptionalLocation->Z)
+                    : FString();
+
+                UE_LOG(LogSOTS_AIPerceptionTelemetry, Verbose,
+                    TEXT("[AIPerc/GSM] Reported Susp=%.3f Reason=%s%s"),
+                    ClampedSuspicion,
+                    *ReasonStr,
+                    *LocationStr);
+            }
+#endif
+        }
+    }
 }

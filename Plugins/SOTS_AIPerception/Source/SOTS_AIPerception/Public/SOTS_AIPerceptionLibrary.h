@@ -12,6 +12,15 @@ class SOTS_AIPERCEPTION_API USOTS_AIPerceptionLibrary : public UBlueprintFunctio
 
 public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Perception", meta=(WorldContext="WorldContextObject"))
+    static bool SOTS_TryReportNoise(
+        UObject* WorldContextObject,
+        AActor* Instigator,
+        FVector Location,
+        float Loudness,
+        FGameplayTag NoiseTag,
+        bool bLogIfFailed = false);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|Perception", meta=(WorldContext="WorldContextObject", DeprecatedFunction, DeprecationMessage="Use SOTS_TryReportNoise for explicit success/failure"))
     static void SOTS_ReportNoise(
         UObject* WorldContextObject,
         AActor* Instigator,

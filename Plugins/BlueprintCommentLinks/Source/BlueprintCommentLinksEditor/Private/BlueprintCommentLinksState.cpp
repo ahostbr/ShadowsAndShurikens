@@ -1,5 +1,7 @@
 #include "BlueprintCommentLinksState.h"
 
+#include "SGraphNode.h"
+
 FBlueprintCommentLinksState& FBlueprintCommentLinksState::Get()
 {
     static FBlueprintCommentLinksState Instance;
@@ -12,7 +14,7 @@ void FBlueprintCommentLinksState::TearDown()
     Instance.CommentToWidget.Reset();
 }
 
-void FBlueprintCommentLinksState::RegisterCommentWidget(const FGuid& CommentGuid, TSharedPtr<SBlueprintCommentLinksGraphNode> Widget)
+void FBlueprintCommentLinksState::RegisterCommentWidget(const FGuid& CommentGuid, TSharedPtr<SGraphNode> Widget)
 {
     if (!CommentGuid.IsValid() || !Widget.IsValid())
     {
@@ -27,14 +29,14 @@ void FBlueprintCommentLinksState::UnregisterCommentWidget(const FGuid& CommentGu
     CommentToWidget.Remove(CommentGuid);
 }
 
-TSharedPtr<SBlueprintCommentLinksGraphNode> FBlueprintCommentLinksState::GetCommentWidget(const FGuid& CommentGuid) const
+TSharedPtr<SGraphNode> FBlueprintCommentLinksState::GetCommentWidget(const FGuid& CommentGuid) const
 {
     if (!CommentGuid.IsValid())
     {
         return nullptr;
     }
 
-    if (const TWeakPtr<SBlueprintCommentLinksGraphNode>* Found = CommentToWidget.Find(CommentGuid))
+    if (const TWeakPtr<SGraphNode>* Found = CommentToWidget.Find(CommentGuid))
     {
         return Found->Pin();
     }
@@ -49,6 +51,6 @@ bool FBlueprintCommentLinksState::HasRegisteredComment(const FGuid& CommentGuid)
         return false;
     }
 
-    const TWeakPtr<SBlueprintCommentLinksGraphNode>* Found = CommentToWidget.Find(CommentGuid);
+    const TWeakPtr<SGraphNode>* Found = CommentToWidget.Find(CommentGuid);
     return Found != nullptr && Found->IsValid();
 }

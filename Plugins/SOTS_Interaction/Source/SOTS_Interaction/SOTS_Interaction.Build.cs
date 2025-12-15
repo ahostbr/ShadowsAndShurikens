@@ -19,7 +19,8 @@ public class SOTS_Interaction : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "SOTS_TagManager"
+                "SOTS_TagManager",
+                "OmniTrace"
             }
         );
     }

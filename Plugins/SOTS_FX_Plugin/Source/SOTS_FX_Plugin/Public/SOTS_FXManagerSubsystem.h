@@ -82,9 +82,13 @@ public:
     void BuildProfileData(FSOTS_FXProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_FXProfileData& InData);
 
-    /** Stubbed FX cue request entry point for other subsystems. */
+    /** FX cue request entry point for other subsystems. */
     UFUNCTION(BlueprintCallable, Category="SOTS|FX|Cues")
     void RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target);
+
+    /** FX cue request with explicit result report. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|FX|Cues")
+    FSOTS_FXRequestReport RequestFXCueWithReport(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target);
 
     // -------------------------
     // Tag-driven FX job router
@@ -94,9 +98,33 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX", meta=(AllowPrivateAccess="true"))
     TArray<TObjectPtr<USOTS_FXDefinitionLibrary>> Libraries;
 
+    /** Dev-only: validate FX registry on init. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Validation")
+    bool bValidateFXRegistryOnInit = false;
+
+    /** Dev-only: warn on duplicate FX tags; first registered wins. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Validation")
+    bool bWarnOnDuplicateFXTags = false;
+
+    /** Dev-only: warn when FX assets are missing/unloadable. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Validation")
+    bool bWarnOnMissingFXAssets = false;
+
+    /** Dev-only: warn once when triggers fire before registry is ready. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Validation")
+    bool bWarnOnTriggerBeforeRegistryReady = false;
+
+    /** Dev-only: log failures for tag-driven FX requests. Default ON. */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Validation")
+    bool bLogFXRequestFailures = true;
+
     /** Broadcast when an FX job is requested and resolved. */
     UPROPERTY(BlueprintAssignable, Category="SOTS|FX")
     FSOTS_OnFXTriggered OnFXTriggered;
+
+    /** Tag-driven FX job with explicit result payload. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|FX", meta=(WorldContext="WorldContextObject"))
+    FSOTS_FXRequestResult TriggerFXByTagWithReport(UObject* WorldContextObject, const FSOTS_FXRequest& Request);
 
     /** Triggers a one-shot FX job in world space. */
     UFUNCTION(BlueprintCallable, Category="SOTS|FX", meta=(WorldContext="WorldContextObject"))
@@ -132,6 +160,15 @@ private:
 
     FSOTS_FXHandle SpawnCue_Internal(UWorld* World, USOTS_FXCueDefinition* CueDefinition, const FSOTS_FXContext& Context);
 
+    FSOTS_FXRequestReport ProcessFXRequest(const FSOTS_FXRequest& Request, FSOTS_FXRequestResult* OutLegacyResult);
+    FSOTS_FXRequestResult ConvertReportToLegacy(const FSOTS_FXRequestReport& Report, const FSOTS_FXRequest& Request, const FVector& ResolvedLocation, const FRotator& ResolvedRotation, float ResolvedScale, const FSOTS_FXDefinition* Definition) const;
+    void MaybeLogFXFailure(const FSOTS_FXRequestReport& Report, const TCHAR* Reason) const;
+
+    void BuildRegistryFromLibraries();
+    void ValidateLibraryDefinitions() const;
+    void ValidateCueDefinition(const FSOTS_FXDefinition& Def, TSet<FGameplayTag>& SeenTags) const;
+    bool EnsureRegistryReady() const;
+
     // Pool helpers
     UNiagaraComponent* AcquireNiagaraComponent(UWorld* World, USOTS_FXCueDefinition* CueDefinition);
     UAudioComponent* AcquireAudioComponent(UWorld* World, USOTS_FXCueDefinition* CueDefinition);
@@ -149,9 +186,18 @@ private:
                              const FRotator& Rotation,
                              ESOTS_FXSpawnSpace Space,
                              USceneComponent* AttachComponent,
-                             FName AttachSocketName);
+                             FName AttachSocketName,
+                             float RequestedScale);
+
+    ESOTS_FXRequestResult EvaluatePolicy(const FSOTS_FXDefinition* Definition, FString& OutFailReason) const;
+    ESOTS_FXRequestResult TryResolveCue(FGameplayTag FXTag, const FSOTS_FXDefinition*& OutDefinition, FGameplayTag& OutResolvedTag, FString& OutFailReason) const;
 
     bool bBloodEnabled = true;
     bool bHighIntensityFX = true;
     bool bCameraMotionFXEnabled = true;
+    bool bRegistryReady = false;
+
+    // Cache of resolved library definitions for deterministic lookup.
+    UPROPERTY()
+    TMap<FGameplayTag, FSOTS_FXDefinition> RegisteredLibraryDefinitions;
 };

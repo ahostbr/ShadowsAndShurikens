@@ -14,7 +14,7 @@
 
 namespace
 {
-#if !UE_BUILD_SHIPPING
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     static TAutoConsoleVariable<int32> CVarSOTSStealthDebugMode(
         TEXT("sots.StealthDebugMode"),
         0,
@@ -47,7 +47,7 @@ namespace
 
 ESOTSStealthDebugMode USOTS_GAS_DebugLibrary::GetStealthDebugMode()
 {
-#if !UE_BUILD_SHIPPING
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     const int32 Value = CVarSOTSStealthDebugMode.GetValueOnGameThread();
     const int32 Clamped = FMath::Clamp(Value, 0, 2);
     return static_cast<ESOTSStealthDebugMode>(Clamped);
@@ -58,13 +58,14 @@ ESOTSStealthDebugMode USOTS_GAS_DebugLibrary::GetStealthDebugMode()
 
 void USOTS_GAS_DebugLibrary::SetStealthDebugMode(ESOTSStealthDebugMode NewMode)
 {
-#if !UE_BUILD_SHIPPING
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     CVarSOTSStealthDebugMode->Set(static_cast<int32>(NewMode));
 #endif
 }
 
 void USOTS_GAS_DebugLibrary::LogCurrentStealthState(const UObject* WorldContextObject)
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (USOTS_GAS_StealthBridgeSubsystem* Bridge = GetStealthBridge_Debug(WorldContextObject))
     {
         const FSOTS_StealthScoreBreakdown Breakdown = Bridge->GetCurrentStealthBreakdown();
@@ -84,10 +85,12 @@ void USOTS_GAS_DebugLibrary::LogCurrentStealthState(const UObject* WorldContextO
         UE_LOG(LogTemp, Warning,
                TEXT("[SOTS GAS Debug] LogCurrentStealthState: Stealth bridge subsystem not available."));
     }
+#endif
 }
 
 void USOTS_GAS_DebugLibrary::LogCurrentSkillAndPlayerTags(const UObject* WorldContextObject)
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     const FGameplayTagContainer SkillTags =
         USOTS_GAS_SkillTreeLibrary::GetAllSkillTags(WorldContextObject);
 
@@ -146,6 +149,7 @@ void USOTS_GAS_DebugLibrary::LogCurrentSkillAndPlayerTags(const UObject* WorldCo
                TEXT("[SOTS GAS Debug] PlayerTags: %s"),
                PlayerTagString.IsEmpty() ? TEXT("<none>") : *PlayerTagString);
     }
+#endif
 }
 
 void USOTS_GAS_DebugLibrary::LogAbilityRequirementsFromLibrary(
@@ -153,6 +157,7 @@ void USOTS_GAS_DebugLibrary::LogAbilityRequirementsFromLibrary(
     USOTS_AbilityRequirementLibraryAsset* LibraryAsset,
     FGameplayTag AbilityTag)
 {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     FSOTS_AbilityRequirementCheckResult Result;
     FText DebugText;
 
@@ -177,4 +182,5 @@ void USOTS_GAS_DebugLibrary::LogAbilityRequirementsFromLibrary(
            Result.bStealthTierTooLow ? TEXT("true") : TEXT("false"),
            Result.bStealthTierTooHigh ? TEXT("true") : TEXT("false"),
            Result.bStealthScoreTooHigh ? TEXT("true") : TEXT("false"));
+#endif
 }

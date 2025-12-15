@@ -25,6 +25,11 @@
 #include "Containers/Set.h"
 #include "SOTS_OmniTraceKEMPresetLibrary.h"
 #include "SOTS_KEM_OmniTraceTuning.h"
+#include "LevelSequence.h"
+#include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
+#include "Engine/StreamableManager.h"
+#include "Engine/AssetManager.h"
 
 DEFINE_LOG_CATEGORY(LogSOTS_KEM);
 
@@ -56,6 +61,12 @@ namespace
     static const FName KEMTag_Vertical(TEXT("SOTS.KEM.Position.Vertical"));
     static const FName KEMTag_VerticalAbove(TEXT("SOTS.KEM.Position.Vertical.Above"));
     static const FName KEMTag_VerticalBelow(TEXT("SOTS.KEM.Position.Vertical.Below"));
+    static const TArray<FName> KEMPositionTagNames = {
+        KEMTag_GroundRear, KEMTag_GroundFront, KEMTag_GroundLeft, KEMTag_GroundRight,
+        KEMTag_LegacyRear, KEMTag_LegacyFront, KEMTag_LegacyLeft, KEMTag_LegacyRight,
+        KEMTag_CornerLeft, KEMTag_CornerRight, KEMTag_Corner,
+        KEMTag_Vertical, KEMTag_VerticalAbove, KEMTag_VerticalBelow
+    };
 
     bool TagNameEquals(const FGameplayTag& Tag, FName TagName)
     {
@@ -77,6 +88,19 @@ namespace
     FGameplayTag RequestCanonicalTag(FName TagName)
     {
         return FGameplayTag::RequestGameplayTag(TagName, false);
+    }
+
+    bool HasAnyPositionTag(const FGameplayTagContainer& Container)
+    {
+        for (const FName& TagName : KEMPositionTagNames)
+        {
+            const FGameplayTag Tag = RequestCanonicalTag(TagName);
+            if (Tag.IsValid() && Container.HasTag(Tag))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     FLinearColor GetColorForFamily(ESOTS_KEM_ExecutionFamily Family)
@@ -308,11 +332,47 @@ namespace
         }
         return TEXT("Unknown");
     }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    void LogUnboundDispatchIfNeeded(const USOTS_KEMManagerSubsystem* Manager,
+                                    const FString& BackendName,
+                                    const USOTS_KEM_ExecutionDefinition* Def,
+                                    AActor* Instigator,
+                                    AActor* Target,
+                                    bool bHasListener)
+    {
+        if (!Manager || bHasListener || !Manager->bWarnOnUnboundDispatchDelegates)
+        {
+            return;
+        }
+
+        const FString ExecName = Def
+            ? (Def->ExecutionTag.IsValid() ? Def->ExecutionTag.ToString() : Def->GetName())
+            : TEXT("None");
+        const FString FamilyName = Def ? GetExecutionFamilyName(Def->ExecutionFamily) : TEXT("Unknown");
+        const FString InstigatorName = GetNameSafe(Instigator);
+        const FString TargetName = GetNameSafe(Target);
+
+        UE_LOG(LogSOTSKEM, Warning,
+            TEXT("[KEM Dispatch] %s execution for Exec=%s Family=%s Instigator=%s Target=%s has no listeners bound."),
+            *BackendName,
+            *ExecName,
+            *FamilyName,
+            *InstigatorName,
+            *TargetName);
+    }
+#endif
 }
 
 USOTS_KEMManagerSubsystem::USOTS_KEMManagerSubsystem()
 {
     CurrentState = ESOTS_KEMState::Ready;
+}
+
+void USOTS_KEMManagerSubsystem::Deinitialize()
+{
+    StopAllActiveLevelSequences();
+    Super::Deinitialize();
 }
 
 USOTS_KEMManagerSubsystem* USOTS_KEMManagerSubsystem::Get(const UObject* WorldContextObject)
@@ -723,18 +783,47 @@ bool USOTS_KEMManagerSubsystem::EvaluateTagsAndHeight(
                 OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
                 OutFailReason = FString::Printf(TEXT("HeightDelta %.1f > MaxSamePlaneHeightDelta %.1f"),
                                                 AbsHeight, MaxDelta);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+                if (bDebugLogHeightRejections)
+                {
+                    UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Height] SamePlaneOnly reject: %s"),
+                        *OutFailReason);
+                }
+#endif
                 return false;
             }
             break;
         }
     case ESOTS_KEM_HeightMode::VerticalOnly:
         {
-            const float MinVertical = Def->CASConfig.MaxSamePlaneHeightDelta;
+            const float MinVertical = Def->CASConfig.MinVerticalHeightDelta;
+            const float MaxVertical = Def->CASConfig.MaxVerticalHeightDelta;
             if (AbsHeight < MinVertical)
             {
                 OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
                 OutFailReason = FString::Printf(TEXT("HeightDelta %.1f < MinVertical %.1f"),
                                                 AbsHeight, MinVertical);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+                if (bDebugLogHeightRejections)
+                {
+                    UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Height] VerticalOnly reject: %s"),
+                        *OutFailReason);
+                }
+#endif
+                return false;
+            }
+            if (MaxVertical > 0.f && AbsHeight > MaxVertical)
+            {
+                OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
+                OutFailReason = FString::Printf(TEXT("HeightDelta %.1f > MaxVertical %.1f"),
+                                                AbsHeight, MaxVertical);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+                if (bDebugLogHeightRejections)
+                {
+                    UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Height] VerticalOnly reject: %s"),
+                        *OutFailReason);
+                }
+#endif
                 return false;
             }
             break;
@@ -776,12 +865,55 @@ bool USOTS_KEMManagerSubsystem::EvaluateCASDefinition(
     }
 
     const float AbsHeight = FMath::Abs(Context.HeightDelta);
-    if (AbsHeight > CASCfg.MaxSamePlaneHeightDelta)
+    if (Def->HeightMode == ESOTS_KEM_HeightMode::SamePlaneOnly)
     {
-        OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
-        OutFailReason = FString::Printf(TEXT("HeightDelta %.1f > CAS MaxSamePlaneHeightDelta %.1f"),
-                                        AbsHeight, CASCfg.MaxSamePlaneHeightDelta);
-        return false;
+        if (AbsHeight > CASCfg.MaxSamePlaneHeightDelta)
+        {
+            OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
+            OutFailReason = FString::Printf(TEXT("HeightDelta %.1f > CAS MaxSamePlaneHeightDelta %.1f"),
+                                            AbsHeight, CASCfg.MaxSamePlaneHeightDelta);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bDebugLogHeightRejections)
+            {
+                UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Height] CAS SamePlaneOnly reject: %s"),
+                    *OutFailReason);
+            }
+#endif
+            return false;
+        }
+    }
+    else if (Def->HeightMode == ESOTS_KEM_HeightMode::VerticalOnly)
+    {
+        const float MinVertical = CASCfg.MinVerticalHeightDelta;
+        const float MaxVertical = CASCfg.MaxVerticalHeightDelta;
+        if (AbsHeight < MinVertical)
+        {
+            OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
+            OutFailReason = FString::Printf(TEXT("HeightDelta %.1f < CAS MinVerticalHeightDelta %.1f"),
+                                            AbsHeight, MinVertical);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bDebugLogHeightRejections)
+            {
+                UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Height] CAS VerticalOnly reject: %s"),
+                    *OutFailReason);
+            }
+#endif
+            return false;
+        }
+        if (MaxVertical > 0.f && AbsHeight > MaxVertical)
+        {
+            OutRejectReason = ESOTS_KEMRejectReason::HeightModeMismatch;
+            OutFailReason = FString::Printf(TEXT("HeightDelta %.1f > CAS MaxVerticalHeightDelta %.1f"),
+                                            AbsHeight, MaxVertical);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bDebugLogHeightRejections)
+            {
+                UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Height] CAS VerticalOnly reject: %s"),
+                    *OutFailReason);
+            }
+#endif
+            return false;
+        }
     }
 
     const float DistSq = FVector::DistSquared(Context.InstigatorLocation, Context.TargetLocation);
@@ -893,26 +1025,10 @@ bool USOTS_KEMManagerSubsystem::EvaluateAISDefinition(
     ESOTS_KEMRejectReason& OutRejectReason,
     FString& OutFailReason) const
 {
-    OutRejectReason = ESOTS_KEMRejectReason::None;
-
-    if (!Def)
-    {
-        OutRejectReason = ESOTS_KEMRejectReason::MissingDefinition;
-        OutFailReason = TEXT("AIS: Definition is null");
-        return false;
-    }
-
-    const FSOTS_KEM_AISConfig& Cfg = Def->AISConfig;
-
-    if (!Cfg.BehaviorTag.IsValid())
-    {
-        OutRejectReason = ESOTS_KEMRejectReason::DataIncomplete;
-        OutFailReason = TEXT("AIS: BehaviorTag is not set");
-        return false;
-    }
-
-    OutFailReason = TEXT("AIS: Passed all checks");
-    return true;
+    OutRejectReason = ESOTS_KEMRejectReason::Other;
+    OutFailReason = TEXT("AIS backend retired; not supported.");
+    UE_LOG(LogSOTSKEM, Warning, TEXT("EvaluateAISDefinition: %s"), *OutFailReason);
+    return false;
 }
 
 
@@ -1184,6 +1300,235 @@ bool USOTS_KEMManagerSubsystem::ResolveWarpPointByName(
     }
 
     return true;
+}
+
+bool USOTS_KEMManagerSubsystem::StartLevelSequenceExecution(
+    const USOTS_KEM_ExecutionDefinition* Def,
+    const FSOTS_ExecutionContext& Context)
+{
+    if (!Def)
+    {
+        return false;
+    }
+
+    const FSOTS_KEM_LevelSequenceConfig& SeqCfg = Def->LevelSequenceConfig;
+    if (!SeqCfg.SequenceAsset.IsValid() && !SeqCfg.SequenceAsset.ToSoftObjectPath().IsValid())
+    {
+        UE_LOG(LogSOTSKEM, Warning, TEXT("LevelSequence backend missing SequenceAsset for %s"),
+            *Def->GetName());
+        return false;
+    }
+
+    const FGuid RequestId = FGuid::NewGuid();
+
+    FActiveLevelSequenceRun Run;
+    Run.RequestId = RequestId;
+    Run.ExecutionTag = Def->ExecutionTag;
+    Run.ExecutionDefinition = Def;
+    Run.ExecContext = Context;
+    Run.Instigator = Context.Instigator.Get();
+    Run.Target = Context.Target.Get();
+    Run.SequenceAsset = SeqCfg.SequenceAsset;
+    Run.bDestroySequenceActorOnFinish = SeqCfg.bDestroySequenceActorOnFinish;
+
+    ActiveLevelSequenceRuns.Add(RequestId, Run);
+
+    const TSoftObjectPtr<ULevelSequence> SequencePtr = SeqCfg.SequenceAsset;
+
+    if (SequencePtr.IsValid())
+    {
+        return PlayLevelSequenceRun(RequestId, SequencePtr.Get());
+    }
+
+    if (!SequencePtr.ToSoftObjectPath().IsValid())
+    {
+        ActiveLevelSequenceRuns.Remove(RequestId);
+        UE_LOG(LogSOTSKEM, Warning, TEXT("LevelSequence backend: invalid soft path for %s"), *Def->GetName());
+        return false;
+    }
+
+    FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+    TSharedPtr<FStreamableHandle> Handle = Streamable.RequestAsyncLoad(
+        SequencePtr.ToSoftObjectPath(),
+        FStreamableDelegate::CreateUObject(this, &USOTS_KEMManagerSubsystem::OnLevelSequenceAssetLoaded, RequestId));
+
+    if (!Handle.IsValid())
+    {
+        ActiveLevelSequenceRuns.Remove(RequestId);
+        UE_LOG(LogSOTSKEM, Warning, TEXT("LevelSequence backend: async load failed for %s"), *Def->GetName());
+        return false;
+    }
+
+    ActiveLevelSequenceRuns.Find(RequestId)->StreamableHandle = Handle;
+    return true;
+}
+
+void USOTS_KEMManagerSubsystem::OnLevelSequenceAssetLoaded(FGuid RequestId)
+{
+    FActiveLevelSequenceRun* Run = ActiveLevelSequenceRuns.Find(RequestId);
+    if (!Run)
+    {
+        return;
+    }
+
+    ULevelSequence* Sequence = Run->SequenceAsset.Get();
+    if (!Sequence && Run->SequenceAsset.ToSoftObjectPath().IsValid())
+    {
+        Sequence = Cast<ULevelSequence>(Run->SequenceAsset.ToSoftObjectPath().TryLoad());
+    }
+
+    if (!Sequence)
+    {
+        UE_LOG(LogSOTSKEM, Warning, TEXT("LevelSequence backend: async load returned null for RequestId %s"),
+            *RequestId.ToString());
+        CleanupLevelSequenceRun(RequestId, false);
+        return;
+    }
+
+    PlayLevelSequenceRun(RequestId, Sequence);
+}
+
+bool USOTS_KEMManagerSubsystem::PlayLevelSequenceRun(FGuid RequestId, ULevelSequence* Sequence)
+{
+    FActiveLevelSequenceRun* Run = ActiveLevelSequenceRuns.Find(RequestId);
+    if (!Run || !Sequence)
+    {
+        return false;
+    }
+
+    UWorld* World = nullptr;
+    if (Run->Instigator.IsValid())
+    {
+        World = Run->Instigator->GetWorld();
+    }
+    if (!World && Run->Target.IsValid())
+    {
+        World = Run->Target->GetWorld();
+    }
+    if (!World)
+    {
+        UE_LOG(LogSOTSKEM, Warning, TEXT("LevelSequence backend: missing world for RequestId %s"), *RequestId.ToString());
+        CleanupLevelSequenceRun(RequestId, false);
+        return false;
+    }
+
+    ALevelSequenceActor* SequenceActor = nullptr;
+    FMovieSceneSequencePlaybackSettings Settings;
+    if (Run->ExecutionDefinition.IsValid())
+    {
+        Settings = Run->ExecutionDefinition->LevelSequenceConfig.PlaybackSettings;
+    }
+
+    ULevelSequencePlayer* Player = ULevelSequencePlayer::CreateLevelSequencePlayer(
+        World,
+        Sequence,
+        Settings,
+        SequenceActor);
+
+    if (!Player)
+    {
+        UE_LOG(LogSOTSKEM, Warning, TEXT("LevelSequence backend: failed to create player for %s"),
+            *Run->ExecutionTag.ToString());
+        CleanupLevelSequenceRun(RequestId, false);
+        return false;
+    }
+
+    Run->Player = Player;
+    Run->SequenceActor = SequenceActor;
+
+    if (SequenceActor)
+    {
+        if (Run->Target.IsValid())
+        {
+            SequenceActor->SetActorTransform(Run->Target->GetActorTransform());
+        }
+        else if (Run->Instigator.IsValid())
+        {
+            SequenceActor->SetActorTransform(Run->Instigator->GetActorTransform());
+        }
+    }
+
+    if (SequenceActor && Run->ExecutionDefinition.IsValid())
+    {
+        const FSOTS_KEM_LevelSequenceConfig& SeqCfg = Run->ExecutionDefinition->LevelSequenceConfig;
+        if (SeqCfg.InstigatorBindingName != NAME_None && Run->Instigator.IsValid())
+        {
+            SequenceActor->SetBindingByTag(SeqCfg.InstigatorBindingName, {Run->Instigator.Get()}, true);
+        }
+        if (SeqCfg.TargetBindingName != NAME_None && Run->Target.IsValid())
+        {
+            SequenceActor->SetBindingByTag(SeqCfg.TargetBindingName, {Run->Target.Get()}, true);
+        }
+    }
+
+    Run->FinishedHandle = Player->OnFinished.AddWeakLambda(this, [this, RequestId]()
+    {
+        OnLevelSequenceFinishedInternal(RequestId, true);
+    });
+
+    Run->StopHandle = Player->OnStopEvent.AddWeakLambda(this, [this, RequestId]()
+    {
+        OnLevelSequenceFinishedInternal(RequestId, false);
+    });
+
+    Player->Play();
+
+    return true;
+}
+
+void USOTS_KEMManagerSubsystem::OnLevelSequenceFinishedInternal(FGuid RequestId, bool bSucceeded)
+{
+    CleanupLevelSequenceRun(RequestId, bSucceeded);
+}
+
+void USOTS_KEMManagerSubsystem::CleanupLevelSequenceRun(FGuid RequestId, bool bSucceeded)
+{
+    FActiveLevelSequenceRun RunCopy;
+    FActiveLevelSequenceRun* Run = ActiveLevelSequenceRuns.Find(RequestId);
+    if (!Run)
+    {
+        return;
+    }
+    RunCopy = *Run;
+
+    if (RunCopy.StreamableHandle.IsValid())
+    {
+        RunCopy.StreamableHandle->ReleaseHandle();
+    }
+
+    if (ULevelSequencePlayer* Player = RunCopy.Player.Get())
+    {
+        Player->OnFinished.Remove(RunCopy.FinishedHandle);
+        Player->OnStopEvent.Remove(RunCopy.StopHandle);
+        if (Player->IsPlaying())
+        {
+            Player->Stop();
+        }
+    }
+
+    if (ALevelSequenceActor* SequenceActor = RunCopy.SequenceActor.Get())
+    {
+        if (RunCopy.bDestroySequenceActorOnFinish)
+        {
+            SequenceActor->Destroy();
+        }
+    }
+
+    ActiveLevelSequenceRuns.Remove(RequestId);
+
+    const USOTS_KEM_ExecutionDefinition* Def = RunCopy.ExecutionDefinition.Get();
+    NotifyExecutionEnded(RunCopy.ExecContext, Def, bSucceeded);
+    OnKEMLevelSequenceFinished.Broadcast(RequestId, RunCopy.ExecutionTag, RunCopy.Instigator.Get(), RunCopy.Target.Get(), bSucceeded);
+}
+
+void USOTS_KEMManagerSubsystem::StopAllActiveLevelSequences()
+{
+    TArray<FGuid> ActiveKeys;
+    ActiveLevelSequenceRuns.GetKeys(ActiveKeys);
+    for (const FGuid& Key : ActiveKeys)
+    {
+        CleanupLevelSequenceRun(Key, false);
+    }
 }
 
 const FSOTS_KEM_OmniTraceTuning* USOTS_KEMManagerSubsystem::FindOmniTraceTuning(ESOTS_OmniTraceKEMPreset Preset) const
@@ -1699,6 +2044,11 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
 
     FSOTS_ExecutionContext ExecContext;
     BuildExecutionContext(Instigator, Target, ContextTags, ExecContext);
+    if (bAutoComputePositionTags)
+    {
+        ComputeAndInjectPositionTags(Instigator, Target, ExecContext.ContextTags);
+    }
+    LastDecisionSnapshot.ContextTags = ExecContext.ContextTags;
 
     const float DistanceToTarget = FVector::Dist(ExecContext.InstigatorLocation, ExecContext.TargetLocation);
     const FVector ForwardDir = ExecContext.InstigatorForward.GetSafeNormal();
@@ -1751,6 +2101,7 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
     bool bHasCandidate = false;
     int32 BestCandidateIndex = INDEX_NONE;
     ASOTS_KEMExecutionAnchor* BestAnchor = nullptr;
+    bool bBestPreferredApplied = false;
 
     TArray<ASOTS_KEMExecutionAnchor*> NearbyAnchors;
     const float SearchRadius = AnchorSearchRadius > 0.f ? AnchorSearchRadius : KEM_DefaultAnchorSearchRadius;
@@ -1767,15 +2118,20 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             ? Def->ExecutionTag.ToString()
             : Def->GetName();
 
+        ASOTS_KEMExecutionAnchor* CandidateAnchor = nullptr;
+        const float AnchorBonus = ComputeAnchorScoreBonus(Def, NearbyAnchors, CandidateAnchor);
+
+        FSOTS_ExecutionContext CandidateContext = ExecContext;
+        ApplyAnchorEnvContextTags(CandidateAnchor, CandidateContext.ContextTags);
+
         float Score = 0.f;
         FSOTS_CASQueryResult CASResult;
         ESOTS_KEMRejectReason RejectReason = ESOTS_KEMRejectReason::None;
         FString FailReason;
-        const bool bPassed = EvaluateDefinition(Def, ExecContext, Score, CASResult, RejectReason, FailReason);
+        const bool bPassed = EvaluateDefinition(Def, CandidateContext, Score, CASResult, RejectReason, FailReason);
 
-        ASOTS_KEMExecutionAnchor* CandidateAnchor = nullptr;
-        const float AnchorBonus = ComputeAnchorScoreBonus(Def, NearbyAnchors, CandidateAnchor);
-        Score += AnchorBonus;
+        const float PreferredBonus = ComputePreferredExecutionBonus(CandidateAnchor, Def);
+        Score += AnchorBonus + PreferredBonus;
 
         FSOTS_KEMCandidateDebugRecord Candidate;
         Candidate.ExecutionName = ExecName;
@@ -1801,6 +2157,16 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
                 *FamilyName,
                 AnchorBonus);
         }
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (IsDebugAtLeast(EKEMDebugVerbosity::Verbose) && PreferredBonus > 0.f && CandidateAnchor)
+        {
+            UE_LOG(LogSOTSKEM, Verbose,
+                TEXT("[KEM Anchor] Preferred execution bias applied to %s via anchor %s (Bonus=%.2f)"),
+                *Candidate.ExecutionName,
+                *GetNameSafe(CandidateAnchor),
+                PreferredBonus);
+        }
+#endif
 
         const int32 CandidateIndex = CandidateRecords.Num() - 1;
 
@@ -1817,6 +2183,7 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             BestCASResult = CASResult;
             BestCandidateIndex = CandidateIndex;
             BestAnchor = CandidateAnchor;
+            bBestPreferredApplied = PreferredBonus > 0.f;
         }
     }
 
@@ -1869,6 +2236,9 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             CandidateRecords.Num(),
             *WinnerName,
             WinnerScore);
+        UE_LOG(LogSOTSKEM, Verbose,
+            TEXT("[KEM] WinnerPreferred=%s"),
+            bBestPreferredApplied ? TEXT("Yes") : TEXT("No"));
     }
 
     if (!bHasCandidate || !BestDef)
@@ -1968,6 +2338,9 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             UE_LOG(LogSOTSKEM, Log, TEXT("RequestExecution: Selected CAS execution '%s' (Score=%.2f)."),
                 *BestDef->ExecutionTag.ToString(), BestScore);
 
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            LogUnboundDispatchIfNeeded(this, TEXT("CAS"), BestDef, Instigator, Target, OnCASExecutionChosen.IsBound());
+#endif
             OnCASExecutionChosen.Broadcast(
                 const_cast<USOTS_KEM_ExecutionDefinition*>(BestDef),
                 BestCASResult.Scene,
@@ -1996,16 +2369,27 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             UE_LOG(LogSOTSKEM, Log, TEXT("RequestExecution: Selected LevelSequence execution '%s' (Score=%.2f)."),
                 *BestDef->ExecutionTag.ToString(), BestScore);
 
-            OnLevelSequenceExecutionChosen.Broadcast(const_cast<USOTS_KEM_ExecutionDefinition*>(BestDef), Instigator, Target, ExecContext);
+            const bool bStarted = StartLevelSequenceExecution(BestDef, ExecContext);
+            if (!bStarted)
+            {
+                UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: LevelSequence backend failed to start for '%s'."), *BestDef->ExecutionTag.ToString());
+                return false;
+            }
+
+            if (bBroadcastLegacyLevelSequenceChosen)
+            {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+                LogUnboundDispatchIfNeeded(this, TEXT("LevelSequence"), BestDef, Instigator, Target, OnLevelSequenceExecutionChosen.IsBound());
+#endif
+                OnLevelSequenceExecutionChosen.Broadcast(const_cast<USOTS_KEM_ExecutionDefinition*>(BestDef), Instigator, Target, ExecContext);
+            }
             break;
         }
     case ESOTS_KEM_BackendType::AIS:
         {
-            UE_LOG(LogSOTSKEM, Log, TEXT("RequestExecution: Selected AIS execution '%s' (Score=%.2f)."),
-                *BestDef->ExecutionTag.ToString(), BestScore);
-
-            OnAISExecutionChosen.Broadcast(const_cast<USOTS_KEM_ExecutionDefinition*>(BestDef), Instigator, Target, ExecContext);
-            break;
+            UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: AIS backend is retired; execution '%s' aborted."),
+                *BestDef->ExecutionTag.ToString());
+            return false;
         }
     default:
         {
@@ -2027,6 +2411,10 @@ void USOTS_KEMManagerSubsystem::RunKEMDebug(
 {
     FSOTS_ExecutionContext ExecContext;
     const_cast<USOTS_KEMManagerSubsystem*>(this)->BuildExecutionContext(Instigator, Target, ContextTags, ExecContext);
+    if (bAutoComputePositionTags)
+    {
+        const_cast<USOTS_KEMManagerSubsystem*>(this)->ComputeAndInjectPositionTags(Instigator, Target, ExecContext.ContextTags);
+    }
 
     UE_LOG(LogSOTSKEM, Log, TEXT("=== KEM Debug Start ==="));
     UE_LOG(LogSOTSKEM, Log, TEXT("Instigator=%s Target=%s HeightDelta=%.1f"),
@@ -2153,6 +2541,203 @@ float USOTS_KEMManagerSubsystem::ComputeAnchorScoreBonus(
     }
 
     return BestBonus;
+}
+
+void USOTS_KEMManagerSubsystem::ApplyAnchorEnvContextTags(const ASOTS_KEMExecutionAnchor* Anchor,
+                                                          FGameplayTagContainer& InOutTags) const
+{
+    if (!bUseAnchorEnvContextTags || !Anchor)
+    {
+        return;
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    TArray<FString> AddedTags;
+#endif
+
+    for (const FGameplayTag& Tag : Anchor->GetEnvContextTags())
+    {
+        if (Tag.IsValid() && !InOutTags.HasTag(Tag))
+        {
+            InOutTags.AddTag(Tag);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            AddedTags.Add(Tag.ToString());
+#endif
+        }
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!AddedTags.IsEmpty() && IsDebugAtLeast(EKEMDebugVerbosity::Verbose))
+    {
+        UE_LOG(LogSOTSKEM, Verbose, TEXT("[KEM Anchor] Injected EnvContextTags: %s"),
+            *FString::Join(AddedTags, TEXT(", ")));
+    }
+#endif
+}
+
+float USOTS_KEMManagerSubsystem::ComputePreferredExecutionBonus(const ASOTS_KEMExecutionAnchor* Anchor,
+                                                                const USOTS_KEM_ExecutionDefinition* Def) const
+{
+    if (!bUseAnchorPreferredExecutions || !Anchor || !Def || AnchorPreferredExecutionBonus <= 0.f)
+    {
+        return 0.f;
+    }
+
+    const FString DefPath = Def->GetPathName();
+    for (const TSoftObjectPtr<USOTS_KEM_ExecutionDefinition>& SoftDef : Anchor->GetPreferredExecutions())
+    {
+        if (!SoftDef.IsValid() && !SoftDef.ToSoftObjectPath().IsValid())
+        {
+            continue;
+        }
+
+        if (SoftDef.Get() == Def)
+        {
+            return AnchorPreferredExecutionBonus;
+        }
+
+        const FString PrefPath = SoftDef.ToSoftObjectPath().ToString();
+        if (!PrefPath.IsEmpty() && PrefPath == DefPath)
+        {
+            return AnchorPreferredExecutionBonus;
+        }
+
+        if (SoftDef.IsValid() && SoftDef->ExecutionTag.IsValid() && SoftDef->ExecutionTag == Def->ExecutionTag)
+        {
+            return AnchorPreferredExecutionBonus;
+        }
+    }
+
+    return 0.f;
+}
+
+void USOTS_KEMManagerSubsystem::ComputeAndInjectPositionTags(AActor* Instigator,
+                                                             AActor* Target,
+                                                             FGameplayTagContainer& InOutTags) const
+{
+    if (!bAutoComputePositionTags || !Instigator || !Target)
+    {
+        return;
+    }
+
+    if (HasAnyPositionTag(InOutTags))
+    {
+        return;
+    }
+
+    const FVector InstLoc = Instigator->GetActorLocation();
+    const FVector TargetLoc = Target->GetActorLocation();
+    FVector ToInst = InstLoc - TargetLoc;
+
+    const float HeightDelta = InstLoc.Z - TargetLoc.Z;
+
+    // Handle vertical classification first.
+    const float AbsHeight = FMath::Abs(HeightDelta);
+    const bool bShouldTagVertical = AutoPositionVerticalThreshold > 0.f && AbsHeight >= AutoPositionVerticalThreshold;
+
+    if (bShouldTagVertical)
+    {
+        const bool bInstigatorAbove = HeightDelta > 0.f;
+        const FGameplayTag VerticalTag = RequestCanonicalTag(bInstigatorAbove ? KEMTag_VerticalAbove : KEMTag_VerticalBelow);
+        const FGameplayTag VerticalBase = RequestCanonicalTag(KEMTag_Vertical);
+
+        if (VerticalTag.IsValid())
+        {
+            InOutTags.AddTag(VerticalTag);
+        }
+        if (VerticalBase.IsValid())
+        {
+            InOutTags.AddTag(VerticalBase);
+        }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (IsDebugAtLeast(EKEMDebugVerbosity::Verbose))
+        {
+            UE_LOG(LogSOTSKEM, Verbose,
+                TEXT("[KEM] Auto position vertical tag injected: %s (HeightDelta=%.1f)"),
+                *VerticalTag.ToString(),
+                HeightDelta);
+        }
+#endif
+        return;
+    }
+
+    ToInst.Z = 0.f;
+    if (ToInst.IsNearlyZero())
+    {
+        return;
+    }
+
+    const FVector ToInstDir = ToInst.GetSafeNormal();
+    FVector TargetForward = Target->GetActorForwardVector();
+    TargetForward.Z = 0.f;
+    TargetForward.Normalize();
+
+    if (TargetForward.IsNearlyZero())
+    {
+        return;
+    }
+
+    FVector TargetRight = FVector::CrossProduct(FVector::UpVector, TargetForward).GetSafeNormal();
+
+    const float ForwardDot = FVector::DotProduct(TargetForward, ToInstDir);
+    const float RightDot = FVector::DotProduct(TargetRight, ToInstDir);
+
+    const float StrongThreshold = 0.707f; // ~cos(45deg)
+    const float CornerThreshold = FMath::Clamp(AutoPositionCornerDotThreshold, 0.f, 1.f);
+    const float PrimaryThreshold = CornerThreshold;
+
+    FGameplayTag PositionTag;
+
+    // Strong bins first
+    if (ForwardDot >= StrongThreshold)
+    {
+        PositionTag = RequestCanonicalTag(KEMTag_GroundFront);
+    }
+    else if (ForwardDot <= -StrongThreshold)
+    {
+        PositionTag = RequestCanonicalTag(KEMTag_GroundRear);
+    }
+    else if (RightDot >= StrongThreshold)
+    {
+        PositionTag = RequestCanonicalTag(KEMTag_GroundRight);
+    }
+    else if (RightDot <= -StrongThreshold)
+    {
+        PositionTag = RequestCanonicalTag(KEMTag_GroundLeft);
+    }
+    else if (bAutoComputeCornerTags && FMath::Abs(ForwardDot) >= CornerThreshold && FMath::Abs(RightDot) >= CornerThreshold)
+    {
+        PositionTag = RequestCanonicalTag(RightDot >= 0.f ? KEMTag_CornerRight : KEMTag_CornerLeft);
+    }
+    else
+    {
+        // Fallback to front/back by sign if no strong/corner bin.
+        if (ForwardDot >= 0.f)
+        {
+            PositionTag = RequestCanonicalTag(KEMTag_GroundFront);
+        }
+        else
+        {
+            PositionTag = RequestCanonicalTag(KEMTag_GroundRear);
+        }
+    }
+
+    if (PositionTag.IsValid())
+    {
+        InOutTags.AddTag(PositionTag);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (IsDebugAtLeast(EKEMDebugVerbosity::Verbose))
+        {
+            UE_LOG(LogSOTSKEM, Verbose,
+                TEXT("[KEM] Auto position tag injected: %s (ForwardDot=%.2f RightDot=%.2f HeightDelta=%.1f)"),
+                *PositionTag.ToString(),
+                ForwardDot,
+                RightDot,
+                HeightDelta);
+        }
+#endif
+    }
 }
 
 void USOTS_KEMManagerSubsystem::KEM_ToggleAnchorDebug()

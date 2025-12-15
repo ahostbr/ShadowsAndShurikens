@@ -17,6 +17,13 @@ class UContextualAnimSceneAsset;
 class ASOTS_KEMExecutionAnchor;
 class UAnimMontage;
 class USOTS_KEM_ExecutionCatalog;
+class ULevelSequence;
+class ULevelSequencePlayer;
+class ALevelSequenceActor;
+class FStreamableHandle;
+class ULevelSequence;
+class ULevelSequencePlayer;
+class ALevelSequenceActor;
 
 USTRUCT(BlueprintType)
 struct FSOTS_KEMAnchorDebugInfo
@@ -77,6 +84,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FSOTS_KEM_AISExecutionChosenSignat
                                               AActor*, Target,
                                               FSOTS_ExecutionContext, Context);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FSOTS_OnKEMLevelSequenceFinished,
+                                              FGuid, RequestId,
+                                              FGameplayTag, ExecutionTag,
+                                              AActor*, Instigator,
+                                              AActor*, Target,
+                                              bool, bSucceeded);
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FSOTS_OnKEMExecutionTelemetry, const FSOTS_KEMExecutionTelemetry&);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnKEMExecutionTelemetryBP, const FSOTS_KEMExecutionTelemetry&, Telemetry);
 
@@ -87,6 +101,7 @@ class SOTS_KILLEXECUTIONMANAGER_API USOTS_KEMManagerSubsystem : public UGameInst
 
 public:
     USOTS_KEMManagerSubsystem();
+    virtual void Deinitialize() override;
 
     UFUNCTION(BlueprintCallable, Category="SOTS|KEM", meta=(WorldContext="WorldContextObject"))
     static USOTS_KEMManagerSubsystem* Get(const UObject* WorldContextObject);
@@ -224,8 +239,28 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="KEM|Debug")
     EKEMDebugVerbosity DebugVerbosity = EKEMDebugVerbosity::Basic;
 
+    /** Optional dev-only warning when dispatch delegates have no listeners. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Debug")
+    bool bWarnOnUnboundDispatchDelegates = false;
+
+    /** Optional dev-only log for height rejections. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Debug")
+    bool bDebugLogHeightRejections = false;
+
     UPROPERTY(EditAnywhere, Config, Category="KEM|Debug", meta=(ClampMin="0.0"))
     float AnchorSearchRadius = 600.f;
+
+    /** Optional: apply anchor EnvContextTags to the request ContextTags before evaluation. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Anchor")
+    bool bUseAnchorEnvContextTags = false;
+
+    /** Optional: bias scoring toward an anchor's preferred executions. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Anchor")
+    bool bUseAnchorPreferredExecutions = false;
+
+    /** Score bonus added when an anchor's PreferredExecutions influences selection. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Anchor", meta=(ClampMin="0.0"))
+    float AnchorPreferredExecutionBonus = 25000.0f;
 
     UPROPERTY(EditAnywhere, Category="KEM|Fallback")
     TObjectPtr<UAnimMontage> FallbackMontage = nullptr;
@@ -243,6 +278,26 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="KEM")
     TSoftObjectPtr<USOTS_KEM_ExecutionRegistryConfig> DefaultRegistryConfig;
+
+    /** Optional: auto-compute position tags when none are present. Default OFF. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Selection")
+    bool bAutoComputePositionTags = false;
+
+    /** Optional: allow corner quadrants when auto computing. Default true. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Selection")
+    bool bAutoComputeCornerTags = true;
+
+    /** Vertical threshold for auto-computed position tags (Above/Below). */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Selection", meta=(ClampMin="0.0"))
+    float AutoPositionVerticalThreshold = 30.f;
+
+    /** Dot threshold for corner classification when auto computing (lower = more permissive). */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|Selection", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float AutoPositionCornerDotThreshold = 0.35f;
+
+    /** Optional: also broadcast the legacy LevelSequence chosen delegate. Default OFF to avoid double-play. */
+    UPROPERTY(EditAnywhere, Config, Category="KEM|LevelSequence")
+    bool bBroadcastLegacyLevelSequenceChosen = false;
 
     // Map of ExecutionId -> ExecutionDefinition for direct lookups. Populated by the registry helpers.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="KEM")
@@ -291,6 +346,10 @@ public:
     // AIS / ability-style execution picked. Caller is responsible for driving AI / gameplay reactions.
     UPROPERTY(BlueprintAssignable, Category="KEM")
     FSOTS_KEM_AISExecutionChosenSignature OnAISExecutionChosen;
+
+    /** Raised when a LevelSequence backend finishes (success or abort). */
+    UPROPERTY(BlueprintAssignable, Category="KEM|LevelSequence")
+    FSOTS_OnKEMLevelSequenceFinished OnKEMLevelSequenceFinished;
 
     // Unified lifecycle event surface for executions (started / succeeded / failed).
     UPROPERTY(BlueprintAssignable, Category="SOTS|KEM")
@@ -422,6 +481,23 @@ public:
                             const USOTS_KEM_ExecutionDefinition* Def) const;
 
 private:
+    struct FActiveLevelSequenceRun
+    {
+        FGuid RequestId;
+        FGameplayTag ExecutionTag;
+        TWeakObjectPtr<const USOTS_KEM_ExecutionDefinition> ExecutionDefinition;
+        FSOTS_ExecutionContext ExecContext;
+        TWeakObjectPtr<AActor> Instigator;
+        TWeakObjectPtr<AActor> Target;
+        TSoftObjectPtr<ULevelSequence> SequenceAsset;
+        TWeakObjectPtr<ULevelSequencePlayer> Player;
+        TWeakObjectPtr<ALevelSequenceActor> SequenceActor;
+        TSharedPtr<FStreamableHandle> StreamableHandle;
+        FDelegateHandle FinishedHandle;
+        FDelegateHandle StopHandle;
+        bool bDestroySequenceActorOnFinish = true;
+    };
+
     bool IsTelemetryLoggingEnabled() const;
     void ResetPendingTelemetry();
     void PrepareExecutionTelemetryForSelection(const USOTS_KEM_ExecutionDefinition* Def,
@@ -446,4 +522,23 @@ private:
     FSOTS_OnKEMExecutionTelemetry OnExecutionTelemetry;
     FSOTS_KEMExecutionTelemetry PendingExecutionTelemetry;
     bool bHasPendingExecutionTelemetry = false;
+
+    void ComputeAndInjectPositionTags(AActor* Instigator,
+                                      AActor* Target,
+                                      FGameplayTagContainer& InOutTags) const;
+
+    void ApplyAnchorEnvContextTags(const ASOTS_KEMExecutionAnchor* Anchor,
+                                   FGameplayTagContainer& InOutTags) const;
+
+    float ComputePreferredExecutionBonus(const ASOTS_KEMExecutionAnchor* Anchor,
+                                         const USOTS_KEM_ExecutionDefinition* Def) const;
+
+    bool StartLevelSequenceExecution(const USOTS_KEM_ExecutionDefinition* Def, const FSOTS_ExecutionContext& Context);
+    void OnLevelSequenceAssetLoaded(FGuid RequestId);
+    bool PlayLevelSequenceRun(FGuid RequestId, ULevelSequence* Sequence);
+    void OnLevelSequenceFinishedInternal(FGuid RequestId, bool bSucceeded);
+    void CleanupLevelSequenceRun(FGuid RequestId, bool bSucceeded);
+    void StopAllActiveLevelSequences();
+
+    TMap<FGuid, FActiveLevelSequenceRun> ActiveLevelSequenceRuns;
 };

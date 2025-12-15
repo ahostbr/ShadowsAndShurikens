@@ -10,6 +10,8 @@
 #include "BlueprintCommentLinksCacheFile.h"
 #include "BlueprintCommentLinksState.h"
 #include "SBlueprintCommentLinksGraphNode.h"
+#include "SGraphNode.h"
+#include "SGraphNodeComment.h"
 #include "Styling/AppStyle.h"
 #include "Styling/CoreStyle.h"
 #include "Framework/Application/SlateApplication.h"
@@ -163,6 +165,11 @@ void SCommentLinkOverlay::SetLinkModeActive(bool bInActive)
     // When OFF we still draw but never participate in hit-testing.
     if (bLinkModeActive)
     {
+        if (GraphPanelPtr)
+        {
+            // Ensure children have valid cached geometry before we rely on it.
+            GraphPanelPtr->SlatePrepass();
+        }
         SetVisibility(EVisibility::Visible);
     }
     else
@@ -210,6 +217,15 @@ int32 SCommentLinkOverlay::OnPaint(
         return CurrentLayer;
     }
 
+    if (bLinkModeActive)
+    {
+        UE_LOG(LogTemp, Log,
+            TEXT("BlueprintCommentLinks: OnPaint link-mode; geom (%.1f, %.1f) zoom %.3f"),
+            AllottedGeometry.GetLocalSize().X,
+            AllottedGeometry.GetLocalSize().Y,
+            GraphPanel->GetZoomAmount());
+    }
+
     LastRenderedLinks.Reset();
     LastRenderedHandles.Reset();
 
@@ -238,6 +254,10 @@ int32 SCommentLinkOverlay::OnPaint(
         GraphData = &UBlueprintCommentLinkCacheFile::Get().GetGraphData(Graph);
     }
 
+    int32 TotalComments = 0;
+    int32 DrawnHandles = 0;
+    int32 ZeroHandles = 0;
+
     if (bLinkModeActive && Graph && GraphData)
     {
         for (UEdGraphNode* Node : Graph->Nodes)
@@ -248,15 +268,21 @@ int32 SCommentLinkOverlay::OnPaint(
                 continue;
             }
 
+            ++TotalComments;
+
             const FVector2D HandleScreenPos = GetHandleScreenPosition(CommentNode->NodeGuid, ECommentHandleSide::Right);
             if (HandleScreenPos.IsNearlyZero())
             {
-                UE_LOG(LogTemp, Verbose, TEXT("BlueprintCommentLinks: No handle geometry for comment %s"),
+                UE_LOG(LogTemp, Log, TEXT("BlueprintCommentLinks: No handle geometry for comment %s"),
                     *CommentNode->GetName());
+                ++ZeroHandles;
                 continue;
             }
 
-            const FVector2D HandleLocalToOverlay = AllottedGeometry.AbsoluteToLocal(HandleScreenPos);
+            ++DrawnHandles;
+
+            // Treat handle coords as panel/overlay-local to avoid absolute transform drift.
+            const FVector2D HandleLocalToOverlay = HandleScreenPos;
 
             FCommentHandleInfo Info;
             Info.CommentGuid    = CommentNode->NodeGuid;
@@ -287,29 +313,31 @@ int32 SCommentLinkOverlay::OnPaint(
                 HandleColor);
             ++CurrentLayer;
 
-            UE_LOG(LogTemp, Verbose,
+            UE_LOG(LogTemp, Log,
                 TEXT("BlueprintCommentLinks: Draw handle for comment %s at (%f,%f)"),
                 *CommentNode->GetName(),
                 HandleLocalToOverlay.X,
                 HandleLocalToOverlay.Y);
         }
+
+        UE_LOG(LogTemp, Log,
+            TEXT("BlueprintCommentLinks: Handle summary total=%d drawn=%d zero=%d"),
+            TotalComments, DrawnHandles, ZeroHandles);
     }
 
     // Draw existing links using handle positions as anchors.
     for (const FBlueprintCommentLink& Link : CachedLinks)
     {
-        FVector2D FromScreen;
-        FVector2D ToScreen;
-        FromScreen = GetHandleScreenPosition(Link.SourceCommentGuid, ECommentHandleSide::Right);
-        ToScreen   = GetHandleScreenPosition(Link.TargetCommentGuid, ECommentHandleSide::Left);
+        const FVector2D FromScreen = GetHandleScreenPosition(Link.SourceCommentGuid, ECommentHandleSide::Right);
+        const FVector2D ToScreen   = GetHandleScreenPosition(Link.TargetCommentGuid, ECommentHandleSide::Left);
 
         if (FromScreen.IsNearlyZero() || ToScreen.IsNearlyZero())
         {
             continue;
         }
 
-        const FVector2D FromLocal = AllottedGeometry.AbsoluteToLocal(FromScreen);
-        const FVector2D ToLocal = AllottedGeometry.AbsoluteToLocal(ToScreen);
+        const FVector2D FromLocal = FromScreen;
+        const FVector2D ToLocal = ToScreen;
 
         if (bLinkModeActive)
         {
@@ -407,7 +435,7 @@ int32 SCommentLinkOverlay::OnPaint(
         const FVector2D FromScreen = GetHandleScreenPosition(PendingFromGuid, ECommentHandleSide::Right);
         if (!FromScreen.IsNearlyZero())
         {
-            const FVector2D FromLocal = AllottedGeometry.AbsoluteToLocal(FromScreen);
+            const FVector2D FromLocal = FromScreen;
 
             TArray<FVector2D> Points;
             Points.Add(FromLocal);
@@ -650,16 +678,178 @@ FVector2D SCommentLinkOverlay::GetHandleScreenPosition(const FGuid& CommentGuid,
         return FVector2D::ZeroVector;
     }
 
-    TSharedPtr<SBlueprintCommentLinksGraphNode> CommentWidget =
+    // Helper: compute handle position directly from graph-space data without a widget.
+    const auto GraphSpacePosition = [this, Side](UEdGraphNode_Comment* CommentNode) -> FVector2D
+    {
+        if (!GraphPanelPtr || !CommentNode)
+        {
+            return FVector2D::ZeroVector;
+        }
+
+        const FVector2D GraphPos(CommentNode->NodePosX, CommentNode->NodePosY);
+        FVector2D GraphSize(CommentNode->NodeWidth, CommentNode->NodeHeight);
+        if (GraphSize.IsNearlyZero())
+        {
+            GraphSize = FVector2D(300.f, 150.f); // sensible default comment size
+        }
+
+        FVector2D LocalPos;
+        switch (Side)
+        {
+        case ECommentHandleSide::Left:
+            LocalPos = FVector2D(0.0f, GraphSize.Y * 0.5f);
+            break;
+        case ECommentHandleSide::Right:
+            LocalPos = FVector2D(GraphSize.X, GraphSize.Y * 0.5f);
+            break;
+        case ECommentHandleSide::Top:
+            LocalPos = FVector2D(GraphSize.X * 0.5f, 0.0f);
+            break;
+        case ECommentHandleSide::Bottom:
+            LocalPos = FVector2D(GraphSize.X * 0.5f, GraphSize.Y);
+            break;
+        default:
+            LocalPos = GraphSize * 0.5f;
+            break;
+        }
+
+        const float Zoom = GraphPanelPtr->GetZoomAmount();
+        const FVector2D ViewOffset = GraphPanelPtr->GetViewOffset();
+        // Return panel-local coords; overlay shares the graph panel space.
+        return (GraphPos + LocalPos - ViewOffset) * Zoom;
+    };
+
+    TSharedPtr<SGraphNode> CommentWidget =
         FBlueprintCommentLinksState::Get().GetCommentWidget(CommentGuid);
+
+    // UE 5.7+ creates a new comment widget (SGraphNodeCommentWithMoveHandles) via
+    // UEdGraphNode_Comment::CreateVisualWidget, which bypasses our node factory.
+    // Fallback: scan the graph panel children for any comment widget that owns
+    // this guid and register it so handle positions resolve.
+    UEdGraphNode_Comment* ResolvedCommentNode = nullptr;
 
     if (!CommentWidget.IsValid())
     {
+        if (SGraphPanel* GraphPanel = GraphPanelPtr)
+        {
+            const FChildren* Children = GraphPanel->GetChildren();
+            if (Children)
+            {
+                for (int32 Index = 0; Index < Children->Num(); ++Index)
+                {
+                    const TSharedRef<const SWidget> ChildConst = Children->GetChildAt(Index);
+                    const TSharedRef<SWidget> Child = ConstCastSharedRef<SWidget>(ChildConst);
+                    const FName ChildType = Child->GetType();
+
+                    const bool bIsCommentWidget =
+                        ChildType == SBlueprintCommentLinksGraphNode::StaticWidgetClass().GetWidgetType() ||
+                        ChildType == SGraphNodeComment::StaticWidgetClass().GetWidgetType() ||
+                        ChildType == FName(TEXT("SGraphNodeCommentWithMoveHandles"));
+
+                    if (!bIsCommentWidget)
+                    {
+                        continue;
+                    }
+
+                    TSharedPtr<SGraphNode> GraphNodeWidget = StaticCastSharedRef<SGraphNode>(Child);
+                    if (UEdGraphNode_Comment* CommentNode = Cast<UEdGraphNode_Comment>(GraphNodeWidget->GetNodeObj()))
+                    {
+                        if (CommentNode->NodeGuid == CommentGuid)
+                        {
+                            FBlueprintCommentLinksState::Get().RegisterCommentWidget(CommentGuid, GraphNodeWidget);
+                            CommentWidget = GraphNodeWidget;
+                            ResolvedCommentNode = CommentNode;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!CommentWidget.IsValid())
+    {
+        // Final fallback: compute purely from graph-space data so handles always draw.
+        if (SGraphPanel* GraphPanel = GraphPanelPtr)
+        {
+            if (UEdGraph* Graph = GraphPanel->GetGraphObj())
+            {
+                for (UEdGraphNode* Node : Graph->Nodes)
+                {
+                    if (UEdGraphNode_Comment* CommentNode = Cast<UEdGraphNode_Comment>(Node))
+                    {
+                        if (CommentNode->NodeGuid == CommentGuid)
+                        {
+                            UE_LOG(LogTemp, Log,
+                                TEXT("BlueprintCommentLinks: HandlePos fallback to graph space for %s (widget missing)"),
+                                *CommentGuid.ToString());
+                            return GraphSpacePosition(CommentNode);
+                        }
+                    }
+                }
+            }
+        }
+
         return FVector2D::ZeroVector;
     }
 
     const FGeometry& NodeGeometry = CommentWidget->GetCachedGeometry();
     const FVector2D NodeSize = NodeGeometry.GetLocalSize();
+
+    if (NodeSize.IsNearlyZero())
+    {
+        UE_LOG(LogTemp, Log,
+            TEXT("BlueprintCommentLinks: Comment widget %s has zero geometry; using graph-space fallback"),
+            *CommentGuid.ToString());
+    }
+
+    // If we still have a tiny/zero size (can happen with new comment widgets before first pre-pass),
+    // fall back to graph coordinates from the comment node itself.
+    if (NodeSize.IsNearlyZero() && GraphPanelPtr)
+    {
+        if (!ResolvedCommentNode)
+        {
+            ResolvedCommentNode = Cast<UEdGraphNode_Comment>(CommentWidget->GetNodeObj());
+        }
+
+        if (ResolvedCommentNode)
+        {
+            const FVector2D GraphPos(ResolvedCommentNode->NodePosX, ResolvedCommentNode->NodePosY);
+            FVector2D GraphSize(ResolvedCommentNode->NodeWidth, ResolvedCommentNode->NodeHeight);
+            if (GraphSize.IsNearlyZero())
+            {
+                GraphSize = FVector2D(300.f, 150.f); // reasonable default for comments
+            }
+
+            UE_LOG(LogTemp, Log,
+                TEXT("BlueprintCommentLinks: Using graph-space fallback size (%f,%f) for comment %s"),
+                GraphSize.X, GraphSize.Y, *CommentGuid.ToString());
+
+            FVector2D LocalPos;
+            switch (Side)
+            {
+            case ECommentHandleSide::Left:
+                LocalPos = FVector2D(0.0f, GraphSize.Y * 0.5f);
+                break;
+            case ECommentHandleSide::Right:
+                LocalPos = FVector2D(GraphSize.X, GraphSize.Y * 0.5f);
+                break;
+            case ECommentHandleSide::Top:
+                LocalPos = FVector2D(GraphSize.X * 0.5f, 0.0f);
+                break;
+            case ECommentHandleSide::Bottom:
+                LocalPos = FVector2D(GraphSize.X * 0.5f, GraphSize.Y);
+                break;
+            default:
+                LocalPos = GraphSize * 0.5f;
+                break;
+            }
+
+            const float Zoom = GraphPanelPtr->GetZoomAmount();
+            const FVector2D ViewOffset = GraphPanelPtr->GetViewOffset();
+            return (GraphPos + LocalPos - ViewOffset) * Zoom;
+        }
+    }
 
     FVector2D LocalPos;
     switch (Side)
@@ -681,7 +871,9 @@ FVector2D SCommentLinkOverlay::GetHandleScreenPosition(const FGuid& CommentGuid,
         break;
     }
 
-    return NodeGeometry.LocalToAbsolute(LocalPos);
+    // Convert node-local to panel-local so overlay draws in the same space.
+    const FVector2D NodeAbsolute = NodeGeometry.LocalToAbsolute(LocalPos);
+    return GraphPanelPtr->GetCachedGeometry().AbsoluteToLocal(NodeAbsolute);
 }
 
 FReply SCommentLinkOverlay::OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)

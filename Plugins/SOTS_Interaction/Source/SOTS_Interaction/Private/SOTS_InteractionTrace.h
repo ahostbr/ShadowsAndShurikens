@@ -17,7 +17,10 @@ namespace SOTSInteractionTrace
         float Radius,
         ECollisionChannel Channel,
         const TArray<const AActor*>& ActorsToIgnore,
-        bool bDebug = false
+        bool bForceLegacyTraces,
+        bool& bOutUsedOmniTrace,
+        bool bDebugDraw = false,
+        bool bDebugLog = false
     );
 
     /** LOS line trace. Returns true if blocked (hit something). */
@@ -28,6 +31,9 @@ namespace SOTSInteractionTrace
         const FVector& End,
         ECollisionChannel Channel,
         const TArray<const AActor*>& ActorsToIgnore,
-        bool bDebug = false
+        bool bForceLegacyTraces,
+        bool& bOutUsedOmniTrace,
+        bool bDebugDraw = false,
+        bool bDebugLog = false
     );
 }

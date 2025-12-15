@@ -35,6 +35,18 @@ FSOTS_FXHandle USOTS_FXBlueprintLibrary::PlayFXCueDefinition(USOTS_FXCueDefiniti
     return Handle;
 }
 
+FSOTS_FXRequestResult USOTS_FXBlueprintLibrary::TriggerFXWithReport(UObject* WorldContextObject, const FSOTS_FXRequest& Request)
+{
+    if (USOTS_FXManagerSubsystem* Manager = USOTS_FXManagerSubsystem::Get())
+    {
+        return Manager->TriggerFXByTagWithReport(WorldContextObject, Request);
+    }
+
+    FSOTS_FXRequestResult Result;
+    Result.Status = ESOTS_FXRequestStatus::MissingContext;
+    return Result;
+}
+
 void USOTS_FXBlueprintLibrary::StopFXHandle(const FSOTS_FXHandle& Handle, bool bImmediate)
 {
     if (Handle.NiagaraComponent)

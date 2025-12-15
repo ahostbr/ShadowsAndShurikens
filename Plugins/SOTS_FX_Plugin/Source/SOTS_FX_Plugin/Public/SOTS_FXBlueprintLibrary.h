@@ -29,6 +29,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SOTS|FX", meta=(DisplayName="Stop FX Handle"))
     static void StopFXHandle(const FSOTS_FXHandle& Handle, bool bImmediate);
 
+    /** Tag-driven FX trigger that returns a detailed result payload. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|FX", meta=(DisplayName="Trigger FX By Tag (With Report)", WorldContext="WorldContextObject"))
+    static FSOTS_FXRequestResult TriggerFXWithReport(UObject* WorldContextObject, const FSOTS_FXRequest& Request);
+
     /** Debug helper: get counts of currently active Niagara & Audio FX. */
     UFUNCTION(BlueprintPure, Category = "SOTS|FX|Debug", meta=(DisplayName="Get FX Active Counts"))
     static FSOTS_FXActiveCounts GetFXActiveCounts();

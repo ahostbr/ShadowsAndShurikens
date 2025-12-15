@@ -24,10 +24,25 @@ void USOTS_FXManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
     CueMap.Reset();
     CuePools.Reset();
+    RegisteredLibraryDefinitions.Reset();
+    bRegistryReady = false;
+
+    BuildRegistryFromLibraries();
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bValidateFXRegistryOnInit)
+    {
+        ValidateLibraryDefinitions();
+    }
+#endif
+
+    bRegistryReady = true;
 }
 
 void USOTS_FXManagerSubsystem::Deinitialize()
 {
+    RegisteredLibraryDefinitions.Reset();
+    bRegistryReady = false;
     CuePools.Reset();
     CueMap.Reset();
 
@@ -39,6 +54,67 @@ void USOTS_FXManagerSubsystem::Deinitialize()
 USOTS_FXManagerSubsystem* USOTS_FXManagerSubsystem::Get()
 {
     return SingletonInstance.Get();
+}
+
+void USOTS_FXManagerSubsystem::BuildRegistryFromLibraries()
+{
+    RegisteredLibraryDefinitions.Reset();
+
+    for (const TObjectPtr<USOTS_FXDefinitionLibrary>& Library : Libraries)
+    {
+        if (!Library)
+        {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bValidateFXRegistryOnInit && bWarnOnMissingFXAssets)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Library reference is null; skipping."));
+            }
+#endif
+            continue;
+        }
+
+        for (const FSOTS_FXDefinition& Def : Library->Definitions)
+        {
+            if (!Def.FXTag.IsValid())
+            {
+                continue;
+            }
+
+            if (RegisteredLibraryDefinitions.Contains(Def.FXTag))
+            {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+                if (bWarnOnDuplicateFXTags)
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s; first definition kept."), *Def.FXTag.ToString());
+                }
+#endif
+                continue;
+            }
+
+            RegisteredLibraryDefinitions.Add(Def.FXTag, Def);
+        }
+    }
+}
+
+bool USOTS_FXManagerSubsystem::EnsureRegistryReady() const
+{
+    if (bRegistryReady)
+    {
+        return true;
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bWarnOnTriggerBeforeRegistryReady)
+    {
+        static bool bWarned = false;
+        if (!bWarned)
+        {
+            bWarned = true;
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Registry not ready; trigger ignored."));
+        }
+    }
+#endif
+    return false;
 }
 
 void USOTS_FXManagerSubsystem::RegisterCue(USOTS_FXCueDefinition* CueDefinition)
@@ -56,7 +132,7 @@ FSOTS_FXHandle USOTS_FXManagerSubsystem::PlayCueByTag(FGameplayTag CueTag, const
     FSOTS_FXHandle Handle;
 
     UWorld* World = GetWorld();
-    if (!World)
+    if (!World || !EnsureRegistryReady())
     {
         return Handle;
     }
@@ -79,7 +155,7 @@ FSOTS_FXHandle USOTS_FXManagerSubsystem::PlayCueDefinition(USOTS_FXCueDefinition
     FSOTS_FXHandle Handle;
 
     UWorld* World = GetWorld();
-    if (!World || !CueDefinition)
+    if (!World || !CueDefinition || !EnsureRegistryReady())
     {
         return Handle;
     }
@@ -169,36 +245,28 @@ void USOTS_FXManagerSubsystem::ApplyProfileData(const FSOTS_FXProfileData& InDat
 
 void USOTS_FXManagerSubsystem::RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
 {
-    if (!FXCueTag.IsValid())
-    {
-        return;
-    }
+    (void)RequestFXCueWithReport(FXCueTag, Instigator, Target);
+}
 
-    UWorld* WorldContext = nullptr;
-    if (Instigator)
-    {
-        WorldContext = Instigator->GetWorld();
-    }
-    else if (Target)
-    {
-        WorldContext = Target->GetWorld();
-    }
-    else
-    {
-        WorldContext = GetWorld();
-    }
+FSOTS_FXRequestReport USOTS_FXManagerSubsystem::RequestFXCueWithReport(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
+{
+    FSOTS_FXRequest Request;
+    Request.FXTag = FXCueTag;
+    Request.Instigator = Instigator;
+    Request.Target = Target;
+    Request.SpawnSpace = ESOTS_FXSpawnSpace::World;
+    Request.Rotation = FRotator::ZeroRotator;
 
-    FVector Location = FVector::ZeroVector;
     if (Target)
     {
-        Location = Target->GetActorLocation();
+        Request.Location = Target->GetActorLocation();
     }
     else if (Instigator)
     {
-        Location = Instigator->GetActorLocation();
+        Request.Location = Instigator->GetActorLocation();
     }
 
-    TriggerFXByTag(WorldContext, FXCueTag, Instigator, Target, Location, FRotator::ZeroRotator);
+    return ProcessFXRequest(Request, nullptr);
 }
 
 // -------------------------
@@ -207,25 +275,13 @@ void USOTS_FXManagerSubsystem::RequestFXCue(FGameplayTag FXCueTag, AActor* Insti
 
 const FSOTS_FXDefinition* USOTS_FXManagerSubsystem::FindDefinition(FGameplayTag FXTag) const
 {
-    if (!FXTag.IsValid())
-    {
-        return nullptr;
-    }
+    const FSOTS_FXDefinition* Definition = nullptr;
+    FGameplayTag ResolvedTag;
+    FString FailReason;
 
-    for (const TObjectPtr<USOTS_FXDefinitionLibrary>& Library : Libraries)
+    if (TryResolveCue(FXTag, Definition, ResolvedTag, FailReason) == ESOTS_FXRequestResult::Success)
     {
-        if (!Library)
-        {
-            continue;
-        }
-
-        for (const FSOTS_FXDefinition& Def : Library->Definitions)
-        {
-            if (Def.FXTag == FXTag)
-            {
-                return &Def;
-            }
-        }
+        return Definition;
     }
 
     return nullptr;
@@ -240,9 +296,15 @@ void USOTS_FXManagerSubsystem::BroadcastResolvedFX(
     const FRotator& Rotation,
     ESOTS_FXSpawnSpace Space,
     USceneComponent* AttachComponent,
-    FName AttachSocketName)
+    FName AttachSocketName,
+    float RequestedScale)
 {
     if (!FXTag.IsValid())
+    {
+        return;
+    }
+
+    if (!EnsureRegistryReady())
     {
         return;
     }
@@ -261,10 +323,24 @@ void USOTS_FXManagerSubsystem::BroadcastResolvedFX(
     {
         Resolved.NiagaraSystem = Definition->NiagaraSystem;
         Resolved.Sound         = Definition->Sound;
-        Resolved.Scale         = Definition->DefaultScale;
+        Resolved.Scale         = RequestedScale > 0.0f ? RequestedScale : Definition->DefaultScale;
+    }
+    else
+    {
+        Resolved.Scale = RequestedScale > 0.0f ? RequestedScale : 1.0f;
     }
 
     OnFXTriggered.Broadcast(Resolved);
+}
+
+FSOTS_FXRequestResult USOTS_FXManagerSubsystem::TriggerFXByTagWithReport(
+    UObject* WorldContextObject,
+    const FSOTS_FXRequest& Request)
+{
+    (void)WorldContextObject;
+    FSOTS_FXRequestResult LegacyResult;
+    ProcessFXRequest(Request, &LegacyResult);
+    return LegacyResult;
 }
 
 void USOTS_FXManagerSubsystem::TriggerFXByTag(
@@ -275,21 +351,17 @@ void USOTS_FXManagerSubsystem::TriggerFXByTag(
     FVector Location,
     FRotator Rotation)
 {
-    // WorldContextObject is accepted for consistency with other APIs, but
-    // the current implementation only uses tag resolution and delegates.
     (void)WorldContextObject;
 
-    const FSOTS_FXDefinition* Definition = FindDefinition(FXTag);
-    BroadcastResolvedFX(
-        FXTag,
-        Instigator,
-        Target,
-        Definition,
-        Location,
-        Rotation,
-        ESOTS_FXSpawnSpace::World,
-        nullptr,
-        NAME_None);
+    FSOTS_FXRequest Request;
+    Request.FXTag = FXTag;
+    Request.Instigator = Instigator;
+    Request.Target = Target;
+    Request.Location = Location;
+    Request.Rotation = Rotation;
+    Request.SpawnSpace = ESOTS_FXSpawnSpace::World;
+
+    ProcessFXRequest(Request, nullptr);
 }
 
 void USOTS_FXManagerSubsystem::TriggerAttachedFXByTag(
@@ -302,27 +374,257 @@ void USOTS_FXManagerSubsystem::TriggerAttachedFXByTag(
 {
     (void)WorldContextObject;
 
-    FVector Location = FVector::ZeroVector;
-    FRotator Rotation = FRotator::ZeroRotator;
+    FSOTS_FXRequest Request;
+    Request.FXTag = FXTag;
+    Request.Instigator = Instigator;
+    Request.Target = Target;
+    Request.AttachComponent = AttachComponent;
+    Request.AttachSocketName = AttachSocketName;
+    Request.SpawnSpace = ESOTS_FXSpawnSpace::AttachToComponent;
 
     if (AttachComponent)
     {
         const FTransform Xf = AttachComponent->GetComponentTransform();
-        Location = Xf.GetLocation();
-        Rotation = Xf.Rotator();
+        Request.Location = Xf.GetLocation();
+        Request.Rotation = Xf.Rotator();
     }
 
-    const FSOTS_FXDefinition* Definition = FindDefinition(FXTag);
+    ProcessFXRequest(Request, nullptr);
+}
+
+FSOTS_FXRequestReport USOTS_FXManagerSubsystem::ProcessFXRequest(const FSOTS_FXRequest& Request, FSOTS_FXRequestResult* OutLegacyResult)
+{
+    FSOTS_FXRequestReport Report;
+    Report.RequestedCueTag = Request.FXTag;
+    Report.ResolvedCueTag = Request.FXTag;
+
+    FSOTS_FXRequestResult Legacy;
+    Legacy.FXTag = Request.FXTag;
+    Legacy.SpawnSpace = Request.SpawnSpace;
+    Legacy.AttachComponent = Request.AttachComponent;
+    Legacy.AttachSocketName = Request.AttachSocketName;
+    Legacy.Instigator = Request.Instigator;
+    Legacy.Target = Request.Target;
+    Legacy.Location = Request.Location;
+    Legacy.Rotation = Request.Rotation;
+    Legacy.ResolvedScale = Request.Scale;
+
+    auto SetFailure = [&](ESOTS_FXRequestResult ResultCode, ESOTS_FXRequestStatus LegacyStatus, const FString& DebugMsg)
+    {
+        Report.Result = ResultCode;
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        Report.DebugMessage = DebugMsg;
+#else
+        (void)DebugMsg;
+#endif
+        Legacy.Status = LegacyStatus;
+        Legacy.bSucceeded = false;
+        MaybeLogFXFailure(Report, *DebugMsg);
+    };
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        SetFailure(ESOTS_FXRequestResult::InvalidWorld, ESOTS_FXRequestStatus::MissingContext, TEXT("Invalid world context"));
+        if (OutLegacyResult)
+        {
+            *OutLegacyResult = Legacy;
+        }
+        return Report;
+    }
+
+    const FSOTS_FXDefinition* Definition = nullptr;
+    FGameplayTag ResolvedTag;
+    FString FailReason;
+
+    const ESOTS_FXRequestResult ResolveResult = TryResolveCue(Request.FXTag, Definition, ResolvedTag, FailReason);
+    Report.ResolvedCueTag = ResolvedTag;
+    if (ResolveResult != ESOTS_FXRequestResult::Success)
+    {
+        ESOTS_FXRequestStatus LegacyStatus = ESOTS_FXRequestStatus::InvalidTag;
+        if (ResolveResult == ESOTS_FXRequestResult::InvalidWorld)
+        {
+            LegacyStatus = ESOTS_FXRequestStatus::RegistryNotReady;
+        }
+        else if (ResolveResult == ESOTS_FXRequestResult::NotFound)
+        {
+            LegacyStatus = ESOTS_FXRequestStatus::DefinitionNotFound;
+        }
+        else
+        {
+            LegacyStatus = ESOTS_FXRequestStatus::InvalidTag;
+        }
+
+        SetFailure(ResolveResult, LegacyStatus, FailReason);
+        if (OutLegacyResult)
+        {
+            *OutLegacyResult = Legacy;
+        }
+        return Report;
+    }
+
+    FString PolicyFail;
+    const ESOTS_FXRequestResult PolicyResult = EvaluatePolicy(Definition, PolicyFail);
+    if (PolicyResult != ESOTS_FXRequestResult::Success)
+    {
+        SetFailure(PolicyResult, ESOTS_FXRequestStatus::MissingContext, PolicyFail);
+        if (OutLegacyResult)
+        {
+            *OutLegacyResult = Legacy;
+        }
+        return Report;
+    }
+
+    // Validate attachment requirements.
+    if (Request.SpawnSpace != ESOTS_FXSpawnSpace::World && !Request.AttachComponent)
+    {
+        SetFailure(ESOTS_FXRequestResult::InvalidParams, ESOTS_FXRequestStatus::MissingAttachment, TEXT("Missing attach target"));
+        if (OutLegacyResult)
+        {
+            *OutLegacyResult = Legacy;
+        }
+        return Report;
+    }
+
+    FVector ResolvedLocation = Request.Location;
+    FRotator ResolvedRotation = Request.Rotation;
+
+    if (Request.SpawnSpace != ESOTS_FXSpawnSpace::World && Request.AttachComponent)
+    {
+        const FTransform Xf = Request.AttachComponent->GetComponentTransform();
+        ResolvedLocation = Xf.GetLocation();
+        ResolvedRotation = Xf.Rotator();
+    }
+
+    float EffectiveScale = Request.Scale;
+    if (EffectiveScale <= 0.0f)
+    {
+        EffectiveScale = 1.0f;
+    }
+    EffectiveScale *= Definition ? Definition->DefaultScale : 1.0f;
+
+    Report.Result = ESOTS_FXRequestResult::Success;
+    Legacy = ConvertReportToLegacy(Report, Request, ResolvedLocation, ResolvedRotation, EffectiveScale, Definition);
+
     BroadcastResolvedFX(
-        FXTag,
-        Instigator,
-        Target,
+        Report.ResolvedCueTag,
+        Request.Instigator,
+        Request.Target,
         Definition,
-        Location,
-        Rotation,
-        ESOTS_FXSpawnSpace::AttachToComponent,
-        AttachComponent,
-        AttachSocketName);
+        ResolvedLocation,
+        ResolvedRotation,
+        Request.SpawnSpace,
+        Request.AttachComponent,
+        Request.AttachSocketName,
+        EffectiveScale);
+
+    if (OutLegacyResult)
+    {
+        *OutLegacyResult = Legacy;
+    }
+
+    return Report;
+}
+
+void USOTS_FXManagerSubsystem::MaybeLogFXFailure(const FSOTS_FXRequestReport& Report, const TCHAR* Reason) const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!bLogFXRequestFailures)
+    {
+        return;
+    }
+
+    const FString StatusStr = StaticEnum<ESOTS_FXRequestResult>()->GetNameStringByValue(static_cast<int64>(Report.Result));
+    const FString TagStr = Report.RequestedCueTag.IsValid() ? Report.RequestedCueTag.ToString() : TEXT("None");
+    const FString Debug = Report.DebugMessage.IsEmpty() ? TEXT("") : Report.DebugMessage;
+    UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] FX request failed (%s): Tag=%s Result=%s %s"), Reason, *TagStr, *StatusStr, *Debug);
+#endif
+}
+
+FSOTS_FXRequestResult USOTS_FXManagerSubsystem::ConvertReportToLegacy(const FSOTS_FXRequestReport& Report, const FSOTS_FXRequest& Request, const FVector& ResolvedLocation, const FRotator& ResolvedRotation, float ResolvedScale, const FSOTS_FXDefinition* Definition) const
+{
+    FSOTS_FXRequestResult Legacy;
+    Legacy.FXTag = Report.ResolvedCueTag.IsValid() ? Report.ResolvedCueTag : Report.RequestedCueTag;
+    Legacy.Location = ResolvedLocation;
+    Legacy.Rotation = ResolvedRotation;
+    Legacy.SpawnSpace = Request.SpawnSpace;
+    Legacy.AttachComponent = Request.AttachComponent;
+    Legacy.AttachSocketName = Request.AttachSocketName;
+    Legacy.Instigator = Request.Instigator;
+    Legacy.Target = Request.Target;
+    Legacy.ResolvedScale = ResolvedScale;
+    Legacy.NiagaraSystem = Definition ? Definition->NiagaraSystem : nullptr;
+    Legacy.Sound = Definition ? Definition->Sound : nullptr;
+
+    switch (Report.Result)
+    {
+        case ESOTS_FXRequestResult::Success:
+            Legacy.Status = ESOTS_FXRequestStatus::Success;
+            Legacy.bSucceeded = true;
+            break;
+        case ESOTS_FXRequestResult::NotFound:
+            Legacy.Status = ESOTS_FXRequestStatus::DefinitionNotFound;
+            Legacy.bSucceeded = false;
+            break;
+        case ESOTS_FXRequestResult::InvalidWorld:
+            Legacy.Status = ESOTS_FXRequestStatus::RegistryNotReady;
+            Legacy.bSucceeded = false;
+            break;
+        case ESOTS_FXRequestResult::InvalidParams:
+            Legacy.Status = ESOTS_FXRequestStatus::InvalidTag;
+            Legacy.bSucceeded = false;
+            break;
+        case ESOTS_FXRequestResult::DisabledByPolicy:
+        case ESOTS_FXRequestResult::FailedToSpawn:
+        default:
+            Legacy.Status = ESOTS_FXRequestStatus::MissingContext;
+            Legacy.bSucceeded = false;
+            break;
+    }
+
+    return Legacy;
+}
+
+ESOTS_FXRequestResult USOTS_FXManagerSubsystem::EvaluatePolicy(const FSOTS_FXDefinition* Definition, FString& OutFailReason) const
+{
+    OutFailReason.Reset();
+
+    if (!Definition)
+    {
+        OutFailReason = TEXT("Definition missing");
+        return ESOTS_FXRequestResult::NotFound;
+    }
+
+    // No per-cue policy metadata yet; global toggles are currently pass-through.
+    return ESOTS_FXRequestResult::Success;
+}
+
+ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag, const FSOTS_FXDefinition*& OutDefinition, FGameplayTag& OutResolvedTag, FString& OutFailReason) const
+{
+    OutDefinition = nullptr;
+    OutResolvedTag = FXTag;
+    OutFailReason.Reset();
+
+    if (!FXTag.IsValid())
+    {
+        OutFailReason = TEXT("Invalid tag");
+        return ESOTS_FXRequestResult::InvalidParams;
+    }
+
+    if (!EnsureRegistryReady())
+    {
+        OutFailReason = TEXT("Registry not ready");
+        return ESOTS_FXRequestResult::InvalidWorld;
+    }
+
+    if (const FSOTS_FXDefinition* Def = RegisteredLibraryDefinitions.Find(FXTag))
+    {
+        OutDefinition = Def;
+        return ESOTS_FXRequestResult::Success;
+    }
+
+    OutFailReason = TEXT("Definition not found");
+    return ESOTS_FXRequestResult::NotFound;
 }
 
 // -------------------------
@@ -531,4 +833,54 @@ FSOTS_FXHandle USOTS_FXManagerSubsystem::SpawnCue_Internal(UWorld* World, USOTS_
     }
 
     return Handle;
+}
+void USOTS_FXManagerSubsystem::ValidateCueDefinition(const FSOTS_FXDefinition& Def, TSet<FGameplayTag>& SeenTags) const
+{
+    if (!Def.FXTag.IsValid())
+    {
+        return;
+    }
+
+    const bool bIsDuplicate = SeenTags.Contains(Def.FXTag);
+    if (bIsDuplicate)
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bWarnOnDuplicateFXTags)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s detected during validation; first definition wins."), *Def.FXTag.ToString());
+        }
+#endif
+        return;
+    }
+
+    SeenTags.Add(Def.FXTag);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const bool bMissingNiagara = !Def.NiagaraSystem.IsValid() && !Def.NiagaraSystem.ToSoftObjectPath().IsValid();
+    const bool bMissingSound = !Def.Sound.IsValid() && !Def.Sound.ToSoftObjectPath().IsValid();
+    if (bWarnOnMissingFXAssets && bMissingNiagara && bMissingSound)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] FX tag %s has no Niagara or Sound asset set."), *Def.FXTag.ToString());
+    }
+#endif
+}
+
+void USOTS_FXManagerSubsystem::ValidateLibraryDefinitions() const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    TSet<FGameplayTag> SeenTags;
+
+    for (const TPair<FGameplayTag, FSOTS_FXDefinition>& Pair : RegisteredLibraryDefinitions)
+    {
+        ValidateCueDefinition(Pair.Value, SeenTags);
+    }
+
+    for (const TObjectPtr<USOTS_FXDefinitionLibrary>& Library : Libraries)
+    {
+        if (!Library && bWarnOnMissingFXAssets)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Validation skipped null library reference."));
+        }
+    }
+#endif
 }

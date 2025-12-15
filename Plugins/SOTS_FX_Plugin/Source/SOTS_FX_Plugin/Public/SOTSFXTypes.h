@@ -10,6 +10,43 @@ class UAudioComponent;
 class UNiagaraComponent;
 class USceneComponent;
 class AActor;
+class UObject;
+
+// Lightweight request outcome for FX triggers.
+UENUM(BlueprintType)
+enum class ESOTS_FXRequestResult : uint8
+{
+    Success           UMETA(DisplayName="Success"),
+    NotFound          UMETA(DisplayName="Not Found"),
+    DisabledByPolicy  UMETA(DisplayName="Disabled By Policy"),
+    InvalidWorld      UMETA(DisplayName="Invalid World"),
+    InvalidParams     UMETA(DisplayName="Invalid Params"),
+    FailedToSpawn     UMETA(DisplayName="Failed To Spawn")
+};
+
+// Minimal report payload returned by FX requests.
+USTRUCT(BlueprintType)
+struct FSOTS_FXRequestReport
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    ESOTS_FXRequestResult Result = ESOTS_FXRequestResult::InvalidParams;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FGameplayTag RequestedCueTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FGameplayTag ResolvedCueTag;
+
+    // Optional spawned object (Niagara/Audio). May be null when broadcast-only.
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    TObjectPtr<UObject> SpawnedObject = nullptr;
+
+    // Dev-only detail. Remains empty in shipping/test.
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FString DebugMessage;
+};
 
 // Where an FX job expects to be applied.
 UENUM(BlueprintType)
@@ -18,6 +55,55 @@ enum class ESOTS_FXSpawnSpace : uint8
     World              UMETA(DisplayName="World"),
     AttachToActor      UMETA(DisplayName="Attach To Actor"),
     AttachToComponent  UMETA(DisplayName="Attach To Component")
+};
+
+// Outcome for the unified FX request pipeline.
+UENUM(BlueprintType)
+enum class ESOTS_FXRequestStatus : uint8
+{
+    Success             UMETA(DisplayName="Success"),
+    InvalidTag          UMETA(DisplayName="Invalid Tag"),
+    RegistryNotReady    UMETA(DisplayName="Registry Not Ready"),
+    DefinitionNotFound  UMETA(DisplayName="Definition Not Found"),
+    MissingContext      UMETA(DisplayName="Missing Context"),
+    MissingAttachment   UMETA(DisplayName="Missing Attachment Target")
+};
+
+/**
+ * Unified FX request payload used by the tag-driven router.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_FXRequest
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    FGameplayTag FXTag;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    AActor* Instigator = nullptr;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    AActor* Target = nullptr;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    FRotator Rotation = FRotator::ZeroRotator;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    ESOTS_FXSpawnSpace SpawnSpace = ESOTS_FXSpawnSpace::World;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    USceneComponent* AttachComponent = nullptr;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    FName AttachSocketName = NAME_None;
+
+    // Optional per-request scale override (applied on top of the definition default).
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    float Scale = 1.0f;
 };
 
 /**
@@ -184,6 +270,54 @@ struct FSOTS_FXResolvedRequest
 
     UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
     TSoftObjectPtr<USoundBase> Sound;
+};
+
+/**
+ * Result payload for the unified FX request pipeline.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_FXRequestResult
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    ESOTS_FXRequestStatus Status = ESOTS_FXRequestStatus::InvalidTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FGameplayTag FXTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FRotator Rotation = FRotator::ZeroRotator;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    ESOTS_FXSpawnSpace SpawnSpace = ESOTS_FXSpawnSpace::World;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    TWeakObjectPtr<AActor> Instigator;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    TWeakObjectPtr<AActor> Target;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    TWeakObjectPtr<USceneComponent> AttachComponent;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    FName AttachSocketName = NAME_None;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    float ResolvedScale = 1.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    TSoftObjectPtr<UNiagaraSystem> NiagaraSystem;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    TSoftObjectPtr<USoundBase> Sound;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|FX")
+    bool bSucceeded = false;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnFXTriggered, const FSOTS_FXResolvedRequest&, FXRequest);

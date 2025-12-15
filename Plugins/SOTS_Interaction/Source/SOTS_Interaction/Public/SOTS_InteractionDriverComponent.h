@@ -36,11 +36,11 @@ public:
 
     /** Call from input binding (Interact). */
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
-    void Driver_RequestInteract();
+    FSOTS_InteractionResult Driver_RequestInteract();
 
     /** Call from UI choice: execute selected option. */
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
-    bool Driver_ExecuteOption(FGameplayTag OptionTag);
+    FSOTS_InteractionResult Driver_ExecuteOption(FGameplayTag OptionTag);
 
     /** Force update now. */
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
