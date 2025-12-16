@@ -20,7 +20,7 @@
 #include "Widgets/Layout/SSeparator.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/SGraphEditor.h"
+#include "SGraphPanel.h"
 #include "Widgets/SWindow.h"
 #include "Misc/Paths.h"
 #include "HAL/PlatformApplicationMisc.h"
@@ -47,49 +47,57 @@ static FString PresetToString(const EBEP_NodeJsonPreset Preset)
     return TEXT("Unknown");
 }
 
-static void GatherGraphEditors(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGraphEditor>>& Out)
+static void GatherGraphPanels(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGraphPanel>>& Out)
 {
-    if (Root->GetType() == FName(TEXT("SGraphEditor")))
+    if (Root->GetType() == FName(TEXT("SGraphPanel")))
     {
-        Out.Add(StaticCastSharedRef<SGraphEditor>(Root));
+        Out.Add(StaticCastSharedRef<SGraphPanel>(Root));
     }
     if (FChildren* Children = Root->GetChildren())
     {
         const int32 Num = Children->Num();
         for (int32 Index = 0; Index < Num; ++Index)
         {
-            GatherGraphEditors(Children->GetChildAt(Index), Out);
+            GatherGraphPanels(Children->GetChildAt(Index), Out);
         }
     }
 }
 
-static TSharedPtr<SGraphEditor> FindActiveGraphEditor()
+static TSharedPtr<SGraphPanel> FindActiveGraphPanel()
 {
     const TArray<TSharedRef<SWindow>>& Windows = FSlateApplication::Get().GetTopLevelWindows();
-    TArray<TSharedPtr<SGraphEditor>> Editors;
+    TArray<TSharedPtr<SGraphPanel>> Panels;
     for (const TSharedRef<SWindow>& Win : Windows)
     {
         if (TSharedPtr<SWidget> Content = Win->GetContent())
         {
-            GatherGraphEditors(Content.ToSharedRef(), Editors);
+            GatherGraphPanels(Content.ToSharedRef(), Panels);
         }
     }
 
-    for (const TSharedPtr<SGraphEditor>& GE : Editors)
+    for (const TSharedPtr<SGraphPanel>& Panel : Panels)
     {
-        if (GE.IsValid())
+        if (Panel.IsValid())
         {
-            if (UEdGraph* Graph = GE->GetCurrentGraph())
+            if (UEdGraph* Graph = Panel->GetGraphObj())
             {
-                if (GE->GetSelectedNodes().Num() > 0)
+                if (Panel->GetSelectedGraphNodes().Num() > 0)
                 {
-                    return GE;
+                    return Panel;
                 }
             }
         }
     }
 
-    return Editors.Num() > 0 ? Editors[0] : nullptr;
+    for (const TSharedPtr<SGraphPanel>& Panel : Panels)
+    {
+        if (Panel.IsValid() && Panel->GetGraphObj())
+        {
+            return Panel;
+        }
+    }
+
+    return nullptr;
 }
 
 static TArray<FString> TokenizeCsvRow(const FString& Line)
@@ -449,38 +457,56 @@ FReply SBEP_NodeJsonPanel::OnApplyPresetClicked()
     {
         Settings->ApplyPresetToSettings(Settings->DefaultPreset);
         Settings->SaveConfig();
-
-    FString GoldenSummaryPath;
-    FString SuperPath;
-    FString AuditPath;
-    FString CommentPath;
-    FString TemplatePath;
-    FString Error;
-    if (!BEP_NodeJson::WriteGoldenSamples(GoldenSummaryPath, &Error, &SuperPath, &AuditPath, &CommentPath, &TemplatePath))
-    {
-        const FString Reason = Error.IsEmpty() ? TEXT("Golden sample failure") : Error;
-        UpdateStatus(FString::Printf(TEXT("Golden samples failed: %s"), *Reason));
-        BEPNodeJsonUI::ShowNodeJsonToast(Reason, false);
-        return false;
+        UpdateStatus(TEXT("Applied default preset."));
+        BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Preset applied"), true);
     }
+    return FReply::Handled();
+}
 
-    LastSavedPath = SuperPath;
-    LastSummaryPath = GoldenSummaryPath;
-    LastCommentPath = CommentPath;
-    LastCommentTemplatePath = TemplatePath;
-    LastJsonPreview.Empty();
-    bHasLastStats = false;
+FReply SBEP_NodeJsonPanel::OnQuickPresetClicked(EBEP_NodeJsonPreset Preset)
+{
+    if (Settings)
+    {
+        Settings->ApplyPresetToSettings(Preset);
+        Settings->DefaultPreset = Preset;
+        Settings->SaveConfig();
+        UpdateStatus(FString::Printf(TEXT("Applied preset: %s"), *PresetToString(Preset)));
+        BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Preset applied"), true);
+    }
+    return FReply::Handled();
+}
 
-    FString Status = TEXT("Golden samples saved.\n");
-    Status += FString::Printf(TEXT("SuperCompact: %s\n"), *SuperPath);
-    Status += FString::Printf(TEXT("AIAudit: %s\n"), *AuditPath);
-    Status += FString::Printf(TEXT("Comments: %s\n"), *CommentPath);
-    Status += FString::Printf(TEXT("Template: %s\n"), *TemplatePath);
-    Status += FString::Printf(TEXT("Summary: %s"), *GoldenSummaryPath);
+FReply SBEP_NodeJsonPanel::OnExportClicked()
+{
+    RunExport(false);
+    return FReply::Handled();
+}
 
-    UpdateStatus(Status);
-    BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Golden samples written"), true);
-    return true;
+FReply SBEP_NodeJsonPanel::OnCopyClicked()
+{
+    RunExport(true);
+    return FReply::Handled();
+}
+
+FReply SBEP_NodeJsonPanel::OnExportCopyPathClicked()
+{
+    RunExportWithPathCopy();
+    return FReply::Handled();
+}
+
+FReply SBEP_NodeJsonPanel::OnPreviewClicked()
+{
+    RunPreview();
+    return FReply::Handled();
+}
+
+FReply SBEP_NodeJsonPanel::OnExportCommentsTemplateClicked()
+{
+    RunCommentExportWithTemplate();
+    return FReply::Handled();
+}
+
+FReply SBEP_NodeJsonPanel::OnGoldenSamplesClicked()
 {
     RunGoldenSamples();
     return FReply::Handled();
@@ -900,15 +926,15 @@ bool SBEP_NodeJsonPanel::RunCommentImport()
         return false;
     }
 
-    const TSharedPtr<SGraphEditor> GraphEditor = FindActiveGraphEditor();
-    if (!GraphEditor.IsValid())
+    const TSharedPtr<SGraphPanel> GraphPanel = FindActiveGraphPanel();
+    if (!GraphPanel.IsValid())
     {
         UpdateStatus(TEXT("No active graph editor."));
         BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Import failed: no graph"), false);
         return false;
     }
 
-    UEdGraph* Graph = GraphEditor->GetCurrentGraph();
+    UEdGraph* Graph = GraphPanel->GetGraphObj();
     if (!Graph)
     {
         UpdateStatus(TEXT("No active graph."));
@@ -996,12 +1022,12 @@ bool SBEP_NodeJsonPanel::RunCommentImport()
         ++Created;
     }
 
-    if (GraphEditor.IsValid())
+    if (GraphPanel.IsValid())
     {
-        GraphEditor->ClearSelectionSet();
+        GraphPanel->SelectionManager.ClearSelectionSet();
         for (UEdGraphNode_Comment* CommentNode : CreatedComments)
         {
-            GraphEditor->SetNodeSelection(CommentNode, true);
+            GraphPanel->SelectionManager.SetNodeSelection(CommentNode, true);
         }
     }
 

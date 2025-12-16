@@ -75,6 +75,16 @@ enum class ESOTS_KEM_ExecutionFamily : uint8
     Special      UMETA(DisplayName="Special / Cinematic")
 };
 
+// Shared helper for logging and debug strings without repeating enum plumbing.
+inline FString SOTS_KEM_GetExecutionFamilyName(ESOTS_KEM_ExecutionFamily Family)
+{
+    if (const UEnum* Enum = StaticEnum<ESOTS_KEM_ExecutionFamily>())
+    {
+        return Enum->GetNameStringByValue(static_cast<int64>(Family));
+    }
+    return TEXT("Unknown");
+}
+
 UENUM(BlueprintType)
 enum class ESOTS_KEMRejectReason : uint8
 {

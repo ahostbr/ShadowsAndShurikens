@@ -20,7 +20,8 @@ public class SOTS_UI : ModuleRules
 				"GameplayTags",
 				"SOTS_TagManager",
 				"DeveloperSettings",
-				"InputCore"
+				"InputCore",
+				"SOTS_Input"
 			}
 		);
 

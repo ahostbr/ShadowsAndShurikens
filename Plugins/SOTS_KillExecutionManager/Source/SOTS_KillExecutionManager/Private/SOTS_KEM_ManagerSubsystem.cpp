@@ -324,15 +324,6 @@ namespace
         return Path.IsEmpty() ? TEXT("UnknownExecutionDefinition") : Path;
     }
 
-    FString GetExecutionFamilyName(ESOTS_KEM_ExecutionFamily Family)
-    {
-        if (const UEnum* Enum = StaticEnum<ESOTS_KEM_ExecutionFamily>())
-        {
-            return Enum->GetNameStringByValue(static_cast<int64>(Family));
-        }
-        return TEXT("Unknown");
-    }
-
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     void LogUnboundDispatchIfNeeded(const USOTS_KEMManagerSubsystem* Manager,
                                     const FString& BackendName,
@@ -349,7 +340,7 @@ namespace
         const FString ExecName = Def
             ? (Def->ExecutionTag.IsValid() ? Def->ExecutionTag.ToString() : Def->GetName())
             : TEXT("None");
-        const FString FamilyName = Def ? GetExecutionFamilyName(Def->ExecutionFamily) : TEXT("Unknown");
+        const FString FamilyName = Def ? SOTS_KEM_GetExecutionFamilyName(Def->ExecutionFamily) : TEXT("Unknown");
         const FString InstigatorName = GetNameSafe(Instigator);
         const FString TargetName = GetNameSafe(Target);
 
@@ -2982,7 +2973,7 @@ void USOTS_KEMManagerSubsystem::KEM_DumpCoverage()
             continue;
         }
 
-        const FString FamilyName = GetExecutionFamilyName(Def->ExecutionFamily);
+        const FString FamilyName = SOTS_KEM_GetExecutionFamilyName(Def->ExecutionFamily);
         FamilyCounts.FindOrAdd(FamilyName) += 1;
 
         TSet<FString> PositionNames;

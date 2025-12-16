@@ -47,6 +47,23 @@ FSOTS_FXRequestResult USOTS_FXBlueprintLibrary::TriggerFXWithReport(UObject* Wor
     return Result;
 }
 
+FSOTS_FXRequestReport USOTS_FXBlueprintLibrary::RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
+{
+    if (USOTS_FXManagerSubsystem* Manager = USOTS_FXManagerSubsystem::Get())
+    {
+        return Manager->RequestFXCueWithReport(FXCueTag, Instigator, Target);
+    }
+
+    FSOTS_FXRequestReport Report;
+    Report.RequestedCueTag = FXCueTag;
+    Report.ResolvedCueTag = FXCueTag;
+    Report.Result = ESOTS_FXRequestResult::InvalidWorld;
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    Report.DebugMessage = TEXT("FXManagerSubsystem missing");
+#endif
+    return Report;
+}
+
 void USOTS_FXBlueprintLibrary::StopFXHandle(const FSOTS_FXHandle& Handle, bool bImmediate)
 {
     if (Handle.NiagaraComponent)

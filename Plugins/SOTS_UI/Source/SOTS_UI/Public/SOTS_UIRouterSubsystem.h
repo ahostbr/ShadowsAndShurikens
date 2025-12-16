@@ -173,6 +173,9 @@ private:
 	bool ResolveEntry(FGameplayTag WidgetId, FSOTS_WidgetRegistryEntry& OutEntry);
 	void RefreshInputAndPauseState();
 	void ApplyInputPolicy(const FSOTS_ActiveWidgetEntry* TopEntry);
+	void RefreshInputLayers(const FSOTS_ActiveWidgetEntry* TopEntry);
+	void UpdateUINavLayerState(bool bShouldEnable);
+	bool ShouldEnableUINavLayer(const FSOTS_ActiveWidgetEntry* TopEntry) const;
 	void RemoveTopFromLayer(ESOTS_UILayer Layer);
 	FSOTS_ActiveWidgetEntry* GetTopEntry(ESOTS_UILayer Layer);
 	const FSOTS_ActiveWidgetEntry* GetTopEntry(ESOTS_UILayer Layer) const;
@@ -223,4 +226,5 @@ public:
 
 private:
 	bool bGamePausedForUI = false;
+	bool bUINavLayerActive = false;
 };

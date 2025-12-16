@@ -91,6 +91,7 @@ struct FSOTS_FXExecutionParams
     ESOTS_FXSpawnSpace SpawnSpace = ESOTS_FXSpawnSpace::World;
     USceneComponent* AttachComponent = nullptr;
     FName AttachSocketName = NAME_None;
+    bool bAttach = false;
     bool bHasSurfaceNormal = false;
     FVector SurfaceNormal = FVector::UpVector;
     AActor* Instigator = nullptr;
@@ -208,7 +209,7 @@ public:
 
     /** FX cue request entry point for other subsystems. */
     UFUNCTION(BlueprintCallable, Category="SOTS|FX|Cues")
-    void RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target);
+    FSOTS_FXRequestReport RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target);
 
     /** FX cue request with explicit result report. */
     UFUNCTION(BlueprintCallable, Category="SOTS|FX|Cues")
@@ -357,6 +358,9 @@ private:
     void RebuildLibraryOrderAndRegistry();
     void RebuildSortedLibraries();
     void SeedLibrariesFromConfig();
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    void LogLibraryOrderDebug() const;
+#endif
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     FString BuildLibraryOrderDebugString() const;
 #endif

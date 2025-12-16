@@ -284,6 +284,10 @@ void USOTS_FXManagerSubsystem::RebuildLibraryOrderAndRegistry()
     RebuildSortedLibraries();
     BuildRegistryFromLibraries();
     bRegistryReady = true;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    LogLibraryOrderDebug();
+#endif
 }
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
@@ -299,6 +303,18 @@ FString USOTS_FXManagerSubsystem::BuildLibraryOrderDebugString() const
     }
 
     return FString::Join(Parts, TEXT(" -> "));
+}
+#endif
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+void USOTS_FXManagerSubsystem::LogLibraryOrderDebug() const
+{
+    if (!bDebugLogCueResolution)
+    {
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Library order => %s"), *BuildLibraryOrderDebugString());
 }
 #endif
 
@@ -553,12 +569,7 @@ void USOTS_FXManagerSubsystem::ApplyFXProfileSettings(const FSOTS_FXProfileData&
     ApplyProfileData(InData);
 }
 
-void USOTS_FXManagerSubsystem::RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
-{
-    (void)RequestFXCueWithReport(FXCueTag, Instigator, Target);
-}
-
-FSOTS_FXRequestReport USOTS_FXManagerSubsystem::RequestFXCueWithReport(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
+FSOTS_FXRequestReport USOTS_FXManagerSubsystem::RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
 {
     FSOTS_FXRequest Request;
     Request.FXTag = FXCueTag;
@@ -577,6 +588,11 @@ FSOTS_FXRequestReport USOTS_FXManagerSubsystem::RequestFXCueWithReport(FGameplay
     }
 
     return ProcessFXRequest(Request, nullptr);
+}
+
+FSOTS_FXRequestReport USOTS_FXManagerSubsystem::RequestFXCueWithReport(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
+{
+    return RequestFXCue(FXCueTag, Instigator, Target);
 }
 
 // -------------------------
@@ -952,7 +968,7 @@ ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bDebugLogCueResolution)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Failed to resolve %s after searching %d libraries."), *FXTag.ToString(), LibraryCount);
+        UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Failed to resolve %s after searching %d libraries. Order: %s"), *FXTag.ToString(), LibraryCount, *BuildLibraryOrderDebugString());
     }
 #endif
     return ESOTS_FXRequestResult::NotFound;

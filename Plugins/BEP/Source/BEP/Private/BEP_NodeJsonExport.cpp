@@ -22,8 +22,7 @@
 #include "Policies/CondensedJsonPrintPolicy.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
-#include "Toolkits/AssetEditorManager.h"
-#include "Widgets/SGraphEditor.h"
+#include "SGraphPanel.h"
 #include "Widgets/SWidget.h"
 #include "Widgets/SWindow.h"
 
@@ -83,11 +82,11 @@ bool IsExecPin(const UEdGraphPin* Pin)
     return Pin && Pin->PinType.PinCategory == KExecPinCategory;
 }
 
-void GatherGraphEditors(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGraphEditor>>& Out)
+void GatherGraphPanels(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGraphPanel>>& Out)
 {
-    if (Root->GetType() == FName(TEXT("SGraphEditor")))
+    if (Root->GetType() == FName(TEXT("SGraphPanel")))
     {
-        Out.Add(StaticCastSharedRef<SGraphEditor>(Root));
+        Out.Add(StaticCastSharedRef<SGraphPanel>(Root));
     }
     FChildren* Children = Root->GetChildren();
     if (Children)
@@ -96,44 +95,53 @@ void GatherGraphEditors(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGrap
         for (int32 i = 0; i < Num; ++i)
         {
             TSharedRef<SWidget> Child = Children->GetChildAt(i);
-            GatherGraphEditors(Child, Out);
+            GatherGraphPanels(Child, Out);
         }
     }
 }
 
-TSharedPtr<SGraphEditor> FindActiveGraphEditor()
+TSharedPtr<SGraphPanel> FindActiveGraphPanel()
 {
     // Prefer graph editors with a selection, else first available.
     const TArray<TSharedRef<SWindow>>& Windows = FSlateApplication::Get().GetTopLevelWindows();
-    TArray<TSharedPtr<SGraphEditor>> Editors;
+    TArray<TSharedPtr<SGraphPanel>> Panels;
     for (const TSharedRef<SWindow>& Win : Windows)
     {
         if (TSharedPtr<SWidget> Content = Win->GetContent())
         {
-            GatherGraphEditors(Content.ToSharedRef(), Editors);
+            GatherGraphPanels(Content.ToSharedRef(), Panels);
         }
     }
 
-    for (const TSharedPtr<SGraphEditor>& GE : Editors)
+    for (const TSharedPtr<SGraphPanel>& Panel : Panels)
     {
-        if (GE.IsValid())
+        if (Panel.IsValid())
         {
-            if (UEdGraph* Graph = GE->GetCurrentGraph())
+            if (UEdGraph* Graph = Panel->GetGraphObj())
             {
-                if (GE->GetSelectedNodes().Num() > 0)
+                if (Panel->GetSelectedGraphNodes().Num() > 0)
                 {
-                    return GE;
+                    return Panel;
                 }
             }
         }
     }
 
-    return Editors.Num() > 0 ? Editors[0] : nullptr;
+    // Fall back to first panel that actually has a graph bound.
+    for (const TSharedPtr<SGraphPanel>& Panel : Panels)
+    {
+        if (Panel.IsValid() && Panel->GetGraphObj())
+        {
+            return Panel;
+        }
+    }
+
+    return nullptr;
 }
 
-UEdGraph* GetGraphFromEditor(const TSharedPtr<SGraphEditor>& GraphEditor)
+UEdGraph* GetGraphFromPanel(const TSharedPtr<SGraphPanel>& GraphPanel)
 {
-    return GraphEditor.IsValid() ? GraphEditor->GetCurrentGraph() : nullptr;
+    return GraphPanel.IsValid() ? GraphPanel->GetGraphObj() : nullptr;
 }
 
 UBlueprint* GetBlueprintForGraph(UEdGraph* Graph)
@@ -280,9 +288,8 @@ TSharedRef<FJsonObject> MakePinTypeJson(const FEdGraphPinType& PinType, bool bCo
     TSharedRef<FJsonObject> Obj = MakeShared<FJsonObject>();
     const FString Cat = PinType.PinCategory.ToString();
     const FString SubCat = PinType.PinSubCategory.ToString();
-    const FString ObjPath = PinType.PinSubCategoryObject.IsValid()
-        ? PinType.PinSubCategoryObject.ToSoftObjectPath().ToString()
-        : FString();
+    const UObject* SubCategoryObject = PinType.PinSubCategoryObject.Get();
+    const FString ObjPath = SubCategoryObject ? SubCategoryObject->GetPathName() : FString();
     const FString Container = PinContainerToString(PinType.ContainerType);
 
     if (bCompact)
@@ -348,9 +355,7 @@ void AddPinFlags(const UEdGraphPin* Pin, const TSharedRef<FJsonObject>& PinObj, 
     Flags->SetBoolField(bCompact ? TEXT("nc") : TEXT("not_connectable"), Pin->bNotConnectable);
     Flags->SetBoolField(bCompact ? TEXT("dvro") : TEXT("default_readonly"), Pin->bDefaultValueIsReadOnly);
     Flags->SetBoolField(bCompact ? TEXT("dvi") : TEXT("default_ignored"), Pin->bDefaultValueIsIgnored);
-    Flags->SetBoolField(bCompact ? TEXT("dif") : TEXT("diffing"), Pin->bIsDiffing);
-
-    const bool bAny = Pin->bHidden || Pin->bNotConnectable || Pin->bDefaultValueIsReadOnly || Pin->bDefaultValueIsIgnored || Pin->bIsDiffing;
+    const bool bAny = Pin->bHidden || Pin->bNotConnectable || Pin->bDefaultValueIsReadOnly || Pin->bDefaultValueIsIgnored;
     if (bAny)
     {
         PinObj->SetObjectField(bCompact ? TEXT("fl") : TEXT("flags"), Flags);
@@ -452,15 +457,15 @@ bool BEP_NodeJson::ExportActiveSelectionToJson(const FBEP_NodeJsonExportOptions&
     Stats->ExecDepthUsed = Opt.ExecDepth;
     Stats->DataDepthUsed = Opt.DataDepth;
 
-    const TSharedPtr<SGraphEditor> GraphEditor = FindActiveGraphEditor();
-    UEdGraph* Graph = GetGraphFromEditor(GraphEditor);
+    const TSharedPtr<SGraphPanel> GraphPanel = FindActiveGraphPanel();
+    UEdGraph* Graph = GetGraphFromPanel(GraphPanel);
     if (!Graph)
     {
         if (OutError) { *OutError = TEXT("No active graph editor."); }
         return false;
     }
 
-    const FGraphPanelSelectionSet Selection = GraphEditor->GetSelectedNodes();
+    const TArray<UEdGraphNode*> Selection = GraphPanel->GetSelectedGraphNodes();
     Stats->SeedSelectionCount = Selection.Num();
     if (Selection.Num() == 0)
     {
@@ -472,13 +477,15 @@ bool BEP_NodeJson::ExportActiveSelectionToJson(const FBEP_NodeJsonExportOptions&
     TSet<UEdGraphNode*> Visited;
     TQueue<FNodeBfsState> Queue;
 
-    for (UObject* Obj : Selection)
+    for (UEdGraphNode* Node : Selection)
     {
-        if (UEdGraphNode* Node = Cast<UEdGraphNode>(Obj))
+        if (!Node)
         {
-            Visited.Add(Node);
-            Queue.Enqueue({Node, 0, 0});
+            continue;
         }
+
+        Visited.Add(Node);
+        Queue.Enqueue({Node, 0, 0});
     }
 
     const int32 MaxExec = FMath::Max(0, Opt.ExecDepth);
@@ -1035,15 +1042,15 @@ bool BEP_NodeJson::ExportActiveSelectionToCommentJson(const FBEP_NodeJsonExportO
     OutJson.Reset();
     OutSuggestedFileStem.Reset();
 
-    const TSharedPtr<SGraphEditor> GraphEditor = FindActiveGraphEditor();
-    UEdGraph* Graph = GetGraphFromEditor(GraphEditor);
+    const TSharedPtr<SGraphPanel> GraphPanel = FindActiveGraphPanel();
+    UEdGraph* Graph = GetGraphFromPanel(GraphPanel);
     if (!Graph)
     {
         if (OutError) { *OutError = TEXT("No active graph editor."); }
         return false;
     }
 
-    const FGraphPanelSelectionSet Selection = GraphEditor->GetSelectedNodes();
+    const TArray<UEdGraphNode*> Selection = GraphPanel->GetSelectedGraphNodes();
     if (Selection.Num() == 0)
     {
         if (OutError) { *OutError = TEXT("No nodes selected."); }
@@ -1074,39 +1081,41 @@ bool BEP_NodeJson::ExportActiveSelectionToCommentJson(const FBEP_NodeJsonExportO
         OutGuids->Reserve(Selection.Num());
     }
 
-    for (UObject* Obj : Selection)
+    for (UEdGraphNode* Node : Selection)
     {
-        if (UEdGraphNode* Node = Cast<UEdGraphNode>(Obj))
+        if (!Node)
         {
-            if (!Node->NodeGuid.IsValid())
-            {
-                UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON][Comments] Skipping node with invalid Guid: %s"), *Node->GetName());
-                continue;
-            }
+            continue;
+        }
 
-            FCommentRow Row;
-            Row.Id = Node->NodeGuid.ToString(EGuidFormats::DigitsWithHyphens);
-            Row.X = Node->NodePosX;
-            Row.Y = Node->NodePosY;
+        if (!Node->NodeGuid.IsValid())
+        {
+            UE_LOG(LogBEPNodeJson, Warning, TEXT("[BEP][NodeJSON][Comments] Skipping node with invalid Guid: %s"), *Node->GetName());
+            continue;
+        }
 
-            if (Opt.bIncludeNodeTitle)
-            {
-                Row.Title = Node->GetNodeTitle(ENodeTitleType::ListView).ToString();
-            }
-            if (Opt.bIncludeNodeComment && !Node->NodeComment.IsEmpty())
-            {
-                Row.ExistingComment = Node->NodeComment;
-            }
-            if (Opt.bIncludeClassDict && Node->GetClass())
-            {
-                Row.ClassPath = Node->GetClass()->GetPathName();
-            }
+        FCommentRow Row;
+        Row.Id = Node->NodeGuid.ToString(EGuidFormats::DigitsWithHyphens);
+        Row.X = Node->NodePosX;
+        Row.Y = Node->NodePosY;
 
-            Rows.Add(MoveTemp(Row));
-            if (OutGuids)
-            {
-                OutGuids->Add(Row.Id);
-            }
+        if (Opt.bIncludeNodeTitle)
+        {
+            Row.Title = Node->GetNodeTitle(ENodeTitleType::ListView).ToString();
+        }
+        if (Opt.bIncludeNodeComment && !Node->NodeComment.IsEmpty())
+        {
+            Row.ExistingComment = Node->NodeComment;
+        }
+        if (Opt.bIncludeClassDict && Node->GetClass())
+        {
+            Row.ClassPath = Node->GetClass()->GetPathName();
+        }
+
+        Rows.Add(MoveTemp(Row));
+        if (OutGuids)
+        {
+            OutGuids->Add(Row.Id);
         }
     }
 
@@ -1335,15 +1344,15 @@ bool BEP_NodeJson::WriteGoldenSamples(FString& OutGoldenSummaryPath, FString* Ou
 
 bool BEP_NodeJson::HasActiveBlueprintSelection(FString* OutReason)
 {
-    const TSharedPtr<SGraphEditor> GraphEditor = FindActiveGraphEditor();
-    UEdGraph* Graph = GetGraphFromEditor(GraphEditor);
+    const TSharedPtr<SGraphPanel> GraphPanel = FindActiveGraphPanel();
+    UEdGraph* Graph = GetGraphFromPanel(GraphPanel);
     if (!Graph)
     {
         if (OutReason) { *OutReason = TEXT("No active graph editor."); }
         return false;
     }
 
-    const FGraphPanelSelectionSet Selection = GraphEditor->GetSelectedNodes();
+    const TArray<UEdGraphNode*> Selection = GraphPanel->GetSelectedGraphNodes();
     if (Selection.Num() == 0)
     {
         if (OutReason) { *OutReason = TEXT("No nodes selected."); }
@@ -1355,8 +1364,8 @@ bool BEP_NodeJson::HasActiveBlueprintSelection(FString* OutReason)
 
 bool BEP_NodeJson::HasActiveBlueprintGraph(FString* OutReason)
 {
-    const TSharedPtr<SGraphEditor> GraphEditor = FindActiveGraphEditor();
-    UEdGraph* Graph = GetGraphFromEditor(GraphEditor);
+    const TSharedPtr<SGraphPanel> GraphPanel = FindActiveGraphPanel();
+    UEdGraph* Graph = GetGraphFromPanel(GraphPanel);
     if (!Graph)
     {
         if (OutReason) { *OutReason = TEXT("No active graph editor."); }

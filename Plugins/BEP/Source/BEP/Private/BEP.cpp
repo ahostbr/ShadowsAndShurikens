@@ -278,13 +278,19 @@ void FBEPModule::RegisterMenus_Impl()
 		Section = &Menu->AddSection(SectionName, FText::FromString(TEXT("BEP Tools")));
 	}
 
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().OpenPanel, NodeJsonCommandList);
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().ExportSelection, NodeJsonCommandList);
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().CopySelection, NodeJsonCommandList);
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().ExportComments, NodeJsonCommandList);
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().ImportComments, NodeJsonCommandList);
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().WriteGoldenSamples, NodeJsonCommandList);
-	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().SelfCheck, NodeJsonCommandList);
+	auto AddCommandMenuEntry = [&](const TSharedPtr<FUICommandInfo>& Command)
+	{
+		FToolMenuEntry& Entry = Section->AddMenuEntry(Command);
+		Entry.SetCommandList(NodeJsonCommandList);
+	};
+
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().OpenPanel);
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().ExportSelection);
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().CopySelection);
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().ExportComments);
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().ImportComments);
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().WriteGoldenSamples);
+	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().SelfCheck);
 }
 
 void FBEPModule::RegisterNodeJsonCommands()

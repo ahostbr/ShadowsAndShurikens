@@ -1,3 +1,19 @@
+# =============================================================================
+# DevTools patch (based on latest DevTools zip state)
+# - sots_tools.py: add menu entries to run Context Anchor tools (12/13)
+# - save_context_anchor.py: robust plugin-folder resolution (aliases + heuristics)
+# Result: anchors land in Plugins/<RealPluginFolder>/Docs/Anchor/ e.g.
+#   E:\SAS\ShadowsAndShurikens\Plugins\BEP\Docs\Anchor\
+# =============================================================================
+
+[SOTS_DEVTOOLS]
+tool: write_files
+category: devtools
+plugin: DevTools
+pass: CONTEXT_ANCHOR_ROUTING_V2
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/sots_tools.py ===
 from __future__ import annotations
 
 import sys
@@ -60,70 +76,7 @@ def run_pack(pack_path: str) -> int:
     pack = Path(pack_path).resolve()
     cmd: list[str] = [sys.executable, str(script), "--source", str(pack)]
     print(f"[INFO] Running pack: {' '.join(cmd)}")
-    subprocess.run(cmd, check=False)
-    return 0
-
-
-def list_pipelines() -> None:
-    """
-    List available pipeline definitions.
-
-    Sources:
-    - DevToolsPipelines.json
-    - DevTools/python/pipelines/*.json
-    """
-    tools_root = get_tools_root()
-    root_json = tools_root.parent / "DevToolsPipelines.json"
-    pipe_dir = tools_root / "pipelines"
-
-    print("")
-    print("=== Available pipelines ===")
-    print("")
-
-    def _print_one(name: str, payload: dict) -> None:
-        desc = payload.get("description", "").strip()
-        print(f"- {name}")
-        if desc:
-            print(f"    {desc}")
-
-    # Root DevToolsPipelines.json
-    if root_json.exists():
-        try:
-            payload = json.loads(root_json.read_text(encoding="utf-8", errors="replace"))
-            for name, item in payload.get("pipelines", {}).items():
-                _print_one(name, item)
-        except Exception as exc:
-            print(f"[WARN] Failed to read {root_json}: {exc}")
-
-    # pipelines/*.json
-    if pipe_dir.exists():
-        for p in sorted(pipe_dir.glob("*.json")):
-            try:
-                item = json.loads(p.read_text(encoding="utf-8", errors="replace"))
-                name = item.get("name", p.stem)
-                _print_one(name, item)
-            except Exception as exc:
-                print(f"[WARN] Failed to read {p}: {exc}")
-
-    print("")
-
-
-def run_pipeline_by_name(pipeline_name: str) -> int:
-    """
-    Run a named pipeline via sots_pipeline_hub.py.
-
-    This keeps the hub as the single entry point and preserves its logging.
-    """
-    tools_root = get_tools_root()
-    hub_script = tools_root / "sots_pipeline_hub.py"
-    if not hub_script.exists():
-        print(f"[ERROR] Missing pipeline hub script: {hub_script}")
-        return 1
-
-    cmd: list[str] = [sys.executable, str(hub_script), pipeline_name]
-    print(f"[INFO] Running pipeline: {' '.join(cmd)}")
-    subprocess.run(cmd, check=False)
-    return 0
+    return subprocess.call(cmd)
 
 
 # ---------------------------------------------------------------------------
@@ -139,33 +92,59 @@ def run_aip_audit(project: str | None = None, out: str | None = None) -> int:
 
     args: list[str] = []
     if project:
-        args.extend(["--project", project])
+        args += ["--project", project]
     if out:
-        args.extend(["--out", out])
-
-    print(f"[INFO] Running AIP audit (aip_audit_configs.py) with args: {args or 'default'}")
-    return int(aip_audit_configs.main(args))
+        args += ["--out", out]
+    return aip_audit_configs.main(args)
 
 
-def run_udsbridge_audit(project: str | None = None, out: str | None = None) -> int:
+def run_tag_audit(project: str | None = None, out: str | None = None) -> int:
     try:
-        import udsbridge_audit_configs  # type: ignore
+        import tag_audit  # type: ignore
     except Exception as exc:
-        print(f"[ERROR] Could not import udsbridge_audit_configs: {exc}")
+        print(f"[ERROR] Could not import tag_audit: {exc}")
         return 1
 
     args: list[str] = []
     if project:
-        args.extend(["--project", project])
+        args += ["--project", project]
     if out:
-        args.extend(["--out", out])
+        args += ["--out", out]
+    return tag_audit.main(args)
 
-    print(f"[INFO] Running UDSBridge audit with args: {args or 'default'}")
-    return int(udsbridge_audit_configs.main(args))
+
+def run_uplugin_audit(project: str | None = None, out: str | None = None) -> int:
+    try:
+        import uplugin_audit  # type: ignore
+    except Exception as exc:
+        print(f"[ERROR] Could not import uplugin_audit: {exc}")
+        return 1
+
+    args: list[str] = []
+    if project:
+        args += ["--project", project]
+    if out:
+        args += ["--out", out]
+    return uplugin_audit.main(args)
+
+
+def run_bep_export_audit(project: str | None = None, out: str | None = None) -> int:
+    try:
+        import bep_export_audit  # type: ignore
+    except Exception as exc:
+        print(f"[ERROR] Could not import bep_export_audit: {exc}")
+        return 1
+
+    args: list[str] = []
+    if project:
+        args += ["--project", project]
+    if out:
+        args += ["--out", out]
+    return bep_export_audit.main(args)
 
 
 # ---------------------------------------------------------------------------
-# Core maintenance (Category 1)
+# Convenience runners (call scripts so behavior/logging stays consistent)
 # ---------------------------------------------------------------------------
 
 def run_clean_binaries_intermediate() -> None:
@@ -184,41 +163,25 @@ def run_scan_todos() -> None:
     run_script("scan_todos.py")
 
 
-# ---------------------------------------------------------------------------
-# Architecture / naming (Category 2)
-# ---------------------------------------------------------------------------
+def run_architecture_lint() -> None:
+    run_script("architecture_lint.py")
+
 
 def run_fsots_duplicate_report() -> None:
     run_script("fsots_duplicate_report.py")
 
 
-def run_architecture_lint() -> None:
-    run_script("architecture_lint.py")
+def run_project_health_report() -> None:
+    run_script("project_health_report.py")
 
 
-# ---------------------------------------------------------------------------
-# Plugins / dependency health (Category 3)
-# ---------------------------------------------------------------------------
-
-def run_plugin_dependency_health() -> None:
-    run_script("plugin_dependency_health.py")
+def run_plugin_stats() -> None:
+    run_script("plugin_stats.py")
 
 
-def run_ensure_plugin_modules() -> None:
-    run_script("ensure_plugin_modules.py")
+def run_include_map() -> None:
+    run_script("include_map.py")
 
-
-def run_fix_plugin_dependencies() -> None:
-    run_script("fix_plugin_dependencies.py")
-
-
-def run_compare_plugin_zips() -> None:
-    run_script("compare_plugin_zips.py")
-
-
-# ---------------------------------------------------------------------------
-# Batch editing / licensing / logs (Category 4)
-# ---------------------------------------------------------------------------
 
 def run_mass_regex_edit() -> None:
     run_script("mass_regex_edit.py")
@@ -229,61 +192,22 @@ def run_inject_license_header() -> None:
 
 
 def run_apply_json_pack() -> None:
-    """
-    Apply a JSON pack (older format) using apply_json_pack.py.
-    """
     run_script("apply_json_pack.py")
 
 
 def run_ad_hoc_regex_search() -> None:
-    """Run the ad-hoc regex search tool."""
     run_script("ad_hoc_regex_search.py")
 
 
 def run_quick_search() -> None:
-    """Run the quick search tool (literal + regex)."""
     run_script("quick_search.py")
 
 
-def run_directory_index(
-    root: str | None = None,
-    out_dir: str | None = None,
-    max_depth: int | None = None,
-    folders_only: bool = False,
-    exclude: str | None = None,
-    chunk_lines: int | None = None,
-) -> None:
-    """
-    Generate an LLM-friendly directory index (tree) text file.
+def run_directory_index() -> None:
+    run_script("generate_directory_index.py")
 
-    This is a thin wrapper that calls DevTools/python/generate_directory_index.py.
-    """
-    extra_args: list[str] = []
-    if root:
-        extra_args.extend(["--root", root])
-    if out_dir:
-        extra_args.extend(["--out-dir", out_dir])
-    if max_depth is not None:
-        extra_args.extend(["--max-depth", str(max_depth)])
-    if folders_only:
-        extra_args.append("--folders-only")
-    if exclude:
-        extra_args.extend(["--exclude", exclude])
-    if chunk_lines is not None:
-        extra_args.extend(["--chunk-lines", str(chunk_lines)])
-
-    run_script("generate_directory_index.py", extra_args)
-
-
-# ---------------------------------------------------------------------------
-# KEM Tools (Category 6)
-# ---------------------------------------------------------------------------
 
 def run_kem_execution_report() -> None:
-    run_script("kem_execution_report.py")
-
-
-def run_kem_telemetry_report() -> None:
     run_script("kem_telemetry_report.py")
 
 
@@ -325,9 +249,15 @@ def run_apply_latest_chatgpt_inbox() -> None:
 
     # Find newest file anywhere under chatgpt_inbox
     for p in current.rglob("*"):
-        if p.is_file():
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md"}:
+            continue
+        try:
             if newest is None or p.stat().st_mtime > newest.stat().st_mtime:
                 newest = p
+        except OSError:
+            continue
 
     if newest is None:
         print(f"[INFO] No files found under: {root}")
@@ -343,14 +273,30 @@ def run_apply_latest_chatgpt_inbox() -> None:
         print("[INFO] Cancelled.")
         return
 
-    # Dispatch (the dispatcher handles file type inference, pack applying, etc)
     dispatch_file(newest, force=False)
     print("[INFO] Dispatch complete.")
 
 
 # ---------------------------------------------------------------------------
-# Interactive menu UI
+# Context Anchors
 # ---------------------------------------------------------------------------
+
+def run_save_context_anchor() -> None:
+    """
+    Save a [CONTEXT_ANCHOR] block and route it into Plugins/<Plugin>/Docs/Anchor/.
+    Also writes a central copy under DevTools/python/Saved/ContextAnchors/.
+    """
+    run_script("save_context_anchor.py")
+
+
+def run_scan_context_anchors_inbox() -> None:
+    """
+    Scan DevTools/python/chatgpt_inbox for files containing [CONTEXT_ANCHOR] blocks,
+    then route them into Plugins/<Plugin>/Docs/Anchor/ and move processed files
+    into DevTools/python/Saved/ContextAnchors/inbox_processed/.
+    """
+    run_script("save_context_anchor.py", ["--scan-inbox", "--move-processed"])
+
 
 def category_core_maintenance() -> None:
     while True:
@@ -361,6 +307,7 @@ def category_core_maintenance() -> None:
         print("  2) Analyze last build log")
         print("  3) Summarize crash logs")
         print("  4) Scan TODO / FIXME comments")
+        print("  5) Project health report")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -375,6 +322,8 @@ def category_core_maintenance() -> None:
             run_summarize_crash_logs()
         elif choice == "4":
             run_scan_todos()
+        elif choice == "5":
+            run_project_health_report()
         elif choice in {"0", "b", "B"}:
             break
         else:
@@ -386,8 +335,9 @@ def category_fsots_architecture() -> None:
         print("")
         print("=== Category 2: Architecture / naming ===")
         print("")
-        print("  1) FSOTS duplicate report")
-        print("  2) Architecture lint")
+        print("  1) Architecture lint (headers, forbidden patterns, etc.)")
+        print("  2) Duplicate FSOTS struct report")
+        print("  3) Include map (public/private includes) report")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -395,9 +345,11 @@ def category_fsots_architecture() -> None:
         choice = input("Arch> ").strip()
 
         if choice == "1":
-            run_fsots_duplicate_report()
-        elif choice == "2":
             run_architecture_lint()
+        elif choice == "2":
+            run_fsots_duplicate_report()
+        elif choice == "3":
+            run_include_map()
         elif choice in {"0", "b", "B"}:
             break
         else:
@@ -409,10 +361,11 @@ def category_plugins_dependencies() -> None:
         print("")
         print("=== Category 3: Plugins / dependencies ===")
         print("")
-        print("  1) Plugin dependency health")
-        print("  2) Ensure plugin modules")
-        print("  3) Fix plugin dependencies (guided)")
-        print("  4) Compare plugin zips")
+        print("  1) Plugin stats report")
+        print("  2) Plugin dependency health")
+        print("  3) Ensure plugin modules exist")
+        print("  4) Fix plugin dependencies")
+        print("  5) Compare plugin zips")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -420,13 +373,15 @@ def category_plugins_dependencies() -> None:
         choice = input("Plugins> ").strip()
 
         if choice == "1":
-            run_plugin_dependency_health()
+            run_plugin_stats()
         elif choice == "2":
-            run_ensure_plugin_modules()
+            run_script("plugin_dependency_health.py")
         elif choice == "3":
-            run_fix_plugin_dependencies()
+            run_script("ensure_plugin_modules.py")
         elif choice == "4":
-            run_compare_plugin_zips()
+            run_script("fix_plugin_dependencies.py")
+        elif choice == "5":
+            run_script("compare_plugin_zips.py")
         elif choice in {"0", "b", "B"}:
             break
         else:
@@ -449,6 +404,8 @@ def category_batch_editing() -> None:
         print("  9) Quick search (literal + optional regex)")
         print(" 10) Generate directory index (LLM_DIRECTORY_INDEX.txt)")
         print(" 11) Browse ChatGPT inbox (manual dispatcher)")
+        print(" 12) Save Context Anchor (paste/file)")
+        print(" 13) Scan inbox for Context Anchors")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -477,6 +434,10 @@ def category_batch_editing() -> None:
             run_directory_index()
         elif choice == "11":
             run_apply_latest_chatgpt_inbox()
+        elif choice == "12":
+            run_save_context_anchor()
+        elif choice == "13":
+            run_scan_context_anchors_inbox()
         elif choice in {"0", "b", "B"}:
             break
         else:
@@ -497,11 +458,11 @@ def category_high_level_checks() -> None:
         choice = input("Checks> ").strip()
 
         if choice == "1":
-            list_pipelines()
+            run_script("list_pipelines.py")
         elif choice == "2":
             name = input("Pipeline name> ").strip()
             if name:
-                run_pipeline_by_name(name)
+                run_script("run_pipeline_by_name.py", [name])
         elif choice in {"0", "b", "B"}:
             break
         else:
@@ -514,8 +475,7 @@ def category_kem_tools() -> None:
         print("=== Category 6: KillExecutionManager (KEM) tools ===")
         print("")
         print("  1) [KEM] Execution & Position Report")
-        print("  2) [KEM] Telemetry Report")
-        print("  3) [KEM] Coverage Matrix Report")
+        print("  2) [KEM] Coverage Matrix Report")
         print("")
         print("  0) Back to main menu")
         print("")
@@ -525,8 +485,6 @@ def category_kem_tools() -> None:
         if choice == "1":
             run_kem_execution_report()
         elif choice == "2":
-            run_kem_telemetry_report()
-        elif choice == "3":
             run_kem_coverage_matrix_report()
         elif choice in {"0", "b", "B"}:
             break
@@ -534,14 +492,7 @@ def category_kem_tools() -> None:
             print("[WARN] Unknown option, please try again.")
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
-def run_interactive_menu() -> None:
-    tools_root = get_tools_root()
-    print(f"[INFO] SOTS DevTools root: {tools_root}")
-
+def main() -> int:
     while True:
         print("")
         print("=== SOTS DevTools Hub ===")
@@ -571,153 +522,487 @@ def run_interactive_menu() -> None:
             category_high_level_checks()
         elif choice == "6":
             category_kem_tools()
-        elif choice in {"0", "q", "Q", "quit", "exit"}:
-            print("[INFO] Exiting SOTS DevTools hub.")
-            break
+        elif choice in {"0", "q", "Q", "exit"}:
+            return 0
         else:
             print("[WARN] Unknown option, please try again.")
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="SOTS DevTools hub (interactive menu by default)",
-        add_help=True,
-    )
-    subparsers = parser.add_subparsers(dest="command")
+if __name__ == "__main__":
+    raise SystemExit(main())
+=== END FILE ===
 
-    pack_parser = subparsers.add_parser(
-        "run_pack",
-        help="Run a write_files pack (saved in chatgpt_inbox or anywhere)",
-    )
-    pack_parser.add_argument("pack_path", help="Path to the prompt .txt file")
+=== FILE: DevTools/python/save_context_anchor.py ===
+# DevTools/python/save_context_anchor.py
+from __future__ import annotations
 
-    pipeline_parser = subparsers.add_parser(
-        "run_pipeline",
-        help="Run a named pipeline from DevToolsPipelines.json / pipelines/*.json",
-    )
-    pipeline_parser.add_argument("pipeline_name", help="Name/ID of the pipeline to run")
+import argparse
+import datetime
+import re
+import sys
+from pathlib import Path
 
-    subparsers.add_parser(
-        "list_pipelines",
-        help="List available pipelines from DevToolsPipelines.json and pipelines/*.json",
-    )
+ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = ROOT.parent.parent  # E:\SAS\ShadowsAndShurikens
+LOG_DIR = ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "context_anchor.log"
 
-    subparsers.add_parser(
-        "browse_inbox",
-        help="Launch the inbox TUI browser (manual dispatcher)",
-    )
+ANCHOR_START = "[CONTEXT_ANCHOR]"
+ANCHOR_END = "[/CONTEXT_ANCHOR]"
 
-    dir_parser = subparsers.add_parser(
-        "dir-index",
-        help="Generate an LLM-friendly directory index (tree) text file",
-    )
-    dir_parser.add_argument("--root", dest="root", help="Root directory to index (defaults to project root)")
-    dir_parser.add_argument("--out-dir", dest="out_dir", help="Output directory for index files (defaults to DevTools/reports/directory_index)")
-    dir_parser.add_argument("--max-depth", dest="max_depth", type=int, help="Maximum recursion depth (default: 10)")
-    dir_parser.add_argument("--folders-only", dest="folders_only", action="store_true", help="Only list folders, not files")
-    dir_parser.add_argument("--exclude", dest="exclude", help="Comma-separated exclude tokens (dir names or relative path prefixes)")
-    dir_parser.add_argument("--chunk-lines", dest="chunk_lines", type=int, help="If set, split output into part files of N lines")
+# ---------------------------------------------------------------------------
+# Plugin folder resolution
+# ---------------------------------------------------------------------------
 
-    subparsers.add_parser(
-        "bpgen_packs",
-        help="List BPGen snippet packs (DevTools/bpgen_snippets/packs)",
-    )
+# Short/alias -> actual plugin folder name under PROJECT_ROOT/Plugins/
+# Keep this list small; resolution also includes acronym/fuzzy matching.
+PLUGIN_ALIASES: dict[str, str] = {
+    # Core SOTS abbreviations
+    "SOTS_KEM": "SOTS_KillExecutionManager",
+    "KEM": "SOTS_KillExecutionManager",
+    "SOTS_GSM": "SOTS_GlobalStealthManager",
+    "GSM": "SOTS_GlobalStealthManager",
+    "SOTS_AIP": "SOTS_AIPerception",
+    "AIP": "SOTS_AIPerception",
+    "AIPERCEPTION": "SOTS_AIPerception",
+    "SOTS_MD": "SOTS_MissionDirector",
+    "MD": "SOTS_MissionDirector",
+    "MISSIONDIRECTOR": "SOTS_MissionDirector",
+    "MMSS": "SOTS_MMSS",
+    "UDSBRIDGE": "SOTS_UDSBridge",
+    # Common short names
+    "INV": "SOTS_INV",
+    "UI": "SOTS_UI",
+    "STATS": "SOTS_Stats",
+    "STEAM": "SOTS_Steam",
+    "PROFILESHARED": "SOTS_ProfileShared",
+    "TAGMANAGER": "SOTS_TagManager",
+    "FX": "SOTS_FX_Plugin",
+    "PARKOUR": "SOTS_Parkour",
+    "EDUTIL": "SOTS_EdUtil",
+    "DEBUG": "SOTS_Debug",
+    "BLUEPRINTGEN": "SOTS_BlueprintGen",
+    # Third-party / non-SOTS
+    "BEP": "BEP",
+    "OMNITRACE": "OmniTrace",
+    "LIGHTPROBE": "LightProbePlugin",
+    "BLUEPRINTCOMMENTLINKS": "BlueprintCommentLinks",
+}
 
-    bpgen_run_parser = subparsers.add_parser(
-        "bpgen_run_pack",
-        help="Run all snippets in a BPGen pack via SOTS_BPGenBuildCommandlet",
-    )
-    bpgen_run_parser.add_argument("pack_name", help="Pack folder name under DevTools/bpgen_snippets/packs")
-    bpgen_run_parser.add_argument("--ue-cmd", dest="ue_cmd", default="", help="Optional UE commandlet args")
 
-    subparsers.add_parser(
-        "bpgen_coverage",
-        help="Run BPGen snippet coverage report",
-    )
+def _normalize_key(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", s.strip().lower())
 
-    # existing subcommands preserved below (BEP reports, parity sweeps, audits, etc.)
-    report_parser = subparsers.add_parser(
-        "bep-parkour-snippets",
-        help="Inventory BEP-exported parkour snippets and write a JSON report",
-    )
-    report_parser.add_argument("--zip-path", dest="zip_path", help="Path to the BEP export zip")
-    report_parser.add_argument("--output-dir", dest="output_dir", help="Output directory for reports (defaults to DevTools/reports)")
 
-    parity_parser = subparsers.add_parser(
-        "parkour-parity-sweep",
-        help="Run name-based parity sweep between BEP snippets and SOTS_Parkour C++",
-    )
-    parity_parser.add_argument("--snippets-json", dest="snippets_json", help="Path to bep_parkour_snippets.json")
-    parity_parser.add_argument("--plugin-root", dest="plugin_root", help="Root path to SOTS_Parkour plugin")
+def _acronym(name: str) -> str:
+    # e.g. SOTS_KillExecutionManager -> SKEM
+    parts = [p for p in re.split(r"[^A-Za-z0-9]+", name) if p]
+    firsts = "".join(p[0] for p in parts if p)
+    uppers = "".join(ch for ch in name if ch.isupper())
+    return (firsts + uppers).upper()
 
-    aip_parser = subparsers.add_parser(
-        "aip_audit",
-        help="Run the AIPerception config audit",
-    )
-    aip_parser.add_argument("--project", dest="project", help="Project root override (defaults to detected root)")
-    aip_parser.add_argument("--out", dest="out", help="Output report path (defaults to DevTools/logs/aip_audit_<timestamp>.txt)")
 
-    udsbridge_parser = subparsers.add_parser(
-        "udsbridge_audit",
-        help="Scans all USOTS_UDSBridgeConfig assets for likely misconfigurations (UDS discovery, weather mappings, DLWE surface).",
-    )
-    udsbridge_parser.add_argument("--project", dest="project", help="Project root override (defaults to detected root)")
-    udsbridge_parser.add_argument("--out", dest="out", help="Output report path (defaults to DevTools/logs/udsbridge_audit_<timestamp>.txt)")
+def _list_plugin_folders() -> list[str]:
+    plugins_root = PROJECT_ROOT / "Plugins"
+    if not plugins_root.exists():
+        return []
+    out: list[str] = []
+    for p in plugins_root.iterdir():
+        if not p.is_dir():
+            continue
+        # Consider it a plugin folder if it contains a .uplugin file.
+        if any(p.glob("*.uplugin")):
+            out.append(p.name)
+    return sorted(out)
 
-    return parser
+
+def resolve_plugin_folder_name(plugin_id: str) -> tuple[str | None, str]:
+    """
+    Resolve a plugin identifier from an anchor (e.g. 'SOTS_KEM', 'Lock_SOTS_UI', 'BEP')
+    into the actual plugin folder name under PROJECT_ROOT/Plugins.
+
+    Returns: (folder_name_or_None, reason_string)
+    """
+    raw = plugin_id.strip()
+    if not raw:
+        return None, "empty"
+
+    # Strip 'Lock_' prefix if present.
+    if raw.lower().startswith("lock_"):
+        raw = raw[5:]
+
+    candidates = [raw]
+    if raw.upper().startswith("SOTS_"):
+        candidates.append(raw[5:])  # without SOTS_
+    # Also try the last token after underscores.
+    if "_" in raw:
+        candidates.append(raw.split("_")[-1])
+
+    plugin_folders = _list_plugin_folders()
+    if not plugin_folders:
+        return None, "no Plugins/* folders found"
+
+    # Exact match (case-sensitive) and case-insensitive match.
+    for c in candidates:
+        direct = PROJECT_ROOT / "Plugins" / c
+        if direct.exists():
+            return c, "direct"
+        for pf in plugin_folders:
+            if pf.lower() == c.lower():
+                return pf, "case-insensitive"
+
+    # Alias table.
+    for c in candidates:
+        mapped = PLUGIN_ALIASES.get(c.strip().upper())
+        if mapped:
+            # mapped might still need case-insensitive resolution
+            direct = PROJECT_ROOT / "Plugins" / mapped
+            if direct.exists():
+                return mapped, f"alias({c}->{mapped})"
+            for pf in plugin_folders:
+                if pf.lower() == mapped.lower():
+                    return pf, f"alias-ci({c}->{pf})"
+
+    # Acronym / heuristic matching.
+    # Build acronym set for each folder.
+    folder_meta = []
+    for pf in plugin_folders:
+        folder_meta.append((pf, _normalize_key(pf), _acronym(pf)))
+
+    for c in candidates:
+        c_norm = _normalize_key(c)
+        c_up = c.strip().upper()
+        hits: list[str] = []
+        for pf, pf_norm, pf_acr in folder_meta:
+            # substring on normalized form
+            if c_norm and (c_norm in pf_norm or pf_norm in c_norm):
+                hits.append(pf)
+                continue
+            # acronym contains candidate
+            if c_up and c_up in pf_acr:
+                hits.append(pf)
+                continue
+        hits = sorted(set(hits))
+        if len(hits) == 1:
+            return hits[0], f"heuristic({c}->{hits[0]})"
+        if len(hits) > 1:
+            return None, f"ambiguous({c} -> {hits})"
+
+    return None, f"unresolved({plugin_id})"
+
+
+def log(msg: str) -> None:
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] {msg}"
+    print(line)
+    try:
+        LOG_FILE.write_text(LOG_FILE.read_text(encoding="utf-8", errors="replace") + line + "\n", encoding="utf-8")
+    except Exception:
+        # If the log file can't be read/written for some reason, still keep stdout.
+        try:
+            LOG_FILE.write_text(line + "\n", encoding="utf-8")
+        except Exception:
+            pass
+
+
+def now_tag() -> str:
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def safe_slug(s: str) -> str:
+    s = s.strip().replace(" ", "_")
+    s = re.sub(r"[^A-Za-z0-9_\-]+", "", s)
+    return s[:64] if s else "ANCHOR"
+
+
+def parse_anchor_blocks(text: str) -> list[str]:
+    blocks: list[str] = []
+    start = 0
+    while True:
+        i = text.find(ANCHOR_START, start)
+        if i == -1:
+            break
+        j = text.find(ANCHOR_END, i + len(ANCHOR_START))
+        if j == -1:
+            # If end tag missing, take rest of text
+            blocks.append(text[i:].strip())
+            break
+        blocks.append(text[i : j + len(ANCHOR_END)].strip())
+        start = j + len(ANCHOR_END)
+    return blocks
+
+
+def infer_plugins(anchor_block: str) -> list[str]:
+    """
+    Try to infer one or more plugin folder names from within the anchor block.
+
+    Supported patterns inside the block:
+      - plugin: SOTS_UI
+      - plugins: SOTS_UI, SOTS_INV
+      - Lock_SOTS_UI (or any 'Lock_<PluginId>' token)
+    """
+    found: set[str] = set()
+
+    # plugin: / plugins:
+    for line in anchor_block.splitlines():
+        m = re.match(r"^\s*plugins?\s*:\s*(.+)\s*$", line.strip(), flags=re.IGNORECASE)
+        if m:
+            raw = m.group(1)
+            parts = re.split(r"[,\s]+", raw.strip())
+            for p in parts:
+                p = p.strip()
+                if p:
+                    found.add(p)
+
+    # Lock_* tokens
+    for m in re.finditer(r"\bLock_[A-Za-z0-9_\-]+\b", anchor_block):
+        tok = m.group(0).strip()
+        if tok:
+            found.add(tok.replace("Lock_", "", 1))
+
+    return sorted(found)
+
+
+def infer_anchor_timestamp(anchor_block: str) -> str:
+    """
+    Try to infer a timestamp from a line like:
+      date: 2025-12-16
+      dt: 2025-12-16 07:30
+      created: 20251216_073000
+    Otherwise returns now_tag().
+    """
+    # ISO-ish date/time patterns
+    m = re.search(r"\b(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?\b", anchor_block)
+    if m:
+        y, mo, d = m.group(1), m.group(2), m.group(3)
+        hh = m.group(4) or "00"
+        mm = m.group(5) or "00"
+        ss = m.group(6) or "00"
+        try:
+            dt = datetime.datetime(int(y), int(mo), int(d), int(hh), int(mm), int(ss))
+            return dt.strftime("%Y%m%d_%H%M%S")
+        except ValueError:
+            pass
+
+    # Compact timestamp pattern
+    m2 = re.search(r"\b(\d{8})[_-](\d{6})\b", anchor_block)
+    if m2:
+        return f"{m2.group(1)}_{m2.group(2)}"
+
+    # Date-only
+    m3 = re.search(r"\b(\d{4})[-/](\d{2})[-/](\d{2})\b", anchor_block)
+    if m3:
+        y, mo, d = m3.group(1), m3.group(2), m3.group(3)
+        try:
+            dt = datetime.datetime(int(y), int(mo), int(d), 0, 0, 0)
+            return dt.strftime("%Y%m%d_000000")
+        except ValueError:
+            pass
+
+    return now_tag()
+
+
+def infer_anchor_slug(anchor_block: str, default_slug: str | None = None) -> str:
+    """
+    Try to infer a slug from:
+      title: Something
+      name: Something
+    Else uses default_slug or "ANCHOR".
+    """
+    for key in ("title", "name", "slug"):
+        m = re.search(rf"^\s*{key}\s*:\s*(.+)\s*$", anchor_block, flags=re.IGNORECASE | re.MULTILINE)
+        if m:
+            return safe_slug(m.group(1))
+    return safe_slug(default_slug or "ANCHOR")
+
+
+def build_filename(plugin: str, anchor_block: str, default_slug: str | None = None) -> str:
+    ts = infer_anchor_timestamp(anchor_block)
+    slug = infer_anchor_slug(anchor_block, default_slug=default_slug)
+    return f"{ts}__{safe_slug(plugin)}__{slug}.md"
+
+
+def write_anchor_to_plugin(plugin: str, filename: str, anchor_block: str) -> Path | None:
+    folder, reason = resolve_plugin_folder_name(plugin)
+    if not folder:
+        log(f"[WARN] Could not resolve plugin '{plugin}': {reason}")
+        return None
+
+    plugin_dir = PROJECT_ROOT / "Plugins" / folder
+    if not plugin_dir.exists():
+        # Shouldn't happen if resolution is correct, but keep it safe.
+        log(f"[WARN] Plugin folder not found after resolve ({plugin} -> {folder}, {reason}): {plugin_dir}")
+        return None
+
+    if folder != plugin:
+        log(f"Resolved plugin id '{plugin}' -> '{folder}' ({reason})")
+
+    dest_dir = plugin_dir / "Docs" / "Anchor"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    dest = dest_dir / filename
+    if dest.exists():
+        # Avoid overwrite: add numeric suffix
+        stem = dest.stem
+        ext = dest.suffix or ".md"
+        for i in range(1, 1000):
+            cand = dest_dir / f"{stem}_{i:02d}{ext}"
+            if not cand.exists():
+                dest = cand
+                break
+
+    dest.write_text(anchor_block.strip() + "\n", encoding="utf-8")
+    return dest
+
+
+def also_write_central_copy(filename: str, anchor_block: str) -> Path:
+    central = ROOT / "Saved" / "ContextAnchors"
+    central.mkdir(parents=True, exist_ok=True)
+    dest = central / filename
+    if dest.exists():
+        stem = dest.stem
+        ext = dest.suffix or ".md"
+        for i in range(1, 1000):
+            cand = central / f"{stem}_{i:02d}{ext}"
+            if not cand.exists():
+                dest = cand
+                break
+    dest.write_text(anchor_block.strip() + "\n", encoding="utf-8")
+    return dest
+
+
+def process_text(text: str, *, default_slug: str | None = None) -> int:
+    blocks = parse_anchor_blocks(text)
+    if not blocks:
+        log("No [CONTEXT_ANCHOR] blocks found in input.")
+        return 2
+
+    rc = 0
+    for block in blocks:
+        plugins = infer_plugins(block)
+        if not plugins:
+            # still save a central copy so it isn't lost
+            fn = f"{infer_anchor_timestamp(block)}__UNSCOPED__{infer_anchor_slug(block, default_slug=default_slug)}.md"
+            cpath = also_write_central_copy(fn, block)
+            log(f"[OK] Saved UNSCOPED anchor to central: {cpath}")
+            continue
+
+        # If multiple plugin ids, write one file per plugin id
+        for plugin in plugins:
+            filename = build_filename(plugin, block, default_slug=default_slug)
+            ppath = write_anchor_to_plugin(plugin, filename, block)
+            cpath = also_write_central_copy(filename, block)
+
+            if ppath:
+                log(f"[OK] Saved anchor -> {ppath}")
+            else:
+                rc = 1
+                log(f"[WARN] Plugin write failed for '{plugin}'. Central copy saved: {cpath}")
+
+    return rc
+
+
+def read_text_from_file(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def scan_inbox(*, move_processed: bool = False, default_slug: str | None = None) -> int:
+    inbox = ROOT / "chatgpt_inbox"
+    if not inbox.exists():
+        log(f"[ERROR] chatgpt_inbox not found: {inbox}")
+        return 2
+
+    candidates: list[Path] = []
+    for p in inbox.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md", ".log"}:
+            continue
+        try:
+            txt = p.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        if ANCHOR_START in txt:
+            candidates.append(p)
+
+    if not candidates:
+        log("No inbox files contain [CONTEXT_ANCHOR].")
+        return 0
+
+    log(f"Found {len(candidates)} inbox file(s) with anchors.")
+    processed_dir = ROOT / "Saved" / "ContextAnchors" / "inbox_processed"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    rc = 0
+    for p in sorted(candidates, key=lambda x: x.stat().st_mtime, reverse=True):
+        log(f"Processing inbox file: {p}")
+        try:
+            txt = p.read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:
+            rc = 1
+            log(f"[WARN] Failed to read: {p} ({exc})")
+            continue
+
+        prc = process_text(txt, default_slug=default_slug)
+        rc = max(rc, prc)
+
+        if move_processed:
+            dest = processed_dir / p.name
+            if dest.exists():
+                dest = processed_dir / f"{p.stem}_{now_tag()}{p.suffix}"
+            try:
+                p.replace(dest)
+                log(f"Moved processed inbox file -> {dest}")
+            except Exception as exc:
+                rc = 1
+                log(f"[WARN] Could not move processed file: {p} ({exc})")
+
+    return rc
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    parser = build_arg_parser()
-    parsed = parser.parse_args(args)
+    ap = argparse.ArgumentParser(description="Save [CONTEXT_ANCHOR] blocks into Plugins/<Plugin>/Docs/Anchor/")
+    ap.add_argument("--file", type=str, default=None, help="Path to a text file containing one or more [CONTEXT_ANCHOR] blocks.")
+    ap.add_argument("--slug", type=str, default=None, help="Default slug if anchor block does not include title/name/slug.")
+    ap.add_argument("--scan-inbox", action="store_true", help="Scan DevTools/python/chatgpt_inbox for anchors and save them.")
+    ap.add_argument("--move-processed", action="store_true", help="When scanning inbox, move processed files into Saved/ContextAnchors/inbox_processed/")
+    args = ap.parse_args(argv)
 
-    if parsed.command is None:
-        run_interactive_menu()
-        return 0
+    log("=== save_context_anchor.py start ===")
 
-    if parsed.command == "run_pack":
-        return run_pack(parsed.pack_path)
-    if parsed.command == "run_pipeline":
-        return run_pipeline_by_name(parsed.pipeline_name)
-    if parsed.command == "list_pipelines":
-        list_pipelines()
-        return 0
-    if parsed.command == "browse_inbox":
-        run_apply_latest_chatgpt_inbox()
-        return 0
-    if parsed.command == "dir-index":
-        run_directory_index(
-            parsed.root,
-            parsed.out_dir,
-            parsed.max_depth,
-            parsed.folders_only,
-            parsed.exclude,
-            parsed.chunk_lines,
-        )
-        return 0
-    if parsed.command == "bpgen_packs":
-        return run_bpgen_packs()
-    if parsed.command == "bpgen_run_pack":
-        return run_bpgen_run_pack(parsed.pack_name, parsed.ue_cmd)
-    if parsed.command == "bpgen_coverage":
-        return run_bpgen_coverage()
+    if args.scan_inbox:
+        rc = scan_inbox(move_processed=args.move_processed, default_slug=args.slug)
+        log(f"=== save_context_anchor.py end (rc={rc}) ===")
+        return rc
 
-    if parsed.command == "bep-parkour-snippets":
-        run_bep_parkour_snippets_report(parsed.zip_path, parsed.output_dir)
-        return 0
-    if parsed.command == "parkour-parity-sweep":
-        run_parkour_parity_sweep(parsed.snippets_json, parsed.plugin_root)
-        return 0
-    if parsed.command == "aip_audit":
-        return run_aip_audit(parsed.project, parsed.out)
-    if parsed.command == "udsbridge_audit":
-        return run_udsbridge_audit(parsed.project, parsed.out)
+    if args.file:
+        path = Path(args.file).expanduser()
+        if not path.exists():
+            log(f"[ERROR] File not found: {path}")
+            return 2
+        txt = read_text_from_file(path)
+        rc = process_text(txt, default_slug=args.slug)
+        log(f"=== save_context_anchor.py end (rc={rc}) ===")
+        return rc
 
-    # If we somehow get here, fall back to interactive menu to preserve behavior.
-    run_interactive_menu()
-    return 0
+    # Interactive paste mode
+    log("Paste your [CONTEXT_ANCHOR] block(s). End input with a single line containing only: EOF")
+    buf: list[str] = []
+    while True:
+        line = sys.stdin.readline()
+        if not line:
+            break
+        if line.strip() == "EOF":
+            break
+        buf.append(line)
+
+    txt = "".join(buf)
+    rc = process_text(txt, default_slug=args.slug)
+    log(f"=== save_context_anchor.py end (rc={rc}) ===")
+    return rc
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
+=== END FILE ===

@@ -16,6 +16,7 @@
 #include "SOTS_WaypointSubsystem.h"
 #include "SOTS_WidgetRegistryDataAsset.h"
 #include "SOTS_UISettings.h"
+#include "SOTS_InputAPI.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UIRouter, Log, All);
 
@@ -27,6 +28,8 @@ namespace
 		ESOTS_UILayer::Debug,
 		ESOTS_UILayer::HUD
 	};
+
+		static const FGameplayTag UINavLayerTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Input.Layer.UI.Nav")), false);
 }
 
 USOTS_UIRouterSubsystem* USOTS_UIRouterSubsystem::Get(const UObject* WorldContextObject)
@@ -111,6 +114,7 @@ void USOTS_UIRouterSubsystem::Deinitialize()
 	InteractionAdapter = nullptr;
 	LoadedRegistry = nullptr;
 	bGamePausedForUI = false;
+	UpdateUINavLayerState(false);
 
 	Super::Deinitialize();
 }
@@ -602,6 +606,7 @@ void USOTS_UIRouterSubsystem::RefreshInputAndPauseState()
 	}
 
 	ApplyInputPolicy(TopEntry);
+	RefreshInputLayers(TopEntry);
 
 	bool bShouldPause = false;
 	for (const auto& Pair : ActiveLayerStacks)
@@ -674,6 +679,39 @@ void USOTS_UIRouterSubsystem::ApplyInputPolicy(const FSOTS_ActiveWidgetEntry* To
 		PC->SetShowMouseCursor(false);
 		break;
 	}
+}
+
+void USOTS_UIRouterSubsystem::RefreshInputLayers(const FSOTS_ActiveWidgetEntry* TopEntry)
+{
+	const bool bShouldEnableUINav = ShouldEnableUINavLayer(TopEntry);
+	UpdateUINavLayerState(bShouldEnableUINav);
+}
+
+void USOTS_UIRouterSubsystem::UpdateUINavLayerState(bool bShouldEnable)
+{
+	if (!UINavLayerTag.IsValid() || bUINavLayerActive == bShouldEnable)
+	{
+		return;
+	}
+
+	if (APlayerController* PC = GetPlayerController())
+	{
+		if (bShouldEnable)
+		{
+			USOTS_InputBlueprintLibrary::PushLayerTag(PC, UINavLayerTag);
+			bUINavLayerActive = true;
+		}
+		else
+		{
+			USOTS_InputBlueprintLibrary::PopLayerTag(PC, UINavLayerTag);
+			bUINavLayerActive = false;
+		}
+	}
+}
+
+bool USOTS_UIRouterSubsystem::ShouldEnableUINavLayer(const FSOTS_ActiveWidgetEntry* TopEntry) const
+{
+	return TopEntry && TopEntry->InputPolicy != ESOTS_UIInputPolicy::GameOnly;
 }
 
 void USOTS_UIRouterSubsystem::RemoveTopFromLayer(ESOTS_UILayer Layer)

@@ -8,6 +8,7 @@
 
 class USOTS_FXManagerSubsystem;
 class USOTS_FXCueDefinition;
+class AActor;
 
 UCLASS()
 class SOTS_FX_PLUGIN_API USOTS_FXBlueprintLibrary : public UBlueprintFunctionLibrary
@@ -32,6 +33,10 @@ public:
     /** Tag-driven FX trigger that returns a detailed result payload. */
     UFUNCTION(BlueprintCallable, Category = "SOTS|FX", meta=(DisplayName="Trigger FX By Tag (With Report)", WorldContext="WorldContextObject"))
     static FSOTS_FXRequestResult TriggerFXWithReport(UObject* WorldContextObject, const FSOTS_FXRequest& Request);
+
+    /** Request an FX cue and receive a detailed report. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|FX|Cues", meta = (DisplayName="Request FX Cue (With Report)"))
+    static FSOTS_FXRequestReport RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target);
 
     /** Debug helper: get counts of currently active Niagara & Audio FX. */
     UFUNCTION(BlueprintPure, Category = "SOTS|FX|Debug", meta=(DisplayName="Get FX Active Counts"))

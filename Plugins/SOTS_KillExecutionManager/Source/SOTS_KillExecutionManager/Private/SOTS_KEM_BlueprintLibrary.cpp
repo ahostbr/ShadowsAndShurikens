@@ -16,15 +16,6 @@
 
 namespace
 {
-    static FString GetExecutionFamilyName(ESOTS_KEM_ExecutionFamily Family)
-    {
-        if (const UEnum* Enum = StaticEnum<ESOTS_KEM_ExecutionFamily>())
-        {
-            return Enum->GetNameStringByValue(static_cast<int64>(Family));
-        }
-        return TEXT("Unknown");
-    }
-
     static USOTS_KEMManagerSubsystem* GetKEMSubsystem(const UObject* WorldContextObject)
     {
         if (!WorldContextObject)
@@ -377,7 +368,7 @@ void USOTS_KEM_BlueprintLibrary::KEM_ValidateRegistryCoverage(
     {
         if (!Families.Contains(Family))
         {
-            const FString FamilyName = GetExecutionFamilyName(Family);
+            const FString FamilyName = SOTS_KEM_GetExecutionFamilyName(Family);
             const FString Warning = FString::Printf(TEXT("Missing execution family coverage: %s"), *FamilyName);
             OutWarnings.Add(Warning);
             UE_LOG(LogSOTSKEM, Warning, TEXT("[KEM Coverage] %s"), *Warning);
