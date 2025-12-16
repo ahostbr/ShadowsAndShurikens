@@ -2,7 +2,7 @@
 
 #include "InputAction.h"
 #include "InputActionValue.h"
-#include "InputActionInstance.h"
+#include "InputAction.h"
 #include "SOTS_InputRouterComponent.h"
 
 bool USOTS_InputHandler::CanHandle(const UInputAction* Action, ETriggerEvent Event) const

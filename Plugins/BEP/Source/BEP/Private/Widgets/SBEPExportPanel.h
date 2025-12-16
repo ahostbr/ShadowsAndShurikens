@@ -14,6 +14,9 @@ public:
 
 	void Construct(const FArguments& InArgs);
 
+	void SetRootPath(const FString& InRootPath);
+	void SetOutputRootPath(const FString& InOutputRootPath);
+
 private:
 	FBEPExportSettings ExportSettings;
 	int32 ActiveTabIndex = 0;

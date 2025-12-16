@@ -1,0 +1,457 @@
+ALL PLUGINS STATE 12-16-25 : 
+
+
+=======================================================================
+Plugin 1: SOTS_TagManager (real scan)
+Knowns (what I can confirm from the code in the zip)
+
+Core ownership surface: USOTS_GameplayTagManagerSubsystem (GameInstanceSubsystem) + USOTS_TagLibrary (BP helpers).
+
+Reads / queries:
+
+Pulls “owned tags” from the actor only if it implements IGameplayTagAssetInterface.
+
+Appends SOTS “loose tags” stored in the subsystem (ActorLooseTags map keyed by TWeakObjectPtr<const AActor>).
+
+Then evaluates HasTag / HasAny / HasAll.
+
+Writes:
+
+AddTagToActor* / RemoveTagFromActor* only mutate subsystem loose tags, not actor-owned containers.
+
+Lookup/caching:
+
+GetTagByName resolves via UGameplayTagsManager::RequestGameplayTag(TagName, false) and caches only valid tags (invalid tags are intentionally not cached, which is good).
+
+GetTagChecked logs an error if missing (currently UE_LOG(LogTemp, Error, …)).
+
+No eventing: no “tag changed” delegates/broadcast surface exists right now.
+
+No explicit prune: no proactive cleanup API for stale entries (it relies on weak keys + natural map usage).
+
+Unknowns & Tasks (what we need to verify to call this “fully working”)
+
+Are all tags actually authored/registered in the live project?
+Unknown: the subsystem assumes tags exist in DefaultGameplayTags.ini.
+Task: Diff Plugins/SOTS_TagManager/Docs/SAS_TagSchema_Locked.md against your project’s Config/DefaultGameplayTags.ini (add-only). Confirm zero missing.
+
+Are any systems bypassing TagManager for tag writes/queries?
+Unknown: BPs/C++ might still be calling direct container mutations or their own tag managers.
+Task: Run DevTools regex searches across Plugins/ and BEP exports for:
+
+RequestGameplayTag( (direct tag lookups)
+
+AddLooseGameplayTag, RemoveLooseGameplayTag
+
+GetOwnedGameplayTags, HasTag, HasAny, HasAll usage outside TagManager
+
+Any legacy “tag manager” helpers
+
+Do the important actors implement IGameplayTagAssetInterface where needed?
+Unknown: If an actor doesn’t implement it, only subsystem-loose tags will ever be seen.
+Task: Identify the core actors (player pawn, dragon pawn, AI, key interactables). Confirm which ones rely on “owned tags” vs “loose tags”, and verify interface implementation where required.
+
+Do we need reactive tag-change events anywhere?
+Unknown: Some systems (UI/input/state machines) might want event-driven behavior instead of polling.
+Task: As we scan SOTS_Input, SOTS_UI, GSM, list any places that currently poll tags every frame/timer or do expensive checks — mark candidates for an optional OnActorTagAdded/Removed delegate later.
+
+Do we need a cleanup/prune hook for transient actors?
+Unknown: If you tag lots of short-lived actors, the map can accumulate “dead keys” until it’s touched/compacted.
+Task: Tell me whether SOTS will tag many transient actors (projectiles, temporary VFX actors, spawned decoys). If “yes,” we’ll add an optional PruneLooseTags() debug/maintenance API (safe + non-breaking).
+
+===========================================================================
+Plugin 2: SOTS_ProfileShared (real scan)
+Knowns (what’s already there + how it behaves)
+
+What it owns
+
+FSOTS_ProfileSnapshot + all slice structs in SOTS_ProfileTypes.h:
+
+Meta (id, display name, last played, total play seconds)
+
+PlayerCharacter (transform, stat map, movement state tags, equipped ability tags)
+
+Slice structs: GSM / Ability / SkillTree / Inventory / Missions / Music(MMSS) / FX
+
+USOTS_ProfileSaveGame (just wraps FSOTS_ProfileSnapshot)
+
+USOTS_ProfileSubsystem (GameInstanceSubsystem) = the snapshot pipeline + persistence
+
+ISOTS_ProfileSnapshotProvider interface (providers build/apply into the shared snapshot)
+
+Persistence behavior
+
+SaveProfile(ProfileId, Snapshot):
+
+Builds a slot name like SOTS_Profile_<SlotIndex>_<ProfileName>
+
+Copies snapshot, forces Meta.Id = ProfileId
+
+Ensures DisplayName isn’t empty
+
+Updates Meta.LastPlayedUtc = UtcNow
+
+Saves via UGameplayStatics::SaveGameToSlot (UserIndex 0)
+
+LoadProfile(ProfileId, OutSnapshot):
+
+DoesSaveGameExist gate
+
+Loads via LoadGameFromSlot, casts to USOTS_ProfileSaveGame
+
+Writes OutSnapshot = SavedSnapshot
+
+Forces OutSnapshot.Meta.Id = ProfileId and fills DisplayName if empty
+
+Snapshot pipeline behavior
+
+BuildSnapshotFromWorld(OutSnapshot):
+
+Updates timestamp + display name (if possible)
+
+Captures player pawn transform
+
+Captures optional stats by finding a component whose class name equals/contains "SOTS_StatsComponent"
+
+Calls reflected function BuildCharacterStateData on that component (if present)
+
+Calls InvokeProviderBuild for all registered providers (priority-ordered, stable)
+
+ApplySnapshotToWorld(Snapshot):
+
+Restores player pawn transform
+
+Calls reflected function ApplyCharacterStateData on the stats component (if present)
+
+Calls InvokeProviderApply on all providers
+
+Provider system
+
+Providers are UObjects implementing ISOTS_ProfileSnapshotProvider
+
+Registration is C++-only (not BlueprintCallable):
+
+RegisterProvider(UObject* Provider, int32 Priority)
+
+UnregisterProvider(UObject* Provider)
+
+Ordering:
+
+Higher Priority runs first
+
+Ties break by registration sequence (stable)
+
+Suite integration (important)
+
+Multiple subsystems in your suite already call ProfileSubsystem->RegisterProvider(this, 0) (FX, GAS ability subsystem, GSM, INV bridge, MissionDirector, MMSS, SkillTree). So the “slice owner registers itself” pattern is already in motion.
+
+Unknowns & Tasks (what we must verify/decide to call it “fully complete + expected behavior”)
+
+Slot-name safety
+
+Unknown: ProfileName may contain characters that are awkward/unsafe for SaveGame slot filenames.
+
+Task: Add a sanitization step for slot naming (replace invalid chars) or enforce a safe profile key.
+
+Profile “folder” architecture vs SaveGame slots
+
+Unknown: Your broader design mentions profile folders + central metadata (gamesettings.sav). This subsystem currently uses SaveGameToSlot only.
+
+Task: Decide which layer owns “profile folders + metadata”:
+
+If ProfileShared should stay minimal → keep SaveGame slots and let another system map profile folders.
+
+If ProfileShared is the canonical profile persistence surface → add folder-path persistence (without breaking current SaveGame slot behavior).
+
+TotalPlaySeconds is present but not maintained
+
+Unknown: Nothing increments/writes Meta.TotalPlaySeconds.
+
+Task: Choose the authoritative place to track playtime (MissionDirector? GameFlow? Profile subsystem tick-free accumulator on mission end?) and update the snapshot before save.
+
+Stats component contract is implicit + string-based
+
+Unknown: Your stats component must:
+
+Be class-named (or contain) "SOTS_StatsComponent"
+
+Implement reflected functions:
+
+BuildCharacterStateData(OutState)
+
+ApplyCharacterStateData(InState)
+
+Task: Verify SOTS_Stats actually provides those functions/signatures and that BP/C++ renames won’t silently break the lookup.
+Optional hardening task: replace class-name string matching with an interface (or a tag/component marker).
+
+Provider slice completeness
+
+Unknown: Several providers may still be no-op Build/Apply (intentionally staged).
+
+Task: For each registered provider (GSM, MMSS, MissionDirector, FX, Ability, SkillTree, INV):
+
+Confirm Build populates the slice fields you actually want persisted
+
+Confirm Apply restores them safely (and doesn’t fight runtime initialization order)
+
+Provider ordering contract
+
+Unknown: Right now everything registers with Priority = 0. If any slice depends on another (e.g., SkillTree gating Ability), order may matter.
+
+Task: Define a small priority table (even if all remain 0 today) so future behavior stays deterministic.
+
+Versioning / migration
+
+Unknown: No snapshot version exists; future struct changes can break loads.
+
+Task: Add int32 SnapshotVersion (or similar) + simple migration hooks.
+
+Transform restore safety
+
+Unknown: Pawn->SetActorTransform(...) can be risky if physics/constraints or “spawn points” should override.
+
+Task: Decide whether restore should:
+
+Always set transform (current behavior)
+
+Or only when in safehouse / non-mission / post-load “spawn phase” gate
+
+=======================================================================
+
+Plugin 3: SOTS_Input (real scan)
+Knowns (what it already does / current behavior)
+
+Purpose: runtime-only Enhanced Input routing spine (layer stack + handler dispatch + optional buffering) with no UI focus/InputMode changes (that stays in SOTS_UI).
+
+Core runtime pieces:
+
+USOTS_InputRouterComponent — owns active layer stack, rebuilds bindings, tracks last device, broadcasts intent events.
+
+USOTS_InputLayerDataAsset — per-layer config (layer tag, priority, mapping contexts, handler templates, consume/block rules).
+
+USOTS_InputHandler (+ subclasses) — per-action/per-event logic; supports live input + buffered replay.
+
+USOTS_InputBufferComponent — manages open buffer channels + queued input events.
+
+UAnimNotifyState_SOTS_InputBufferWindow — opens/closes a buffer channel via animation notify windows.
+
+USOTS_InputLayerRegistrySubsystem + USOTS_InputLayerRegistrySettings — maps LayerTag → DataAsset via Project Settings (sync load by default; async optional).
+
+Optional tag gating: Router can gate dispatch using SOTS_TagManager via reflection calling ActorHasTag(...). If TagManager isn’t present, gating becomes a no-op (safe fallback).
+
+Dev-only tooling: console commands like sots.input.dump are compiled out in Shipping/Test (#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)).
+
+What’s in this zip (content-wise)
+
+Plugin ships GameplayTags in SOTS_Input/Config/Tags/SOTS_InputTags.ini:
+
+Layers: Input.Layer.Ninja.Default, Input.Layer.Dragon.Control, Input.Layer.UI.Nav, Input.Layer.Cutscene
+
+Buffer: Input.Buffer.Channel.Execution
+
+Device: Input.Device.KBM, Input.Device.Gamepad
+
+Intents: Input.Intent.Gameplay.Interact, Input.Intent.UI.Back
+
+Plugin ships 3 layer DataAssets:
+
+DA_InputLayer_Cutscene
+
+DA_InputLayer_NinjaDefault
+
+DA_InputLayer_UINav
+
+Notably missing in Content: a DA_InputLayer_DragonControl asset (even though the tag exists).
+
+Unknowns & Tasks (to reach “fully complete + expected behavior”)
+
+Layer registry isn’t auto-populated
+
+Unknown: Whether your live project has the Project Settings → SOTS Input Layer Registry entries set up.
+
+Task: Add registry mappings for:
+
+Input.Layer.Ninja.Default → DA_InputLayer_NinjaDefault
+
+Input.Layer.UI.Nav → DA_InputLayer_UINav
+
+Input.Layer.Cutscene → DA_InputLayer_Cutscene
+
+Input.Layer.Dragon.Control → (needs an asset, see #2)
+
+Dragon layer asset is missing
+
+Unknown: What the Dragon-control IMC/IAs are supposed to be (and whether they already exist elsewhere).
+
+Task: Create DA_InputLayer_DragonControl (or equivalent) + register it for Input.Layer.Dragon.Control.
+
+Real IMCs/IAs are not shipped here
+
+Unknown: What InputMappingContexts + InputActions each layer should actually use (the layer DataAssets may currently be placeholders).
+
+Task: For each layer, author/assign the real IMCs/IAs and confirm they’re referenced by the layer DataAssets.
+
+Where the router/buffer components live
+
+Unknown: Your canonical attachment point:
+
+PlayerController vs Pawn vs a dedicated “Input Host” actor/component.
+
+Task: Decide the standard placement and ensure both:
+
+USOTS_InputRouterComponent
+
+USOTS_InputBufferComponent
+exist where USOTS_InputBlueprintLibrary::GetRouterFromActor will reliably find them.
+
+Integration wiring is only partially done across suite
+
+Unknown: Whether these responsibilities are fully wired in gameplay:
+
+SOTS_UI push/pop Input.Layer.UI.Nav
+
+Dragon possession push/pop Input.Layer.Dragon.Control
+
+MissionDirector/cutscenes push/pop Input.Layer.Cutscene and restore prior stack
+
+Ensure Input.Layer.Ninja.Default is always present during normal play
+
+Task: Verify each owner is actually calling the stable surface (SOTS_InputAPI.h / USOTS_InputBlueprintLibrary).
+
+Buffer windows need to be placed into the right animations
+
+Unknown: Which montages should open Input.Buffer.Channel.Execution (executions, interacts, special stealth actions, etc.).
+
+Task: Add UAnimNotifyState_SOTS_InputBufferWindow to the correct montage windows and validate:
+
+open → buffer events
+
+close+flush → replay in order
+
+Tag authoring policy (your “tags must be in DefaultGameplayTags.ini” law)
+
+Unknown: Whether you’ve already copied these plugin tags into Config/DefaultGameplayTags.ini.
+
+Task: Ensure all Input.* tags are present there (add-only), even though the plugin already ships a Tags ini.
+
+Device-change consumer hookup
+
+Unknown: Who consumes OnInputDeviceChanged (UI cursor hiding, input prompts, etc.).
+
+Task: Decide the consumer (likely SOTS_UIRouterSubsystem) and bind once, not per-widget.
+
+
+====================================================================
+
+Plugin 5:  SOTS_UI (scan of PLUGINS_121625_0107PM.zip)
+What’s already “there” (C++ behavior looks solid)
+
+Central stack router: USOTS_UIRouterSubsystem
+
+Registry-driven PushWidgetById / ReplaceTopWidgetById / PopWidget, layered stacks: HUD / Overlay / Modal / Debug
+
+Layer base Z: HUD=0, Overlay=100, Modal=1000, Debug=10000
+
+Input mode + mouse cursor controlled by top widget’s ESOTS_UIInputPolicy (GameOnly / UIOnly / GameAndUI)
+
+Pause policy: if any active widget entry has bPauseGame, router pauses the game; auto-unpauses when none remain
+
+SOTS_Input integration: automatically pushes/pops Input.Layer.UI.Nav when the top entry is not GameOnly
+
+Widget registry model is clean:
+
+USOTS_WidgetRegistryDataAsset holds FSOTS_WidgetRegistryEntry rows (WidgetId tag, WidgetClass soft ptr, Layer, InputPolicy, CachePolicy (Recreate/KeepAlive), ZOrder offset, bAllowMultiple, bCloseOnEscape)
+
+Router caches KeepAlive widgets (unless bAllowMultiple)
+
+“System actions” supported by tag (router executes these from modal results):
+
+SAS.UI.Action.QuitGame, SAS.UI.Action.OpenSettings, SAS.UI.Action.OpenProfiles, SAS.UI.Action.CloseTopModal, SAS.UI.Action.ReturnToMainMenu
+
+Return-to-main-menu flow is implemented as: RequestReturnToMainMenu() → confirm dialog → broadcasts OnReturnToMainMenuRequested
+
+Subsystems are present for data/eventing:
+
+USOTS_HUDSubsystem (objective text, detection, etc)
+
+USOTS_NotificationSubsystem
+
+USOTS_WaypointSubsystem
+
+Adapters are intentionally BP-implemented and router-owned:
+
+USOTS_ProHUDAdapter (EnsureHUDCreated, PushNotification, AddOrUpdateWorldMarker, RemoveWorldMarker)
+
+USOTS_InvSPAdapter (Open/Close/Refresh)
+
+USOTS_InteractionEssentialsAdapter (prompt show/update/hide + marker add/remove)
+
+Unknowns / “needs confirmation” for full correctness (these block true end-to-end behavior)
+
+These are the things I can’t verify from the plugin code alone, but they’re required for “works fully”:
+
+Which /Game Widget Registry DataAsset is actually in use right now?
+
+SOTS_UISettings.DefaultWidgetRegistry must point to a real DA, and it must contain entries for:
+
+Confirm dialog widget id: UI.Modals.DialogPrompt (primary) or SAS.UI.CGF.Modal.DialogPrompt (fallback)
+
+Inventory/menu ids used by router:
+
+UI.Menu.Inventory or SAS.UI.InvSP.InventoryMenu
+
+UI.Menu.Container or SAS.UI.InvSP.ContainerMenu
+
+UI.Menu.Settings
+
+UI.Menu.Profiles
+
+Are the required GameplayTags actually defined somewhere?
+
+Router requests tags with ErrorIfNotFound=false, so missing tags can fail “quietly.”
+
+This plugin doesn’t ship its own tag config folder in the zip, so tags must exist in your project/global tag setup (ex: DefaultGameplayTags.ini).
+
+Do the BP adapter subclasses exist + are they assigned in Project Settings?
+
+SOTS -> UI settings need:
+
+ProHUD adapter BP class
+
+InvSP adapter BP class
+
+InteractionEssentials adapter BP class
+
+Without these, the router will run but you’ll get “no visuals” for those systems.
+
+Who is listening to OnReturnToMainMenuRequested?
+
+Router will warn if nothing is bound.
+
+The game-flow owner (likely MissionDirector/UI/GameFlow) must bind this and actually travel/clean up.
+
+Escape/Back behavior is NOT implemented yet in C++
+
+Registry supports bCloseOnEscape, router stores it into active entries… but router never uses it.
+
+So the “expected” behavior (Esc/B button closes top modal/top closable widget) must be:
+
+handled in BP widgets, or
+
+handled by SOTS_Input routing calling back into router, or
+
+needs a small router feature added later.
+
+Concrete “completion tasks” I’d put on the checklist for SOTS_UI
+
+[Tags] Ensure all UI action/intent/widget-id tags exist (confirm dialog tags + SAS.UI.Action.* + any UI.Menu.* ids you’re using).
+
+[Registry] Confirm the live registry DA contains every widget id the router can push from system actions + inventory functions.
+
+[Adapters] Verify/implement the 3 adapter BP subclasses and assign them in SOTS_UISettings.
+
+[ReturnToMainMenu] Ensure something binds OnReturnToMainMenuRequested and performs the actual flow.
+
+[Back/Escape] Decide the canonical close policy:
+
+either implement in router (recommended long-term), or enforce via input system/widget handling—right now it’s a gap.

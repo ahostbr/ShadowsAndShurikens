@@ -4,7 +4,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/GameInstance.h"
 #include "InputAction.h"
-#include "InputActionInstance.h"
+#include "InputAction.h"
 #include "SOTS_InputBufferComponent.h"
 #include "SOTS_InputDeviceLibrary.h"
 #include "SOTS_InputHandler.h"
@@ -120,19 +120,16 @@ void USOTS_InputRouterComponent::ClearRouterOwnedBindings(UEnhancedInputComponen
 {
     if (!TargetComponent)
     {
-        RouterOwnedBindingIndices.Reset();
+        RouterOwnedBindings.Reset();
         return;
     }
 
-    for (int32 Index = RouterOwnedBindingIndices.Num() - 1; Index >= 0; --Index)
+    for (const FInputBindingHandle& Handle : RouterOwnedBindings)
     {
-        if (RouterOwnedBindingIndices.IsValidIndex(Index))
-        {
-            TargetComponent->RemoveBinding(RouterOwnedBindingIndices[Index]);
-        }
+        TargetComponent->RemoveBinding(Handle);
     }
 
-    RouterOwnedBindingIndices.Reset();
+    RouterOwnedBindings.Reset();
 }
 
 void USOTS_InputRouterComponent::StartAutoRefreshTimer()
@@ -198,7 +195,11 @@ void USOTS_InputRouterComponent::PushLayer(const USOTS_InputLayerDataAsset* Laye
     Active.Priority = Layer->Priority;
     Active.bBlocksLowerPriorityLayers = Layer->bBlocksLowerPriorityLayers;
     Active.ConsumePolicy = Layer->ConsumePolicy;
-    Active.AppliedContexts = Layer->MappingContexts;
+    Active.AppliedContexts.Reset(Layer->MappingContexts.Num());
+    for (const TObjectPtr<UInputMappingContext>& Context : Layer->MappingContexts)
+    {
+        Active.AppliedContexts.Add(Context.Get());
+    }
 
     for (USOTS_InputHandler* TemplateHandler : Layer->HandlerTemplates)
     {
@@ -377,7 +378,7 @@ bool USOTS_InputRouterComponent::EvaluateGates(bool bForBuffering) const
         return true;
     }
 
-    UClass* TagManagerClass = FindObject<UClass>(ANY_PACKAGE, TEXT("USOTS_GameplayTagManagerSubsystem"));
+    UClass* TagManagerClass = FindObject<UClass>(nullptr, TEXT("/Script/SOTS_TagManager.SOTS_GameplayTagManagerSubsystem"));
     if (!TagManagerClass)
     {
         return true;
@@ -463,7 +464,7 @@ void USOTS_InputRouterComponent::RebuildBindings()
     }
 
     ClearRouterOwnedBindings(BoundInputComponent.Get());
-    RouterOwnedBindingIndices.Reset();
+    RouterOwnedBindings.Reset();
     BoundInputComponent = CurrentInputComp;
 
     LocalInputSubsystem->ClearAllMappings();
@@ -718,9 +719,8 @@ void USOTS_InputRouterComponent::BindActionEvent(const FSOTS_InputBindingKey& Bi
         return;
     }
 
-    InputComp->BindAction(BindingKey.Action, BindingKey.TriggerEvent, this, Handler);
-    const int32 NewIndex = InputComp->GetNumActionBindings() - 1;
-    RouterOwnedBindingIndices.Add(NewIndex);
+    const FInputBindingHandle BindingHandle = InputComp->BindAction(BindingKey.Action, BindingKey.TriggerEvent, this, Handler);
+    RouterOwnedBindings.Add(BindingHandle);
 }
 
 void USOTS_InputRouterComponent::OnActionStarted(const FInputActionInstance& Instance)

@@ -5,6 +5,8 @@
 #include "GameplayTagContainer.h"
 #include "InputActionValue.h"
 #include "InputCoreTypes.h"
+#include "InputTriggers.h"
+#include "EnhancedInputComponent.h"
 #include "SOTS_InputBindingTypes.h"
 #include "SOTS_InputBufferTypes.h"
 #include "SOTS_InputDeviceTypes.h"
@@ -20,7 +22,8 @@ class APlayerController;
 class USOTS_InputHandler;
 class USOTS_InputLayerDataAsset;
 class USOTS_InputBufferComponent;
-class FInputActionInstance;
+struct FInputActionInstance;
+struct FInputBindingHandle;
 
 USTRUCT()
 struct FSOTS_ActiveInputLayer
@@ -102,7 +105,7 @@ struct FSOTS_InputIntentEvent
     FGameplayTag IntentTag;
 
     UPROPERTY(BlueprintReadOnly, Category = "Intent")
-    TEnumAsByte<ETriggerEvent> TriggerEvent = ETriggerEvent::None;
+    ETriggerEvent TriggerEvent = ETriggerEvent::None;
 
     UPROPERTY(BlueprintReadOnly, Category = "Intent")
     FInputActionValue Value;
@@ -219,8 +222,7 @@ private:
     UPROPERTY()
     TWeakObjectPtr<USOTS_InputBufferComponent> BufferComp;
 
-    UPROPERTY()
-    TArray<int32> RouterOwnedBindingIndices;
+    TArray<FInputBindingHandle> RouterOwnedBindings;
 
     UPROPERTY()
     TArray<FSOTS_InputBindingKey> CachedBindingOrder;
@@ -234,25 +236,25 @@ private:
     UPROPERTY(VisibleAnywhere, Category = "SOTS|Input")
     ESOTS_InputDevice LastDevice = ESOTS_InputDevice::Unknown;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input", meta = (AllowPrivateAccess = "true"))
     bool bEnableTagGates = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input", meta = (AllowPrivateAccess = "true"))
     TArray<FSOTS_InputGateRule> GateRules;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Debug")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Debug", meta = (AllowPrivateAccess = "true"))
     bool bDebugLogRouterState = false;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Debug")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Debug", meta = (AllowPrivateAccess = "true"))
     bool bDebugLogBindings = false;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input", meta = (AllowPrivateAccess = "true"))
     bool bEnableAutoRefresh = false;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input", meta = (AllowPrivateAccess = "true"))
     float AutoRefreshIntervalSeconds = 0.5f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Debug")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Debug", meta = (AllowPrivateAccess = "true"))
     float DebugLogIntervalSeconds = 2.0f;
 
     float LastDebugLogTime = 0.f;

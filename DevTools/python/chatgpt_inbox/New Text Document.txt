@@ -1,0 +1,604 @@
+/* =============================================================================
+DevTools ADD-ONLY PATCH:
+- Adds Context Anchor support WITHOUT removing ANY existing sots_tools.py features.
+- Patches your existing DevTools/python/sots_tools.py in-place (after making a backup).
+- Adds menu items to Category 4:
+    12) Save Context Anchor (paste/file)
+    13) Scan inbox for Context Anchors
+- Adds DevTools/python/save_context_anchor.py which routes anchors to:
+    Plugins/<Plugin>/Docs/Anchor/
+  and also keeps a central copy under:
+    DevTools/python/Saved/ContextAnchors/
+============================================================================= */
+
+[SOTS_DEVTOOLS]
+tool: write_files
+category: devtools
+plugin: DevTools
+pass: CONTEXT_ANCHOR_ADD_ONLY_PATCH_V1
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/patch_sots_tools_add_context_anchors.py ===
+from __future__ import annotations
+
+import datetime
+import re
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# ADD-ONLY patcher for sots_tools.py
+# - creates a timestamped backup
+# - injects new wrapper funcs if missing
+# - injects new Category 4 menu options if missing
+# - verifies nothing was removed (defs / subcommands / menu-option print lines)
+# ---------------------------------------------------------------------------
+
+ROOT = Path(__file__).resolve().parent
+TARGET = ROOT / "sots_tools.py"
+LOG_DIR = ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "patch_sots_tools_add_context_anchors.log"
+
+FUNC_SAVE = "run_save_context_anchor"
+FUNC_SCAN = "run_scan_context_anchors_inbox"
+
+MENU_PRINT_12 = '        print(" 12) Save Context Anchor (paste/file)")'
+MENU_PRINT_13 = '        print(" 13) Scan inbox for Context Anchors")'
+
+def log(msg: str) -> None:
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] {msg}"
+    print(line)
+    try:
+        LOG_FILE.write_text(LOG_FILE.read_text(encoding="utf-8", errors="replace") + line + "\n", encoding="utf-8")
+    except Exception:
+        try:
+            LOG_FILE.write_text(line + "\n", encoding="utf-8")
+        except Exception:
+            pass
+
+def now_tag() -> str:
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+def parse_defs(text: str) -> set[str]:
+    return set(re.findall(r"^def\s+([A-Za-z0-9_]+)\s*\(", text, flags=re.M))
+
+def parse_subcommands(text: str) -> set[str]:
+    return set(re.findall(r"add_parser\(\s*['\"]([^'\"]+)['\"]", text))
+
+def parse_menu_option_prints(text: str) -> set[str]:
+    # Just capture the raw print lines so we can assert we didn't delete any.
+    out = set()
+    for m in re.finditer(r'^\s*print\(" {2}\d+\)\s.*"\)\s*$', text, flags=re.M):
+        out.add(m.group(0))
+    return out
+
+def write_backup(path: Path, text: str) -> Path:
+    backup = path.with_suffix(path.suffix + f".pre_context_anchor_{now_tag()}.bak")
+    backup.write_text(text, encoding="utf-8")
+    return backup
+
+def ensure_wrapper_functions(text: str) -> tuple[str, bool]:
+    """
+    Inject wrapper functions near other helpers if missing:
+      - run_save_context_anchor()
+      - run_scan_context_anchors_inbox()
+    """
+    changed = False
+
+    if f"def {FUNC_SAVE}(" in text and f"def {FUNC_SCAN}(" in text:
+        return text, changed
+
+    inject_block = "\n\n# ---------------------------------------------------------------------------\n# Context Anchors (ADD-ONLY)\n# ---------------------------------------------------------------------------\n\n"
+    if f"def {FUNC_SAVE}(" not in text:
+        inject_block += f"def {FUNC_SAVE}() -> None:\n    \"\"\"Save a [CONTEXT_ANCHOR] block to Plugins/<Plugin>/Docs/Anchor/.\"\"\"\n    run_script(\"save_context_anchor.py\")\n\n\n"
+    if f"def {FUNC_SCAN}(" not in text:
+        inject_block += f"def {FUNC_SCAN}() -> None:\n    \"\"\"Scan chatgpt_inbox for [CONTEXT_ANCHOR] blocks and route them to Plugins/<Plugin>/Docs/Anchor/.\"\"\"\n    run_script(\"save_context_anchor.py\", [\"--scan-inbox\", \"--move-processed\"])\n\n"
+
+    # Insert before the "Interactive menu UI" section if present; else append at end.
+    marker = "# ---------------------------------------------------------------------------\n# Interactive menu UI"
+    idx = text.find(marker)
+    if idx != -1:
+        text = text[:idx] + inject_block + text[idx:]
+        changed = True
+        return text, changed
+
+    # Fallback: insert before main()/arg parser if marker not found.
+    marker2 = "def run_interactive_menu()"
+    idx2 = text.find(marker2)
+    if idx2 != -1:
+        text = text[:idx2] + inject_block + text[idx2:]
+        changed = True
+        return text, changed
+
+    # Last resort: append (still add-only).
+    text += inject_block
+    changed = True
+    return text, changed
+
+def ensure_category4_menu(text: str) -> tuple[str, bool]:
+    """
+    Add menu prints and choice handlers inside category_batch_editing()
+    without deleting or renumbering existing lines.
+    """
+    changed = False
+
+    # If prints already exist, assume menu already patched.
+    if "Save Context Anchor" in text and "Scan inbox for Context Anchors" in text:
+        return text, changed
+
+    # 1) Inject the two print lines after option 11 (browse inbox) if present.
+    # Find the exact print for option 11.
+    pat_print_11 = r'^\s*print\(" 11\) Browse ChatGPT inbox \(manual dispatcher\)"\)\s*$'
+    m11 = re.search(pat_print_11, text, flags=re.M)
+    if m11 and MENU_PRINT_12 not in text:
+        insert_at = m11.end()
+        text = text[:insert_at] + "\n" + MENU_PRINT_12 + "\n" + MENU_PRINT_13 + text[insert_at:]
+        changed = True
+    else:
+        # If the menu is formatted differently, inject right before "0) Back" inside Category 4.
+        pat_back = r'^\s*print\(""\)\s*\n\s*print\(" {2}0\) Back to main menu"\)\s*$'
+        mb = re.search(pat_back, text, flags=re.M)
+        if mb and MENU_PRINT_12 not in text:
+            insert_at = mb.start()
+            text = text[:insert_at] + MENU_PRINT_12 + "\n" + MENU_PRINT_13 + "\n" + text[insert_at:]
+            changed = True
+
+    # 2) Inject handlers in the choice chain: after the handler for choice "11" if possible.
+    # Try to locate: elif choice == "11":
+    pat_choice_11 = r'^\s*elif choice == "11":\s*$'
+    mc11 = re.search(pat_choice_11, text, flags=re.M)
+    if mc11 and 'elif choice == "12":' not in text:
+        insert_at = mc11.end()
+        inject = (
+            "\n            run_apply_latest_chatgpt_inbox()\n"
+            "        elif choice == \"12\":\n"
+            f"            {FUNC_SAVE}()\n"
+            "        elif choice == \"13\":\n"
+            f"            {FUNC_SCAN}()\n"
+        )
+        # Replace the single-line 'elif choice == "11":' with the same line plus injected block,
+        # BUT only if the very next line isn't already a call.
+        # We'll insert immediately after the 'elif' line; existing code remains below.
+        text = text[:insert_at] + inject + text[insert_at:]
+        changed = True
+
+    return text, changed
+
+def verify_no_removals(before: str, after: str) -> tuple[bool, list[str]]:
+    """
+    Hard safety check: ensure our patch did not remove any pre-existing:
+      - def names
+      - subcommand names
+      - menu-option print lines (the numbered ones)
+    """
+    problems: list[str] = []
+
+    b_defs = parse_defs(before)
+    a_defs = parse_defs(after)
+    missing_defs = sorted(b_defs - a_defs)
+    if missing_defs:
+        problems.append(f"Removed def(s): {missing_defs}")
+
+    b_cmds = parse_subcommands(before)
+    a_cmds = parse_subcommands(after)
+    missing_cmds = sorted(b_cmds - a_cmds)
+    if missing_cmds:
+        problems.append(f"Removed CLI subcommand(s): {missing_cmds}")
+
+    b_menu = parse_menu_option_prints(before)
+    a_menu = parse_menu_option_prints(after)
+    missing_menu = sorted(b_menu - a_menu)
+    if missing_menu:
+        problems.append(f"Removed menu print line(s): {missing_menu[:20]}{' ...' if len(missing_menu) > 20 else ''}")
+
+    ok = len(problems) == 0
+    return ok, problems
+
+def main() -> int:
+    log("=== patch_sots_tools_add_context_anchors.py start ===")
+
+    if not TARGET.exists():
+        log(f"[ERROR] Target not found: {TARGET}")
+        return 2
+
+    before = TARGET.read_text(encoding="utf-8", errors="replace")
+    backup_path = write_backup(TARGET, before)
+    log(f"Backup written: {backup_path}")
+
+    after, ch1 = ensure_wrapper_functions(before)
+    after, ch2 = ensure_category4_menu(after)
+
+    ok, problems = verify_no_removals(before, after)
+    if not ok:
+        log("[ERROR] Refusing to write patch because it would remove existing features.")
+        for p in problems:
+            log(" - " + p)
+        log("Restoring original file from backup (no changes applied).")
+        TARGET.write_text(before, encoding="utf-8")
+        return 3
+
+    if after == before:
+        log("[INFO] No changes needed (already patched).")
+        return 0
+
+    TARGET.write_text(after, encoding="utf-8")
+    log(f"[OK] Patched: {TARGET}")
+    log(f"Changed wrapper functions: {ch1}, changed menu: {ch2}")
+    log("=== patch_sots_tools_add_context_anchors.py end ===")
+    return 0
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        log(f"[FATAL] Unhandled exception: {exc}")
+        import traceback
+        traceback.print_exc()
+        try:
+            if sys.stdin.isatty():
+                input("\nPress Enter to close...")
+        except Exception:
+            pass
+        raise
+=== END FILE ===
+
+=== FILE: DevTools/python/save_context_anchor.py ===
+from __future__ import annotations
+
+import argparse
+import datetime
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = ROOT.parent.parent  # .../ShadowsAndShurikens
+LOG_DIR = ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "context_anchor.log"
+
+ANCHOR_START = "[CONTEXT_ANCHOR]"
+ANCHOR_END = "[/CONTEXT_ANCHOR]"
+
+# Keep a central copy as well (handy for auditing)
+CENTRAL_DIR = ROOT / "Saved" / "ContextAnchors"
+CENTRAL_DIR.mkdir(parents=True, exist_ok=True)
+
+# Shorthand aliases -> actual plugin folder names
+PLUGIN_ALIASES: dict[str, str] = {
+    "KEM": "SOTS_KillExecutionManager",
+    "SOTS_KEM": "SOTS_KillExecutionManager",
+    "GSM": "SOTS_GlobalStealthManager",
+    "SOTS_GSM": "SOTS_GlobalStealthManager",
+    "AIP": "SOTS_AIPerception",
+    "SOTS_AIP": "SOTS_AIPerception",
+    "MD": "SOTS_MissionDirector",
+    "SOTS_MD": "SOTS_MissionDirector",
+    "INV": "SOTS_INV",
+    "UI": "SOTS_UI",
+    "MMSS": "SOTS_MMSS",
+    "STATS": "SOTS_Stats",
+    "STEAM": "SOTS_Steam",
+    "PROFILESHARED": "SOTS_ProfileShared",
+    "TAGMANAGER": "SOTS_TagManager",
+    "FX": "SOTS_FX_Plugin",
+    "PARKOUR": "SOTS_Parkour",
+    "EDUTIL": "SOTS_EdUtil",
+    "DEBUG": "SOTS_Debug",
+    "BLUEPRINTGEN": "SOTS_BlueprintGen",
+    "BEP": "BEP",
+    "OMNITRACE": "OmniTrace",
+    "LIGHTPROBE": "LightProbePlugin",
+    "BLUEPRINTCOMMENTLINKS": "BlueprintCommentLinks",
+}
+
+def log(msg: str) -> None:
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] {msg}"
+    print(line)
+    try:
+        LOG_FILE.write_text(LOG_FILE.read_text(encoding="utf-8", errors="replace") + line + "\n", encoding="utf-8")
+    except Exception:
+        try:
+            LOG_FILE.write_text(line + "\n", encoding="utf-8")
+        except Exception:
+            pass
+
+def now_tag() -> str:
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+def safe_slug(s: str) -> str:
+    s = s.strip().replace(" ", "_")
+    s = re.sub(r"[^A-Za-z0-9_\-]+", "", s)
+    return s[:64] if s else "ANCHOR"
+
+def parse_anchor_blocks(text: str) -> list[str]:
+    blocks: list[str] = []
+    start = 0
+    while True:
+        i = text.find(ANCHOR_START, start)
+        if i == -1:
+            break
+        j = text.find(ANCHOR_END, i + len(ANCHOR_START))
+        if j == -1:
+            blocks.append(text[i:].strip())
+            break
+        blocks.append(text[i : j + len(ANCHOR_END)].strip())
+        start = j + len(ANCHOR_END)
+    return blocks
+
+def parse_kv(block: str) -> dict[str, str]:
+    kv: dict[str, str] = {}
+    for line in block.splitlines():
+        m = re.match(r"^\s*([A-Za-z0-9_\-]+)\s*:\s*(.*?)\s*$", line)
+        if not m:
+            continue
+        k = m.group(1).strip().lower()
+        v = m.group(2).strip()
+        if k and v:
+            kv[k] = v
+    return kv
+
+def resolve_anchor_timestamp(kv: dict[str, str]) -> str:
+    for key in ("created", "timestamp", "ts", "dt", "date"):
+        val = kv.get(key)
+        if not val:
+            continue
+        m = re.search(r"\b(\d{8})[_-](\d{6})\b", val)
+        if m:
+            return f"{m.group(1)}_{m.group(2)}"
+    return now_tag()
+
+def list_plugin_folders() -> list[str]:
+    plugins_root = PROJECT_ROOT / "Plugins"
+    if not plugins_root.exists():
+        return []
+    out: list[str] = []
+    for p in plugins_root.iterdir():
+        if p.is_dir() and any(p.glob("*.uplugin")):
+            out.append(p.name)
+    return sorted(out)
+
+def resolve_plugin_folder(plugin_id: str) -> tuple[str | None, str]:
+    raw = plugin_id.strip()
+    if not raw:
+        return None, "empty"
+    if raw.lower().startswith("lock_"):
+        raw = raw[5:]
+
+    folders = list_plugin_folders()
+    if not folders:
+        return None, "no plugin folders found"
+
+    # direct
+    direct = PROJECT_ROOT / "Plugins" / raw
+    if direct.exists():
+        return raw, "direct"
+
+    # case-insensitive
+    for f in folders:
+        if f.lower() == raw.lower():
+            return f, "case-insensitive"
+
+    # alias
+    mapped = PLUGIN_ALIASES.get(raw.upper())
+    if mapped:
+        for f in folders:
+            if f.lower() == mapped.lower():
+                return f, f"alias({raw}->{f})"
+
+    # heuristic substring
+    raw_n = re.sub(r"[^a-z0-9]+", "", raw.lower())
+    hits = []
+    for f in folders:
+        f_n = re.sub(r"[^a-z0-9]+", "", f.lower())
+        if raw_n and (raw_n in f_n or f_n in raw_n):
+            hits.append(f)
+    hits = sorted(set(hits))
+    if len(hits) == 1:
+        return hits[0], f"heuristic({raw}->{hits[0]})"
+    if len(hits) > 1:
+        return None, f"ambiguous({raw}->{hits})"
+
+    return None, f"unresolved({plugin_id})"
+
+def infer_plugins(anchor_block: str, kv: dict[str, str]) -> list[str]:
+    plugins: set[str] = set()
+
+    for key in ("plugin", "plugins"):
+        val = kv.get(key)
+        if val:
+            for part in re.split(r"[,\s]+", val):
+                p = part.strip()
+                if p:
+                    plugins.add(p)
+
+    for m in re.finditer(r"\bLock_([A-Za-z0-9_]+)\b", anchor_block):
+        plugins.add(m.group(1))
+
+    return sorted(plugins)
+
+def write_central_copy(filename: str, anchor_block: str) -> Path:
+    dest = CENTRAL_DIR / filename
+    if dest.exists():
+        dest = CENTRAL_DIR / f"{dest.stem}_{now_tag()}{dest.suffix}"
+    dest.write_text(anchor_block.strip() + "\n", encoding="utf-8")
+    return dest
+
+def write_to_plugin(plugin: str, filename: str, anchor_block: str) -> Path | None:
+    folder, reason = resolve_plugin_folder(plugin)
+    if not folder:
+        log(f"[WARN] Plugin resolve failed for '{plugin}' ({reason}).")
+        return None
+
+    plugin_dir = PROJECT_ROOT / "Plugins" / folder
+    dest_dir = plugin_dir / "Docs" / "Anchor"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    dest = dest_dir / filename
+    if dest.exists():
+        dest = dest_dir / f"{dest.stem}_{now_tag()}{dest.suffix}"
+    dest.write_text(anchor_block.strip() + "\n", encoding="utf-8")
+    return dest
+
+def process_text(text: str, default_slug: str | None = None) -> int:
+    blocks = parse_anchor_blocks(text)
+    if not blocks:
+        log("No [CONTEXT_ANCHOR] blocks found.")
+        return 2
+
+    rc = 0
+    for block in blocks:
+        kv = parse_kv(block)
+        plugins = infer_plugins(block, kv)
+        ts = resolve_anchor_timestamp(kv)
+        slug = safe_slug(kv.get("slug") or default_slug or (plugins[0] if len(plugins) == 1 else "MULTI"))
+        filename = f"CONTEXT_ANCHOR_{ts}_{slug}.md"
+
+        cpath = write_central_copy(filename, block)
+        log(f"Wrote central copy: {cpath}")
+
+        if not plugins:
+            log("[WARN] No plugin inferred. Central copy only.")
+            continue
+
+        for plugin in plugins:
+            out = write_to_plugin(plugin, filename, block)
+            if out:
+                log(f"Wrote plugin copy: {out}")
+            else:
+                rc = 1
+    return rc
+
+def scan_inbox(move_processed: bool) -> int:
+    inbox = ROOT / "chatgpt_inbox"
+    if not inbox.exists():
+        log(f"[ERROR] chatgpt_inbox not found: {inbox}")
+        return 2
+
+    processed_dir = CENTRAL_DIR / "inbox_processed"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    files = []
+    for p in inbox.rglob("*"):
+        if p.is_file() and p.suffix.lower() in {".txt", ".md", ".log"}:
+            try:
+                txt = p.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                continue
+            if ANCHOR_START in txt:
+                files.append(p)
+
+    if not files:
+        log("No inbox files contain [CONTEXT_ANCHOR].")
+        return 0
+
+    log(f"Found {len(files)} inbox file(s) with anchors.")
+    ok = 0
+    for p in sorted(files, key=lambda x: x.stat().st_mtime, reverse=True):
+        log(f"Processing inbox file: {p}")
+        txt = p.read_text(encoding="utf-8", errors="replace")
+        rc = process_text(txt)
+        if rc == 0:
+            ok += 1
+            if move_processed:
+                dest = processed_dir / p.name
+                if dest.exists():
+                    dest = processed_dir / f"{p.stem}_{now_tag()}{p.suffix}"
+                try:
+                    p.replace(dest)
+                    log(f"Moved processed inbox file -> {dest}")
+                except Exception as exc:
+                    log(f"[WARN] Could not move processed file: {p} ({exc})")
+        else:
+            log(f"[WARN] Failed processing: {p} (rc={rc})")
+
+    log(f"Inbox scan complete. OK: {ok}/{len(files)}")
+    return 0
+
+def interactive() -> int:
+    print("")
+    print("=== Save Context Anchor ===")
+    print("1) Paste a [CONTEXT_ANCHOR] block now")
+    print("2) Process a file path containing [CONTEXT_ANCHOR]")
+    print("3) Scan chatgpt_inbox for [CONTEXT_ANCHOR] blocks")
+    print("")
+    choice = input("Choice (1/2/3)> ").strip()
+
+    if choice == "1":
+        print("")
+        print("Paste your [CONTEXT_ANCHOR] block(s). End input with a single line containing only: EOF")
+        buf: list[str] = []
+        while True:
+            line = sys.stdin.readline()
+            if not line:
+                break
+            if line.strip() == "EOF":
+                break
+            buf.append(line)
+        return process_text("".join(buf))
+
+    if choice == "2":
+        path_str = input("File path> ").strip().strip('"')
+        p = Path(path_str)
+        if not p.exists():
+            log(f"[ERROR] File not found: {p}")
+            return 2
+        return process_text(p.read_text(encoding="utf-8", errors="replace"))
+
+    if choice == "3":
+        return scan_inbox(move_processed=True)
+
+    print("[INFO] Cancelled.")
+    return 0
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Save [CONTEXT_ANCHOR] blocks into Plugins/<Plugin>/Docs/Anchor/")
+    ap.add_argument("--file", type=str, default=None, help="File containing one or more [CONTEXT_ANCHOR] blocks")
+    ap.add_argument("--slug", type=str, default=None, help="Default slug if anchor does not specify one")
+    ap.add_argument("--scan-inbox", action="store_true", help="Scan chatgpt_inbox for anchors")
+    ap.add_argument("--move-processed", action="store_true", help="Move processed inbox files to Saved/ContextAnchors/inbox_processed")
+    ap.add_argument("--interactive", action="store_true", help="Interactive mode")
+    args = ap.parse_args(argv)
+
+    log("=== save_context_anchor.py start ===")
+
+    if args.interactive or (not args.file and not args.scan_inbox):
+        rc = interactive()
+        log(f"=== save_context_anchor.py end (rc={rc}) ===")
+        return rc
+
+    if args.scan_inbox:
+        rc = scan_inbox(move_processed=args.move_processed)
+        log(f"=== save_context_anchor.py end (rc={rc}) ===")
+        return rc
+
+    if args.file:
+        p = Path(args.file).expanduser()
+        if not p.exists():
+            log(f"[ERROR] File not found: {p}")
+            return 2
+        txt = p.read_text(encoding="utf-8", errors="replace")
+        rc = process_text(txt, default_slug=args.slug)
+        log(f"=== save_context_anchor.py end (rc={rc}) ===")
+        return rc
+
+    log("Nothing to do.")
+    return 0
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception:
+        import traceback
+        log("[FATAL] Unhandled exception in save_context_anchor.py")
+        traceback.print_exc()
+        try:
+            if sys.stdin.isatty():
+                input("\nPress Enter to close...")
+        except Exception:
+            pass
+        raise
+=== END FILE ===

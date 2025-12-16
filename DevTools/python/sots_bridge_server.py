@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -45,9 +46,6 @@ def _route_existing_inbox_entries() -> None:
     )
 
 
-_route_existing_inbox_entries()
-
-
 # ---------------------------------------------------------------------------
 # Logging helper
 # ---------------------------------------------------------------------------
@@ -62,6 +60,22 @@ def bridge_log(msg: str) -> None:
     except Exception:
         # Logging must never kill the server
         pass
+
+
+def bridge_log_exception(exc: BaseException, context: str = "") -> None:
+    context_prefix = f"{context}: " if context else ""
+    bridge_log(f"{context_prefix}{exc}")
+    try:
+        trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        for line in trace.rstrip().splitlines():
+            bridge_log(line)
+    except Exception:
+        # Never let logging raise.
+        pass
+
+
+    # Run inbox routing once logging is available so errors are captured.
+    _route_existing_inbox_entries()
 
 
 # ---------------------------------------------------------------------------
@@ -257,41 +271,45 @@ def run_prompt() -> tuple:
       - Normal prompt files (last markdown, code blocks, etc.)
       - open_file style actions coming from DevTools labels
     """
-    data = request.get_json(force=True, silent=True) or {}
+    try:
+        data = request.get_json(force=True, silent=True) or {}
 
-    action = (data.get("action") or "").strip()
-    label = (data.get("label") or "chatgpt_prompt").strip()
-    meta = data.get("meta") or {}
+        action = (data.get("action") or "").strip()
+        label = (data.get("label") or "chatgpt_prompt").strip()
+        meta = data.get("meta") or {}
 
-    # devtools_path may live in meta or at the top level
-    devtools_path = meta.get("devtools_path") or data.get("devtools_path", "")
+        # devtools_path may live in meta or at the top level
+        devtools_path = meta.get("devtools_path") or data.get("devtools_path", "")
 
-    bridge_log(
-        f"run_prompt: action={action!r}, label={label!r}, "
-        f"has_devtools_path={bool(devtools_path)}"
-    )
+        bridge_log(
+            f"run_prompt: action={action!r}, label={label!r}, "
+            f"has_devtools_path={bool(devtools_path)}"
+        )
 
-    # --- Any request that looks like an open-file intent ---
-    if action == "open_file" or devtools_path:
-        bridge_log(f"Received open_file-style request for {devtools_path!r}")
-        payload, status = handle_open_file(devtools_path)
-        return jsonify(payload), status
+        # --- Any request that looks like an open-file intent ---
+        if action == "open_file" or devtools_path:
+            bridge_log(f"Received open_file-style request for {devtools_path!r}")
+            payload, status = handle_open_file(devtools_path)
+            return jsonify(payload), status
 
-    # --- Normal prompt path (last message, code blocks, etc.) ---
-    prompt = (data.get("prompt") or "").rstrip()
-    if not prompt:
-        bridge_log(f"Rejected request: empty prompt (action={action!r})")
-        return jsonify({"ok": False, "error": "empty prompt"}), 400
+        # --- Normal prompt path (last message, code blocks, etc.) ---
+        prompt = (data.get("prompt") or "").rstrip()
+        if not prompt:
+            bridge_log(f"Rejected request: empty prompt (action={action!r})")
+            return jsonify({"ok": False, "error": "empty prompt"}), 400
 
-    bridge_log(f"Received prompt (label={label}, len={len(prompt)})")
+        bridge_log(f"Received prompt (label={label}, len={len(prompt)})")
 
-    out_path = store_prompt_to_inbox(prompt, label, meta)
-    resp = {
-        "ok": True,
-        "file": str(out_path),
-        "label": label,
-    }
-    return jsonify(resp), 200
+        out_path = store_prompt_to_inbox(prompt, label, meta)
+        resp = {
+            "ok": True,
+            "file": str(out_path),
+            "label": label,
+        }
+        return jsonify(resp), 200
+    except Exception as exc:
+        bridge_log_exception(exc, context="run_prompt")
+        return jsonify({"ok": False, "error": str(exc)}), 500
 
 
 # ---------------------------------------------------------------------------
@@ -299,5 +317,8 @@ def run_prompt() -> tuple:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    bridge_log("SOTS DevTools Flask bridge starting on http://127.0.0.1:5050")
-    app.run(host="127.0.0.1", port=5050, debug=False)
+    try:
+        bridge_log("SOTS DevTools Flask bridge starting on http://127.0.0.1:5050")
+        app.run(host="127.0.0.1", port=5050, debug=False)
+    except Exception as exc:
+        bridge_log_exception(exc, context="app.run")

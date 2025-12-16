@@ -12,6 +12,7 @@
 class USOTS_FXCueDefinition;
 class UNiagaraComponent;
 class UAudioComponent;
+class UActorComponent;
 class USOTS_FXDefinitionLibrary;
 
 /** Configurable registration for a hard-referenced FX library. */
@@ -99,52 +100,19 @@ struct FSOTS_FXExecutionParams
     bool bAllowCameraShake = true;
 };
 
-/** Pooled Niagara component entry with simple usage bookkeeping. */
-USTRUCT()
-struct FSOTS_FXPooledNiagaraEntry
+// Lightweight pooled entry shared by Niagara and Audio.
+struct FSOTS_FXPoolEntry
 {
-    GENERATED_BODY()
-
-    UPROPERTY()
-    TObjectPtr<UNiagaraComponent> Component = nullptr;
-
-    UPROPERTY()
-    bool bInUse = false;
-
-    UPROPERTY()
-    float LastUseTime = 0.0f;
+    TWeakObjectPtr<UActorComponent> Component;
+    double LastUseTime = 0.0;
+    bool bActive = false;
 };
 
-/** Pooled audio component entry with simple usage bookkeeping. */
-USTRUCT()
-struct FSOTS_FXPooledAudioEntry
+// Per-tag pool container.
+struct FSOTS_FXTagPool
 {
-    GENERATED_BODY()
-
-    UPROPERTY()
-    TObjectPtr<UAudioComponent> Component = nullptr;
-
-    UPROPERTY()
-    bool bInUse = false;
-
-    UPROPERTY()
-    float LastUseTime = 0.0f;
-};
-
-/**
- * Internal pool per cue definition.
- * Not exposed to BP – purely runtime plumbing.
- */
-USTRUCT()
-struct FSOTS_FXCuePool
-{
-    GENERATED_BODY()
-
-    UPROPERTY()
-    TArray<struct FSOTS_FXPooledNiagaraEntry> NiagaraComponents;
-
-    UPROPERTY()
-    TArray<struct FSOTS_FXPooledAudioEntry> AudioComponents;
+    TArray<FSOTS_FXPoolEntry> NiagaraEntries;
+    TArray<FSOTS_FXPoolEntry> AudioEntries;
 };
 
 UCLASS(Config=Game)
@@ -279,29 +247,32 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Debug")
     bool bDebugLogCueResolution = false;
 
-    /** Max pooled Niagara components per cue (legacy pooled path). */
+    /** Global toggle for pooling. If false, components spawn transiently with auto-destroy. */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Pooling")
-    int32 MaxNiagaraPoolSizePerCue = 8;
+    bool bEnablePooling = true;
 
-    /** Max pooled audio components per cue (legacy pooled path). */
+    /** Global pooled component limits (all cue tags combined). */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Pooling")
-    int32 MaxAudioPoolSizePerCue = 8;
+    int32 MaxPooledNiagaraComponents = 64;
 
-    /** Hard cap on concurrently active Niagara components per cue; oldest can be reclaimed. */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Pooling")
-    int32 MaxActiveNiagaraPerCue = 12;
+    int32 MaxPooledAudioComponents = 64;
 
-    /** Hard cap on concurrently active audio components per cue; oldest can be reclaimed. */
+    /** Max concurrently active components per cue tag (Niagara + Audio each respect this cap). */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Pooling")
-    int32 MaxActiveAudioPerCue = 12;
+    int32 MaxActivePerCue = 12;
 
-    /** If true, recycle the oldest pooled component when the cap is reached; otherwise drop the request. */
+    /** Overflow policy when per-cue active cap is hit. */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Pooling")
-    bool bRecycleWhenExhausted = true;
+    ESOTS_FXPoolOverflowPolicy OverflowPolicy = ESOTS_FXPoolOverflowPolicy::ReuseOldest;
 
     /** Dev-only: log pool reuse and reclamation decisions. */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Debug")
     bool bLogPoolActions = false;
+
+    /** Dev-only: dump pool stats to log when explicitly triggered. */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Debug")
+    bool bDebugDumpPoolStats = false;
 
     /** Broadcast when an FX job is requested and resolved. */
     UPROPERTY(BlueprintAssignable, Category="SOTS|FX")
@@ -310,6 +281,11 @@ public:
     /** Debug helper: snapshot of pooled component usage. */
     UFUNCTION(BlueprintPure, Category="SOTS|FX|Debug")
     FSOTS_FXPoolStats GetPoolStats() const;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    /** Dev-only: dump pool stats to log when enabled. */
+    void DumpPoolStatsToLog() const;
+#endif
 
     /** Tag-driven FX job with explicit result payload. */
     UFUNCTION(BlueprintCallable, Category="SOTS|FX", meta=(WorldContext="WorldContextObject"))
@@ -339,10 +315,6 @@ protected:
     UPROPERTY()
     TMap<FGameplayTag, TObjectPtr<USOTS_FXCueDefinition>> CueMap;
 
-    /** Cue definition → component pools. */
-    UPROPERTY()
-    TMap<TObjectPtr<USOTS_FXCueDefinition>, FSOTS_FXCuePool> CuePools;
-
 private:
 
     static TWeakObjectPtr<USOTS_FXManagerSubsystem> SingletonInstance;
@@ -371,17 +343,17 @@ private:
     bool EnsureRegistryReady() const;
 
     // Pool helpers
-    UNiagaraComponent* AcquireNiagaraComponent(UWorld* World, USOTS_FXCueDefinition* CueDefinition);
-    UAudioComponent* AcquireAudioComponent(UWorld* World, USOTS_FXCueDefinition* CueDefinition);
-    void CleanupInvalidPoolEntries(FSOTS_FXCuePool& Pool) const;
-    UNiagaraComponent* ReclaimNiagaraComponent(FSOTS_FXCuePool& Pool, const TCHAR* CueName, float NowSeconds);
-    UAudioComponent* ReclaimAudioComponent(FSOTS_FXCuePool& Pool, const TCHAR* CueName, float NowSeconds);
-    void MarkNiagaraEntryFree(UNiagaraComponent* Component);
-    void MarkAudioEntryFree(UAudioComponent* Component);
+    FSOTS_FXTagPool& GetOrCreatePool(const FGameplayTag& CueTag);
+    UNiagaraComponent* AcquireNiagaraComponent(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, UWorld* World, bool& bOutRejectedByPolicy);
+    void ReleaseNiagaraComponent(UNiagaraComponent* Component);
+    UAudioComponent* AcquireAudioComponent(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, UWorld* World, bool& bOutRejectedByPolicy);
+    void ReleaseAudioComponent(UAudioComponent* Component);
+    UNiagaraComponent* SpawnFreshNiagaraComponent(UNiagaraSystem* NiagaraSystem, UWorld* World);
+    UAudioComponent* SpawnFreshAudioComponent(USoundBase* Sound, UWorld* World);
+    FSOTS_FXPoolEntry* FindFreeEntry(TArray<FSOTS_FXPoolEntry>& Entries) const;
+    FSOTS_FXPoolEntry* ReclaimOldestActiveEntry(TArray<FSOTS_FXPoolEntry>& Entries, bool bDestroyOldest);
+    void PruneExcessPoolEntries();
     void LogPoolEvent(const FString& Message) const;
-
-    void ApplyContextToNiagara(UNiagaraComponent* NiagaraComp, USOTS_FXCueDefinition* CueDefinition, const FSOTS_FXContext& Context);
-    void ApplyContextToAudio(UAudioComponent* AudioComp, USOTS_FXCueDefinition* CueDefinition, const FSOTS_FXContext& Context);
 
     // New helper path for gameplay-tag-driven FX jobs.
     const FSOTS_FXDefinition* FindDefinition(FGameplayTag FXTag) const;
@@ -402,9 +374,8 @@ private:
     FSOTS_FXExecutionParams BuildExecutionParams(const FSOTS_FXRequest& Request, const FSOTS_FXDefinition* Definition, const FGameplayTag& ResolvedTag) const;
     void ApplySurfaceAlignment(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, FVector& InOutLocation, FRotator& InOutRotation) const;
     void ApplyOffsets(const FSOTS_FXDefinition* Definition, bool bAttached, FVector& InOutLocation, FRotator& InOutRotation) const;
-    UNiagaraComponent* SpawnNiagara(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, const FVector& SpawnLocation, const FRotator& SpawnRotation, float SpawnScale, UWorld* World) const;
     void ApplyNiagaraParameters(UNiagaraComponent* NiagaraComp, const FSOTS_FXDefinition* Definition) const;
-    UAudioComponent* SpawnAudio(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, const FVector& SpawnLocation, const FRotator& SpawnRotation, UWorld* World) const;
+    void ApplyAudioTuning(UAudioComponent* AudioComp, const FSOTS_FXDefinition* Definition) const;
     void TriggerCameraShake(const FSOTS_FXDefinition* Definition, UWorld* World) const;
 
     UFUNCTION()
@@ -430,4 +401,13 @@ private:
     // Cache of resolved library definitions for deterministic lookup.
     UPROPERTY()
     TMap<FGameplayTag, FSOTS_FXResolvedDefinitionEntry> RegisteredLibraryDefinitions;
+
+    // Tag-driven pools and bookkeeping.
+    TMap<FGameplayTag, FSOTS_FXTagPool> TagPools;
+    TMap<TWeakObjectPtr<UNiagaraComponent>, FGameplayTag> NiagaraComponentTags;
+    TMap<TWeakObjectPtr<UAudioComponent>, FGameplayTag> AudioComponentTags;
+    TMap<FGameplayTag, int32> ActiveNiagaraCounts;
+    TMap<FGameplayTag, int32> ActiveAudioCounts;
+    int32 TotalPooledNiagara = 0;
+    int32 TotalPooledAudio = 0;
 };

@@ -3,10 +3,13 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+#include "InputTriggers.h"
+#include "InputAction.h"
 #include "SOTS_InputLayerDataAsset.generated.h"
 
 class UInputMappingContext;
 class USOTS_InputHandler;
+class UInputAction;
 
 UENUM(BlueprintType)
 enum class ESOTS_InputLayerConsumePolicy : uint8

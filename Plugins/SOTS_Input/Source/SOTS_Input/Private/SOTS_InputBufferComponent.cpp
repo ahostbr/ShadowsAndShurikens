@@ -17,10 +17,10 @@ void USOTS_InputBufferComponent::OpenChannel(FGameplayTag Channel)
     OpenChannelStack.Remove(Channel);
     OpenChannelStack.Add(Channel); // Treat end as top of stack.
 
-    TArray<FSOTS_BufferedInputEvent>& Events = BufferedByChannel.FindOrAdd(Channel);
+    FSOTS_BufferedInputEventArray& ArrayRef = BufferedByChannel.FindOrAdd(Channel);
     if (MaxBufferedEventsPerChannel > 0)
     {
-        Events.Reserve(MaxBufferedEventsPerChannel);
+        ArrayRef.Events.Reserve(MaxBufferedEventsPerChannel);
     }
 }
 
@@ -39,11 +39,11 @@ void USOTS_InputBufferComponent::CloseChannel(FGameplayTag Channel, bool bFlush,
         return;
     }
 
-    if (TArray<FSOTS_BufferedInputEvent>* Events = BufferedByChannel.Find(Channel))
+    if (FSOTS_BufferedInputEventArray* ArrayRef = BufferedByChannel.Find(Channel))
     {
         if (Router)
         {
-            for (const FSOTS_BufferedInputEvent& Evt : *Events)
+            for (const FSOTS_BufferedInputEvent& Evt : ArrayRef->Events)
             {
                 Router->DispatchBufferedEvent(Evt);
             }
@@ -67,7 +67,9 @@ void USOTS_InputBufferComponent::BufferEvent(const FSOTS_BufferedInputEvent& Evt
         return;
     }
 
-    TArray<FSOTS_BufferedInputEvent>& Events = BufferedByChannel.FindOrAdd(Channel);
+    FSOTS_BufferedInputEventArray& ArrayRef = BufferedByChannel.FindOrAdd(Channel);
+    TArray<FSOTS_BufferedInputEvent>& Events = ArrayRef.Events;
+
     if (MaxBufferedEventsPerChannel > 0 && Events.Num() >= MaxBufferedEventsPerChannel)
     {
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)

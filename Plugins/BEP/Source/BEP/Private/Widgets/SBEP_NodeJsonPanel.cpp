@@ -38,7 +38,7 @@ struct FParsedCsvRow
     FString Comment;
 };
 
-static FString PresetToString(const EBEP_NodeJsonPreset Preset)
+static FString PanelPresetToString(const EBEP_NodeJsonPreset Preset)
 {
     if (const UEnum* Enum = StaticEnum<EBEP_NodeJsonPreset>())
     {
@@ -47,7 +47,7 @@ static FString PresetToString(const EBEP_NodeJsonPreset Preset)
     return TEXT("Unknown");
 }
 
-static void GatherGraphPanels(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGraphPanel>>& Out)
+static void PanelGatherGraphPanels(const TSharedRef<SWidget>& Root, TArray<TSharedPtr<SGraphPanel>>& Out)
 {
     if (Root->GetType() == FName(TEXT("SGraphPanel")))
     {
@@ -58,46 +58,63 @@ static void GatherGraphPanels(const TSharedRef<SWidget>& Root, TArray<TSharedPtr
         const int32 Num = Children->Num();
         for (int32 Index = 0; Index < Num; ++Index)
         {
-            GatherGraphPanels(Children->GetChildAt(Index), Out);
+            PanelGatherGraphPanels(Children->GetChildAt(Index), Out);
         }
     }
 }
 
-static TSharedPtr<SGraphPanel> FindActiveGraphPanel()
+static TSharedPtr<SGraphPanel> PanelFindActiveGraphPanel()
 {
+    auto PickPanel = [](const TArray<TSharedPtr<SGraphPanel>>& InPanels) -> TSharedPtr<SGraphPanel>
+    {
+        for (const TSharedPtr<SGraphPanel>& Panel : InPanels)
+        {
+            if (Panel.IsValid())
+            {
+                if (UEdGraph* Graph = Panel->GetGraphObj())
+                {
+                    if (Panel->GetSelectedGraphNodes().Num() > 0)
+                    {
+                        return Panel;
+                    }
+                }
+            }
+        }
+
+        for (const TSharedPtr<SGraphPanel>& Panel : InPanels)
+        {
+            if (Panel.IsValid() && Panel->GetGraphObj())
+            {
+                return Panel;
+            }
+        }
+        return nullptr;
+    };
+
+    if (TSharedPtr<SWindow> ActiveWindow = FSlateApplication::Get().GetActiveTopLevelWindow())
+    {
+        TArray<TSharedPtr<SGraphPanel>> ActivePanels;
+        if (TSharedPtr<SWidget> Content = ActiveWindow->GetContent())
+        {
+            PanelGatherGraphPanels(Content.ToSharedRef(), ActivePanels);
+        }
+        if (TSharedPtr<SGraphPanel> Hit = PickPanel(ActivePanels))
+        {
+            return Hit;
+        }
+    }
+
     const TArray<TSharedRef<SWindow>>& Windows = FSlateApplication::Get().GetTopLevelWindows();
     TArray<TSharedPtr<SGraphPanel>> Panels;
     for (const TSharedRef<SWindow>& Win : Windows)
     {
         if (TSharedPtr<SWidget> Content = Win->GetContent())
         {
-            GatherGraphPanels(Content.ToSharedRef(), Panels);
+            PanelGatherGraphPanels(Content.ToSharedRef(), Panels);
         }
     }
 
-    for (const TSharedPtr<SGraphPanel>& Panel : Panels)
-    {
-        if (Panel.IsValid())
-        {
-            if (UEdGraph* Graph = Panel->GetGraphObj())
-            {
-                if (Panel->GetSelectedGraphNodes().Num() > 0)
-                {
-                    return Panel;
-                }
-            }
-        }
-    }
-
-    for (const TSharedPtr<SGraphPanel>& Panel : Panels)
-    {
-        if (Panel.IsValid() && Panel->GetGraphObj())
-        {
-            return Panel;
-        }
-    }
-
-    return nullptr;
+    return PickPanel(Panels);
 }
 
 static TArray<FString> TokenizeCsvRow(const FString& Line)
@@ -282,7 +299,7 @@ void SBEP_NodeJsonPanel::Construct(const FArguments& InArgs)
                         {
                             return FText::FromString(TEXT("(no settings)"));
                         }
-                        return FText::FromString(PresetToString(Settings->DefaultPreset));
+                        return FText::FromString(PanelPresetToString(Settings->DefaultPreset));
                     })
                 ]
                 + SHorizontalBox::Slot()
@@ -470,7 +487,7 @@ FReply SBEP_NodeJsonPanel::OnQuickPresetClicked(EBEP_NodeJsonPreset Preset)
         Settings->ApplyPresetToSettings(Preset);
         Settings->DefaultPreset = Preset;
         Settings->SaveConfig();
-        UpdateStatus(FString::Printf(TEXT("Applied preset: %s"), *PresetToString(Preset)));
+        UpdateStatus(FString::Printf(TEXT("Applied preset: %s"), *PanelPresetToString(Preset)));
         BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Preset applied"), true);
     }
     return FReply::Handled();
@@ -639,7 +656,7 @@ bool SBEP_NodeJsonPanel::RunExport(bool bCopyOnly)
             EdgeCount,
             Stats.ExecEdgeCount,
             Stats.DataEdgeCount,
-            *PresetToString(Opt.Preset),
+            *PanelPresetToString(Opt.Preset),
             Stats.bHitNodeCap ? TEXT("true") : TEXT("false"),
             Stats.bHitEdgeCap ? TEXT("true") : TEXT("false"));
 
@@ -671,7 +688,7 @@ bool SBEP_NodeJsonPanel::RunExport(bool bCopyOnly)
         Stats.DataEdgeCount,
         Stats.ExecDepthUsed,
         Stats.DataDepthUsed,
-        *PresetToString(Opt.Preset),
+        *PanelPresetToString(Opt.Preset),
         Stats.bHitNodeCap ? TEXT("true") : TEXT("false"),
         Stats.bHitEdgeCap ? TEXT("true") : TEXT("false"),
         *SavedPath,
@@ -926,7 +943,7 @@ bool SBEP_NodeJsonPanel::RunCommentImport()
         return false;
     }
 
-    const TSharedPtr<SGraphPanel> GraphPanel = FindActiveGraphPanel();
+    const TSharedPtr<SGraphPanel> GraphPanel = PanelFindActiveGraphPanel();
     if (!GraphPanel.IsValid())
     {
         UpdateStatus(TEXT("No active graph editor."));
@@ -1053,7 +1070,7 @@ void SBEP_NodeJsonPanel::UpdateStatus(const FString& InStatus)
         if (bHasLastStats)
         {
             Enriched += FString::Printf(TEXT("\nPreset: %s | Nodes: %d | Edges: %d (exec %d / data %d) | Caps Hit: N=%s E=%s"),
-                *PresetToString(LastPreset),
+                *PanelPresetToString(LastPreset),
                 LastStats.FinalNodeCount,
                 LastStats.ExecEdgeCount + LastStats.DataEdgeCount,
                 LastStats.ExecEdgeCount,

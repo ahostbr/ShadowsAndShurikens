@@ -7,7 +7,7 @@
 #include "InputTriggers.h"
 #include "SOTS_InputHandler.generated.h"
 
-class FInputActionInstance;
+struct FInputActionInstance;
 class USOTS_InputRouterComponent;
 
 // STABLE API: used by SOTS_UI and gameplay systems
@@ -21,7 +21,7 @@ public:
     TArray<TObjectPtr<const UInputAction>> InputActions;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-    TArray<TEnumAsByte<ETriggerEvent>> TriggerEvents;
+    TArray<ETriggerEvent> TriggerEvents;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buffer")
     bool bAllowBuffering = false;

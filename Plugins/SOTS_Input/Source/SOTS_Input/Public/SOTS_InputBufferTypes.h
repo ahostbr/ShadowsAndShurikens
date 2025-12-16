@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "InputActionValue.h"
+#include "InputTriggers.h"
 #include "SOTS_InputBufferTypes.generated.h"
 
 class UInputAction;
@@ -17,7 +18,7 @@ public:
     TObjectPtr<const UInputAction> Action = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TEnumAsByte<ETriggerEvent> TriggerEvent = ETriggerEvent::None;
+    ETriggerEvent TriggerEvent = ETriggerEvent::None;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FInputActionValue Value;
@@ -27,4 +28,15 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FGameplayTag Channel;
+};
+
+/** Wrapper to allow storing buffered event arrays as TMap values. */
+USTRUCT(BlueprintType)
+struct SOTS_INPUT_API FSOTS_BufferedInputEventArray
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FSOTS_BufferedInputEvent> Events;
 };

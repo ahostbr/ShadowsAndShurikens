@@ -6,7 +6,7 @@
 #include "SOTS_InputLayerRegistrySubsystem.generated.h"
 
 class USOTS_InputLayerDataAsset;
-class FStreamableHandle;
+struct FStreamableHandle;
 
 UCLASS()
 class SOTS_INPUT_API USOTS_InputLayerRegistrySubsystem : public UGameInstanceSubsystem
@@ -17,7 +17,7 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|Input")
-    bool TryGetLayerAsset(FGameplayTag Tag, USOTS_InputLayerDataAsset*& OutLayer) const;
+    bool TryGetLayerAsset(FGameplayTag Tag, USOTS_InputLayerDataAsset*& OutLayer);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|Input")
     void RequestLayerAsync(FGameplayTag Tag);

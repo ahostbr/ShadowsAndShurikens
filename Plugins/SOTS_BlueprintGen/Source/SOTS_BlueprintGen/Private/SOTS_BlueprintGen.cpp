@@ -71,11 +71,15 @@ void FSOTS_BlueprintGenModule::RegisterMenus()
 		return;
 	}
 
-	FToolMenuSection& Section = WindowMenu->FindOrAddSection("SOTS");
+	FToolMenuSection* Section = WindowMenu->FindSection("SOTS_Tools");
+	if (!Section)
+	{
+		Section = &WindowMenu->AddSection("SOTS_Tools", FText::FromString(TEXT("SOTS Tools")));
+	}
 	const FText Label = LOCTEXT("BPGenRunnerMenuLabel", "SOTS BPGen Runner");
 	const FText Tooltip = LOCTEXT("BPGenRunnerMenuTooltip", "Open the SOTS BPGen Runner tab.");
 
-	Section.AddMenuEntry(
+	Section->AddMenuEntry(
 		"OpenSOTS_BPGenRunner",
 		Label,
 		Tooltip,

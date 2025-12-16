@@ -1,9 +1,12 @@
 #pragma once
 
-#include "Modules/ModuleManager.h"
 #include "Delegates/Delegate.h"
+#include "Modules/ModuleManager.h"
+#include "Templates/SharedPointer.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogBEP, Log, All);
+
+struct FAssetData;
 
 class FBEPModule : public IModuleInterface
 {
@@ -15,6 +18,7 @@ private:
 	void RegisterContentBrowserHooks();
 	void UnregisterContentBrowserHooks();
 	TSharedRef<class FExtender> OnExtendContentBrowserPathMenu(const TArray<FString>& SelectedPaths);
+	TSharedRef<class FExtender> OnExtendContentBrowserAssetMenu(const TArray<FAssetData>& SelectedAssets);
 	void ExecuteExportFolderWithBEP(const TArray<FString>& SelectedPaths);
 
 	void RegisterTabSpawner();
@@ -45,7 +49,10 @@ private:
 
 private:
 	FDelegateHandle ContentBrowserPathExtenderHandle;
+	FDelegateHandle ContentBrowserAssetExtenderHandle;
 	FDelegateHandle MenuRegistrationHandle;
+
+	TWeakPtr<class SBEPExportPanel> ExportPanelWeak;
 
 	TSharedPtr<class FUICommandList> NodeJsonCommandList;
 };

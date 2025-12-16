@@ -26,6 +26,32 @@ KNOWN_TOOLS = {
     "save_context_anchor",
 }
 
+
+def load_header_from_file(path: str):
+    """Load and parse a [SOTS_DEVTOOLS] header from a text file.
+
+    Returns a tuple of (header_dict_or_None, error_str). We keep this helper
+    here to avoid duplicating header parsing logic in callers like
+    inbox_router.
+    """
+    if not os.path.exists(path):
+        return None, f"file not found: {path}"
+
+    if not is_text_file_name(path):
+        return None, f"not a text file: {path}"
+
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception as exc:
+        return None, f"failed to read file: {exc}"
+
+    header = parse_header_block(content)
+    if header is None:
+        return None, "missing [SOTS_DEVTOOLS] header"
+
+    return header, ""
+
 PATH_LIKE_KEYS = {
     "path",
     "file",

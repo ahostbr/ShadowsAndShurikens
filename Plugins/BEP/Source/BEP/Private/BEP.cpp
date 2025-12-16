@@ -1,6 +1,8 @@
 #include "BEP.h"
 
 #include "BlueprintFlowExporter.h"
+#include "AssetRegistry/AssetData.h"
+#include "ContentBrowserMenuContexts.h"
 #include "ContentBrowserModule.h"
 #include "Framework/Docking/TabManager.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -154,32 +156,43 @@ void FBEPModule::RegisterContentBrowserHooks()
 		this, &FBEPModule::OnExtendContentBrowserPathMenu));
 
 	ContentBrowserPathExtenderHandle = PathExtenders.Last().GetHandle();
+
+	// Also extend the asset view (grid/list) so folder tiles get the option.
+	TArray<FContentBrowserMenuExtender_SelectedAssets>& AssetExtenders =
+		ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
+
+	AssetExtenders.Add(FContentBrowserMenuExtender_SelectedAssets::CreateRaw(
+		this, &FBEPModule::OnExtendContentBrowserAssetMenu));
+
+	ContentBrowserAssetExtenderHandle = AssetExtenders.Last().GetHandle();
 }
 
 void FBEPModule::UnregisterContentBrowserHooks()
 {
-	if (!ContentBrowserPathExtenderHandle.IsValid())
-	{
-		return;
-	}
-
 	FContentBrowserModule* ContentBrowserModule =
 		FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");
 
-	if (!ContentBrowserModule)
+	if (ContentBrowserModule)
 	{
-		return;
+		TArray<FContentBrowserMenuExtender_SelectedPaths>& PathExtenders =
+			ContentBrowserModule->GetAllPathViewContextMenuExtenders();
+
+		PathExtenders.RemoveAll([this](const FContentBrowserMenuExtender_SelectedPaths& Delegate)
+		{
+			return Delegate.GetHandle() == ContentBrowserPathExtenderHandle;
+		});
+
+		TArray<FContentBrowserMenuExtender_SelectedAssets>& AssetExtenders =
+			ContentBrowserModule->GetAllAssetViewContextMenuExtenders();
+
+		AssetExtenders.RemoveAll([this](const FContentBrowserMenuExtender_SelectedAssets& Delegate)
+		{
+			return Delegate.GetHandle() == ContentBrowserAssetExtenderHandle;
+		});
 	}
 
-	TArray<FContentBrowserMenuExtender_SelectedPaths>& PathExtenders =
-		ContentBrowserModule->GetAllPathViewContextMenuExtenders();
-
-	PathExtenders.RemoveAll([this](const FContentBrowserMenuExtender_SelectedPaths& Delegate)
-	{
-		return Delegate.GetHandle() == ContentBrowserPathExtenderHandle;
-	});
-
 	ContentBrowserPathExtenderHandle.Reset();
+	ContentBrowserAssetExtenderHandle.Reset();
 }
 
 TSharedRef<FExtender> FBEPModule::OnExtendContentBrowserPathMenu(const TArray<FString>& SelectedPaths)
@@ -189,12 +202,51 @@ TSharedRef<FExtender> FBEPModule::OnExtendContentBrowserPathMenu(const TArray<FS
 	if (SelectedPaths.Num() > 0)
 	{
 		Extender->AddMenuExtension(
-			TEXT("ContentBrowserFolderOptions"),
+			TEXT("PathContextMenu"),
 			EExtensionHook::After,
 			nullptr,
 			FMenuExtensionDelegate::CreateLambda([this, SelectedPaths](FMenuBuilder& MenuBuilder)
 			{
 				const TArray<FString> PathsCopy = SelectedPaths;
+				MenuBuilder.AddMenuEntry(
+					FText::FromString(TEXT("Export Folder with BEP")),
+					FText::FromString(TEXT("Export Blueprints, IMCs, data assets, and schemas under this folder using BEP.")),
+					FSlateIcon(),
+					FUIAction(FExecuteAction::CreateLambda([this, PathsCopy]()
+					{
+						ExecuteExportFolderWithBEP(PathsCopy);
+					}))
+				);
+			}));
+	}
+
+	return Extender;
+}
+
+TSharedRef<FExtender> FBEPModule::OnExtendContentBrowserAssetMenu(const TArray<FAssetData>& SelectedAssets)
+{
+	TSharedRef<FExtender> Extender = MakeShared<FExtender>();
+
+	TArray<FString> UniquePaths;
+	UniquePaths.Reserve(SelectedAssets.Num());
+
+	for (const FAssetData& Asset : SelectedAssets)
+	{
+		if (!Asset.PackagePath.IsNone())
+		{
+			UniquePaths.AddUnique(Asset.PackagePath.ToString());
+		}
+	}
+
+	if (UniquePaths.Num() > 0)
+	{
+		Extender->AddMenuExtension(
+			TEXT("GetAssetActions"),
+			EExtensionHook::After,
+			nullptr,
+			FMenuExtensionDelegate::CreateLambda([this, UniquePaths](FMenuBuilder& MenuBuilder)
+			{
+				const TArray<FString> PathsCopy = UniquePaths;
 				MenuBuilder.AddMenuEntry(
 					FText::FromString(TEXT("Export Folder with BEP")),
 					FText::FromString(TEXT("Export Blueprints, IMCs, data assets, and schemas under this folder using BEP.")),
@@ -217,21 +269,32 @@ void FBEPModule::ExecuteExportFolderWithBEP(const TArray<FString>& SelectedPaths
 		return;
 	}
 
-	const EBEPExportFormat Format = EBEPExportFormat::Json;
+	const FString RootPath = SelectedPaths[0];
 
-	for (const FString& Path : SelectedPaths)
+	if (SelectedPaths.Num() > 1)
 	{
-		if (Path.IsEmpty())
-		{
-			continue;
-		}
+		UE_LOG(LogBEP, Log, TEXT("BEP: Multiple paths selected; prefilling first path %s in export panel."), *RootPath);
+	}
 
-		FString SanitizedPath = Path;
+	TSharedPtr<SDockTab> ExportTab = FGlobalTabmanager::Get()->TryInvokeTab(BEPExportTabName);
+	if (ExportTab.IsValid())
+	{
+		ExportTab->ActivateInParent(ETabActivationCause::SetDirectly);
+	}
+
+	TSharedPtr<SBEPExportPanel> ExportPanel = ExportPanelWeak.Pin();
+	if (ExportPanel.IsValid())
+	{
+		ExportPanel->SetRootPath(RootPath);
+
+		FString SanitizedPath = RootPath;
 		SanitizedPath.ReplaceInline(TEXT("/"), TEXT("_"));
-
-		const FString OutputRoot = FPaths::ProjectSavedDir() / TEXT("BEPExport") / SanitizedPath;
-		const TArray<FString> ExcludedPatterns;
-		FBlueprintFlowExporter::ExportAll(OutputRoot, Path, Format, ExcludedPatterns);
+		const FString SuggestedOutputRoot = FPaths::Combine(GetDefaultBEPExportRoot(), SanitizedPath);
+		ExportPanel->SetOutputRootPath(SuggestedOutputRoot);
+	}
+	else
+	{
+		UE_LOG(LogBEP, Warning, TEXT("BEP: Could not prefill export panel; tab spawner may not be available."));
 	}
 }
 
@@ -241,7 +304,7 @@ void FBEPModule::RegisterTabSpawner()
 		BEPExportTabName,
 		FOnSpawnTab::CreateRaw(this, &FBEPModule::SpawnBEPExportTab))
 		.SetDisplayName(FText::FromString(TEXT("BEP Exporter")))
-		.SetMenuType(ETabSpawnerMenuType::Hidden);
+		.SetMenuType(ETabSpawnerMenuType::Enabled);
 }
 
 void FBEPModule::UnregisterTabSpawner()
@@ -251,10 +314,13 @@ void FBEPModule::UnregisterTabSpawner()
 
 TSharedRef<SDockTab> FBEPModule::SpawnBEPExportTab(const FSpawnTabArgs& Args)
 {
+	TSharedRef<SBEPExportPanel> ExportPanel = SNew(SBEPExportPanel);
+	ExportPanelWeak = ExportPanel;
+
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
 		[
-			SNew(SBEPExportPanel)
+			ExportPanel
 		];
 }
 
@@ -266,31 +332,56 @@ void FBEPModule::RegisterMenus()
 void FBEPModule::RegisterMenus_Impl()
 {
 	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-	if (!Menu)
+	if (Menu)
 	{
-		return;
+		static const FName SectionName("BEP_Tools");
+		FToolMenuSection* Section = Menu->FindSection(SectionName);
+		if (!Section)
+		{
+			Section = &Menu->AddSection(SectionName, FText::FromString(TEXT("BEP Tools")));
+		}
+
+		auto AddCommandMenuEntry = [&](const TSharedPtr<FUICommandInfo>& Command)
+		{
+			FToolMenuEntry& Entry = Section->AddMenuEntry(Command);
+			Entry.SetCommandList(NodeJsonCommandList);
+		};
+
+		// Full BEP exporter tab (legacy/default export UI)
+		Section->AddMenuEntry(
+			FName(TEXT("BEP_ExportTab")),
+			FText::FromString(TEXT("BEP Exporter (Full Export)")),
+			FText::FromString(TEXT("Open the original BEP exporter tab.")),
+			FSlateIcon(),
+			FUIAction(FExecuteAction::CreateStatic([]()
+			{
+				FGlobalTabmanager::Get()->TryInvokeTab(BEPExportTabName);
+			})));
+
+		AddCommandMenuEntry(FBEPNodeJsonCommands::Get().OpenPanel);
 	}
 
-	static const FName SectionName("BEP_Tools");
-	FToolMenuSection* Section = Menu->FindSection(SectionName);
-	if (!Section)
+	// Folder right-click menu in Content Browser (path tree and folder tiles)
+	UToolMenu* FolderMenu = UToolMenus::Get()->ExtendMenu("ContentBrowser.FolderContextMenu");
+	if (FolderMenu)
 	{
-		Section = &Menu->AddSection(SectionName, FText::FromString(TEXT("BEP Tools")));
+		FToolMenuSection& Section = FolderMenu->FindOrAddSection("PathViewFolderOptions");
+		FToolMenuEntry& Entry = Section.AddMenuEntry(
+			"BEP_ExportFolder_Menu",
+			FText::FromString(TEXT("Export Folder with BEP")),
+			FText::FromString(TEXT("Open BEP Exporter with this folder prefilled.")),
+			FSlateIcon(),
+			FToolMenuExecuteAction::CreateLambda([this](const FToolMenuContext& Context)
+			{
+				if (const UContentBrowserFolderContext* FolderContext = Context.FindContext<UContentBrowserFolderContext>())
+				{
+					const TArray<FString>& SelectedPaths = FolderContext->GetSelectedPackagePaths();
+					ExecuteExportFolderWithBEP(SelectedPaths);
+				}
+			})
+		);
+		Entry.InsertPosition = FToolMenuInsert(NAME_None, EToolMenuInsertType::Default);
 	}
-
-	auto AddCommandMenuEntry = [&](const TSharedPtr<FUICommandInfo>& Command)
-	{
-		FToolMenuEntry& Entry = Section->AddMenuEntry(Command);
-		Entry.SetCommandList(NodeJsonCommandList);
-	};
-
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().OpenPanel);
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().ExportSelection);
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().CopySelection);
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().ExportComments);
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().ImportComments);
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().WriteGoldenSamples);
-	AddCommandMenuEntry(FBEPNodeJsonCommands::Get().SelfCheck);
 }
 
 void FBEPModule::RegisterNodeJsonCommands()

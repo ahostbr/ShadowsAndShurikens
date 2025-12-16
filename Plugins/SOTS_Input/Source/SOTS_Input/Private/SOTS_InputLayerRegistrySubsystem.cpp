@@ -37,7 +37,7 @@ void USOTS_InputLayerRegistrySubsystem::Initialize(FSubsystemCollectionBase& Col
     }
 }
 
-bool USOTS_InputLayerRegistrySubsystem::TryGetLayerAsset(FGameplayTag Tag, USOTS_InputLayerDataAsset*& OutLayer) const
+bool USOTS_InputLayerRegistrySubsystem::TryGetLayerAsset(FGameplayTag Tag, USOTS_InputLayerDataAsset*& OutLayer)
 {
     OutLayer = nullptr;
 
@@ -46,9 +46,9 @@ bool USOTS_InputLayerRegistrySubsystem::TryGetLayerAsset(FGameplayTag Tag, USOTS
         return false;
     }
 
-    if (USOTS_InputLayerDataAsset* const* LoadedPtr = LoadedLayers.Find(Tag))
+    if (const TObjectPtr<USOTS_InputLayerDataAsset>* LoadedPtr = LoadedLayers.Find(Tag))
     {
-        OutLayer = *LoadedPtr;
+        OutLayer = LoadedPtr->Get();
         return OutLayer != nullptr;
     }
 

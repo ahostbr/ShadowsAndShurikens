@@ -71,6 +71,15 @@ enum class ESOTS_FXRequestStatus : uint8
     MissingAttachment   UMETA(DisplayName="Missing Attachment Target")
 };
 
+// Pool overflow handling policy.
+UENUM(BlueprintType)
+enum class ESOTS_FXPoolOverflowPolicy : uint8
+{
+    RejectNew     UMETA(DisplayName="Reject New"),
+    ReuseOldest   UMETA(DisplayName="Reuse Oldest"),
+    DestroyOldest UMETA(DisplayName="Destroy Oldest")
+};
+
 /** How a cue should react to global FX toggles. */
 UENUM(BlueprintType)
 enum class ESOTS_FXToggleBehavior : uint8

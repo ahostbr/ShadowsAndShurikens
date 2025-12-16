@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "InputAction.h"
+#include "InputTriggers.h"
 #include "SOTS_InputBindingTypes.generated.h"
 
 USTRUCT()
@@ -13,7 +14,7 @@ struct FSOTS_InputBindingKey
     TObjectPtr<const UInputAction> Action = nullptr;
 
     UPROPERTY()
-    TEnumAsByte<ETriggerEvent> TriggerEvent = ETriggerEvent::None;
+    ETriggerEvent TriggerEvent = ETriggerEvent::None;
 
     bool operator==(const FSOTS_InputBindingKey& Other) const
     {

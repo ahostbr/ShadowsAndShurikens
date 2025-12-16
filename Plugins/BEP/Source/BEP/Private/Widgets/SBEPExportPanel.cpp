@@ -293,6 +293,23 @@ void SBEPExportPanel::Construct(const FArguments& InArgs)
 	];
 }
 
+void SBEPExportPanel::SetRootPath(const FString& InRootPath)
+{
+	ExportSettings.RootPath = InRootPath;
+}
+
+void SBEPExportPanel::SetOutputRootPath(const FString& InOutputRootPath)
+{
+	FString Clean = InOutputRootPath;
+	Clean.TrimStartAndEndInline();
+	if (Clean.IsEmpty())
+	{
+		Clean = GetDefaultBEPExportRoot();
+	}
+
+	ExportSettings.OutputRootPath = Clean;
+}
+
 FText SBEPExportPanel::GetRootPathText() const
 {
 	return FText::FromString(ExportSettings.RootPath);

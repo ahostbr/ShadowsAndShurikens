@@ -40,5 +40,5 @@ private:
     TArray<FGameplayTag> OpenChannelStack;
 
     UPROPERTY()
-    TMap<FGameplayTag, TArray<FSOTS_BufferedInputEvent>> BufferedByChannel;
+    TMap<FGameplayTag, FSOTS_BufferedInputEventArray> BufferedByChannel;
 };
