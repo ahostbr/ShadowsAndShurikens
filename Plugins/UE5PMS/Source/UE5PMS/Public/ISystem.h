@@ -526,6 +526,8 @@ namespace adlx
         ADLX_DECLARE_IID (L"IADLXGPUList")
         //Lists must declare the type of items it holds - what was passed as ADLX_DECLARE_IID() in that interface
         ADLX_DECLARE_ITEM_IID (IADLXGPU::IID ())
+        using IADLXList::Add_Back;
+        using IADLXList::At;
 
         /**
         * @page DOX_IADLXGPUList_At At

@@ -17,7 +17,8 @@ public class SOTS_MissionDirector : ModuleRules
                 "SOTS_FX_Plugin",
                 "SOTS_KillExecutionManager",
                 "SOTS_TagManager",
-                "SOTS_ProfileShared"
+                "SOTS_ProfileShared",
+                "SOTS_UI"
             }
         );
 

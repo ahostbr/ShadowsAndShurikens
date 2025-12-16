@@ -18,6 +18,7 @@ public class BEP : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "InputCore",
+                "ApplicationCore",
                 // IMCs live in EnhancedInput; if the plugin is disabled this module just won't load.
                 "EnhancedInput"
             }
@@ -28,11 +29,15 @@ public class BEP : ModuleRules
             {
                 "Slate",
                 "SlateCore",
+                "BlueprintGraph",
                 "ContentBrowser",
                 "ToolMenus",
                 "GraphEditor",
                 "EditorStyle",
-                "LevelEditor"
+                "LevelEditor",
+                "PropertyEditor",
+                "DesktopPlatform",
+                "Settings"
             }
         );
     }

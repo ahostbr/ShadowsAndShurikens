@@ -21,7 +21,7 @@ struct FBEPExportSettings
 {
     GENERATED_BODY()
 
-    /** Root content path, e.g. /Game or /Game/SOTS */
+    /** Root content path, e.g. /Game or /Game/Example */
     UPROPERTY()
     FString RootPath = TEXT("/Game");
 

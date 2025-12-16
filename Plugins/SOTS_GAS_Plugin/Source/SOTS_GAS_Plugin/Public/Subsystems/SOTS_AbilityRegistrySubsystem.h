@@ -77,11 +77,11 @@ public:
 
 protected:
     /** Source-of-truth ability libraries loaded on init (ordered). */
-    UPROPERTY(EditAnywhere, Config, Category="SOTS Ability|Registry", meta=(AllowedClasses="SOTS_AbilityDefinitionLibrary"))
+    UPROPERTY(EditAnywhere, Config, Category="SOTS Ability|Registry", meta=(AllowedClasses="/Script/SOTS_GAS_Plugin.SOTS_AbilityDefinitionLibrary"))
     TArray<TSoftObjectPtr<USOTS_AbilityDefinitionLibrary>> AbilityDefinitionLibraries;
 
     /** Optional individual ability definitions loaded on init. */
-    UPROPERTY(EditAnywhere, Config, Category="SOTS Ability|Registry", meta=(AllowedClasses="SOTS_AbilityDefinitionDA"))
+    UPROPERTY(EditAnywhere, Config, Category="SOTS Ability|Registry", meta=(AllowedClasses="/Script/SOTS_GAS_Plugin.SOTS_AbilityDefinitionDA"))
     TArray<TSoftObjectPtr<USOTS_AbilityDefinitionDA>> AdditionalAbilityDefinitions;
 
     /** Dev-only validation toggles (default OFF). */

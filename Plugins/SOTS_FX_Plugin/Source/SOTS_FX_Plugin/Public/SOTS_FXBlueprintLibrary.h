@@ -37,6 +37,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "SOTS|FX|Debug", meta=(DisplayName="Get FX Active Counts"))
     static FSOTS_FXActiveCounts GetFXActiveCounts();
 
+    /** Debug helper: snapshot pooled component state. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|FX|Debug", meta=(DisplayName="Get FX Pool Stats"))
+    static FSOTS_FXPoolStats GetFXPoolStats();
+
     /** Debug helper: list currently registered FX cues (tags + assets). */
     UFUNCTION(BlueprintPure, Category = "SOTS|FX|Debug", meta=(DisplayName="Get Registered FX Cues"))
     static void GetRegisteredFXCues(TArray<FGameplayTag>& OutCueTags, TArray<USOTS_FXCueDefinition*>& OutCueDefinitions);

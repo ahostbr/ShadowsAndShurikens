@@ -26,6 +26,9 @@ public:
     bool TryReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag);
     void ReportNoise(AActor* Instigator, const FVector& Location, float Loudness, FGameplayTag NoiseTag);
 
+    // C++ entrypoint for damage stimuli (BP should use the Library wrapper).
+    bool TryReportDamageStimulus(AActor* VictimActor, AActor* InstigatorActor, float DamageAmount, FGameplayTag DamageTag, const FVector& Location, bool bHasLocation);
+
     // Optional query helpers.
     TArray<USOTS_AIPerceptionComponent*> GetAlertedAI() const;
     bool IsAnyoneAlerted() const;

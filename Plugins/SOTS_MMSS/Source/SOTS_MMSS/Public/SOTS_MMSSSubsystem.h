@@ -4,6 +4,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "Engine/StreamableManager.h"
+#include "SOTS_ProfileSnapshotProvider.h"
 #include "SOTS_MMSS_Types.h"
 #include "SOTS_ProfileTypes.h"
 #include "SOTS_MMSSSubsystem.generated.h"
@@ -23,7 +24,7 @@ class UWorld;
  *   call into this subsystem via simple tag-based APIs.
  */
 UCLASS()
-class SOTS_MMSS_API USOTS_MMSSSubsystem : public UGameInstanceSubsystem
+class SOTS_MMSS_API USOTS_MMSSSubsystem : public UGameInstanceSubsystem, public ISOTS_ProfileSnapshotProvider
 {
     GENERATED_BODY()
 
@@ -83,6 +84,8 @@ public:
 
     void BuildProfileData(FSOTS_MMSSProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_MMSSProfileData& InData);
+    virtual void BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot) override;
+    virtual void ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot) override;
 
 protected:
     UPROPERTY()

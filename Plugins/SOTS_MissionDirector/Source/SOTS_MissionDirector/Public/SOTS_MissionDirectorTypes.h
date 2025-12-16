@@ -6,6 +6,8 @@
 #include "SOTS_StealthConfigDataAsset.h"
 #include "SOTS_MissionDirectorTypes.generated.h"
 
+class AActor;
+
 UENUM(BlueprintType)
 enum class ESOTSMissionEventCategory : uint8
 {
@@ -23,11 +25,21 @@ enum class ESOTSMissionEventCategory : uint8
 UENUM(BlueprintType)
 enum class ESOTS_MissionState : uint8
 {
-    None        UMETA(DisplayName="None"),
-    Inactive    UMETA(DisplayName="Inactive"),
+    NotStarted  UMETA(DisplayName="Not Started"),
     InProgress  UMETA(DisplayName="In Progress"),
     Completed   UMETA(DisplayName="Completed"),
-    Failed      UMETA(DisplayName="Failed")
+    Failed      UMETA(DisplayName="Failed"),
+    Aborted     UMETA(DisplayName="Aborted")
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_ObjectiveState : uint8
+{
+    Inactive    UMETA(DisplayName="Inactive"),
+    Active      UMETA(DisplayName="Active"),
+    Completed   UMETA(DisplayName="Completed"),
+    Failed      UMETA(DisplayName="Failed"),
+    Abandoned   UMETA(DisplayName="Abandoned")
 };
 
 // Simple type flag so designers can mark which objectives are mandatory.
@@ -36,6 +48,86 @@ enum class ESOTS_ObjectiveType : uint8
 {
     Mandatory   UMETA(DisplayName="Mandatory"),
     Optional    UMETA(DisplayName="Optional")
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_MissionId
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Mission")
+    FName Id = NAME_None;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_RouteId
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Mission")
+    FName Id = NAME_None;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_ObjectiveId
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Mission")
+    FName Id = NAME_None;
+};
+
+// Normalized transient event consumed by MissionDirector to drive objective progress.
+USTRUCT(BlueprintType)
+struct FSOTS_MissionProgressEvent
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    FGameplayTag EventTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    bool bHasLocation = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    double TimestampSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    float Value01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Progress")
+    FName NameId = NAME_None;
+};
+
+// Lightweight snapshot written to Stats/Profile at mission milestones.
+USTRUCT(BlueprintType)
+struct FSOTS_MissionMilestoneSnapshot
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Milestone")
+    FSOTS_MissionId MissionId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Milestone")
+    ESOTS_MissionState MissionState = ESOTS_MissionState::NotStarted;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Milestone")
+    FSOTS_RouteId ActiveRouteId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Milestone")
+    TArray<FSOTS_ObjectiveId> CompletedObjectives;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Milestone")
+    TArray<FSOTS_ObjectiveId> FailedObjectives;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Milestone")
+    double TimestampSeconds = 0.0;
 };
 
 // High-level mission completion state used for save/profile systems.
@@ -189,6 +281,94 @@ struct FSOTS_MissionObjective
     FGameplayTag RequiredTargetTag;
 };
 
+// Data-driven condition entry for objective progress/failure.
+USTRUCT(BlueprintType)
+struct FSOTS_ObjectiveCondition
+{
+    GENERATED_BODY()
+
+    // Canonical event tag required to advance this condition.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Condition")
+    FGameplayTag RequiredEventTag;
+
+    // Optional id-like discriminator (item id, execution id, stat key, etc.).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Condition")
+    FName RequiredNameId = NAME_None;
+
+    // Minimum number of matching events required.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Condition")
+    int32 RequiredCount = 1;
+
+    // If > 0, requires this condition to remain valid for the duration window after the first match.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Condition")
+    float DurationSeconds = 0.0f;
+
+    // If true, satisfying this condition fails the objective instead of completing it.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Condition")
+    bool bIsFailureCondition = false;
+};
+
+// Golden-path objective DataAsset (Prompt 2). Existing FSOTS_MissionObjective remains for legacy flows.
+UCLASS(BlueprintType)
+class SOTS_MISSIONDIRECTOR_API USOTS_ObjectiveDefinition : public UDataAsset
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_ObjectiveId ObjectiveId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|UI")
+    FText Title;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|UI")
+    FText Description;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
+    bool bIsOptional = false;
+
+    // If empty, objective is valid for all routes.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Routing")
+    TArray<FSOTS_RouteId> AllowedRoutes;
+
+    // Simple gating: requires these objectives completed first.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Gating")
+    TArray<FSOTS_ObjectiveId> RequiresCompleted;
+
+    // Placeholder for failability; evaluation is implemented in later prompts.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Failure")
+    bool bCanFail = true;
+
+    // Data-driven event conditions required to complete/fail this objective.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Conditions")
+    TArray<FSOTS_ObjectiveCondition> Conditions;
+
+    // When true, all non-failure conditions must be satisfied; otherwise any single non-failure condition completes the objective.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Conditions")
+    bool bAllConditionsRequired = true;
+};
+
+// Golden-path route DataAsset (Prompt 2).
+UCLASS(BlueprintType)
+class SOTS_MISSIONDIRECTOR_API USOTS_RouteDefinition : public UDataAsset
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_RouteId RouteId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|UI")
+    FText Title;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|UI")
+    FText Description;
+
+    // Objectives belonging to this route.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Objectives")
+    TArray<TObjectPtr<USOTS_ObjectiveDefinition>> Objectives;
+};
+
 // Lightweight runtime view of a mission objective for UI/query code.
 USTRUCT(BlueprintType)
 struct FSOTS_MissionObjectiveRuntimeState
@@ -217,6 +397,45 @@ struct FSOTS_MissionObjectiveRuntimeState
     bool bOptional = false;
 };
 
+// Golden-path runtime objective state (Prompt 2). Keeps timestamps for analytics/debug.
+USTRUCT(BlueprintType)
+struct FSOTS_ObjectiveRuntimeState
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_ObjectiveId ObjectiveId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    ESOTS_ObjectiveState State = ESOTS_ObjectiveState::Inactive;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double ActivatedTimeSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double CompletedTimeSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double FailedTimeSeconds = 0.0;
+};
+
+// Golden-path runtime route state (Prompt 2).
+USTRUCT(BlueprintType)
+struct FSOTS_RouteRuntimeState
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_RouteId RouteId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    bool bIsActive = false;
+
+    // Map keyed by ObjectiveId.Id for BP friendliness.
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    TMap<FName, FSOTS_ObjectiveRuntimeState> ObjectiveStatesById;
+};
+
 // High-level snapshot of the current mission runtime state.
 USTRUCT(BlueprintType)
 struct FSOTS_MissionRuntimeState
@@ -224,7 +443,7 @@ struct FSOTS_MissionRuntimeState
     GENERATED_BODY()
 
     UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
-    FName MissionId;
+    FSOTS_MissionId MissionId;
 
     UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
     TArray<FSOTS_MissionObjectiveRuntimeState> Objectives;
@@ -248,6 +467,25 @@ struct FSOTS_MissionRuntimeState
 
     UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
     int32 AlertsTriggered = 0;
+
+    // Golden-path mission state fields (Prompt 2).
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    ESOTS_MissionState State = ESOTS_MissionState::NotStarted;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_RouteId ActiveRouteId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    TMap<FName, FSOTS_ObjectiveRuntimeState> GlobalObjectiveStatesById;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    TMap<FName, FSOTS_RouteRuntimeState> RouteStatesById;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double StartTimeSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double EndTimeSeconds = 0.0;
 };
 
 /**
@@ -316,6 +554,71 @@ struct FSOTS_MissionRewards
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Rewards")
     FGameplayTag FXTag_OnRewardsGranted;
 };
+
+// Stable delegate payloads (Prompt 2)
+USTRUCT(BlueprintType)
+struct FSOTS_MissionStateChangedPayload
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_MissionId MissionId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    ESOTS_MissionState OldState = ESOTS_MissionState::NotStarted;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    ESOTS_MissionState NewState = ESOTS_MissionState::NotStarted;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double TimestampSeconds = 0.0;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_ObjectiveStateChangedPayload
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_MissionId MissionId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_RouteId RouteId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    bool bIsGlobalObjective = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_ObjectiveId ObjectiveId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    ESOTS_ObjectiveState OldState = ESOTS_ObjectiveState::Inactive;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    ESOTS_ObjectiveState NewState = ESOTS_ObjectiveState::Inactive;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double TimestampSeconds = 0.0;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_RouteActivatedPayload
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_MissionId MissionId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_RouteId RouteId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission")
+    double TimestampSeconds = 0.0;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnMissionStateChanged, const FSOTS_MissionStateChangedPayload&, Payload);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnObjectiveStateChanged, const FSOTS_ObjectiveStateChangedPayload&, Payload);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnRouteActivated, const FSOTS_RouteActivatedPayload&, Payload);
 /**
  * DataAsset describing mission-level rules, objectives, and stealth constraints.
  */
@@ -325,7 +628,11 @@ class SOTS_MISSIONDIRECTOR_API USOTS_MissionDefinition : public UDataAsset
     GENERATED_BODY()
 
 public:
-    // Identifier for this mission (e.g. "M01_CastleInfiltration").
+    // Identifier for this mission (golden-path id). Legacy MissionId (FName) retained for compatibility.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
+    FSOTS_MissionId MissionIdentifier;
+
+    // Legacy mission id for existing content.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
     FName MissionId;
 
@@ -342,9 +649,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
     TSoftObjectPtr<UWorld> MissionMap;
 
-    // Ordered list of authored objectives.
+    // Ordered list of authored objectives (legacy inline authoring).
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
     TArray<FSOTS_MissionObjective> Objectives;
+
+    // Golden-path routes (first-class mission structure).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Routing")
+    TArray<TObjectPtr<USOTS_RouteDefinition>> Routes;
+
+    // Global objectives that apply regardless of route.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Objectives")
+    TArray<TObjectPtr<USOTS_ObjectiveDefinition>> GlobalObjectives;
 
     // Max allowed global stealth tier (inclusive). If >= 0 and the GSM tier exceeds this, the mission fails.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Stealth")
@@ -387,4 +702,8 @@ public:
     // Optional rewards applied when the mission completes successfully.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission")
     FSOTS_MissionRewards Rewards;
+
+    // Placeholder for mission-level failure enable/disable (logic in later prompts).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Failure")
+    bool bMissionCanFail = true;
 };

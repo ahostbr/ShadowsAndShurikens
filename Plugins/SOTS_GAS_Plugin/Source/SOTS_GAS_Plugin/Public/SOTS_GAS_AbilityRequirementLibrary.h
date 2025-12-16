@@ -74,6 +74,10 @@ public:
         const UObject* WorldContextObject,
         const FSOTS_AbilityRequirements& Requirements);
 
+    // Fire a failure FX tag if configured.
+    UFUNCTION(BlueprintCallable, Category="SOTS|GAS|Ability", meta=(WorldContext="WorldContextObject"))
+    static void TriggerFailureFX(const UObject* WorldContextObject, FGameplayTag FailureFXTag);
+
     // High-level helper that looks up requirements by ability tag and reports
     // a localized failure reason. This is intended for ability UI and gating.
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|GAS|Ability", meta=(WorldContext="WorldContextObject"))

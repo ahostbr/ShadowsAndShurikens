@@ -3,6 +3,9 @@
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "SOTS_KEM_ManagerSubsystem.h"
+#include "SOTS_KEM_Types.h"
+#include "SOTS_KEM_ExecutionCatalog.h"
+#include "SOTS_KEMCatalogLibrary.h"
 #include "ContextualAnimTypes.h"
 #include "SOTS_KillExecutionManagerModule.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -13,6 +16,15 @@
 
 namespace
 {
+    static FString GetExecutionFamilyName(ESOTS_KEM_ExecutionFamily Family)
+    {
+        if (const UEnum* Enum = StaticEnum<ESOTS_KEM_ExecutionFamily>())
+        {
+            return Enum->GetNameStringByValue(static_cast<int64>(Family));
+        }
+        return TEXT("Unknown");
+    }
+
     static USOTS_KEMManagerSubsystem* GetKEMSubsystem(const UObject* WorldContextObject)
     {
         if (!WorldContextObject)

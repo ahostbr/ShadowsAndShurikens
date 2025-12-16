@@ -44,12 +44,6 @@ void USOTS_StealthFXController::HandleStealthStateChanged(const FSOTS_PlayerStea
         // designers to optionally use, and fire a tier-based FX tag when the
         // stealth tier changes. The actual Niagara/SFX spawning is handled
         // by game-side Blueprint listeners bound to OnFXTriggered.
-        UE_LOG(LogTemp, VeryVerbose,
-            TEXT("[StealthFX] AmbientFX=%.2f DangerFX=%.2f (Shadow=%.2f Stealth=%.2f)"),
-            AmbientFX,
-            DangerFX,
-            ShadowT,
-            DangerT);
 
         if (LastStealthTier != NewState.StealthTier)
         {

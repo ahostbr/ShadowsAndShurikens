@@ -3,6 +3,7 @@
 #include "SOTS_SkillTreeDefinition.h"
 #include "SOTS_SkillTreeModule.h"
 #include "SOTS_FXManagerSubsystem.h"
+#include "SOTS_ProfileSubsystem.h"
 #include "SOTS_TagAccessHelpers.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -22,10 +23,25 @@ namespace
 void USOTS_SkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->RegisterProvider(this, 0);
+        }
+    }
 }
 
 void USOTS_SkillTreeSubsystem::Deinitialize()
 {
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->UnregisterProvider(this);
+        }
+    }
+
     RuntimeStates.Reset();
     RegisteredTrees.Reset();
 
@@ -757,6 +773,16 @@ void USOTS_SkillTreeSubsystem::ApplyProfileData(const FSOTS_SkillTreeProfileData
             ReapplyTagsForRuntimeState(PlayerActor, TagSubsystem);
         }
     }
+}
+
+void USOTS_SkillTreeSubsystem::BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot)
+{
+    BuildProfileData(InOutSnapshot.SkillTree);
+}
+
+void USOTS_SkillTreeSubsystem::ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot)
+{
+    ApplyProfileData(Snapshot.SkillTree);
 }
 
 FSOTS_SkillTreeProfileState USOTS_SkillTreeSubsystem::SaveSkillTreeState() const

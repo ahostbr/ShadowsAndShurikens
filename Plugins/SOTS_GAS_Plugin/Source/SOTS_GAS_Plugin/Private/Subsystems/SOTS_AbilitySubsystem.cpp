@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "Math/UnrealMathUtility.h"
+#include "SOTS_ProfileSubsystem.h"
 
 void USOTS_AbilitySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -10,10 +11,26 @@ void USOTS_AbilitySubsystem::Initialize(FSubsystemCollectionBase& Collection)
     GrantedAbilityTags.Reset();
     AbilityRanks.Reset();
     AbilityCooldownRemaining.Reset();
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->RegisterProvider(this, 0);
+        }
+    }
 }
 
 void USOTS_AbilitySubsystem::Deinitialize()
 {
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->UnregisterProvider(this);
+        }
+    }
+
     GrantedAbilityTags.Reset();
     AbilityRanks.Reset();
     AbilityCooldownRemaining.Reset();
@@ -50,6 +67,16 @@ void USOTS_AbilitySubsystem::ApplyProfileData(const FSOTS_AbilityProfileData& In
     GrantedAbilityTags = InData.GrantedAbilityTags;
     AbilityRanks = InData.AbilityRanks;
     AbilityCooldownRemaining = InData.CooldownsRemaining;
+}
+
+void USOTS_AbilitySubsystem::BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot)
+{
+    BuildProfileData(InOutSnapshot.Ability);
+}
+
+void USOTS_AbilitySubsystem::ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot)
+{
+    ApplyProfileData(Snapshot.Ability);
 }
 
 void USOTS_AbilitySubsystem::GrantAbility(FGameplayTag AbilityTag, int32 Rank)
@@ -143,4 +170,3 @@ FString USOTS_AbilitySubsystem::GetAbilityProfileSummary() const
         AbilityRanks.Num(),
         AbilityCooldownRemaining.Num());
 }
-

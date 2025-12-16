@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SOTS_ProfileSnapshotProvider.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "SOTS_ProfileTypes.h"
@@ -27,7 +28,7 @@ class AActor;
  *   to call the subsystem directly for queries and save/load.
  */
 UCLASS()
-class SOTS_SKILLTREE_API USOTS_SkillTreeSubsystem : public UGameInstanceSubsystem
+class SOTS_SKILLTREE_API USOTS_SkillTreeSubsystem : public UGameInstanceSubsystem, public ISOTS_ProfileSnapshotProvider
 {
     GENERATED_BODY()
 
@@ -139,6 +140,8 @@ public:
 
     void BuildProfileData(FSOTS_SkillTreeProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_SkillTreeProfileData& InData);
+    virtual void BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot) override;
+    virtual void ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot) override;
 
     // Serializes all tree runtime states into a profile-level container.
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|SkillTree")

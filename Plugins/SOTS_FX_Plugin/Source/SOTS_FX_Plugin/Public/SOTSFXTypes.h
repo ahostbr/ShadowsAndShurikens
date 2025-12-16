@@ -6,6 +6,8 @@
 
 class UNiagaraSystem;
 class USoundBase;
+class USoundAttenuation;
+class USoundConcurrency;
 class UAudioComponent;
 class UNiagaraComponent;
 class USceneComponent;
@@ -69,6 +71,15 @@ enum class ESOTS_FXRequestStatus : uint8
     MissingAttachment   UMETA(DisplayName="Missing Attachment Target")
 };
 
+/** How a cue should react to global FX toggles. */
+UENUM(BlueprintType)
+enum class ESOTS_FXToggleBehavior : uint8
+{
+    RespectGlobalToggles UMETA(DisplayName="Respect Global Toggles"),
+    IgnoreGlobalToggles   UMETA(DisplayName="Ignore Global Toggles"),
+    ForceDisable          UMETA(DisplayName="Force Disable")
+};
+
 /**
  * Unified FX request payload used by the tag-driven router.
  */
@@ -101,6 +112,13 @@ struct FSOTS_FXRequest
     UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
     FName AttachSocketName = NAME_None;
 
+    /** Optional surface normal for alignment-aware FX. */
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    FVector SurfaceNormal = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
+    bool bHasSurfaceNormal = false;
+
     // Optional per-request scale override (applied on top of the definition default).
     UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="SOTS|FX")
     float Scale = 1.0f;
@@ -126,12 +144,71 @@ struct FSOTS_FXDefinition
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
     TSoftObjectPtr<USoundBase> Sound;
 
+    /** Optional attenuation settings for spawned audio. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Audio")
+    TSoftObjectPtr<USoundAttenuation> SoundAttenuation;
+
+    /** Optional concurrency settings for spawned audio. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Audio")
+    TSoftObjectPtr<USoundConcurrency> SoundConcurrency;
+
+    /** Per-definition audio tuning. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Audio")
+    float VolumeMultiplier = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Audio")
+    float PitchMultiplier = 1.0f;
+
     // Default spawn space and scale.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
     ESOTS_FXSpawnSpace DefaultSpace = ESOTS_FXSpawnSpace::World;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
     float DefaultScale = 1.0f;
+
+    /** Optional offsets applied after spawn (world space if not attached, relative if attached). */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
+    FVector LocationOffset = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
+    FRotator RotationOffset = FRotator::ZeroRotator;
+
+    /** If true and SurfaceNormal supplied by request, rotate FX to align to it. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
+    bool bAlignToSurfaceNormal = false;
+
+    /** Optional Niagara user parameters set post-spawn. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Niagara")
+    TMap<FName, float> NiagaraFloatParameters;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Niagara")
+    TMap<FName, FVector> NiagaraVectorParameters;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Niagara")
+    TMap<FName, FLinearColor> NiagaraColorParameters;
+
+    /** Optional camera shake to accompany this FX. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Camera")
+    TSubclassOf<UCameraShakeBase> CameraShakeClass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Camera", meta=(EditCondition="CameraShakeClass != nullptr", ClampMin="0.0"))
+    float CameraShakeScale = 1.0f;
+
+    /** Policy: how this cue responds to global FX toggles. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Policy")
+    ESOTS_FXToggleBehavior ToggleBehavior = ESOTS_FXToggleBehavior::RespectGlobalToggles;
+
+    /** True if this cue should be suppressed when blood FX are disabled. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Policy")
+    bool bIsBloodFX = false;
+
+    /** True if this cue counts as high-intensity FX. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Policy")
+    bool bIsHighIntensityFX = false;
+
+    /** Allow this cue's camera shake even when camera motion is disabled. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX|Policy")
+    bool bCameraShakeIgnoresGlobalToggle = false;
 };
 
 /**
@@ -224,6 +301,33 @@ struct FSOTS_FXActiveCounts
     // Number of Audio components currently playing
     UPROPERTY(BlueprintReadOnly, Category = "FX|Debug")
     int32 ActiveAudio = 0;
+};
+
+/**
+ * Debug snapshot of pooled component usage.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_FXPoolStats
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="FX|Debug")
+    int32 TotalPooledNiagara = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="FX|Debug")
+    int32 TotalPooledAudio = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="FX|Debug")
+    int32 ActiveNiagara = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="FX|Debug")
+    int32 ActiveAudio = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="FX|Debug")
+    int32 FreeNiagara = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="FX|Debug")
+    int32 FreeAudio = 0;
 };
 
 /**

@@ -29,8 +29,8 @@ namespace
         const double TraceLen = (TraceEnd - TraceStart).Size();
         Hit.Time = (TraceLen > KINDA_SMALL_NUMBER) ? FMath::Clamp(static_cast<float>(OmniHit.Distance / TraceLen), 0.f, 1.f) : 0.f;
 
-        Hit.SetActor(OmniHit.HitActor.Get());
-        Hit.SetComponent(OmniHit.HitComponent.Get());
+        Hit.HitObjectHandle = FActorInstanceHandle(OmniHit.HitActor.Get());
+        Hit.Component = OmniHit.HitComponent.Get();
         return Hit;
     }
 }

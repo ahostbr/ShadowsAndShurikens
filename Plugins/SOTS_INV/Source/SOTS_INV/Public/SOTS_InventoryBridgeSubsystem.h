@@ -6,21 +6,32 @@
 #include "Interfaces/SOTS_InventoryProviderInterface.h"
 #include "Interfaces/SOTS_InventoryProvider.h"
 #include "GameplayTagContainer.h"
+#include "SOTS_ProfileSnapshotProvider.h"
 #include "SOTS_ProfileTypes.h"
 #include "SOTS_InventoryTypes.h"
 #include "SOTS_InventoryBridgeSubsystem.generated.h"
 
-UCLASS()
-class SOTS_INV_API USOTS_InventoryBridgeSubsystem : public UGameInstanceSubsystem
+UCLASS(Config=Game)
+class SOTS_INV_API USOTS_InventoryBridgeSubsystem : public UGameInstanceSubsystem, public ISOTS_ProfileSnapshotProvider
 {
 	GENERATED_BODY()
+
+	friend class USOTS_InventoryFacadeLibrary;
 
 public:
 	static USOTS_InventoryBridgeSubsystem* Get(const UObject* WorldContextObject);
 
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Deinitialize() override;
+
+	bool ShouldLogInventoryOpFailures() const { return bDebugLogInventoryOpFailures; }
+	UObject* GetResolvedProviderForFacade(const AActor* Owner) const { return GetResolvedProvider(Owner); }
+
 	void BuildProfileData(FSOTS_InventoryProfileData& OutData) const;
 	void ApplyProfileData(const FSOTS_InventoryProfileData& InData);
 	void ValidateInventorySnapshot(const FSOTS_InventoryProfileData& InData, TArray<FString>& OutWarnings, TArray<FString>& OutErrors) const;
+    virtual void BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot) override;
+    virtual void ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot) override;
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|Inventory")
 	void ClearAllInventory();
@@ -73,6 +84,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="SOTS|Inventory|Provider")
 	bool IsInventoryProviderReady() const { return bProviderResolved && CachedProvider.IsValid(); }
 
+	// Facade/debug helpers
+	UObject* GetResolvedProvider_ForUI(const AActor* Owner) const { return GetResolvedProvider(Owner); }
+
 	int32 GetCarriedItemCountByTags(const FGameplayTagContainer& Tags) const;
 	bool ConsumeCarriedItemsByTags(const FGameplayTagContainer& Tags, int32 Count);
 
@@ -120,7 +134,7 @@ protected:
 	TWeakObjectPtr<UObject> CachedProvider;
 
 	bool bProviderResolved = false;
-	double NextProviderWarnTime = 0.0;
+	mutable double NextProviderWarnTime = 0.0;
 
 	// Deferred profile apply state
 	bool bHasPendingSnapshot = false;

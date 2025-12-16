@@ -115,10 +115,21 @@ Perception results, alertness tiers, search state.
 - `SAS.AI.Sense.Damage`
 - `SAS.AI.Sense.Special.Dragon` *(reserved)*
 
+**Reasons (GSM/AIPerception reports)**
+- `SAS.AI.Reason.Sight`
+- `SAS.AI.Reason.Hearing`
+- `SAS.AI.Reason.Shadow`
+- `SAS.AI.Reason.Damage`
+- `SAS.AI.Reason.Generic`
+
 **Perception results**
 - `SAS.AI.Perception.HasLOS.Player`
 - `SAS.AI.Perception.KnowsLastKnown.Player`
 - `SAS.AI.Perception.LostTrack.Player`
+
+**Focus (who the AI is working on)**
+- `SAS.AI.Focus.Player`
+- `SAS.AI.Focus.Unknown`
 
 **Alertness tiers**
 - `SAS.AI.Alert.Calm`

@@ -4,6 +4,10 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SOTS_MissionDirectorTypes.h"
 #include "GameplayTagContainer.h"
+#include "SOTS_GlobalStealthTypes.h"
+#include "SOTS_ProfileSnapshotProvider.h"
+#include "SOTS_ProfileTypes.h"
+#include "TimerManager.h"
 #include "SOTS_MissionDirectorSubsystem.generated.h"
 
 class AActor;
@@ -32,7 +36,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnObjectiveUpdatedSignature, F
  *   and triggering FX/rewards, without owning level scripts or AI behavior.
  */
 UCLASS()
-class SOTS_MISSIONDIRECTOR_API USOTS_MissionDirectorSubsystem : public UGameInstanceSubsystem
+class SOTS_MISSIONDIRECTOR_API USOTS_MissionDirectorSubsystem : public UGameInstanceSubsystem, public ISOTS_ProfileSnapshotProvider
 {
     GENERATED_BODY()
 
@@ -144,6 +148,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
     void NotifyMissionEvent(const FGameplayTag& EventTag);
 
+    // Normalized ingress point for external systems to feed mission progress events.
+    UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
+    void PushMissionProgressEvent(const FSOTS_MissionProgressEvent& Event);
+
     // Explicitly fails a specific objective, optionally with a debug reason.
     UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
     void ForceFailObjective(FName ObjectiveId, const FString& Reason);
@@ -164,6 +172,8 @@ public:
 
     void BuildProfileData(FSOTS_MissionProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_MissionProfileData& InData);
+    virtual void BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot) override;
+    virtual void ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot) override;
 
     // Reads the next mission id configured for the current outcome tag, if any.
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|Mission")
@@ -196,15 +206,45 @@ private:
 
     // Mission-definition-driven helpers.
     void EvaluateMissionCompletion();
+    void InitializeMissionRuntimeState(const USOTS_MissionDefinition* MissionDef);
+    void ResetConditionTracking();
+    void HandleProgressEvent(const FSOTS_MissionProgressEvent& Event);
+    void ApplyProgressToObjective(const USOTS_ObjectiveDefinition* ObjectiveDef, bool bIsGlobalObjective, const FSOTS_RouteId& RouteId, const FSOTS_MissionProgressEvent& Event, double NowSeconds);
+    bool EvaluateObjectiveConditions(const USOTS_ObjectiveDefinition* ObjectiveDef, const FSOTS_RouteId& RouteId, bool bIsGlobalObjective, double NowSeconds, bool& bOutFailed, bool& bOutCompleted) const;
+    bool IsConditionSatisfied(const FSOTS_ObjectiveCondition& Condition, const FName& ConditionKey, double NowSeconds) const;
+    FName BuildConditionKey(const FSOTS_ObjectiveId& ObjectiveId, const FSOTS_ObjectiveCondition& Condition) const;
+    bool SetObjectiveState(const FSOTS_ObjectiveId& ObjectiveId, const FSOTS_RouteId& RouteId, bool bIsGlobalObjective, ESOTS_ObjectiveState NewState, double TimestampSeconds);
+    bool ValidateMissionDefinition(const USOTS_MissionDefinition* MissionDef, FString& OutError) const;
+    bool AreObjectiveRequirementsSatisfied(const TArray<FSOTS_ObjectiveId>& RequiresCompleted) const;
+    bool IsObjectiveIdCompleted(const FSOTS_ObjectiveId& ObjectiveId) const;
+    void ClearConditionTrackingForObjective(const FSOTS_ObjectiveId& ObjectiveId);
+    void HandleMissionTerminalState();
+    USOTS_RouteDefinition* GetActiveRouteDefinition() const;
+    void ActivateDefaultRoute();
+    void OnConditionDurationElapsed(FName ConditionKey, FSOTS_ObjectiveId ObjectiveId, bool bIsGlobalObjective, FSOTS_RouteId RouteId);
+    const USOTS_ObjectiveDefinition* FindObjectiveDefinition(const FSOTS_ObjectiveId& ObjectiveId, const FSOTS_RouteId& RouteId, bool bIsGlobalObjective) const;
+    FSOTS_MissionMilestoneSnapshot BuildMilestoneSnapshot(double NowSeconds) const;
+    void TryWriteMilestoneToStatsAndProfile(const FSOTS_MissionMilestoneSnapshot& Snapshot);
+    void EmitMissionUIIntent(const FText& Message, FGameplayTag CategoryTag) const;
+    void EmitObjectiveUIIntent(const USOTS_ObjectiveDefinition* ObjectiveDef, bool bIsGlobalObjective, const FSOTS_RouteId& RouteId, ESOTS_ObjectiveState NewState) const;
+    void EmitMissionTerminalUIIntent(ESOTS_MissionState NewState) const;
 
     UFUNCTION()
     void HandleStealthLevelChanged(ESOTSStealthLevel OldLevel, ESOTSStealthLevel NewLevel, float NewScore);
+
+    UFUNCTION()
+    void HandleAIAwarenessStateChanged(AActor* SubjectAI, ESOTS_AIAwarenessState OldState, ESOTS_AIAwarenessState NewState, const FSOTS_GSM_AIRecord& Record);
+
+    UFUNCTION()
+    void HandleGlobalAlertnessChanged(float NewValue, float OldValue);
 
     // KEM integration: invoked when the KillExecutionManager broadcasts an
     // execution event so objectives with RequiredExecutionTag / RequiredTargetTag
     // can be evaluated.
     UFUNCTION()
     void HandleExecutionEvent(const struct FSOTS_KEM_ExecutionEvent& Event);
+
+    void ClearMissionStealthConfigOverride();
 
 private:
     // Active authored mission (if any).
@@ -213,11 +253,14 @@ private:
 
     // High-level mission lifecycle state.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="SOTS|Mission", meta=(AllowPrivateAccess="true"))
-    ESOTS_MissionState MissionState = ESOTS_MissionState::Inactive;
+    ESOTS_MissionState MissionState = ESOTS_MissionState::NotStarted;
 
     // Objective completion flags keyed by ObjectiveId.
     UPROPERTY()
     TMap<FName, bool> ObjectiveCompletion;
+
+    UPROPERTY()
+    FSOTS_GSM_Handle MissionStealthConfigHandle;
 
     // Objective failure flags keyed by ObjectiveId.
     UPROPERTY()
@@ -236,6 +279,32 @@ private:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="SOTS|Mission", meta=(AllowPrivateAccess="true"))
     int32 AlertsTriggered = 0;
+
+    // Condition/runtime tracking for prompt 4 triggers.
+    UPROPERTY()
+    TMap<FName, int32> ConditionCountsByKey;
+
+    UPROPERTY()
+    TMap<FName, double> ConditionStartTimeByKey;
+
+    UPROPERTY()
+    TMap<FName, FTimerHandle> ConditionTimerHandles;
+
+    UPROPERTY()
+    TMap<FName, FSOTS_ObjectiveRuntimeState> GlobalObjectiveStatesById;
+
+    UPROPERTY()
+    TMap<FName, FSOTS_RouteRuntimeState> RouteStatesById;
+
+    UPROPERTY()
+    FSOTS_RouteId ActiveRouteId;
+
+    // Persistence/UI bookkeeping.
+    UPROPERTY()
+    TArray<FSOTS_MissionMilestoneSnapshot> MilestoneHistory;
+
+    bool bLoggedMissingStatsOnce = false;
+    bool bLoggedMissingUIRouterOnce = false;
 
     // Profile-oriented mirrors of mission progression.
     UPROPERTY()

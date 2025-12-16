@@ -1,5 +1,6 @@
 #include "Subsystems/SOTS_AbilityRegistrySubsystem.h"
 #include "SOTS_GAS_Plugin.h"
+#include "Abilities/SOTS_AbilityBase.h"
 
 void USOTS_AbilityRegistrySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {

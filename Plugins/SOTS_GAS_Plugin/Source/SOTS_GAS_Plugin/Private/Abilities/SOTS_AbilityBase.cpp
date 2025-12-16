@@ -1,6 +1,7 @@
 #include "Abilities/SOTS_AbilityBase.h"
 
 #include "Components/SOTS_AbilityComponent.h"
+#include "Data/SOTS_AbilityTypes.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "SOTS_GlobalStealthManagerSubsystem.h"
@@ -101,4 +102,20 @@ void USOTS_AbilityBase::RemoveStealthModifierFromWorld(FName SourceId) const
             GSM->RemoveStealthModifierBySource(SourceId);
         }
     }
+}
+
+USOTS_AbilityBase* USOTS_AbilityBase::GetAbilityInstance(UObject* Outer, const F_SOTS_AbilityDefinition& Definition, const F_SOTS_AbilityHandle& Handle)
+{
+    UClass* AbilityClass = Definition.AbilityClass ? Definition.AbilityClass.Get() : StaticClass();
+    if (!AbilityClass)
+    {
+        return nullptr;
+    }
+
+    USOTS_AbilityBase* Instance = NewObject<USOTS_AbilityBase>(Outer ? Outer : GetTransientPackage(), AbilityClass);
+    if (Instance)
+    {
+        Instance->Initialize(Cast<UAC_SOTS_Abilitys>(Outer), Definition, Handle);
+    }
+    return Instance;
 }

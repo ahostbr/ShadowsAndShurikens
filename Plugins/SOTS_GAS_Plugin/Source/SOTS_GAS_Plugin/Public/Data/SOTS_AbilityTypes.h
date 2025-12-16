@@ -110,8 +110,16 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
     int32 RemainingCharges = 0;
 
+    // Optional: total charge capacity at activation time.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    int32 MaxCharges = 0;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
     float CooldownRemaining = 0.0f;
+
+    // Explicit remaining cooldown seconds for UI; mirrors CooldownRemaining for clarity.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")
+    float RemainingCooldown = 0.0f;
 
     // Dev-only hint string. Left empty in shipping builds unless explicitly filled.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|GAS|Ability")

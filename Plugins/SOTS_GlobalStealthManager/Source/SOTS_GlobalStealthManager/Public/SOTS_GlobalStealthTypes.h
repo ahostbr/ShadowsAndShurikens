@@ -39,6 +39,16 @@ enum class ESOTS_StealthInputType : uint8
     Custom       UMETA(DisplayName="Custom")
 };
 
+UENUM(BlueprintType)
+enum class ESOTS_AIAwarenessState : uint8
+{
+    Calm            UMETA(DisplayName="Calm"),
+    Investigating   UMETA(DisplayName="Investigating"),
+    Searching       UMETA(DisplayName="Searching"),
+    Alerted         UMETA(DisplayName="Alerted"),
+    Hostile         UMETA(DisplayName="Hostile")
+};
+
 UENUM()
 enum class ESOTS_StealthIngestResult : uint8
 {
@@ -150,6 +160,118 @@ enum class ESOTS_GSM_ResetReason : uint8
     MissionStart,
     LevelTransition,
     Manual
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_AwarenessThresholds
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float InvestigatingMin01 = 0.25f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float SearchingMin01 = 0.50f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float AlertedMin01 = 0.80f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float HostileMin01 = 0.95f;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_EvidenceConfig
+{
+    GENERATED_BODY()
+
+    // Rolling window parameters.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    int32 MaxEventsPerAI = 8;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float WindowSeconds = 6.0f;
+
+    // Evidence stacking.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float EvidencePointsPerEvent = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float MaxEvidencePoints = 6.0f;
+
+    // Evidence influence on suspicion.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float MaxEvidenceSuspicionBonus = 0.25f;
+
+    // Optional minimum strength gate for counting evidence.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float MinSuspicionToCountAsEvidence = 0.10f;
+
+    // Optional reason multipliers (Sight/Hearing/Damage/etc.).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    TMap<FGameplayTag, float> EvidenceReasonMultipliers;
+
+    // Optional multiplier when the same instigator repeats.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float SameInstigatorMultiplier = 1.25f;
+
+    // Numeric blend between prior and incoming suspicion.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    float PriorSuspicionBlendAlpha = 0.35f;
+
+    // Last reason wins switch (default true).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|AI")
+    bool bLastReasonWins = true;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_GlobalAlertnessConfig
+{
+    GENERATED_BODY()
+
+    // Baseline / bounds.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float Baseline = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float MinValue = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float MaxValue = 1.0f;
+
+    // Decay toward baseline (units per second).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float DecayPerSecond = 0.05f;
+
+    // Contribution from incoming reports.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float SuspicionWeight = 0.10f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float Weight_Unaware = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float Weight_Suspicious = 0.02f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float Weight_Investigating = 0.04f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float Weight_Alert = 0.07f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float Weight_Combat = 0.10f;
+
+    // Optional smoothing/clamp.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float MaxIncreasePerSecond = 0.35f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float UpdateMinDelta = 0.001f;
+
+    // Optional evidence influence when available.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|GSM|Global")
+    float EvidenceBonusWeight = 0.05f;
 };
 
 USTRUCT(BlueprintType)
@@ -388,6 +510,18 @@ struct FSOTS_StealthScoringConfig
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Global Blend")
     float AISuspicionWeight = 0.5f;
 
+    // Awareness state thresholds for AI suspicion mapping (ReportAISuspicionEx).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|AI")
+    FSOTS_GSM_AwarenessThresholds AwarenessThresholds;
+
+    // Evidence stacking and history tuning for AI suspicion ingestion.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|AI")
+    FSOTS_GSM_EvidenceConfig EvidenceConfig;
+
+    // Global alertness metric tuning.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Global")
+    FSOTS_GSM_GlobalAlertnessConfig GlobalAlertnessConfig;
+
     // --- Stealth level thresholds (multi-level enum) ---
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stealth|Levels", meta=(ClampMin="0.0", ClampMax="1.0"))
@@ -519,6 +653,69 @@ struct FSOTS_StealthScoreBreakdown
     // Effective multiplier applied by modifiers (EffectiveGlobal / RawScore).
     UPROPERTY(BlueprintReadOnly, Category="SOTS|Stealth")
     float ModifierMultiplier = 1.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_AISuspicionEvent
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    float Suspicion01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FGameplayTag ReasonTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    bool bHasLocation = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    double TimestampSeconds = 0.0;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_GSM_AIRecord
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    TWeakObjectPtr<AActor> SubjectAI;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    float Suspicion01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    ESOTS_AIAwarenessState AwarenessState = ESOTS_AIAwarenessState::Calm;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FGameplayTag AwarenessTierTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FGameplayTag ReasonTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FGameplayTag FocusTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    TArray<FSOTS_GSM_AISuspicionEvent> RecentEvents;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    bool bHasLocation = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    double TimestampSeconds = 0.0;
 };
 
 USTRUCT(BlueprintType)

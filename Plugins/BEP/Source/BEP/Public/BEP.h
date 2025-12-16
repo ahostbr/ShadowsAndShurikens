@@ -24,8 +24,29 @@ private:
 	void RegisterMenus();
 	void RegisterMenus_Impl();
 
+	void RegisterNodeJsonCommands();
+	void UnregisterNodeJsonCommands();
+	void BindNodeJsonCommands();
+
+	void RegisterSettings();
+	void UnregisterSettings();
+
+	void ExecuteOpenNodeJsonPanel();
+	void ExecuteExportNodeJson();
+	void ExecuteCopyNodeJson();
+	void ExecuteExportCommentJson();
+	void ExecuteImportComments();
+	void ExecuteWriteGoldenSamples();
+	void ExecuteSelfCheck();
+
+	bool CanRunNodeJsonSelectionAction() const;
+	bool CanImportComments() const;
+	bool CanRunSelfCheck() const;
+
 private:
 	FDelegateHandle ContentBrowserPathExtenderHandle;
 	FDelegateHandle MenuRegistrationHandle;
+
+	TSharedPtr<class FUICommandList> NodeJsonCommandList;
 };
 

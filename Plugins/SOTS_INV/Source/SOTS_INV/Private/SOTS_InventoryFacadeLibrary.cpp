@@ -1,6 +1,10 @@
 #include "SOTS_InventoryFacadeLibrary.h"
 
 #include "SOTS_InventoryBridgeSubsystem.h"
+#include "Interfaces/SOTS_InventoryProvider.h"
+#include "Interfaces/SOTS_InventoryProviderInterface.h"
+
+class AActor;
 
 namespace
 {
@@ -8,6 +12,13 @@ namespace
     {
         return USOTS_InventoryBridgeSubsystem::Get(WorldContextObject);
     }
+
+    enum class ESOTS_UIHelperAction
+    {
+        Open,
+        Close,
+        Toggle
+    };
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     void MaybeLogFacadeFailure(bool bEnableLog, const TCHAR* HelperName, const FSOTS_InventoryOpReport& Report)
@@ -38,11 +49,11 @@ bool USOTS_InventoryFacadeLibrary::TryConsumeItemForAbility(const UObject* World
     {
         OutReport = Bridge->TryConsumeItemByTag_WithReport(nullptr, ItemTag, Quantity);
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        if (Bridge->bDebugLogInventoryOpFailures && OutReport.Result != ESOTS_InventoryOpResult::Success)
+        if (Bridge->ShouldLogInventoryOpFailures() && OutReport.Result != ESOTS_InventoryOpResult::Success)
         {
             OutReport.DebugReason += FString::Printf(TEXT(" AbilityTag=%s"), *AbilityTag.ToString());
         }
-        MaybeLogFacadeFailure(Bridge->bDebugLogInventoryOpFailures, TEXT("TryConsumeItemForAbility"), OutReport);
+        MaybeLogFacadeFailure(Bridge->ShouldLogInventoryOpFailures(), TEXT("TryConsumeItemForAbility"), OutReport);
 #endif
         return OutReport.Result == ESOTS_InventoryOpResult::Success;
     }
@@ -61,11 +72,11 @@ bool USOTS_InventoryFacadeLibrary::HasItemForSkillGate(const UObject* WorldConte
     {
         OutReport = Bridge->HasItemByTag_WithReport(nullptr, ItemTag, MinQuantity);
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        if (Bridge->bDebugLogInventoryOpFailures && OutReport.Result != ESOTS_InventoryOpResult::Success)
+        if (Bridge->ShouldLogInventoryOpFailures() && OutReport.Result != ESOTS_InventoryOpResult::Success)
         {
             OutReport.DebugReason += FString::Printf(TEXT(" SkillTag=%s"), *SkillTag.ToString());
         }
-        MaybeLogFacadeFailure(Bridge->bDebugLogInventoryOpFailures, TEXT("HasItemForSkillGate"), OutReport);
+        MaybeLogFacadeFailure(Bridge->ShouldLogInventoryOpFailures(), TEXT("HasItemForSkillGate"), OutReport);
 #endif
         return OutReport.Result == ESOTS_InventoryOpResult::Success;
     }
@@ -85,7 +96,7 @@ bool USOTS_InventoryFacadeLibrary::GetEquippedItemTag_ForContext(const UObject* 
         OutReport = Bridge->GetEquippedItemTag_WithReport(nullptr);
         OutEquippedTag = OutReport.ItemTag;
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        MaybeLogFacadeFailure(Bridge->bDebugLogInventoryOpFailures, TEXT("GetEquippedItemTag_ForContext"), OutReport);
+        MaybeLogFacadeFailure(Bridge->ShouldLogInventoryOpFailures(), TEXT("GetEquippedItemTag_ForContext"), OutReport);
 #endif
         return OutReport.Result == ESOTS_InventoryOpResult::Success;
     }
@@ -93,53 +104,68 @@ bool USOTS_InventoryFacadeLibrary::GetEquippedItemTag_ForContext(const UObject* 
     return false;
 }
 
-static FSOTS_InventoryOpReport RunUIHelper(const UObject* WorldContextObject, TFunctionRef<bool(USOTS_InventoryProvider*)> Fn)
+static FSOTS_InventoryOpReport RunUIHelper(const UObject* WorldContextObject, const TCHAR* HelperName, ESOTS_UIHelperAction Action)
 {
     FSOTS_InventoryOpReport Report;
     Report.RequestId = FGuid::NewGuid();
+    Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+    Report.DebugReason = FString::Printf(TEXT("%s failed (inventory provider missing)"), HelperName);
 
     if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
     {
-        UObject* ProviderObj = Bridge->GetResolvedProvider(nullptr);
-        if (!ProviderObj)
+        if (UObject* ProviderObj = Bridge->GetResolvedProvider_ForUI(nullptr))
         {
-            Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
-            return Report;
-        }
+            if (ISOTS_InventoryProvider* Provider = Cast<ISOTS_InventoryProvider>(ProviderObj))
+            {
+                if (!Provider->IsInventoryReady())
+                {
+                    Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
+                    Report.DebugReason = FString::Printf(TEXT("%s failed (provider not ready)"), HelperName);
+                    return Report;
+                }
 
-        if (!ProviderObj->GetClass()->ImplementsInterface(USOTS_InventoryProvider::StaticClass()))
-        {
+                const bool bSuccess = [Action, Provider]()
+                {
+                    switch (Action)
+                    {
+                        case ESOTS_UIHelperAction::Open:
+                            return Provider->OpenInventoryUI();
+                        case ESOTS_UIHelperAction::Close:
+                            return Provider->CloseInventoryUI();
+                        case ESOTS_UIHelperAction::Toggle:
+                            return Provider->ToggleInventoryUI();
+                    }
+                    return false;
+                }();
+
+                Report.Result = bSuccess ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::InternalError;
+                Report.DebugReason = bSuccess
+                    ? FString()
+                    : FString::Printf(TEXT("%s failed (provider returned false)"), HelperName);
+                Report.OwnerActor = Cast<AActor>(Provider->GetProviderObject());
+                return Report;
+            }
+
             Report.Result = ESOTS_InventoryOpResult::InternalError;
-            Report.DebugReason = TEXT("Provider lacks UI hooks");
+            Report.DebugReason = FString::Printf(TEXT("%s failed (resolved provider lacks ISOTS_InventoryProvider)"), HelperName);
             return Report;
         }
 
-        ISOTS_InventoryProvider* Provider = Cast<ISOTS_InventoryProvider>(ProviderObj);
-        if (!Provider || !ISOTS_InventoryProvider::Execute_IsInventoryReady(ProviderObj))
-        {
-            Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
-            return Report;
-        }
-
-        const bool bOk = Fn(Provider);
-        Report.Result = bOk ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::LockedOrBlocked;
+        Report.DebugReason = FString::Printf(TEXT("%s failed (inventory provider unresolved)"), HelperName);
         return Report;
     }
 
-    Report.Result = ESOTS_InventoryOpResult::ProviderMissing;
+    Report.DebugReason = FString::Printf(TEXT("%s failed (inventory bridge missing)"), HelperName);
     return Report;
 }
 
 bool USOTS_InventoryFacadeLibrary::OpenInventoryUI_WithReport(const UObject* WorldContextObject, FSOTS_InventoryOpReport& OutReport)
 {
-    OutReport = RunUIHelper(WorldContextObject, [](ISOTS_InventoryProvider* Provider)
-    {
-        return Provider->OpenInventoryUI();
-    });
+    OutReport = RunUIHelper(WorldContextObject, TEXT("OpenInventoryUI_WithReport"), ESOTS_UIHelperAction::Open);
     if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
     {
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        MaybeLogFacadeFailure(Bridge->bDebugLogInventoryOpFailures, TEXT("OpenInventoryUI_WithReport"), OutReport);
+        MaybeLogFacadeFailure(Bridge->ShouldLogInventoryOpFailures(), TEXT("OpenInventoryUI_WithReport"), OutReport);
 #endif
     }
     return OutReport.Result == ESOTS_InventoryOpResult::Success;
@@ -147,14 +173,11 @@ bool USOTS_InventoryFacadeLibrary::OpenInventoryUI_WithReport(const UObject* Wor
 
 bool USOTS_InventoryFacadeLibrary::CloseInventoryUI_WithReport(const UObject* WorldContextObject, FSOTS_InventoryOpReport& OutReport)
 {
-    OutReport = RunUIHelper(WorldContextObject, [](ISOTS_InventoryProvider* Provider)
-    {
-        return Provider->CloseInventoryUI();
-    });
+    OutReport = RunUIHelper(WorldContextObject, TEXT("CloseInventoryUI_WithReport"), ESOTS_UIHelperAction::Close);
     if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
     {
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        MaybeLogFacadeFailure(Bridge->bDebugLogInventoryOpFailures, TEXT("CloseInventoryUI_WithReport"), OutReport);
+        MaybeLogFacadeFailure(Bridge->ShouldLogInventoryOpFailures(), TEXT("CloseInventoryUI_WithReport"), OutReport);
 #endif
     }
     return OutReport.Result == ESOTS_InventoryOpResult::Success;
@@ -162,14 +185,11 @@ bool USOTS_InventoryFacadeLibrary::CloseInventoryUI_WithReport(const UObject* Wo
 
 bool USOTS_InventoryFacadeLibrary::ToggleInventoryUI_WithReport(const UObject* WorldContextObject, FSOTS_InventoryOpReport& OutReport)
 {
-    OutReport = RunUIHelper(WorldContextObject, [](ISOTS_InventoryProvider* Provider)
-    {
-        return Provider->ToggleInventoryUI();
-    });
+    OutReport = RunUIHelper(WorldContextObject, TEXT("ToggleInventoryUI_WithReport"), ESOTS_UIHelperAction::Toggle);
     if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
     {
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        MaybeLogFacadeFailure(Bridge->bDebugLogInventoryOpFailures, TEXT("ToggleInventoryUI_WithReport"), OutReport);
+        MaybeLogFacadeFailure(Bridge->ShouldLogInventoryOpFailures(), TEXT("ToggleInventoryUI_WithReport"), OutReport);
 #endif
     }
     return OutReport.Result == ESOTS_InventoryOpResult::Success;

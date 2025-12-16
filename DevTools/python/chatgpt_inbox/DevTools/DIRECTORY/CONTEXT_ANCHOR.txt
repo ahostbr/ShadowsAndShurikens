@@ -1,0 +1,1337 @@
+[SOTS_DEVTOOLS]
+tool: write_files
+category: devtools
+plugin: DevTools
+pass: CONTEXT_ANCHOR_ROUTING_V1
+[/SOTS_DEVTOOLS]
+
+=== FILE: DevTools/python/save_context_anchor.py ===
+# DevTools/python/save_context_anchor.py
+from __future__ import annotations
+
+import argparse
+import datetime
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = ROOT.parent.parent  # E:\SAS\ShadowsAndShurikens
+LOG_DIR = ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "context_anchor.log"
+
+ANCHOR_START = "[CONTEXT_ANCHOR]"
+ANCHOR_END = "[/CONTEXT_ANCHOR]"
+
+
+def log(msg: str) -> None:
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] [ANCHOR] {msg}"
+    print(line)
+    try:
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        # Logging must never break the tool.
+        pass
+
+
+def now_tag() -> str:
+    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def safe_slug(s: str) -> str:
+    s = s.strip().replace(" ", "_")
+    s = re.sub(r"[^A-Za-z0-9_\-]+", "", s)
+    return s[:64] if s else "ANCHOR"
+
+
+def parse_anchor_blocks(text: str) -> list[str]:
+    blocks: list[str] = []
+    start = 0
+    while True:
+        i = text.find(ANCHOR_START, start)
+        if i == -1:
+            break
+        j = text.find(ANCHOR_END, i)
+        if j == -1:
+            # Unterminated; treat rest as one block
+            blocks.append(text[i:].strip())
+            break
+        blocks.append(text[i : j + len(ANCHOR_END)].strip())
+        start = j + len(ANCHOR_END)
+    return blocks
+
+
+def parse_anchor_kv(anchor_block: str) -> dict[str, str]:
+    """
+    Parse lines inside the anchor block:
+      key: value
+    """
+    data: dict[str, str] = {}
+    for raw in anchor_block.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("[") or line.startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        k, v = line.split(":", 1)
+        data[k.strip().lower()] = v.strip()
+    return data
+
+
+def infer_plugins(anchor_block: str, kv: dict[str, str]) -> list[str]:
+    plugins: set[str] = set()
+
+    # Explicit fields (preferred)
+    for key in ("plugin", "plugins"):
+        val = kv.get(key)
+        if val:
+            for part in re.split(r"[,\s]+", val):
+                p = part.strip()
+                if p:
+                    plugins.add(p)
+
+    # Lock patterns like Lock_SOTS_UI, Lock_BEP, etc.
+    for m in re.finditer(r"\bLock_([A-Za-z0-9_]+)\b", anchor_block):
+        plugins.add(m.group(1))
+
+    # Also allow "plugin: X" to be missing but passes mention "plugin: X"
+    for m in re.finditer(
+        r"\bplugin\s*[:=]\s*([A-Za-z0-9_]+)\b", anchor_block, flags=re.IGNORECASE
+    ):
+        plugins.add(m.group(1))
+
+    out = [p.strip() for p in plugins if p.strip()]
+    out.sort()
+    return out
+
+
+def resolve_anchor_timestamp(kv: dict[str, str]) -> str:
+    """
+    Best-effort: if anchor has date, we keep it in the filename only if it parses cleanly.
+    Otherwise fall back to now_tag().
+    """
+    raw = (kv.get("date") or "").strip()
+    if not raw:
+        return now_tag()
+
+    raw2 = raw.replace("T", " ").replace("/", "-")
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d",
+    ):
+        try:
+            dt = datetime.datetime.strptime(raw2, fmt)
+            return (
+                dt.strftime("%Y%m%d_%H%M%S")
+                if "H" in fmt
+                else dt.strftime("%Y%m%d_000000")
+            )
+        except ValueError:
+            pass
+
+    return now_tag()
+
+
+def write_anchor_to_plugin(plugin: str, filename: str, anchor_block: str) -> Path | None:
+    plugin_dir = PROJECT_ROOT / "Plugins" / plugin
+    if not plugin_dir.exists():
+        log(f"[WARN] Plugin folder not found: {plugin_dir}")
+        return None
+
+    dest_dir = plugin_dir / "Docs" / "Anchor"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    dest = dest_dir / filename
+    if dest.exists():
+        # Avoid overwrite: add numeric suffix
+        stem = dest.stem
+        ext = dest.suffix or ".md"
+        for i in range(1, 1000):
+            cand = dest_dir / f"{stem}_{i:02d}{ext}"
+            if not cand.exists():
+                dest = cand
+                break
+
+    dest.write_text(anchor_block.strip() + "\n", encoding="utf-8")
+    return dest
+
+
+def also_write_central_copy(filename: str, anchor_block: str) -> Path:
+    central = ROOT / "Saved" / "ContextAnchors"
+    central.mkdir(parents=True, exist_ok=True)
+    dest = central / filename
+    if dest.exists():
+        stem = dest.stem
+        ext = dest.suffix or ".md"
+        for i in range(1, 1000):
+            cand = central / f"{stem}_{i:02d}{ext}"
+            if not cand.exists():
+                dest = cand
+                break
+    dest.write_text(anchor_block.strip() + "\n", encoding="utf-8")
+    return dest
+
+
+def process_text(text: str, *, default_slug: str | None = None) -> int:
+    blocks = parse_anchor_blocks(text)
+    if not blocks:
+        log("No [CONTEXT_ANCHOR] blocks found in input.")
+        return 2
+
+    wrote = 0
+    for block in blocks:
+        kv = parse_anchor_kv(block)
+        plugins = infer_plugins(block, kv)
+
+        ts = resolve_anchor_timestamp(kv)
+        slug = safe_slug(
+            (kv.get("slug") or default_slug or (plugins[0] if len(plugins) == 1 else "MULTI"))
+        )
+        filename = f"CONTEXT_ANCHOR_{ts}_{slug}.md"
+
+        central_path = also_write_central_copy(filename, block)
+        log(f"Wrote central copy: {central_path}")
+
+        if not plugins:
+            log("[WARN] No plugin could be inferred. Central copy written only.")
+            continue
+
+        for plugin in plugins:
+            out_path = write_anchor_to_plugin(plugin, filename, block)
+            if out_path:
+                wrote += 1
+                log(f"Wrote plugin copy: {out_path}")
+
+    log(f"Done. Plugin copies written: {wrote}")
+    return 0
+
+
+def scan_inbox(*, move_processed: bool) -> int:
+    inbox = ROOT / "chatgpt_inbox"
+    if not inbox.exists():
+        log(f"[ERROR] chatgpt_inbox not found: {inbox}")
+        return 2
+
+    candidates: list[Path] = []
+    for p in inbox.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md", ".log"}:
+            continue
+        try:
+            txt = p.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        if ANCHOR_START in txt:
+            candidates.append(p)
+
+    if not candidates:
+        log("No inbox files containing [CONTEXT_ANCHOR] were found.")
+        return 0
+
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    log(f"Found {len(candidates)} inbox candidate(s).")
+
+    processed_dir = ROOT / "Saved" / "ContextAnchors" / "inbox_processed"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    ok = 0
+    for p in candidates:
+        log(f"Processing inbox file: {p}")
+        txt = p.read_text(encoding="utf-8", errors="replace")
+        rc = process_text(txt, default_slug=p.stem)
+        if rc == 0:
+            ok += 1
+            if move_processed:
+                try:
+                    rel = p.relative_to(inbox)
+                except Exception:
+                    rel = Path(p.name)
+
+                dest = processed_dir / f"{now_tag()}__{safe_slug(str(rel))}{p.suffix}"
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    dest.write_text(txt, encoding="utf-8")
+                    p.unlink(missing_ok=True)
+                    log(f"Moved processed file -> {dest}")
+                except Exception as e:
+                    log(f"[WARN] Could not move/delete processed inbox file: {e}")
+        else:
+            log(f"[WARN] Processing failed for {p} (rc={rc}). Leaving file in place.")
+
+    log(f"Inbox scan complete. Processed OK: {ok}/{len(candidates)}")
+    return 0
+
+
+def interactive() -> int:
+    print("")
+    print("=== Save Context Anchor ===")
+    print("1) Paste a [CONTEXT_ANCHOR] block now")
+    print("2) Process a file path containing [CONTEXT_ANCHOR]")
+    print("3) Scan chatgpt_inbox for [CONTEXT_ANCHOR] blocks")
+    print("")
+    choice = input("Choice (1/2/3)> ").strip()
+
+    if choice == "1":
+        print("")
+        print("Paste the full block (end with a single line containing only: EOF)")
+        lines: list[str] = []
+        while True:
+            line = sys.stdin.readline()
+            if not line:
+                break
+            if line.strip() == "EOF":
+                break
+            lines.append(line)
+        return process_text("".join(lines), default_slug="PASTE")
+
+    if choice == "2":
+        path = input("File path> ").strip().strip('"')
+        p = Path(path)
+        if not p.is_file():
+            log(f"[ERROR] File not found: {p}")
+            return 2
+        return process_text(p.read_text(encoding="utf-8", errors="replace"), default_slug=p.stem)
+
+    if choice == "3":
+        return scan_inbox(move_processed=True)
+
+    log("[WARN] Unknown choice.")
+    return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--source", help="Path to a prompt/text file that contains one or more [CONTEXT_ANCHOR] blocks.")
+    ap.add_argument("--scan-inbox", action="store_true", help="Scan DevTools/python/chatgpt_inbox for context anchors.")
+    ap.add_argument("--move-processed", action="store_true", help="When scanning inbox, move processed files to Saved/ContextAnchors/inbox_processed and delete originals.")
+    ap.add_argument("--slug", help="Optional default slug if the anchor block does not provide one.")
+    args = ap.parse_args(argv)
+
+    if args.scan_inbox:
+        return scan_inbox(move_processed=args.move_processed)
+
+    if args.source:
+        p = Path(args.source)
+        if not p.is_file():
+            log(f"[ERROR] --source file not found: {p}")
+            return 2
+        return process_text(p.read_text(encoding="utf-8", errors="replace"), default_slug=args.slug or p.stem)
+
+    return interactive()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+=== END FILE ===
+
+=== FILE: DevTools/python/sots_chatgpt_dispatcher.py ===
+from __future__ import annotations
+
+import argparse
+import datetime
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+LOG_DIR = ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "chatgpt_dispatcher.log"
+
+
+def log(msg: str) -> None:
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] [DISPATCHER] {msg}"
+    print(line)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+# ---------------------------------------------------------------------------
+# Header parsing
+# ---------------------------------------------------------------------------
+
+def parse_header(prompt_path: Path) -> dict[str, str]:
+    """
+    Parse the [SOTS_DEVTOOLS] header block from the prompt file.
+    Returns a dict of key -> value. If no header, returns {}.
+    """
+    text = prompt_path.read_text(encoding="utf-8", errors="replace")
+    start_tag = "[SOTS_DEVTOOLS]"
+    end_tag = "[/SOTS_DEVTOOLS]"
+
+    start_idx = text.find(start_tag)
+    end_idx = text.find(end_tag)
+
+    if start_idx == -1 or end_idx == -1 or end_idx < start_idx:
+        log("No SOTS_DEVTOOLS header found.")
+        return {}
+
+    header_text = text[start_idx + len(start_tag) : end_idx]
+    config: dict[str, str] = {}
+
+    for raw_line in header_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # Allow "key: value" or "key=value"
+        if ":" in line:
+            key, value = line.split(":", 1)
+        elif "=" in line:
+            key, value = line.split("=", 1)
+        else:
+            log(f"Skipping malformed header line: {line!r}")
+            continue
+        config[key.strip().lower()] = value.strip()
+
+    log(f"Parsed header config: {config}")
+    return config
+
+
+def str_to_bool(value: str | None, default: bool = True) -> bool:
+    if value is None:
+        return default
+    v = value.strip().lower()
+    if v in {"1", "true", "yes", "y"}:
+        return True
+    if v in {"0", "false", "no", "n"}:
+        return False
+    return default
+
+
+def should_auto_dispatch(config: dict[str, str]) -> bool:
+    """
+    Return True if this prompt should be auto-dispatched.
+
+    If a prompt declares:
+        auto_dispatch: false
+    we skip running it automatically.
+    """
+    return str_to_bool(config.get("auto_dispatch"), default=True)
+
+
+# ---------------------------------------------------------------------------
+# Tool dispatchers
+# ---------------------------------------------------------------------------
+
+def run_write_files(config: dict[str, str], prompt_path: Path) -> None:
+    """Dispatch to write_files.py using the full prompt file as --source.
+
+    Expected header shape:
+
+        [SOTS_DEVTOOLS]
+        tool: write_files
+        mode: ...
+        [/SOTS_DEVTOOLS]
+
+    The write_files.py script will:
+      - Parse the body for FILE: ... / === END FILE === blocks
+      - Write those files under PROJECT_ROOT
+      - Log a summary in DevTools/python/logs/write_files_*.log
+    """
+    script = ROOT / "write_files.py"
+    if not script.is_file():
+        log(f"write_files.py not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script), "--source", str(prompt_path)]
+    log(f"Launching write_files: {' '.join(cmd)}")
+
+    try:
+        subprocess.Popen(cmd, cwd=str(ROOT))
+    except Exception as e:
+        log(f"ERROR running write_files: {e}")
+
+
+def run_save_context_anchor(config: dict[str, str], prompt_path: Path) -> None:
+    """Dispatch to save_context_anchor.py using the full prompt file as --source.
+
+    Expected body contains one or more [CONTEXT_ANCHOR] blocks.
+
+    The tool will:
+      - Extract anchor blocks
+      - Infer plugin(s) from Lock_<PLUGIN> or plugin fields
+      - Write copies into Plugins/<Plugin>/Docs/Anchor/
+      - Write a central copy into DevTools/python/Saved/ContextAnchors/
+      - Log to DevTools/python/logs/context_anchor.log
+    """
+    script = ROOT / "save_context_anchor.py"
+    if not script.is_file():
+        log(f"save_context_anchor.py not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script), "--source", str(prompt_path)]
+    log(f"Launching save_context_anchor: {' '.join(cmd)}")
+
+    try:
+        subprocess.Popen(cmd, cwd=str(ROOT))
+    except Exception as e:
+        log(f"ERROR running save_context_anchor: {e}")
+
+
+def run_quick_search(config: dict[str, str]) -> None:
+    """
+    Dispatch to quick_search.py using 'search' and optional 'exts'.
+    """
+    search = config.get("search")
+    if not search:
+        log("quick_search requires 'search' in header.")
+        return
+
+    exts = config.get("exts", "").strip()
+    script = ROOT / "quick_search.py"
+    if not script.is_file():
+        log(f"quick_search.py not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script), "--search", search]
+    if exts:
+        cmd.extend(["--exts", exts])
+
+    log(f"Launching quick_search: {' '.join(cmd)}")
+    try:
+        subprocess.Popen(cmd, cwd=str(ROOT))
+    except Exception as e:
+        log(f"ERROR running quick_search: {e}")
+
+
+def run_regex_replace(config: dict[str, str]) -> None:
+    """
+    Dispatch to regex_replace.py.
+
+    Expected header keys:
+      - search: regex pattern
+      - replace: replacement
+      - exts: e.g. .h,.cpp,.ini
+    """
+    search = config.get("search")
+    replace = config.get("replace", "")
+    exts = config.get("exts", "")
+
+    if not search:
+        log("regex_replace requires 'search' in header.")
+        return
+
+    script = ROOT / "regex_replace.py"
+    if not script.is_file():
+        log(f"regex_replace.py not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script), "--search", search, "--replace", replace]
+    if exts:
+        cmd.extend(["--exts", exts])
+
+    log(f"Launching regex_replace: {' '.join(cmd)}")
+    try:
+        subprocess.Popen(cmd, cwd=str(ROOT))
+    except Exception as e:
+        log(f"ERROR running regex_replace: {e}")
+
+
+def run_delete_paths(config: dict[str, str]) -> None:
+    """
+    Dispatch to delete_paths.py.
+
+    Expected header keys:
+      - paths: semicolon-separated paths
+    """
+    paths = config.get("paths", "")
+    if not paths:
+        log("delete_paths requires 'paths' in header.")
+        return
+
+    script = ROOT / "delete_paths.py"
+    if not script.is_file():
+        log(f"delete_paths.py not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script), "--paths", paths]
+    log(f"Launching delete_paths: {' '.join(cmd)}")
+    try:
+        subprocess.Popen(cmd, cwd=str(ROOT))
+    except Exception as e:
+        log(f"ERROR running delete_paths: {e}")
+
+
+def dispatch_tool(prompt_path: Path, *, force: bool = False) -> None:
+    config = parse_header(prompt_path)
+    if not config:
+        log("No header config; nothing to dispatch.")
+        return
+
+    if not force and not should_auto_dispatch(config):
+        log("auto_dispatch=false (manual); skipping auto-dispatch. Use sots_tools.py for manual run.")
+        return
+
+    tool = config.get("tool", "").lower()
+    log(f"Dispatching tool: {tool!r}, force={force}")
+
+    if tool == "write_files":
+        run_write_files(config, prompt_path)
+    elif tool == "save_context_anchor":
+        run_save_context_anchor(config, prompt_path)
+    elif tool == "quick_search":
+        run_quick_search(config)
+    elif tool == "regex_replace":
+        run_regex_replace(config)
+    elif tool == "delete_paths":
+        run_delete_paths(config)
+    else:
+        log(f"Unknown or unsupported tool: {tool!r}")
+
+
+def dispatch_file(prompt_path: Path, *, force: bool = False) -> None:
+    """
+    Dispatch a single file that contains a [SOTS_DEVTOOLS] header.
+    """
+    log(f"Dispatching file: {prompt_path}")
+    dispatch_tool(prompt_path, force=force)
+
+
+def find_latest_prompt(inbox_root: Path) -> Path | None:
+    """
+    Find the newest file in the inbox tree (by mtime).
+    """
+    best: Path | None = None
+    best_mtime = -1.0
+    for p in inbox_root.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md"}:
+            continue
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        if mtime > best_mtime:
+            best_mtime = mtime
+            best = p
+    return best
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--file", help="Dispatch a specific prompt file path.")
+    ap.add_argument("--latest", action="store_true", help="Dispatch the newest file in chatgpt_inbox.")
+    ap.add_argument("--force", action="store_true", help="Force dispatch even if auto_dispatch=false.")
+    args = ap.parse_args(argv)
+
+    if args.file:
+        dispatch_file(Path(args.file), force=args.force)
+        return 0
+
+    if args.latest:
+        inbox = ROOT / "chatgpt_inbox"
+        latest = find_latest_prompt(inbox)
+        if not latest:
+            log("No prompt files found in chatgpt_inbox.")
+            return 0
+        dispatch_file(latest, force=args.force)
+        return 0
+
+    ap.print_help()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+=== END FILE ===
+
+=== FILE: DevTools/python/devtools_header_utils.py ===
+# Shared helpers for [SOTS_DEVTOOLS] headers
+import os
+from typing import Dict, Tuple, Optional, List
+
+HEADER_START = "[SOTS_DEVTOOLS]"
+HEADER_END = "[/SOTS_DEVTOOLS]"
+
+TEXT_FILE_EXTS = (".txt", ".md", ".log", ".cfg", ".json")
+
+KNOWN_TOOLS = {
+    "quick_search",
+    "regex_search",
+    "run_python_script",
+    "apply_json_pack",
+    "version_cleanup",
+    "mass_regex_edit",
+    "pack_lint",
+    "devtools_status_update",
+    "export_report_bundle",
+    "report_bundle_export",
+    "pipeline_hub",
+    "inbox_route",
+    "devtools_status_dashboard",
+    "log_error_digest",
+    "pack_template_generator",
+    "save_context_anchor",
+}
+
+PATH_LIKE_KEYS = {
+    "path",
+    "file",
+    "folder",
+    "project_root",
+    "root",
+    "source",
+    "dest",
+    "output",
+}
+
+TOOL_REQUIRED_FIELDS = {
+    "quick_search": ["search", "exts"],
+    "mass_regex_edit": ["search", "replace", "exts"],
+    "devtools_status_update": ["plugin", "step", "status"],
+    "export_report_bundle": ["category"],
+    "report_bundle_export": ["category"],
+}
+
+
+def is_text_file_name(name: str) -> bool:
+    return name.lower().endswith(TEXT_FILE_EXTS)
+
+
+def parse_header_block(text: str) -> Optional[Dict[str, str]]:
+    start_idx = text.find(HEADER_START)
+    if start_idx == -1:
+        return None
+    end_idx = text.find(HEADER_END, start_idx)
+    if end_idx == -1:
+        return None
+    block = text[start_idx:end_idx].splitlines()[1:]  # skip first line
+    data: Dict[str, str] = {}
+    for raw in block:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" in line:
+            k, v = line.split(":", 1)
+        elif "=" in line:
+            k, v = line.split("=", 1)
+        else:
+            continue
+        data[k.strip().lower()] = v.strip()
+    return data
+
+
+def validate_header_required_fields(header: Dict[str, str]) -> Tuple[int, int, List[str]]:
+    msgs: List[str] = []
+    warns = 0
+    fatals = 0
+
+    tool = header.get("tool", "").strip().lower()
+    if not tool:
+        msgs.append("FATAL: Missing tool: in [SOTS_DEVTOOLS] header.")
+        return 1, 0, msgs
+
+    if tool not in KNOWN_TOOLS:
+        msgs.append(f"WARNING: Unknown tool '{tool}'. Add to KNOWN_TOOLS if intended.")
+        warns += 1
+
+    required = TOOL_REQUIRED_FIELDS.get(tool)
+    if not required:
+        return fatals, warns, msgs
+
+    for field in required:
+        if not header.get(field):
+            msgs.append(f"WARNING: tool '{tool}' missing recommended field '{field}:'")
+            warns += 1
+
+    return fatals, warns, msgs
+
+
+def analyze_header_paths(header: Dict[str, str], project_root: str) -> Tuple[int, int, List[str]]:
+    msgs: List[str] = []
+    warns = 0
+    fatals = 0
+    for key, raw in header.items():
+        if key not in PATH_LIKE_KEYS:
+            continue
+        value = raw.strip()
+        if not value:
+            continue
+        candidate = value
+        if not os.path.isabs(candidate):
+            candidate = os.path.normpath(os.path.join(project_root, candidate))
+        if not os.path.exists(candidate):
+            msgs.append(f"WARNING: header path key '{key}' points to missing path: {candidate}")
+            warns += 1
+    return fatals, warns, msgs
+=== END FILE ===
+
+=== FILE: DevTools/python/sots_tools.py ===
+from __future__ import annotations
+
+import sys
+import subprocess
+from pathlib import Path
+
+import analyze_build_log
+import apply_json_pack
+import architecture_lint
+import clean_binaries_intermediate
+import delete_paths
+import devtools_status_dashboard
+import devtools_selftest
+import fix_plugin_dependencies
+import fsots_duplicate_report
+import include_map
+import kem_telemetry_report
+import license_header_injector
+import mass_regex_edit
+import plugin_dependency_health
+import plugin_stats
+import print_bp_functions
+import project_health_report
+import quick_search
+import quick_search_regex
+import regex_replace
+import scan_todos
+import summarize_crash_logs
+import udsbridge_audit_configs
+
+
+# ---------------------------------------------------------------------------
+# Version
+# ---------------------------------------------------------------------------
+
+TOOLBOX_VERSION = "SOTS DevTools Toolbox v1.6"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def get_tools_root() -> Path:
+    return Path(__file__).resolve().parent
+
+
+def run_script(script_name: str, extra_args: list[str] | None = None) -> None:
+    """
+    Helper to run a Python tool script located in DevTools/python.
+
+    - If the script is missing, print a clear error and return.
+    - All tools are responsible for their own confirm_start/confirm_exit,
+      logging via llm_log, etc.
+    """
+    tools_root = get_tools_root()
+    script = tools_root / script_name
+
+    if not script.exists():
+        print(f"[ERROR] Script not found: {script}")
+        return
+
+    cmd: list[str] = [sys.executable, str(script)]
+    if extra_args:
+        cmd.extend(extra_args)
+
+    print(f"[INFO] Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+
+
+def run_pack(pack_path: str) -> int:
+    """
+    Run a ChatGPT pack (write_files) manually via the same pathway as inbox files.
+
+    The pack_path is passed to write_files.py --source so behavior/logging match
+    the Send2SOTS bridge flow.
+    """
+    tools_root = get_tools_root()
+    write_files_py = tools_root / "write_files.py"
+
+    if not write_files_py.exists():
+        print(f"[ERROR] write_files.py not found: {write_files_py}")
+        return 1
+
+    cmd = [sys.executable, str(write_files_py), "--source", pack_path]
+    print(f"[INFO] Running pack: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+    return 0
+
+
+def list_pipelines() -> None:
+    """
+    List available pipeline definitions.
+
+    Sources:
+    - DevToolsPipelines.json
+    - DevTools/python/pipelines/*.json
+    """
+    tools_root = get_tools_root()
+    root_json = tools_root.parent / "DevToolsPipelines.json"
+    pipe_dir = tools_root / "pipelines"
+
+    print("")
+    print("=== Available pipelines ===")
+    print("")
+
+    def _print_one(name: str, payload: dict) -> None:
+        desc = payload.get("description", "").strip()
+        print(f"- {name}")
+        if desc:
+            print(f"    {desc}")
+
+    # Root DevToolsPipelines.json
+    if root_json.exists():
+        try:
+            import json
+            data = json.loads(root_json.read_text(encoding="utf-8"))
+            for name, payload in data.items():
+                if isinstance(payload, dict):
+                    _print_one(name, payload)
+        except Exception as e:
+            print(f"[WARN] Could not read {root_json}: {e}")
+    else:
+        print(f"(no {root_json.name})")
+
+    # DevTools/python/pipelines/
+    if pipe_dir.exists():
+        for p in sorted(pipe_dir.glob("*.json")):
+            try:
+                import json
+                payload = json.loads(p.read_text(encoding="utf-8"))
+                _print_one(p.stem, payload)
+            except Exception as e:
+                print(f"[WARN] Could not read {p.name}: {e}")
+    else:
+        print("(no pipelines/ folder)")
+
+    print("")
+
+
+def run_pipeline_by_name(name: str) -> None:
+    """
+    Run a pipeline definition by name, if found.
+    """
+    tools_root = get_tools_root()
+    root_json = tools_root.parent / "DevToolsPipelines.json"
+    pipe_dir = tools_root / "pipelines"
+
+    payload = None
+
+    if root_json.exists():
+        try:
+            import json
+            data = json.loads(root_json.read_text(encoding="utf-8"))
+            payload = data.get(name)
+        except Exception:
+            payload = None
+
+    if payload is None and pipe_dir.exists():
+        candidate = pipe_dir / f"{name}.json"
+        if candidate.exists():
+            try:
+                import json
+                payload = json.loads(candidate.read_text(encoding="utf-8"))
+            except Exception:
+                payload = None
+
+    if not isinstance(payload, dict):
+        print(f"[ERROR] Pipeline '{name}' not found.")
+        return
+
+    cmd = payload.get("cmd")
+    if not cmd:
+        print(f"[ERROR] Pipeline '{name}' has no 'cmd'.")
+        return
+
+    if isinstance(cmd, str):
+        cmd = cmd.strip().split()
+
+    if not isinstance(cmd, list):
+        print(f"[ERROR] Pipeline '{name}' cmd must be a list or string.")
+        return
+
+    print(f"[INFO] Running pipeline: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+
+
+# ---------------------------------------------------------------------------
+# Convenience runners (they call into scripts so behavior/logging stays consistent)
+# ---------------------------------------------------------------------------
+
+def run_clean_binaries_intermediate() -> None:
+    run_script("clean_binaries_intermediate.py")
+
+
+def run_analyze_build_log() -> None:
+    run_script("analyze_build_log.py")
+
+
+def run_summarize_crash_logs() -> None:
+    run_script("summarize_crash_logs.py")
+
+
+def run_scan_todos() -> None:
+    run_script("scan_todos.py")
+
+
+def run_architecture_lint() -> None:
+    run_script("architecture_lint.py")
+
+
+def run_fsots_duplicate_report() -> None:
+    run_script("fsots_duplicate_report.py")
+
+
+def run_project_health_report() -> None:
+    run_script("project_health_report.py")
+
+
+def run_plugin_stats() -> None:
+    run_script("plugin_stats.py")
+
+
+def run_include_map() -> None:
+    run_script("include_map.py")
+
+
+def run_mass_regex_edit() -> None:
+    run_script("mass_regex_edit.py")
+
+
+def run_inject_license_header() -> None:
+    run_script("license_header_injector.py")
+
+
+def run_regex_replace() -> None:
+    run_script("regex_replace.py")
+
+
+def run_delete_paths() -> None:
+    run_script("delete_paths.py")
+
+
+def run_apply_json_pack() -> None:
+    run_script("apply_json_pack.py")
+
+
+def run_quick_search() -> None:
+    run_script("quick_search.py")
+
+
+def run_quick_search_regex() -> None:
+    run_script("quick_search_regex.py")
+
+
+def run_kem_telemetry_report() -> None:
+    run_script("kem_telemetry_report.py")
+
+
+def run_plugin_dependency_health() -> None:
+    run_script("plugin_dependency_health.py")
+
+
+def run_ensure_plugin_modules() -> None:
+    run_script("ensure_plugin_modules.py")
+
+
+def run_fix_plugin_dependencies() -> None:
+    run_script("fix_plugin_dependencies.py")
+
+
+def run_compare_plugin_zips() -> None:
+    run_script("compare_plugin_zips.py")
+
+
+def run_devtools_selftest() -> None:
+    run_script("devtools_selftest.py")
+
+
+def run_devtools_status_dashboard() -> None:
+    run_script("devtools_status_dashboard.py")
+
+
+def run_udsbridge_audit_configs() -> None:
+    run_script("udsbridge_audit_configs.py")
+
+
+def run_print_bp_functions() -> None:
+    run_script("print_bp_functions.py")
+
+
+def run_generate_directory_index() -> None:
+    run_script("generate_directory_index.py")
+
+
+def run_apply_latest_chatgpt_inbox() -> None:
+    """
+    Manually apply the newest file in DevTools/python/chatgpt_inbox by dispatching it
+    through the same dispatcher used by the Send2SOTS bridge server.
+
+    This keeps Copilot/Buddy aligned with your "manual gateway" rule: DevTools runs are
+    manual by default, never assumed.
+    """
+    tools_root = get_tools_root()
+    root = tools_root / "chatgpt_inbox"
+
+    if not root.exists():
+        print(f"[WARN] chatgpt_inbox directory does not exist: {root}")
+        return
+
+    # Find newest .txt/.md anywhere under inbox
+    newest = None
+    newest_mtime = -1.0
+    for p in root.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md"}:
+            continue
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        if mtime > newest_mtime:
+            newest_mtime = mtime
+            newest = p
+
+    if newest is None:
+        print("[INFO] No inbox files found.")
+        return
+
+    dispatcher = tools_root / "sots_chatgpt_dispatcher.py"
+    if not dispatcher.exists():
+        print(f"[ERROR] Dispatcher not found: {dispatcher}")
+        return
+
+    cmd = [sys.executable, str(dispatcher), "--file", str(newest)]
+    print(f"[INFO] Dispatching latest inbox file: {newest}")
+    print(f"[INFO] Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=False)
+
+
+def run_save_context_anchor() -> None:
+    """Save a [CONTEXT_ANCHOR] block into Plugins/<Plugin>/Docs/Anchor/."""
+    run_script("save_context_anchor.py")
+
+
+def run_scan_context_anchors_inbox() -> None:
+    """Scan chatgpt_inbox for [CONTEXT_ANCHOR] blocks and sort them into plugin Docs/Anchor folders."""
+    run_script("save_context_anchor.py", ["--scan-inbox", "--move-processed"])
+
+
+# ---------------------------------------------------------------------------
+# Menus
+# ---------------------------------------------------------------------------
+
+def category_core_maintenance() -> None:
+    while True:
+        print("")
+        print("=== Category 1: Core maintenance ===")
+        print("")
+        print("  1) Clean Binaries/Intermediate (safe)")
+        print("  2) Analyze last build log")
+        print("  3) Summarize crash logs")
+        print("  4) Scan TODO / FIXME comments")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Core> ").strip()
+
+        if choice == "1":
+            run_clean_binaries_intermediate()
+        elif choice == "2":
+            run_analyze_build_log()
+        elif choice == "3":
+            run_summarize_crash_logs()
+        elif choice == "4":
+            run_scan_todos()
+        elif choice in {"0", "b", "B"}:
+            break
+
+
+def category_fsots_architecture() -> None:
+    while True:
+        print("")
+        print("=== Category 2: Architecture / naming ===")
+        print("")
+        print("  1) Architecture lint (headers, forbidden patterns, etc.)")
+        print("  2) Duplicate FSOTS struct report")
+        print("  3) Include map (public/private includes) report")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Arch> ").strip()
+
+        if choice == "1":
+            run_architecture_lint()
+        elif choice == "2":
+            run_fsots_duplicate_report()
+        elif choice == "3":
+            run_include_map()
+        elif choice in {"0", "b", "B"}:
+            break
+
+
+def category_plugins_dependencies() -> None:
+    while True:
+        print("")
+        print("=== Category 3: Plugins / dependencies ===")
+        print("")
+        print("  1) Plugin stats report")
+        print("  2) Plugin dependency health")
+        print("  3) Ensure plugin modules exist")
+        print("  4) Fix plugin dependencies")
+        print("  5) Compare plugin zips")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Plugins> ").strip()
+
+        if choice == "1":
+            run_plugin_stats()
+        elif choice == "2":
+            run_plugin_dependency_health()
+        elif choice == "3":
+            run_ensure_plugin_modules()
+        elif choice == "4":
+            run_fix_plugin_dependencies()
+        elif choice == "5":
+            run_compare_plugin_zips()
+        elif choice in {"0", "b", "B"}:
+            break
+
+
+def category_batch_editing() -> None:
+    while True:
+        print("")
+        print("=== Category 4: Batch editing / licensing / logs ===")
+        print("")
+        print("  1) Mass regex edit from config")
+        print("  2) Inject / verify license headers")
+        print("  3) Analyze last build log")
+        print("  4) Summarize crash logs")
+        print("  5) Scan TODO / FIXME comments")
+        print("  6) Apply JSON DevTools pack")
+        print("  7) Ad-hoc regex search (pattern + optional literal)")
+        print("  8) [KEM] Execution & Position Report")
+        print("  9) Quick search (literal + optional regex)")
+        print(" 10) Generate directory index (LLM_DIRECTORY_INDEX.txt)")
+        print(" 11) Browse ChatGPT inbox (manual dispatcher)")
+        print(" 12) Save Context Anchor (paste/file)")
+        print(" 13) Scan inbox for Context Anchors")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Batch> ").strip()
+
+        if choice == "1":
+            run_mass_regex_edit()
+        elif choice == "2":
+            run_inject_license_header()
+        elif choice == "3":
+            run_analyze_build_log()
+        elif choice == "4":
+            run_summarize_crash_logs()
+        elif choice == "5":
+            run_scan_todos()
+        elif choice == "6":
+            run_apply_json_pack()
+        elif choice == "7":
+            run_script("ad_hoc_regex_search.py")
+        elif choice == "8":
+            run_kem_telemetry_report()
+        elif choice == "9":
+            run_quick_search_regex()
+        elif choice == "10":
+            run_generate_directory_index()
+        elif choice == "11":
+            run_apply_latest_chatgpt_inbox()
+        elif choice == "12":
+            run_save_context_anchor()
+        elif choice == "13":
+            run_scan_context_anchors_inbox()
+        elif choice in {"0", "b", "B"}:
+            break
+
+
+def category_high_level_checks() -> None:
+    while True:
+        print("")
+        print("=== Category 5: High-level project checks ===")
+        print("")
+        print("  1) List available pipelines")
+        print("  2) Run pipeline by name")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("Checks> ").strip()
+
+        if choice == "1":
+            list_pipelines()
+        elif choice == "2":
+            name = input("Pipeline name> ").strip()
+            if name:
+                run_pipeline_by_name(name)
+        elif choice in {"0", "b", "B"}:
+            break
+
+
+def category_kem_tools() -> None:
+    while True:
+        print("")
+        print("=== Category 6: KillExecutionManager (KEM) tools ===")
+        print("")
+        print("  1) [KEM] Execution & Position Report")
+        print("  2) Print BP functions (BEP/BPGen helper)")
+        print("")
+        print("  0) Back to main menu")
+        print("")
+
+        choice = input("KEM> ").strip()
+
+        if choice == "1":
+            run_kem_telemetry_report()
+        elif choice == "2":
+            run_print_bp_functions()
+        elif choice in {"0", "b", "B"}:
+            break
+
+
+def main() -> int:
+    while True:
+        print("")
+        print("=== SOTS DevTools Hub ===")
+        print(f"Version: {TOOLBOX_VERSION}")
+        print("")
+        print("  1) Core maintenance")
+        print("  2) Architecture / naming")
+        print("  3) Plugins / dependencies")
+        print("  4) Batch editing / licensing / logs")
+        print("  5) High-level project checks")
+        print("  6) KillExecutionManager (KEM) tools")
+        print("")
+        print("  0) Exit")
+        print("")
+
+        choice = input("Main> ").strip()
+
+        if choice == "1":
+            category_core_maintenance()
+        elif choice == "2":
+            category_fsots_architecture()
+        elif choice == "3":
+            category_plugins_dependencies()
+        elif choice == "4":
+            category_batch_editing()
+        elif choice == "5":
+            category_high_level_checks()
+        elif choice == "6":
+            category_kem_tools()
+        elif choice in {"0", "q", "Q", "exit"}:
+            return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+=== END FILE ===

@@ -1,0 +1,8 @@
+# SOTS AIPerception Behavior Rollup (2025-12-16)
+
+- Ownership: AIPerception owns local sensing, suspicion accrual, BB projection, and forwarding to GSM. GSM owns global aggregation and stealth state; AIPerception only calls `ReportAISuspicionEx` with suspicion01 + reason + optional location/instigator.
+- Suspicion reporting: All paths use `ReportAISuspicionEx` with ReasonTag (sight/hearing/shadow/damage/generic), optional world location, and instigator when known; throttled by GuardConfig GSM settings unless a path forces reporting.
+- Noise stimuli: `SOTS_TryReportNoise` (Lib) -> Subsystem -> Component `HandleReportedNoise`; relation filters, tag-driven policy (range/cooldown/loudness), suspicion delta, last stimulus cache, GSM send with noise location and instigator. See NoiseStimuli contract.
+- Damage stimuli: Engine `OnTakeAnyDamage` (default tagless via DefaultDamagePolicy) or `SOTS_TryReportDamageStimulus` (tagged manual) -> Subsystem -> Component `ApplyDamageStimulus`; relation filter, tag policy (cooldown/range/severity, optional min state), suspicion impulse, GSM send with best location/instigator. See DamageStimuli contract.
+- Blackboard output: `WriteBlackboardSnapshot` is the only writer; selectors-first (TargetActor/Suspicion/State/LastKnownLocation/Validity/HasLOS), legacy keys only when selectors unset, one-time warning when falling back. See BB Output Policy doc.
+- Known limitations: Primary-target assumptions remain for stimulus caching; legacy tuning fields (SightSuspicionPerSecond, HearingSuspicionPerEvent, SuspicionDecayPerSecond) are kept for compatibility but unused by the current model.

@@ -75,16 +75,17 @@ def str_to_bool(value: str | None, default: bool = True) -> bool:
 
 def should_auto_dispatch(config: dict[str, str]) -> bool:
     """
-    Returns False if the header explicitly requests manual mode.
+    Return True if this prompt should be auto-dispatched.
+
+    If a prompt declares:
+        auto_dispatch: false
+    we skip running it automatically.
     """
-    mode = config.get("mode", "").strip().lower()
-    if mode in {"manual", "manual_only", "manual-run"}:
-        return False
-    return True
+    return str_to_bool(config.get("auto_dispatch"), default=True)
 
 
 # ---------------------------------------------------------------------------
-# Tool runners
+# Tool dispatchers
 # ---------------------------------------------------------------------------
 
 def run_write_files(config: dict[str, str], prompt_path: Path) -> None:
@@ -116,6 +117,31 @@ def run_write_files(config: dict[str, str], prompt_path: Path) -> None:
         log(f"ERROR running write_files: {e}")
 
 
+def run_save_context_anchor(config: dict[str, str], prompt_path: Path) -> None:
+    """Dispatch to save_context_anchor.py using the full prompt file as --source.
+
+    Expected body contains one or more [CONTEXT_ANCHOR] blocks.
+
+    The tool will:
+      - Extract anchor blocks
+      - Infer plugin(s) from Lock_<PLUGIN> or plugin fields
+      - Write copies into Plugins/<Plugin>/Docs/Anchor/
+      - Write a central copy into DevTools/python/Saved/ContextAnchors/
+      - Log to DevTools/python/logs/context_anchor.log
+    """
+    script = ROOT / "save_context_anchor.py"
+    if not script.is_file():
+        log(f"save_context_anchor.py not found at {script}")
+        return
+
+    cmd = [sys.executable, str(script), "--source", str(prompt_path)]
+    log(f"Launching save_context_anchor: {' '.join(cmd)}")
+
+    try:
+        subprocess.Popen(cmd, cwd=str(ROOT))
+    except Exception as e:
+        log(f"ERROR running save_context_anchor: {e}")
+
 
 def run_quick_search(config: dict[str, str]) -> None:
     """
@@ -123,11 +149,10 @@ def run_quick_search(config: dict[str, str]) -> None:
     """
     search = config.get("search")
     if not search:
-        log("quick_search requested but 'search' key is missing.")
+        log("quick_search requires 'search' in header.")
         return
 
-    exts = config.get("exts")  # passed straight through to --exts
-
+    exts = config.get("exts", "").strip()
     script = ROOT / "quick_search.py"
     if not script.is_file():
         log(f"quick_search.py not found at {script}")
@@ -135,7 +160,7 @@ def run_quick_search(config: dict[str, str]) -> None:
 
     cmd = [sys.executable, str(script), "--search", search]
     if exts:
-        cmd += ["--exts", exts]
+        cmd.extend(["--exts", exts])
 
     log(f"Launching quick_search: {' '.join(cmd)}")
     try:
@@ -146,17 +171,20 @@ def run_quick_search(config: dict[str, str]) -> None:
 
 def run_regex_replace(config: dict[str, str]) -> None:
     """
-    Dispatch to regex_replace.py with search/replace/exts/root/dry_run.
+    Dispatch to regex_replace.py.
+
+    Expected header keys:
+      - search: regex pattern
+      - replace: replacement
+      - exts: e.g. .h,.cpp,.ini
     """
     search = config.get("search")
-    replace = config.get("replace")
-    if not search or replace is None:
-        log("regex_replace requested but 'search' or 'replace' is missing.")
-        return
+    replace = config.get("replace", "")
+    exts = config.get("exts", "")
 
-    exts = config.get("exts")  # regex over extensions, e.g. \.cpp|\.h
-    root = config.get("root")  # optional override
-    dry_run = str_to_bool(config.get("dry_run"), default=True)
+    if not search:
+        log("regex_replace requires 'search' in header.")
+        return
 
     script = ROOT / "regex_replace.py"
     if not script.is_file():
@@ -165,11 +193,7 @@ def run_regex_replace(config: dict[str, str]) -> None:
 
     cmd = [sys.executable, str(script), "--search", search, "--replace", replace]
     if exts:
-        cmd += ["--exts", exts]
-    if root:
-        cmd += ["--root", root]
-    if dry_run:
-        cmd += ["--dry-run"]
+        cmd.extend(["--exts", exts])
 
     log(f"Launching regex_replace: {' '.join(cmd)}")
     try:
@@ -178,37 +202,24 @@ def run_regex_replace(config: dict[str, str]) -> None:
         log(f"ERROR running regex_replace: {e}")
 
 
-def split_paths(value: str) -> list[str]:
-    # Split on ; or , and trim
-    parts = re.split(r"[;,]", value)
-    return [p.strip() for p in parts if p.strip()]
-
-
 def run_delete_paths(config: dict[str, str]) -> None:
     """
-    Dispatch to delete_paths.py with list of paths and dry_run.
+    Dispatch to delete_paths.py.
+
+    Expected header keys:
+      - paths: semicolon-separated paths
     """
-    paths_str = config.get("paths")
-    if not paths_str:
-        log("delete_paths requested but 'paths' is missing.")
-        return
-
-    paths = split_paths(paths_str)
+    paths = config.get("paths", "")
     if not paths:
-        log("delete_paths: no valid paths after parsing.")
+        log("delete_paths requires 'paths' in header.")
         return
-
-    dry_run = str_to_bool(config.get("dry_run"), default=True)
 
     script = ROOT / "delete_paths.py"
     if not script.is_file():
         log(f"delete_paths.py not found at {script}")
         return
 
-    cmd = [sys.executable, str(script), "--paths", *paths]
-    if dry_run:
-        cmd += ["--dry-run"]
-
+    cmd = [sys.executable, str(script), "--paths", paths]
     log(f"Launching delete_paths: {' '.join(cmd)}")
     try:
         subprocess.Popen(cmd, cwd=str(ROOT))
@@ -216,17 +227,14 @@ def run_delete_paths(config: dict[str, str]) -> None:
         log(f"ERROR running delete_paths: {e}")
 
 
-# ---------------------------------------------------------------------------
-# Dispatch helpers (exported for sots_tools.py)
-# ---------------------------------------------------------------------------
-
-def _dispatch_config(config: dict[str, str], prompt_path: Path, *, force: bool) -> None:
+def dispatch_tool(prompt_path: Path, *, force: bool = False) -> None:
+    config = parse_header(prompt_path)
     if not config:
-        log("No config; nothing to dispatch.")
+        log("No header config; nothing to dispatch.")
         return
 
     if not force and not should_auto_dispatch(config):
-        log("Header mode=manual; skipping auto-dispatch. Use sots_tools.py for manual run.")
+        log("auto_dispatch=false (manual); skipping auto-dispatch. Use sots_tools.py for manual run.")
         return
 
     tool = config.get("tool", "").lower()
@@ -234,6 +242,8 @@ def _dispatch_config(config: dict[str, str], prompt_path: Path, *, force: bool) 
 
     if tool == "write_files":
         run_write_files(config, prompt_path)
+    elif tool == "save_context_anchor":
+        run_save_context_anchor(config, prompt_path)
     elif tool == "quick_search":
         run_quick_search(config)
     elif tool == "regex_replace":
@@ -246,35 +256,56 @@ def _dispatch_config(config: dict[str, str], prompt_path: Path, *, force: bool) 
 
 def dispatch_file(prompt_path: Path, *, force: bool = False) -> None:
     """
-    Public entrypoint for other scripts (bridge_runner, sots_tools).
-    - Reads header from prompt_path.
-    - Respects mode=manual unless force=True.
+    Dispatch a single file that contains a [SOTS_DEVTOOLS] header.
     """
-    if not prompt_path.is_file():
-        log(f"ERROR: Prompt file not found: {prompt_path}")
-        return
-
-    log(f"Processing prompt file: {prompt_path} (force={force})")
-    config = parse_header(prompt_path)
-    _dispatch_config(config, prompt_path, force=force)
+    log(f"Dispatching file: {prompt_path}")
+    dispatch_tool(prompt_path, force=force)
 
 
-# ---------------------------------------------------------------------------
-# CLI entrypoint
-# ---------------------------------------------------------------------------
+def find_latest_prompt(inbox_root: Path) -> Path | None:
+    """
+    Find the newest file in the inbox tree (by mtime).
+    """
+    best: Path | None = None
+    best_mtime = -1.0
+    for p in inbox_root.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md"}:
+            continue
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        if mtime > best_mtime:
+            best_mtime = mtime
+            best = p
+    return best
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="SOTS ChatGPT DevTools dispatcher")
-    parser.add_argument(
-        "--prompt_file",
-        type=Path,
-        required=True,
-        help="Path to the prompt .txt file from ChatGPT inbox",
-    )
-    args = parser.parse_args()
 
-    dispatch_file(args.prompt_file, force=False)
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--file", help="Dispatch a specific prompt file path.")
+    ap.add_argument("--latest", action="store_true", help="Dispatch the newest file in chatgpt_inbox.")
+    ap.add_argument("--force", action="store_true", help="Force dispatch even if auto_dispatch=false.")
+    args = ap.parse_args(argv)
+
+    if args.file:
+        dispatch_file(Path(args.file), force=args.force)
+        return 0
+
+    if args.latest:
+        inbox = ROOT / "chatgpt_inbox"
+        latest = find_latest_prompt(inbox)
+        if not latest:
+            log("No prompt files found in chatgpt_inbox.")
+            return 0
+        dispatch_file(latest, force=args.force)
+        return 0
+
+    ap.print_help()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

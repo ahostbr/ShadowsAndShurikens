@@ -4,6 +4,7 @@
 #include "Subsystems/SOTS_AbilityRegistrySubsystem.h"
 #include "Subsystems/SOTS_AbilitySubsystem.h"
 #include "SOTS_GAS_AbilityRequirementLibrary.h"
+#include "Subsystems/SOTS_AbilityFXSubsystem.h"
 #include "SOTS_GAS_Plugin.h"
 #include "SOTS_FXManagerSubsystem.h"
 #include "SOTS_UIAbilityLibrary.h"
@@ -942,7 +943,7 @@ FSOTS_AbilityActivateReport UAC_SOTS_Abilitys::ProcessActivationRequest(const FS
     USOTS_AbilityBase* AbilityInstance = AbilityInstances.FindRef(Params.AbilityTag);
     if (!AbilityInstance)
     {
-        AbilityInstance = USOTS_AbilityBase::GetAbilityInstance(this, Def);
+        AbilityInstance = USOTS_AbilityBase::GetAbilityInstance(this, Def, State.Handle);
         AbilityInstances.Add(Params.AbilityTag, AbilityInstance);
     }
 

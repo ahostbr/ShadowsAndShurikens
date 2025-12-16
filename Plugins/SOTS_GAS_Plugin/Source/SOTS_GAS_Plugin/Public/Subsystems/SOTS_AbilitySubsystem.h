@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SOTS_ProfileSnapshotProvider.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SOTS_ProfileTypes.h"
 #include "SOTS_AbilitySubsystem.generated.h"
@@ -8,7 +9,7 @@
 class UWorld;
 
 UCLASS()
-class SOTS_GAS_PLUGIN_API USOTS_AbilitySubsystem : public UGameInstanceSubsystem
+class SOTS_GAS_PLUGIN_API USOTS_AbilitySubsystem : public UGameInstanceSubsystem, public ISOTS_ProfileSnapshotProvider
 {
     GENERATED_BODY()
 
@@ -30,6 +31,8 @@ public:
 
     void BuildProfileData(FSOTS_AbilityProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_AbilityProfileData& InData);
+    virtual void BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot) override;
+    virtual void ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot) override;
 
     UFUNCTION(BlueprintCallable, Category="SOTS Ability|Profile")
     void GrantAbility(FGameplayTag AbilityTag, int32 Rank = 1);

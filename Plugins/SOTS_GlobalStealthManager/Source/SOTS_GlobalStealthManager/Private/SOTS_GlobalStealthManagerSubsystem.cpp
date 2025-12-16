@@ -6,10 +6,17 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "SOTS_GlobalStealthManagerModule.h"
+#include "SOTS_ProfileSubsystem.h"
 #include "SOTS_PlayerStealthComponent.h"
 #include "SOTS_TagLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "HAL/PlatformTime.h"
+#include "TimerManager.h"
+
+namespace
+{
+constexpr float GlobalAlertnessTimerInterval = 0.25f;
+}
 
 USOTS_GlobalStealthManagerSubsystem::USOTS_GlobalStealthManagerSubsystem()
     : CurrentStealthScore(0.0f)
@@ -38,6 +45,27 @@ void USOTS_GlobalStealthManagerSubsystem::Initialize(FSubsystemCollectionBase& C
     }
 
     ResetStealthState(ESOTS_GSM_ResetReason::Initialize);
+
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GameInstance->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->RegisterProvider(this, 0);
+        }
+    }
+}
+
+void USOTS_GlobalStealthManagerSubsystem::Deinitialize()
+{
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GameInstance->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->UnregisterProvider(this);
+        }
+    }
+
+    Super::Deinitialize();
 }
 
 USOTS_GlobalStealthManagerSubsystem* USOTS_GlobalStealthManagerSubsystem::Get(const UObject* WorldContextObject)
@@ -207,21 +235,504 @@ void USOTS_GlobalStealthManagerSubsystem::SetAISuspicion(float In01)
 
 void USOTS_GlobalStealthManagerSubsystem::ReportAISuspicion(AActor* GuardActor, float SuspicionNormalized)
 {
-    if (!GuardActor)
+    ReportAISuspicionEx(GuardActor, SuspicionNormalized, FGameplayTag(), FVector::ZeroVector, false, nullptr);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::PruneInvalidAIRecords()
+{
+    for (auto It = AIRecords.CreateIterator(); It; ++It)
+    {
+        if (!It.Key().IsValid())
+        {
+            LastAISuspicionReports.Remove(It.Key());
+            GuardSuspicion.Remove(It.Key());
+            It.RemoveCurrent();
+        }
+    }
+
+    for (auto It = GuardSuspicion.CreateIterator(); It; ++It)
+    {
+        if (!It.Key().IsValid())
+        {
+            LastAISuspicionReports.Remove(It.Key());
+            It.RemoveCurrent();
+        }
+    }
+}
+
+ESOTS_AIAwarenessState USOTS_GlobalStealthManagerSubsystem::ResolveAwarenessStateFromSuspicion(float Suspicion01) const
+{
+    const FSOTS_GSM_AwarenessThresholds& Thresholds = ActiveConfig.AwarenessThresholds;
+    const float Value = FMath::Clamp(Suspicion01, 0.0f, 1.0f);
+
+    if (Value >= Thresholds.HostileMin01)
+    {
+        return ESOTS_AIAwarenessState::Hostile;
+    }
+    if (Value >= Thresholds.AlertedMin01)
+    {
+        return ESOTS_AIAwarenessState::Alerted;
+    }
+    if (Value >= Thresholds.SearchingMin01)
+    {
+        return ESOTS_AIAwarenessState::Searching;
+    }
+    if (Value >= Thresholds.InvestigatingMin01)
+    {
+        return ESOTS_AIAwarenessState::Investigating;
+    }
+
+    return ESOTS_AIAwarenessState::Calm;
+}
+
+FGameplayTag USOTS_GlobalStealthManagerSubsystem::GetAwarenessTierTag(ESOTS_AIAwarenessState State) const
+{
+    switch (State)
+    {
+    case ESOTS_AIAwarenessState::Calm:
+        return RequestTagSafe(TEXT("SAS.AI.Alert.Calm"));
+    case ESOTS_AIAwarenessState::Investigating:
+        return RequestTagSafe(TEXT("SAS.AI.Alert.Investigating"));
+    case ESOTS_AIAwarenessState::Searching:
+        return RequestTagSafe(TEXT("SAS.AI.Alert.Searching"));
+    case ESOTS_AIAwarenessState::Alerted:
+        return RequestTagSafe(TEXT("SAS.AI.Alert.Alerted"));
+    case ESOTS_AIAwarenessState::Hostile:
+    default:
+        return RequestTagSafe(TEXT("SAS.AI.Alert.Hostile"));
+    }
+}
+
+FGameplayTag USOTS_GlobalStealthManagerSubsystem::GetFocusTagForTarget(AActor* TargetActor) const
+{
+    if (TargetActor)
+    {
+        if (AActor* PlayerActor = FindPlayerActor())
+        {
+            if (TargetActor == PlayerActor)
+            {
+                return RequestTagSafe(TEXT("SAS.AI.Focus.Player"));
+            }
+        }
+
+        return RequestTagSafe(TEXT("SAS.AI.Focus.Unknown"));
+    }
+
+    return RequestTagSafe(TEXT("SAS.AI.Focus.Unknown"));
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ApplyAwarenessTags(const FSOTS_GSM_AIRecord& Record)
+{
+    AActor* Subject = Record.SubjectAI.Get();
+    if (!Subject)
     {
         return;
     }
 
-    const float ClampedSuspicion = FMath::Clamp(SuspicionNormalized, 0.0f, 1.0f);
+    const FGameplayTag CalmTag = GetAwarenessTierTag(ESOTS_AIAwarenessState::Calm);
+    const FGameplayTag InvestigatingTag = GetAwarenessTierTag(ESOTS_AIAwarenessState::Investigating);
+    const FGameplayTag SearchingTag = GetAwarenessTierTag(ESOTS_AIAwarenessState::Searching);
+    const FGameplayTag AlertedTag = GetAwarenessTierTag(ESOTS_AIAwarenessState::Alerted);
+    const FGameplayTag HostileTag = GetAwarenessTierTag(ESOTS_AIAwarenessState::Hostile);
+
+    const FGameplayTag ReasonSight = RequestTagSafe(TEXT("SAS.AI.Reason.Sight"));
+    const FGameplayTag ReasonHearing = RequestTagSafe(TEXT("SAS.AI.Reason.Hearing"));
+    const FGameplayTag ReasonShadow = RequestTagSafe(TEXT("SAS.AI.Reason.Shadow"));
+    const FGameplayTag ReasonDamage = RequestTagSafe(TEXT("SAS.AI.Reason.Damage"));
+    const FGameplayTag ReasonGeneric = RequestTagSafe(TEXT("SAS.AI.Reason.Generic"));
+
+    const FGameplayTag FocusPlayer = RequestTagSafe(TEXT("SAS.AI.Focus.Player"));
+    const FGameplayTag FocusUnknown = RequestTagSafe(TEXT("SAS.AI.Focus.Unknown"));
+
+    const FGameplayTag TierTags[] = { CalmTag, InvestigatingTag, SearchingTag, AlertedTag, HostileTag };
+    for (const FGameplayTag& Tag : TierTags)
+    {
+        if (Tag.IsValid())
+        {
+            USOTS_TagLibrary::RemoveTagFromActor(this, Subject, Tag);
+        }
+    }
+
+    if (Record.AwarenessTierTag.IsValid())
+    {
+        USOTS_TagLibrary::AddTagToActor(this, Subject, Record.AwarenessTierTag);
+    }
+
+    const FGameplayTag ReasonTags[] = { ReasonSight, ReasonHearing, ReasonShadow, ReasonDamage, ReasonGeneric };
+    for (const FGameplayTag& Tag : ReasonTags)
+    {
+        if (Tag.IsValid())
+        {
+            USOTS_TagLibrary::RemoveTagFromActor(this, Subject, Tag);
+        }
+    }
+
+    if (Record.ReasonTag.IsValid())
+    {
+        USOTS_TagLibrary::AddTagToActor(this, Subject, Record.ReasonTag);
+    }
+
+    const FGameplayTag FocusTags[] = { FocusPlayer, FocusUnknown };
+    for (const FGameplayTag& Tag : FocusTags)
+    {
+        if (Tag.IsValid())
+        {
+            USOTS_TagLibrary::RemoveTagFromActor(this, Subject, Tag);
+        }
+    }
+
+    if (Record.FocusTag.IsValid())
+    {
+        USOTS_TagLibrary::AddTagToActor(this, Subject, Record.FocusTag);
+    }
+}
+
+void USOTS_GlobalStealthManagerSubsystem::AppendSuspicionEvent(FSOTS_GSM_AIRecord& Record, const FSOTS_AISuspicionReport& Report, double NowSeconds)
+{
+    FSOTS_GSM_AISuspicionEvent Event;
+    Event.Suspicion01 = Report.Suspicion01;
+    Event.ReasonTag = Report.ReasonTag;
+    Event.bHasLocation = Report.bHasLocation;
+    Event.Location = Report.Location;
+    Event.InstigatorActor = Report.InstigatorActor;
+    Event.TimestampSeconds = NowSeconds > 0.0 ? NowSeconds : Report.TimestampSeconds;
+
+    Record.RecentEvents.Add(Event);
+
+    const int32 MaxEvents = FMath::Max(1, ActiveConfig.EvidenceConfig.MaxEventsPerAI);
+    if (Record.RecentEvents.Num() > MaxEvents)
+    {
+        while (Record.RecentEvents.Num() > MaxEvents)
+        {
+            Record.RecentEvents.RemoveAt(0);
+        }
+    }
+}
+
+void USOTS_GlobalStealthManagerSubsystem::PruneOldEvents(FSOTS_GSM_AIRecord& Record, double NowSeconds) const
+{
+    const FSOTS_GSM_EvidenceConfig& Cfg = ActiveConfig.EvidenceConfig;
+    if (Cfg.WindowSeconds <= 0.0f || NowSeconds <= 0.0)
+    {
+        return;
+    }
+
+    const double Window = static_cast<double>(Cfg.WindowSeconds);
+
+    int32 FirstValidIndex = 0;
+    for (int32 Index = 0; Index < Record.RecentEvents.Num(); ++Index)
+    {
+        const FSOTS_GSM_AISuspicionEvent& Event = Record.RecentEvents[Index];
+        const double Age = NowSeconds - Event.TimestampSeconds;
+        if (Age <= Window)
+        {
+            FirstValidIndex = Index;
+            break;
+        }
+        FirstValidIndex = Index + 1;
+    }
+
+    if (FirstValidIndex > 0)
+    {
+        Record.RecentEvents.RemoveAt(0, FirstValidIndex, false);
+    }
+
+    const int32 MaxEvents = FMath::Max(1, Cfg.MaxEventsPerAI);
+    if (Record.RecentEvents.Num() > MaxEvents)
+    {
+        while (Record.RecentEvents.Num() > MaxEvents)
+        {
+            Record.RecentEvents.RemoveAt(0);
+        }
+    }
+}
+
+float USOTS_GlobalStealthManagerSubsystem::ComputeEvidencePoints(const FSOTS_GSM_AIRecord& Record, const FSOTS_AISuspicionReport& Incoming, const FSOTS_GSM_EvidenceConfig& Cfg) const
+{
+    float Points = 0.0f;
+
+    for (const FSOTS_GSM_AISuspicionEvent& Event : Record.RecentEvents)
+    {
+        if (Event.Suspicion01 < Cfg.MinSuspicionToCountAsEvidence)
+        {
+            continue;
+        }
+
+        float Multiplier = Cfg.EvidencePointsPerEvent;
+        if (const float* ReasonScale = Cfg.EvidenceReasonMultipliers.Find(Event.ReasonTag))
+        {
+            Multiplier *= *ReasonScale;
+        }
+
+        if (Incoming.InstigatorActor.IsValid() && Event.InstigatorActor == Incoming.InstigatorActor)
+        {
+            Multiplier *= Cfg.SameInstigatorMultiplier;
+        }
+
+        Points += Multiplier;
+    }
+
+    if (Cfg.MaxEvidencePoints > 0.0f)
+    {
+        Points = FMath::Clamp(Points, 0.0f, Cfg.MaxEvidencePoints);
+    }
+    else
+    {
+        Points = 0.0f;
+    }
+
+    return Points;
+}
+
+bool USOTS_GlobalStealthManagerSubsystem::ShouldLogMissingTag(const FName& TagName) const
+{
+    if (!TagName.IsNone() && !MissingTagWarnings.Contains(TagName))
+    {
+        MissingTagWarnings.Add(TagName);
+        return true;
+    }
+    return false;
+}
+
+FGameplayTag USOTS_GlobalStealthManagerSubsystem::RequestTagSafe(const TCHAR* TagName) const
+{
+    if (!TagName)
+    {
+        return FGameplayTag();
+    }
+
+    const FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName(TagName), false);
+    if (!Tag.IsValid())
+    {
+        if (ShouldLogMissingTag(FName(TagName)))
+        {
+            UE_LOG(LogSOTSGlobalStealth, Warning, TEXT("[GSM] Missing gameplay tag: %s"), TagName);
+        }
+    }
+
+    return Tag;
+}
+
+float USOTS_GlobalStealthManagerSubsystem::GetGlobalAlertnessTierWeight(ESOTS_AIAwarenessState State) const
+{
+    const FSOTS_GSM_GlobalAlertnessConfig& Cfg = ActiveConfig.GlobalAlertnessConfig;
+
+    switch (State)
+    {
+    case ESOTS_AIAwarenessState::Calm:
+        return Cfg.Weight_Unaware;
+    case ESOTS_AIAwarenessState::Investigating:
+        return Cfg.Weight_Suspicious;
+    case ESOTS_AIAwarenessState::Searching:
+        return Cfg.Weight_Investigating;
+    case ESOTS_AIAwarenessState::Alerted:
+        return Cfg.Weight_Alert;
+    case ESOTS_AIAwarenessState::Hostile:
+    default:
+        return Cfg.Weight_Combat;
+    }
+}
+
+bool USOTS_GlobalStealthManagerSubsystem::ApplyGlobalAlertnessTags(float Value)
+{
+    AActor* TargetActor = FindPlayerActor();
+    if (!TargetActor)
+    {
+        return false;
+    }
+
+    static const FGameplayTag CalmTag = RequestTagSafe(TEXT("SAS.Global.Alertness.Calm"));
+    static const FGameplayTag TenseTag = RequestTagSafe(TEXT("SAS.Global.Alertness.Tense"));
+    static const FGameplayTag AlertTag = RequestTagSafe(TEXT("SAS.Global.Alertness.Alert"));
+    static const FGameplayTag CriticalTag = RequestTagSafe(TEXT("SAS.Global.Alertness.Critical"));
+
+    FGameplayTag NewTag = CalmTag;
+    if (Value >= 0.75f)
+    {
+        NewTag = CriticalTag;
+    }
+    else if (Value >= 0.50f)
+    {
+        NewTag = AlertTag;
+    }
+    else if (Value >= 0.25f)
+    {
+        NewTag = TenseTag;
+    }
+
+    if (!NewTag.IsValid())
+    {
+        return false;
+    }
+
+    if (LastGlobalAlertnessTag.IsValid() && LastGlobalAlertnessTag != NewTag)
+    {
+        USOTS_TagLibrary::RemoveTagFromActor(this, TargetActor, LastGlobalAlertnessTag);
+    }
+
+    if (LastGlobalAlertnessTag != NewTag)
+    {
+        USOTS_TagLibrary::AddTagToActor(this, TargetActor, NewTag);
+        LastGlobalAlertnessTag = NewTag;
+        return true;
+    }
+
+    if (!ActorHasTag(TargetActor, NewTag))
+    {
+        USOTS_TagLibrary::AddTagToActor(this, TargetActor, NewTag);
+        LastGlobalAlertnessTag = NewTag;
+        return true;
+    }
+
+    return false;
+}
+
+void USOTS_GlobalStealthManagerSubsystem::SetGlobalAlertnessInternal(float NewValue, double TimestampSeconds, bool bForceBroadcast)
+{
+    const FSOTS_GSM_GlobalAlertnessConfig& Cfg = ActiveConfig.GlobalAlertnessConfig;
+    const float Clamped = FMath::Clamp(NewValue, Cfg.MinValue, Cfg.MaxValue);
+    const float OldValue = GlobalAlertness;
+    const float Delta = Clamped - OldValue;
+
+    GlobalAlertness = Clamped;
+
+    const double UseTimestamp = (TimestampSeconds > 0.0) ? TimestampSeconds : GetWorldTimeSecondsSafe();
+    LastGlobalAlertnessUpdateTimeSeconds = UseTimestamp;
+
+    const bool bTagChanged = ApplyGlobalAlertnessTags(GlobalAlertness);
+    if (bForceBroadcast || FMath::Abs(Delta) >= Cfg.UpdateMinDelta || bTagChanged)
+    {
+        OnGlobalAlertnessChanged.Broadcast(GlobalAlertness, OldValue);
+    }
+}
+
+void USOTS_GlobalStealthManagerSubsystem::StartGlobalAlertnessDecayTimer()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    World->GetTimerManager().ClearTimer(GlobalAlertnessDecayTimerHandle);
+    World->GetTimerManager().SetTimer(GlobalAlertnessDecayTimerHandle, this, &USOTS_GlobalStealthManagerSubsystem::UpdateGlobalAlertnessDecay, GlobalAlertnessTimerInterval, true, GlobalAlertnessTimerInterval);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::UpdateGlobalAlertnessDecay()
+{
+    const UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    const double Now = World->GetTimeSeconds();
+    if (LastGlobalAlertnessUpdateTimeSeconds <= 0.0)
+    {
+        LastGlobalAlertnessUpdateTimeSeconds = Now;
+        return;
+    }
+
+    const double Dt = Now - LastGlobalAlertnessUpdateTimeSeconds;
+    if (Dt <= 0.0)
+    {
+        return;
+    }
+
+    const FSOTS_GSM_GlobalAlertnessConfig& Cfg = ActiveConfig.GlobalAlertnessConfig;
+    const float Step = Cfg.DecayPerSecond * static_cast<float>(Dt);
+    if (Step <= KINDA_SMALL_NUMBER)
+    {
+        LastGlobalAlertnessUpdateTimeSeconds = Now;
+        return;
+    }
+
+    const float Baseline = FMath::Clamp(Cfg.Baseline, Cfg.MinValue, Cfg.MaxValue);
+    float NewValue = GlobalAlertness;
+
+    if (GlobalAlertness > Baseline + KINDA_SMALL_NUMBER)
+    {
+        NewValue = FMath::Max(GlobalAlertness - Step, Baseline);
+    }
+    else if (GlobalAlertness < Baseline - KINDA_SMALL_NUMBER)
+    {
+        NewValue = FMath::Min(GlobalAlertness + Step, Baseline);
+    }
+    else
+    {
+        LastGlobalAlertnessUpdateTimeSeconds = Now;
+        return;
+    }
+
+    SetGlobalAlertnessInternal(NewValue, Now);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ApplyGlobalAlertnessFromReport(float IncomingSuspicion, ESOTS_AIAwarenessState NewState, float EvidenceBonus, double TimestampSeconds)
+{
+    const FSOTS_GSM_GlobalAlertnessConfig& Cfg = ActiveConfig.GlobalAlertnessConfig;
+
+    float Increase = IncomingSuspicion * Cfg.SuspicionWeight;
+    Increase += GetGlobalAlertnessTierWeight(NewState);
+
+    if (Cfg.EvidenceBonusWeight > 0.0f && EvidenceBonus > 0.0f)
+    {
+        Increase += EvidenceBonus * Cfg.EvidenceBonusWeight;
+    }
+
+    double DtSeconds = 0.0;
+    if (TimestampSeconds > 0.0 && LastGlobalAlertnessUpdateTimeSeconds > 0.0)
+    {
+        DtSeconds = TimestampSeconds - LastGlobalAlertnessUpdateTimeSeconds;
+    }
+
+    if (DtSeconds <= 0.0)
+    {
+        DtSeconds = GlobalAlertnessTimerInterval;
+    }
+
+    if (Cfg.MaxIncreasePerSecond > 0.0f && DtSeconds > 0.0)
+    {
+        const float MaxIncrease = Cfg.MaxIncreasePerSecond * static_cast<float>(DtSeconds);
+        Increase = FMath::Min(Increase, MaxIncrease);
+    }
+
+    const float NewValue = GlobalAlertness + Increase;
+    SetGlobalAlertnessInternal(NewValue, TimestampSeconds);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ReportAISuspicionEx(
+    AActor* SubjectAI,
+    float Suspicion01,
+    FGameplayTag ReasonTag,
+    const FVector& Location,
+    bool bHasLocation,
+    AActor* InstigatorActor)
+{
+    // GSM guarantees: every accepted suspicion report updates AIRecord, broadcasts OnAISuspicionReported,
+    // and (if enabled) applies tags deterministically. State is derived from FinalSuspicion01 after
+    // evidence blend. CurrentReasonTag uses last reason wins. Per-AI suspicion decay is NOT performed
+    // by GSM. GlobalAlertness is independent and decays toward baseline.
+    if (!SubjectAI)
+    {
+        return;
+    }
+
+    const float ClampedSuspicion = FMath::Clamp(Suspicion01, 0.0f, 1.0f);
+    const FVector UseLocation = bHasLocation ? Location : SubjectAI->GetActorLocation();
+    const double Timestamp = GetWorldTimeSecondsSafe();
+
+    PruneInvalidAIRecords();
 
     FSOTS_StealthInputSample Input;
     Input.Type = ESOTS_StealthInputType::Perception;
     Input.StrengthNormalized = ClampedSuspicion;
-    Input.InstigatorActor = GuardActor;
+    Input.InstigatorActor = SubjectAI;
     Input.TargetActor = FindPlayerActor();
-    Input.WorldLocation = GuardActor->GetActorLocation();
-    Input.TimestampSeconds = GetWorldTimeSecondsSafe();
-    Input.SourceTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.AI")), false);
+    Input.WorldLocation = UseLocation;
+    Input.TimestampSeconds = Timestamp;
+    Input.SourceTag = ReasonTag.IsValid()
+        ? ReasonTag
+        : FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.AI")), false);
 
     FSOTS_StealthIngestReport IngestReport;
     if (!IngestSample(Input, IngestReport))
@@ -234,24 +745,183 @@ void USOTS_GlobalStealthManagerSubsystem::ReportAISuspicion(AActor* GuardActor, 
         LastReasonTag = Input.SourceTag;
     }
 
-    // Update or add this guard's suspicion entry.
-    GuardSuspicion.FindOrAdd(GuardActor) = ClampedSuspicion;
+    const FGameplayTag EffectiveReasonTag = ReasonTag.IsValid()
+        ? ReasonTag
+        : FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.AI.Reason.Generic")), false);
 
-    // Aggregate suspicion across all active guards (simple max for now).
+    if (EffectiveReasonTag.IsValid())
+    {
+        LastReasonTag = EffectiveReasonTag;
+    }
+
+    const FGameplayTag FocusTag = GetFocusTagForTarget(Input.TargetActor.Get());
+
+    FSOTS_AISuspicionReport Report;
+    Report.SubjectAI = SubjectAI;
+    Report.Suspicion01 = ClampedSuspicion;
+    Report.ReasonTag = EffectiveReasonTag;
+    Report.bHasLocation = bHasLocation;
+    Report.Location = bHasLocation ? Location : FVector::ZeroVector;
+    Report.InstigatorActor = InstigatorActor;
+    Report.TimestampSeconds = Timestamp;
+    LastAISuspicionReports.FindOrAdd(SubjectAI) = Report;
+
+    FSOTS_GSM_AIRecord& Record = AIRecords.FindOrAdd(SubjectAI);
+    const ESOTS_AIAwarenessState PrevState = Record.AwarenessState;
+    const float PrevSuspicion = Record.Suspicion01;
+
+    PruneOldEvents(Record, Timestamp);
+    AppendSuspicionEvent(Record, Report, Timestamp);
+
+    const FSOTS_GSM_EvidenceConfig& EvidenceCfg = ActiveConfig.EvidenceConfig;
+    const float EvidencePoints = ComputeEvidencePoints(Record, Report, EvidenceCfg);
+
+    float EvidenceBonus = 0.0f;
+    if (EvidenceCfg.MaxEvidencePoints > KINDA_SMALL_NUMBER)
+    {
+        EvidenceBonus = FMath::Clamp(EvidencePoints / EvidenceCfg.MaxEvidencePoints, 0.0f, 1.0f) * EvidenceCfg.MaxEvidenceSuspicionBonus;
+        EvidenceBonus = FMath::Clamp(EvidenceBonus, 0.0f, EvidenceCfg.MaxEvidenceSuspicionBonus);
+    }
+
+    const float BlendedBase = FMath::Lerp(ClampedSuspicion, PrevSuspicion, EvidenceCfg.PriorSuspicionBlendAlpha);
+    const float FinalSuspicion = FMath::Clamp(FMath::Max(ClampedSuspicion, BlendedBase) + EvidenceBonus, 0.0f, 1.0f);
+
+    GuardSuspicion.FindOrAdd(SubjectAI) = FinalSuspicion;
+
+    Record.SubjectAI = SubjectAI;
+    Record.Suspicion01 = FinalSuspicion;
+    Record.AwarenessState = ResolveAwarenessStateFromSuspicion(FinalSuspicion);
+    Record.AwarenessTierTag = GetAwarenessTierTag(Record.AwarenessState);
+    Record.ReasonTag = EffectiveReasonTag;
+
+    if (InstigatorActor)
+    {
+        Record.InstigatorActor = InstigatorActor;
+        Record.FocusTag = GetFocusTagForTarget(InstigatorActor);
+    }
+    else if (!Record.FocusTag.IsValid())
+    {
+        Record.FocusTag = FocusTag;
+    }
+
+    if (bHasLocation)
+    {
+        Record.bHasLocation = true;
+        Record.Location = Location;
+    }
+
+    Record.TimestampSeconds = Timestamp;
+
+    ApplyGlobalAlertnessFromReport(ClampedSuspicion, Record.AwarenessState, EvidenceBonus, Timestamp);
+
     float MaxSuspicion = 0.0f;
 
-    for (auto It = GuardSuspicion.CreateIterator(); It; ++It)
+    for (auto It = AIRecords.CreateIterator(); It; ++It)
     {
         if (!It.Key().IsValid())
         {
+            LastAISuspicionReports.Remove(It.Key());
+            GuardSuspicion.Remove(It.Key());
             It.RemoveCurrent();
             continue;
         }
 
-        MaxSuspicion = FMath::Max(MaxSuspicion, It.Value());
+        MaxSuspicion = FMath::Max(MaxSuspicion, It.Value().Suspicion01);
+        GuardSuspicion.FindOrAdd(It.Key()) = It.Value().Suspicion01;
     }
 
     SetAISuspicion(MaxSuspicion);
+
+    ApplyAwarenessTags(Record);
+
+    if (PrevState != Record.AwarenessState && OnAIAwarenessStateChanged.IsBound())
+    {
+        OnAIAwarenessStateChanged.Broadcast(SubjectAI, PrevState, Record.AwarenessState, Record);
+    }
+
+    if (OnAIRecordUpdated.IsBound())
+    {
+        OnAIRecordUpdated.Broadcast(Record);
+    }
+
+    if (OnAISuspicionReported.IsBound())
+    {
+        OnAISuspicionReported.Broadcast(Report);
+    }
+}
+
+bool USOTS_GlobalStealthManagerSubsystem::GetLastAISuspicionReport(AActor* SubjectAI, FSOTS_AISuspicionReport& OutReport) const
+{
+    OutReport = FSOTS_AISuspicionReport();
+
+    if (!SubjectAI)
+    {
+        return false;
+    }
+
+    if (const FSOTS_AISuspicionReport* Found = LastAISuspicionReports.Find(SubjectAI))
+    {
+        if (!Found->SubjectAI.IsValid())
+        {
+            return false;
+        }
+
+        OutReport = *Found;
+        return true;
+    }
+
+    if (const FSOTS_GSM_AIRecord* Record = AIRecords.Find(SubjectAI))
+    {
+        if (!Record->SubjectAI.IsValid())
+        {
+            return false;
+        }
+
+        OutReport.SubjectAI = Record->SubjectAI;
+        OutReport.Suspicion01 = Record->Suspicion01;
+        OutReport.ReasonTag = Record->ReasonTag;
+        OutReport.bHasLocation = Record->bHasLocation;
+        OutReport.Location = Record->Location;
+        OutReport.InstigatorActor = Record->InstigatorActor;
+        OutReport.TimestampSeconds = Record->TimestampSeconds;
+        return true;
+    }
+
+    return false;
+}
+
+bool USOTS_GlobalStealthManagerSubsystem::GetAIRecord(AActor* SubjectAI, FSOTS_GSM_AIRecord& OutRecord) const
+{
+    OutRecord = FSOTS_GSM_AIRecord();
+
+    if (!SubjectAI)
+    {
+        return false;
+    }
+
+    if (const FSOTS_GSM_AIRecord* Record = AIRecords.Find(SubjectAI))
+    {
+        if (!Record->SubjectAI.IsValid())
+        {
+            return false;
+        }
+
+        OutRecord = *Record;
+        return true;
+    }
+
+    return false;
+}
+
+ESOTS_AIAwarenessState USOTS_GlobalStealthManagerSubsystem::GetAwarenessStateForAI(AActor* SubjectAI) const
+{
+    FSOTS_GSM_AIRecord Record;
+    if (GetAIRecord(SubjectAI, Record))
+    {
+        return Record.AwarenessState;
+    }
+
+    return ESOTS_AIAwarenessState::Calm;
 }
 
 void USOTS_GlobalStealthManagerSubsystem::UpdateFromPlayer(const FSOTS_PlayerStealthState& PlayerState)
@@ -601,8 +1271,8 @@ void USOTS_GlobalStealthManagerSubsystem::UpdateGameplayTags()
         return;
     }
 
-    static const FGameplayTag BrightTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.Light.Bright")), false);
-    static const FGameplayTag DarkTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.Light.Dark")), false);
+    static const FGameplayTag BrightTag = RequestTagSafe(TEXT("SOTS.Stealth.Light.Bright"));
+    static const FGameplayTag DarkTag = RequestTagSafe(TEXT("SOTS.Stealth.Light.Dark"));
 
     const bool bBright = CurrentState.LightLevel01 > 0.6f;
     const bool bDark = CurrentState.ShadowLevel01 > 0.6f;
@@ -914,13 +1584,13 @@ FGameplayTag USOTS_GlobalStealthManagerSubsystem::GetTierTag(ESOTS_StealthTier T
     switch (Tier)
     {
     case ESOTS_StealthTier::Hidden:
-        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Hidden")), false);
+        return RequestTagSafe(TEXT("SOTS.Stealth.State.Hidden"));
     case ESOTS_StealthTier::Cautious:
-        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Cautious")), false);
+        return RequestTagSafe(TEXT("SOTS.Stealth.State.Cautious"));
     case ESOTS_StealthTier::Danger:
-        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Danger")), false);
+        return RequestTagSafe(TEXT("SOTS.Stealth.State.Danger"));
     case ESOTS_StealthTier::Compromised:
-        return FGameplayTag::RequestGameplayTag(FName(TEXT("SOTS.Stealth.State.Compromised")), false);
+        return RequestTagSafe(TEXT("SOTS.Stealth.State.Compromised"));
     default:
         return FGameplayTag();
     }
@@ -1297,6 +1967,8 @@ void USOTS_GlobalStealthManagerSubsystem::SetStealthConfig(const FSOTS_StealthSc
 {
     BaseConfig = InConfig;
     ResolveEffectiveConfig();
+    const FSOTS_GSM_GlobalAlertnessConfig& GlobalCfg = ActiveConfig.GlobalAlertnessConfig;
+    SetGlobalAlertnessInternal(FMath::Clamp(GlobalAlertness, GlobalCfg.MinValue, GlobalCfg.MaxValue), GetWorldTimeSecondsSafe());
     RecomputeGlobalScore();
 }
 
@@ -1310,6 +1982,8 @@ void USOTS_GlobalStealthManagerSubsystem::SetStealthConfigAsset(USOTS_StealthCon
     DefaultConfigAsset = InAsset;
     BaseConfig = InAsset->Config;
     ResolveEffectiveConfig();
+    const FSOTS_GSM_GlobalAlertnessConfig& GlobalCfg = ActiveConfig.GlobalAlertnessConfig;
+    SetGlobalAlertnessInternal(FMath::Clamp(GlobalAlertness, GlobalCfg.MinValue, GlobalCfg.MaxValue), GetWorldTimeSecondsSafe());
     RecomputeGlobalScore();
 }
 
@@ -1341,6 +2015,8 @@ FSOTS_GSM_Handle USOTS_GlobalStealthManagerSubsystem::PushStealthConfig(USOTS_St
         ConfigEntries.Num());
 
     ResolveEffectiveConfig();
+    const FSOTS_GSM_GlobalAlertnessConfig& GlobalCfg = ActiveConfig.GlobalAlertnessConfig;
+    SetGlobalAlertnessInternal(FMath::Clamp(GlobalAlertness, GlobalCfg.MinValue, GlobalCfg.MaxValue), GetWorldTimeSecondsSafe());
     RecomputeGlobalScore();
     return Handle;
 }
@@ -1378,6 +2054,8 @@ ESOTS_GSM_RemoveResult USOTS_GlobalStealthManagerSubsystem::PopStealthConfig(con
                 ConfigEntries.Num());
 
             ResolveEffectiveConfig();
+            const FSOTS_GSM_GlobalAlertnessConfig& GlobalCfg = ActiveConfig.GlobalAlertnessConfig;
+            SetGlobalAlertnessInternal(FMath::Clamp(GlobalAlertness, GlobalCfg.MinValue, GlobalCfg.MaxValue), GetWorldTimeSecondsSafe());
             RecomputeGlobalScore();
             return ESOTS_GSM_RemoveResult::Removed;
         }
@@ -1398,11 +2076,24 @@ void USOTS_GlobalStealthManagerSubsystem::ApplyProfileData(const FSOTS_GSMProfil
     ResetStealthState(ESOTS_GSM_ResetReason::ProfileLoaded);
 }
 
+void USOTS_GlobalStealthManagerSubsystem::BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot)
+{
+    BuildProfileData(InOutSnapshot.GSM);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot)
+{
+    ApplyProfileData(Snapshot.GSM);
+}
+
 void USOTS_GlobalStealthManagerSubsystem::ResetStealthState(ESOTS_GSM_ResetReason Reason)
 {
     // Clear dynamic stacks (modifiers/config overrides) but preserve BaseConfig/default asset.
     ModifierEntries.Reset();
     ConfigEntries.Reset();
+    GuardSuspicion.Reset();
+    LastAISuspicionReports.Reset();
+    AIRecords.Reset();
     ActiveStealthConfig = DefaultConfigAsset;
     ActiveConfig = BaseConfig;
     ResolveEffectiveConfig();
@@ -1419,6 +2110,9 @@ void USOTS_GlobalStealthManagerSubsystem::ResetStealthState(ESOTS_GSM_ResetReaso
     LastTierChangeTimeSeconds = 0.0;
     LastScoreUpdateTimeSeconds = GetWorldTimeSecondsSafe();
     LastAlertingInputTimeSeconds = 0.0;
+    const FSOTS_GSM_GlobalAlertnessConfig& GlobalAlertnessCfg = ActiveConfig.GlobalAlertnessConfig;
+    const float BaselineAlertness = FMath::Clamp(GlobalAlertnessCfg.Baseline, GlobalAlertnessCfg.MinValue, GlobalAlertnessCfg.MaxValue);
+    SetGlobalAlertnessInternal(BaselineAlertness, LastScoreUpdateTimeSeconds, true);
     LastAppliedTier = ESOTS_StealthTier::Hidden;
     LastAppliedTierTag = GetTierTag(LastAppliedTier);
 
@@ -1434,6 +2128,7 @@ void USOTS_GlobalStealthManagerSubsystem::ResetStealthState(ESOTS_GSM_ResetReaso
     UpdateGameplayTags();
     SyncPlayerStealthComponent();
     OnStealthStateChanged.Broadcast(CurrentState);
+    StartGlobalAlertnessDecayTimer();
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (ActiveConfig.bDebugLogStealthResets)

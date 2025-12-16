@@ -49,3 +49,42 @@ void USOTS_AIPerceptionLibrary::SOTS_ReportNoise(
     SOTS_TryReportNoise(WorldContextObject, Instigator, Location, Loudness, NoiseTag, /*bLogIfFailed=*/false);
 }
 
+bool USOTS_AIPerceptionLibrary::SOTS_TryReportDamageStimulus(
+    UObject* WorldContextObject,
+    AActor* VictimActor,
+    AActor* InstigatorActor,
+    float DamageAmount,
+    FGameplayTag DamageTag,
+    FVector Location,
+    bool bHasLocation,
+    bool bLogIfFailed)
+{
+    if (!WorldContextObject)
+    {
+        return false;
+    }
+
+    UWorld* World = WorldContextObject->GetWorld();
+    if (!World)
+    {
+        return false;
+    }
+
+    if (USOTS_AIPerceptionSubsystem* Subsys = World->GetSubsystem<USOTS_AIPerceptionSubsystem>())
+    {
+        return Subsys->TryReportDamageStimulus(VictimActor, InstigatorActor, DamageAmount, DamageTag, Location, bHasLocation);
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bLogIfFailed)
+    {
+        UE_LOG(LogSOTS_AIPerception, Verbose, TEXT("[AIPerc/Damage] Failed to report damage stimulus (missing subsystem) Victim=%s Instigator=%s LocValid=%s"),
+            *GetNameSafe(VictimActor),
+            *GetNameSafe(InstigatorActor),
+            bHasLocation ? TEXT("true") : TEXT("false"));
+    }
+#endif
+
+    return false;
+}
+

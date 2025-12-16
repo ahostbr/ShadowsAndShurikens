@@ -20,10 +20,7 @@ class USOTS_KEM_ExecutionCatalog;
 class ULevelSequence;
 class ULevelSequencePlayer;
 class ALevelSequenceActor;
-class FStreamableHandle;
-class ULevelSequence;
-class ULevelSequencePlayer;
-class ALevelSequenceActor;
+struct FStreamableHandle;
 
 USTRUCT(BlueprintType)
 struct FSOTS_KEMAnchorDebugInfo
@@ -493,8 +490,6 @@ private:
         TWeakObjectPtr<ULevelSequencePlayer> Player;
         TWeakObjectPtr<ALevelSequenceActor> SequenceActor;
         TSharedPtr<FStreamableHandle> StreamableHandle;
-        FDelegateHandle FinishedHandle;
-        FDelegateHandle StopHandle;
         bool bDestroySequenceActorOnFinish = true;
     };
 
@@ -536,6 +531,9 @@ private:
     bool StartLevelSequenceExecution(const USOTS_KEM_ExecutionDefinition* Def, const FSOTS_ExecutionContext& Context);
     void OnLevelSequenceAssetLoaded(FGuid RequestId);
     bool PlayLevelSequenceRun(FGuid RequestId, ULevelSequence* Sequence);
+    FGuid FindRequestIdForPlayer(const ULevelSequencePlayer* Player) const;
+    void HandleLevelSequenceFinished();
+    void HandleLevelSequenceStopped();
     void OnLevelSequenceFinishedInternal(FGuid RequestId, bool bSucceeded);
     void CleanupLevelSequenceRun(FGuid RequestId, bool bSucceeded);
     void StopAllActiveLevelSequences();

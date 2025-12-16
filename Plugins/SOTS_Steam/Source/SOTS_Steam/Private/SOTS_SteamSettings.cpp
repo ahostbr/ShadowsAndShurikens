@@ -18,10 +18,12 @@ FName USOTS_SteamSettings::GetCategoryName() const
     return FName(TEXT("SOTS"));
 }
 
+#if WITH_EDITOR
 FText USOTS_SteamSettings::GetSectionText() const
 {
     return NSLOCTEXT("SOTS_Steam", "SettingsSection", "Steam Integration");
 }
+#endif
 
 const USOTS_SteamSettings* USOTS_SteamSettings::Get()
 {

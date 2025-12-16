@@ -9,6 +9,10 @@
 class USOTS_AIPerceptionConfig;
 class USkeletalMeshComponent;
 class USOTS_GlobalStealthManagerSubsystem;
+class UDamageType;
+class UBlackboardComponent;
+class AController;
+class UBlackboardComponent;
 
 /**
  * Per-AI perception component. Tracks awareness of important targets
@@ -114,6 +118,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Perception")
     void ReportAlertStateChanged(bool bAlertedNow);
 
+    UFUNCTION()
+    void OnOwnerTakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
     // --- EVENTS ---
 
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnPerceptionStateChanged, ESOTS_PerceptionState, NewState);
@@ -151,7 +158,7 @@ public:
     FSOTS_OnAIPerceptionSuspicionChanged OnAIPerceptionSuspicionChanged;
 
     // Internal: called by subsystem to apply noise stim.
-    void HandleReportedNoise(const FVector& Location, float Loudness);
+    void HandleReportedNoise(const FVector& Location, float Loudness, AActor* InstigatorActor, FGameplayTag NoiseTag);
 
 protected:
     virtual void BeginPlay() override;
@@ -159,6 +166,8 @@ protected:
     virtual void OnUnregister() override;
 
 private:
+    friend class USOTS_AIPerceptionSubsystem;
+
     // Last reason used when clearing caches; useful for debugging lifecycle.
     ESOTS_AIPerceptionResetReason LastResetReason = ESOTS_AIPerceptionResetReason::Unknown;
 
@@ -187,6 +196,9 @@ private:
     void RefreshWatchedTargets();
 
     void UpdateBlackboardAndTags();
+    void WriteBlackboardSnapshot(UBlackboardComponent* BlackboardComp, AActor* PrimaryTargetActor, bool bHasLOSOnPrimary, const FVector& LastKnownLocation, bool bHasValidLastKnownLocation, float SuspicionNormalized, float PrimaryTargetAwareness, ESOTS_PerceptionState PerceptionState);
+
+    void ApplyDamageStimulus(AActor* InstigatorActor, float DamageAmount, FGameplayTag DamageTag, const FVector& Location, bool bHasLocation);
 
     void ApplyLOSStateTags(bool bHasLOS);
     void ApplyPerceptionStateTags(ESOTS_PerceptionState NewState);
@@ -213,7 +225,7 @@ private:
     void BroadcastSuspicionTelemetry(const FSOTS_AIPerceptionTelemetry& Telemetry, bool bDetectedChanged);
 
     USOTS_GlobalStealthManagerSubsystem* ResolveGSM();
-    void ReportSuspicionToGSM(float AISuspicion01, const FGameplayTag& ReasonTag, const FVector* OptionalLocation, bool bForceReport);
+    void ReportSuspicionToGSM(float AISuspicion01, const FGameplayTag& ReasonTag, const FVector* OptionalLocation, bool bForceReport, AActor* InstigatorActorOverride = nullptr);
 
 private:
     UPROPERTY()
@@ -242,7 +254,13 @@ private:
     bool bIsDetected = false;
     float PendingHearingStrength = 0.0f;
     float LastSuspicionNormalized = 0.0f;
+    bool bWarnedAboutLegacyBBFallback = false;
     FSOTS_LastPerceptionStimulus LastStimulusCache;
+    TMap<FGameplayTag, double> NextAllowedNoiseTimeByTag;
+    TMap<FGameplayTag, double> NextAllowedDamageTimeByTag;
+    FSOTS_DamageStimulus LastDamageStimulus;
+    bool bHasLastDamageStimulus = false;
+    bool bDamageDelegatesBound = false;
 
     // Last perception state observed for this guard. Used to detect
     // transitions and drive optional FX cues.

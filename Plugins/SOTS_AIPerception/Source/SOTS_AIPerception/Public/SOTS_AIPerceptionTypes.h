@@ -123,19 +123,119 @@ struct FSOTS_LastPerceptionStimulus
 };
 
 USTRUCT(BlueprintType)
+struct FSOTS_NoiseStimulusPolicy
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Noise")
+    float SuspicionDelta = 0.05f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Noise")
+    float MaxRange = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Noise")
+    float CooldownSeconds = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Noise")
+    float LoudnessScale = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Noise")
+    FGameplayTag OverrideReasonTag;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_DamageStimulus
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    TWeakObjectPtr<AActor> VictimActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    float DamageAmount = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    FGameplayTag DamageTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    bool bHasLocation = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Damage")
+    double TimestampSeconds = 0.0;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_DamageStimulusPolicy
+{
+    GENERATED_BODY()
+
+    // Suspicion impulse applied immediately (treated as normalized delta 0..1).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    float SuspicionImpulse = 0.25f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bScaleByDamageAmount = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    float SeverityRefDamage = 20.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    float MaxSeverityScale = 2.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bForceMinPerceptionState = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    int32 MinPerceptionState = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    float CooldownSeconds = 0.25f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    float MaxRange = 0.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bIgnoreSelf = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bIgnoreFriendly = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bIgnoreNeutral = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bIgnoreUnknown = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    FGameplayTag OverrideReasonTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|AI|Damage")
+    bool bAlwaysReportToGSM = true;
+};
+
+USTRUCT(BlueprintType)
 struct FSOTS_AIGuardPerceptionConfig
 {
     GENERATED_BODY()
 
+    // LEGACY (unused by current suspicion model; retained for asset compatibility).
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI")
     float SightSuspicionPerSecond = 0.25f;
 
+    // LEGACY (unused by current suspicion model; retained for asset compatibility).
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI")
     float HearingSuspicionPerEvent = 0.15f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI")
     float MaxSuspicion = 1.0f;
 
+    // LEGACY (unused by current suspicion model; retained for asset compatibility).
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI")
     float SuspicionDecayPerSecond = 0.1f;
 
@@ -233,6 +333,26 @@ struct FSOTS_AIGuardPerceptionConfig
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Tags")
     FGameplayTag ReasonTag_Generic;
 
+    // --- Noise handling ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Noise")
+    bool bIgnoreSelfNoise = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Noise")
+    bool bIgnoreFriendlyNoise = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Noise")
+    bool bIgnoreNeutralNoise = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Noise")
+    bool bIgnoreUnknownNoise = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Noise")
+    TMap<FGameplayTag, FSOTS_NoiseStimulusPolicy> NoisePolicies;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Noise")
+    FSOTS_NoiseStimulusPolicy DefaultNoisePolicy;
+
     // Dev-only: emit a verbose log if GSM cannot be resolved (off by default).
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|GSM|Debug")
     bool bDebugLogMissingGSM = false;
@@ -240,6 +360,14 @@ struct FSOTS_AIGuardPerceptionConfig
     // Dev-only: emit perception event logs (spotted/lost/suspicion changed). Off by default.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Debug")
     bool bDebugLogAIPerceptionEvents = false;
+
+    // --- Damage handling ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Damage")
+    TMap<FGameplayTag, FSOTS_DamageStimulusPolicy> DamagePolicies;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Damage")
+    FSOTS_DamageStimulusPolicy DefaultDamagePolicy;
 };
 
 USTRUCT(BlueprintType)
@@ -275,6 +403,10 @@ struct FSOTS_AIPerceptionBlackboardConfig
 {
     GENERATED_BODY()
 
+    // Object: primary/spotlight target currently driving suspicion.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")
+    FBlackboardKeySelector TargetActorKey;
+
     // Float: current normalized suspicion [0,1].
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")
     FBlackboardKeySelector SuspicionKey;
@@ -282,6 +414,14 @@ struct FSOTS_AIPerceptionBlackboardConfig
     // Int/Enum: high-level perception state as ESOTS_PerceptionState index.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")
     FBlackboardKeySelector StateKey;
+
+    // Vector: last known world-space location of the primary target.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")
+    FBlackboardKeySelector LastKnownLocationKey;
+
+    // Bool: whether the last known location is valid/populated.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")
+    FBlackboardKeySelector LastKnownLocationValidKey;
 
     // Bool: whether this AI currently has line of sight to the primary target.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")

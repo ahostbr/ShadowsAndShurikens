@@ -35,4 +35,8 @@ public:
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|MissionDirector", meta=(WorldContext="WorldContextObject"))
     static bool SOTS_IsMissionCompleted(const UObject* WorldContextObject, FGameplayTag MissionCompleteTag);
+
+    // Lightweight static validation for authored mission definitions (golden-path schema).
+    UFUNCTION(BlueprintCallable, Category="SOTS|Mission|Validation")
+    static bool ValidateMissionDefinition(const USOTS_MissionDefinition* MissionDef, FText& OutError);
 };

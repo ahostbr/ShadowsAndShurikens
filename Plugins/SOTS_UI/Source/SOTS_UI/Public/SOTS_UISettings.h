@@ -21,7 +21,9 @@ public:
     USOTS_UISettings(const FObjectInitializer& ObjectInitializer);
 
     virtual FName GetCategoryName() const override;
+#if WITH_EDITOR
     virtual FText GetSectionText() const override;
+#endif
 
     static const USOTS_UISettings* Get();
 

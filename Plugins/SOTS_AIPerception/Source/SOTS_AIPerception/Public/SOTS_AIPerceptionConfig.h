@@ -39,6 +39,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Detection")
     float DetectionSpeed_Peripheral = 0.5f;
 
+    // Suspicion decay for the overall guard state (mirrors GuardConfig->Config.DecayPerSecond).
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Detection")
+    float SuspicionDecayPerSecond = 0.1f;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Detection")
     float DetectionDecayPerSecond = 0.75f;
 

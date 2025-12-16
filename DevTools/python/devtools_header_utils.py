@@ -23,17 +23,18 @@ KNOWN_TOOLS = {
     "devtools_status_dashboard",
     "log_error_digest",
     "pack_template_generator",
+    "save_context_anchor",
 }
 
 PATH_LIKE_KEYS = {
     "path",
     "file",
-    "target",
-    "target_file",
-    "script_path",
-    "config_path",
+    "folder",
     "project_root",
-    "scope",
+    "root",
+    "source",
+    "dest",
+    "output",
 }
 
 TOOL_REQUIRED_FIELDS = {
@@ -58,59 +59,41 @@ def parse_header_block(text: str) -> Optional[Dict[str, str]]:
         return None
     block = text[start_idx:end_idx].splitlines()[1:]  # skip first line
     data: Dict[str, str] = {}
-    for line in block:
-        line = line.strip()
+    for raw in block:
+        line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        if ":" not in line:
+        if ":" in line:
+            k, v = line.split(":", 1)
+        elif "=" in line:
+            k, v = line.split("=", 1)
+        else:
             continue
-        key, value = line.split(":", 1)
-        data[key.strip().lower()] = value.strip()
+        data[k.strip().lower()] = v.strip()
     return data
 
 
-def load_header_from_file(path: str) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
-    if not os.path.isfile(path):
-        return None, f"file does not exist or is not a file: {path}"
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            text = f.read()
-    except Exception as exc:
-        return None, f"failed to read file: {exc}"
-    header = parse_header_block(text)
-    if header is None:
-        return None, "no [SOTS_DEVTOOLS] header block found"
-    return header, None
-
-
-def analyze_header_core(header: Dict[str, str]) -> Tuple[int, int, List[str]]:
+def validate_header_required_fields(header: Dict[str, str]) -> Tuple[int, int, List[str]]:
     msgs: List[str] = []
-    fatals = 0
     warns = 0
+    fatals = 0
 
-    tool = header.get("tool", "").strip()
+    tool = header.get("tool", "").strip().lower()
     if not tool:
-        msgs.append("FATAL: header missing required 'tool:' field")
-        fatals += 1
-    else:
-        msgs.append(f"OK: tool='{tool}'")
-        if tool not in KNOWN_TOOLS:
-            msgs.append(
-                "WARNING: tool not in KNOWN_TOOLS; may be fine but check spelling/config."
-            )
-            warns += 1
+        msgs.append("FATAL: Missing tool: in [SOTS_DEVTOOLS] header.")
+        return 1, 0, msgs
 
-    mode = header.get("mode", "").strip().lower()
-    if not mode:
-        msgs.append("WARNING: 'mode' not set; treating as 'manual' by convention.")
-        warns += 1
-    elif mode not in ("manual", "auto"):
-        msgs.append(f"WARNING: unexpected mode '{mode}', expected 'manual' or 'auto'.")
+    if tool not in KNOWN_TOOLS:
+        msgs.append(f"WARNING: Unknown tool '{tool}'. Add to KNOWN_TOOLS if intended.")
         warns += 1
 
-    for key in ("name", "plugin", "category"):
-        if not header.get(key, "").strip():
-            msgs.append(f"WARNING: recommended header field '{key}:' missing or empty.")
+    required = TOOL_REQUIRED_FIELDS.get(tool)
+    if not required:
+        return fatals, warns, msgs
+
+    for field in required:
+        if not header.get(field):
+            msgs.append(f"WARNING: tool '{tool}' missing recommended field '{field}:'")
             warns += 1
 
     return fatals, warns, msgs
@@ -128,30 +111,8 @@ def analyze_header_paths(header: Dict[str, str], project_root: str) -> Tuple[int
             continue
         candidate = value
         if not os.path.isabs(candidate):
-            candidate = os.path.join(project_root, candidate)
-        candidate = os.path.normpath(candidate)
-        if os.path.exists(candidate):
-            msgs.append(f"OK: {key} -> {candidate} exists")
-        else:
-            msgs.append(f"WARNING: {key} -> {candidate} does not exist")
-            warns += 1
-    return fatals, warns, msgs
-
-
-def analyze_header_tool_specific(header: Dict[str, str]) -> Tuple[int, int, List[str]]:
-    msgs: List[str] = []
-    fatals = 0
-    warns = 0
-    tool = header.get("tool", "").strip()
-    if not tool:
-        return fatals, warns, msgs
-    required = TOOL_REQUIRED_FIELDS.get(tool)
-    if not required:
-        return fatals, warns, msgs
-    for field in required:
-        if not header.get(field):
-            msgs.append(
-                f"WARNING: tool '{tool}' missing recommended field '{field}:'"
-            )
+            candidate = os.path.normpath(os.path.join(project_root, candidate))
+        if not os.path.exists(candidate):
+            msgs.append(f"WARNING: header path key '{key}' points to missing path: {candidate}")
             warns += 1
     return fatals, warns, msgs

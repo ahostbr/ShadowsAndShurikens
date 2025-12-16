@@ -1461,19 +1461,74 @@ bool USOTS_KEMManagerSubsystem::PlayLevelSequenceRun(FGuid RequestId, ULevelSequ
         }
     }
 
-    Run->FinishedHandle = Player->OnFinished.AddWeakLambda(this, [this, RequestId]()
-    {
-        OnLevelSequenceFinishedInternal(RequestId, true);
-    });
+    Player->OnFinished.RemoveDynamic(this, &USOTS_KEMManagerSubsystem::HandleLevelSequenceFinished);
+    Player->OnFinished.AddDynamic(this, &USOTS_KEMManagerSubsystem::HandleLevelSequenceFinished);
 
-    Run->StopHandle = Player->OnStopEvent.AddWeakLambda(this, [this, RequestId]()
-    {
-        OnLevelSequenceFinishedInternal(RequestId, false);
-    });
+    Player->OnStop.RemoveDynamic(this, &USOTS_KEMManagerSubsystem::HandleLevelSequenceStopped);
+    Player->OnStop.AddDynamic(this, &USOTS_KEMManagerSubsystem::HandleLevelSequenceStopped);
 
     Player->Play();
 
     return true;
+}
+
+FGuid USOTS_KEMManagerSubsystem::FindRequestIdForPlayer(const ULevelSequencePlayer* Player) const
+{
+    if (!Player)
+    {
+        return FGuid();
+    }
+
+    for (const TPair<FGuid, FActiveLevelSequenceRun>& Pair : ActiveLevelSequenceRuns)
+    {
+        if (Pair.Value.Player.Get() == Player)
+        {
+            return Pair.Key;
+        }
+    }
+
+    return FGuid();
+}
+
+void USOTS_KEMManagerSubsystem::HandleLevelSequenceFinished()
+{
+    FGuid RequestId;
+
+    for (const TPair<FGuid, FActiveLevelSequenceRun>& Pair : ActiveLevelSequenceRuns)
+    {
+        if (ULevelSequencePlayer* Player = Pair.Value.Player.Get())
+        {
+            if (!Player->IsPlaying())
+            {
+                RequestId = Pair.Key;
+                break;
+            }
+        }
+    }
+
+    if (RequestId.IsValid())
+    {
+        OnLevelSequenceFinishedInternal(RequestId, true);
+    }
+}
+
+void USOTS_KEMManagerSubsystem::HandleLevelSequenceStopped()
+{
+    FGuid RequestId;
+
+    for (const TPair<FGuid, FActiveLevelSequenceRun>& Pair : ActiveLevelSequenceRuns)
+    {
+        if (Pair.Value.Player.IsValid())
+        {
+            RequestId = Pair.Key;
+            break;
+        }
+    }
+
+    if (RequestId.IsValid())
+    {
+        OnLevelSequenceFinishedInternal(RequestId, false);
+    }
 }
 
 void USOTS_KEMManagerSubsystem::OnLevelSequenceFinishedInternal(FGuid RequestId, bool bSucceeded)
@@ -1498,8 +1553,8 @@ void USOTS_KEMManagerSubsystem::CleanupLevelSequenceRun(FGuid RequestId, bool bS
 
     if (ULevelSequencePlayer* Player = RunCopy.Player.Get())
     {
-        Player->OnFinished.Remove(RunCopy.FinishedHandle);
-        Player->OnStopEvent.Remove(RunCopy.StopHandle);
+        Player->OnFinished.RemoveDynamic(this, &USOTS_KEMManagerSubsystem::HandleLevelSequenceFinished);
+        Player->OnStop.RemoveDynamic(this, &USOTS_KEMManagerSubsystem::HandleLevelSequenceStopped);
         if (Player->IsPlaying())
         {
             Player->Stop();

@@ -11,7 +11,19 @@
 #include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
 
+#include "BEP_NodeJsonExport.h"
+#include "BEP_NodeJsonExportSettings.h"
+#include "BEP_NodeJsonTab.h"
+#include "BEP_NodeJsonUI.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#include "HAL/PlatformApplicationMisc.h"
+#include "UObject/UnrealType.h"
+#include "Framework/Commands/UICommandList.h"
+#include "ISettingsModule.h"
+
 #include "Widgets/SBEPExportPanel.h"
+#include "BEP_NodeJsonCommands.h"
 
 DEFINE_LOG_CATEGORY(LogBEP);
 
@@ -19,8 +31,20 @@ IMPLEMENT_MODULE(FBEPModule, BEP)
 
 static const FName BEPExportTabName(TEXT("BEPExportTab"));
 
+static FString PresetToString(const EBEP_NodeJsonPreset Preset)
+{
+	if (const UEnum* Enum = StaticEnum<EBEP_NodeJsonPreset>())
+	{
+		return Enum->GetNameStringByValue(static_cast<int64>(Preset));
+	}
+	return TEXT("Unknown");
+}
+
 void FBEPModule::StartupModule()
 {
+	RegisterNodeJsonCommands();
+	RegisterSettings();
+
 	// Console command: BEP.ExportAll [RootPath] [OutputDir] [Format]
 	// RootPath defaults to /Game
 	// OutputDir defaults to <Project>/Saved/BEPExport
@@ -103,13 +127,18 @@ void FBEPModule::StartupModule()
 
 	RegisterContentBrowserHooks();
 	RegisterTabSpawner();
+	FBEP_NodeJsonTab::Register();
 	RegisterMenus();
 }
 
 void FBEPModule::ShutdownModule()
 {
+	UnregisterSettings();
+	UnregisterNodeJsonCommands();
+
 	UnregisterContentBrowserHooks();
 	UnregisterTabSpawner();
+	FBEP_NodeJsonTab::Unregister();
 	MenuRegistrationHandle.Reset();
 }
 
@@ -242,20 +271,234 @@ void FBEPModule::RegisterMenus_Impl()
 		return;
 	}
 
-	static const FName SectionName("SOTS_Tools");
+	static const FName SectionName("BEP_Tools");
 	FToolMenuSection* Section = Menu->FindSection(SectionName);
 	if (!Section)
 	{
-		Section = &Menu->AddSection(SectionName, FText::FromString(TEXT("SOTS Tools")));
+		Section = &Menu->AddSection(SectionName, FText::FromString(TEXT("BEP Tools")));
 	}
 
-	Section->AddMenuEntry(
-		"OpenBEPExporter",
-		FText::FromString(TEXT("BEP Exporter")),
-		FText::FromString(TEXT("Open the BEP Exporter panel.")),
-		FSlateIcon(),
-		FUIAction(FExecuteAction::CreateLambda([]()
-		{
-			FGlobalTabmanager::Get()->TryInvokeTab(BEPExportTabName);
-		})));
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().OpenPanel, NodeJsonCommandList);
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().ExportSelection, NodeJsonCommandList);
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().CopySelection, NodeJsonCommandList);
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().ExportComments, NodeJsonCommandList);
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().ImportComments, NodeJsonCommandList);
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().WriteGoldenSamples, NodeJsonCommandList);
+	Section->AddMenuEntry(FBEPNodeJsonCommands::Get().SelfCheck, NodeJsonCommandList);
+}
+
+void FBEPModule::RegisterNodeJsonCommands()
+{
+	FBEPNodeJsonCommands::Register();
+	NodeJsonCommandList = MakeShared<FUICommandList>();
+	BindNodeJsonCommands();
+}
+
+void FBEPModule::UnregisterNodeJsonCommands()
+{
+	FBEPNodeJsonCommands::Unregister();
+	NodeJsonCommandList.Reset();
+}
+
+void FBEPModule::BindNodeJsonCommands()
+{
+	if (!NodeJsonCommandList.IsValid())
+	{
+		return;
+	}
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().OpenPanel,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteOpenNodeJsonPanel));
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().ExportSelection,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteExportNodeJson),
+		FCanExecuteAction::CreateRaw(this, &FBEPModule::CanRunNodeJsonSelectionAction));
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().CopySelection,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteCopyNodeJson),
+		FCanExecuteAction::CreateRaw(this, &FBEPModule::CanRunNodeJsonSelectionAction));
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().ExportComments,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteExportCommentJson),
+		FCanExecuteAction::CreateRaw(this, &FBEPModule::CanRunNodeJsonSelectionAction));
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().ImportComments,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteImportComments),
+		FCanExecuteAction::CreateRaw(this, &FBEPModule::CanImportComments));
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().WriteGoldenSamples,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteWriteGoldenSamples),
+		FCanExecuteAction::CreateRaw(this, &FBEPModule::CanRunNodeJsonSelectionAction));
+
+	NodeJsonCommandList->MapAction(
+		FBEPNodeJsonCommands::Get().SelfCheck,
+		FExecuteAction::CreateRaw(this, &FBEPModule::ExecuteSelfCheck),
+		FCanExecuteAction::CreateRaw(this, &FBEPModule::CanRunSelfCheck));
+}
+
+void FBEPModule::RegisterSettings()
+{
+	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+	{
+		SettingsModule->RegisterSettings(
+			"Editor",
+			"Plugins",
+			"BEPNodeJSON",
+			FText::FromString(TEXT("BEP Node JSON")),
+			FText::FromString(TEXT("Configure BEP Node JSON export defaults.")),
+			GetMutableDefault<UBEP_NodeJsonExportSettings>());
+	}
+}
+
+void FBEPModule::UnregisterSettings()
+{
+	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+	{
+		SettingsModule->UnregisterSettings("Editor", "Plugins", "BEPNodeJSON");
+	}
+}
+
+void FBEPModule::ExecuteOpenNodeJsonPanel()
+{
+	FGlobalTabmanager::Get()->TryInvokeTab(FBEP_NodeJsonTab::TabId);
+}
+
+void FBEPModule::ExecuteExportNodeJson()
+{
+	FBEP_NodeJsonExportOptions Opt = BEPNodeJsonUI::BuildOptionsFromSettings();
+
+	FString Json;
+	FString Stem;
+	FString Error;
+	int32 NodeCount = 0;
+	int32 EdgeCount = 0;
+	FBEP_NodeJsonExportStats Stats;
+	if (!BEP_NodeJson::ExportActiveSelectionToJson(Opt, Json, Stem, NodeCount, EdgeCount, &Error, &Stats, false))
+	{
+		const FString Reason = Error.IsEmpty() ? TEXT("Unknown error") : Error;
+		UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON] Export failed: %s"), *Reason);
+		BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Export failed: %s"), *Reason), false);
+		return;
+	}
+
+	FString SavedPath;
+	FString SummaryPath;
+	if (!BEP_NodeJson::SaveJsonToFile(Json, Stem, Opt, &Stats, SavedPath, &SummaryPath, &Error, false))
+	{
+		const FString Reason = Error.IsEmpty() ? TEXT("Save failed") : Error;
+		UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON] Save failed: %s"), *Reason);
+		BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Save failed: %s"), *Reason), false);
+		return;
+	}
+
+	UE_LOG(LogBEP, Log, TEXT("[BEP][NodeJSON] Saved: %s (Nodes=%d Edges=%d Preset=%s)"), *SavedPath, NodeCount, EdgeCount, *PresetToString(Opt.Preset));
+	if (!SummaryPath.IsEmpty())
+	{
+		UE_LOG(LogBEP, Log, TEXT("[BEP][NodeJSON] Summary: %s"), *SummaryPath);
+	}
+	BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Saved (%d nodes, %d edges): %s"), NodeCount, EdgeCount, *SavedPath), true);
+}
+
+void FBEPModule::ExecuteCopyNodeJson()
+{
+	FBEP_NodeJsonExportOptions Opt = BEPNodeJsonUI::BuildOptionsFromSettings();
+	FString Json;
+	FString Stem;
+	FString Error;
+	int32 NodeCount = 0;
+	int32 EdgeCount = 0;
+	FBEP_NodeJsonExportStats Stats;
+	if (!BEP_NodeJson::ExportActiveSelectionToJson(Opt, Json, Stem, NodeCount, EdgeCount, &Error, &Stats, false))
+	{
+		const FString Reason = Error.IsEmpty() ? TEXT("Unknown error") : Error;
+		UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON] Copy failed: %s"), *Reason);
+		BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Copy failed: %s"), *Reason), false);
+		return;
+	}
+
+	FPlatformApplicationMisc::ClipboardCopy(*Json);
+	UE_LOG(LogBEP, Log, TEXT("[BEP][NodeJSON] Copied to clipboard (Nodes=%d Edges=%d Preset=%s)"), NodeCount, EdgeCount, *PresetToString(Opt.Preset));
+	BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Copied Node JSON (%d nodes, %d edges)"), NodeCount, EdgeCount), true);
+}
+
+void FBEPModule::ExecuteExportCommentJson()
+{
+	FBEP_NodeJsonExportOptions Opt = BEPNodeJsonUI::BuildOptionsFromSettings();
+	FString Json;
+	FString Stem;
+	FString Error;
+	if (!BEP_NodeJson::ExportActiveSelectionToCommentJson(Opt, Json, Stem, nullptr, &Error))
+	{
+		const FString Reason = Error.IsEmpty() ? TEXT("Unknown error") : Error;
+		UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON] Comment export failed: %s"), *Reason);
+		BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Comment export failed: %s"), *Reason), false);
+		return;
+	}
+
+	FString SavedPath;
+	if (!BEP_NodeJson::SaveCommentJsonToFile(Json, Stem, Opt, SavedPath, nullptr, &Error, nullptr, false))
+	{
+		const FString Reason = Error.IsEmpty() ? TEXT("Save failed") : Error;
+		UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON] Comment save failed: %s"), *Reason);
+		BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Comment save failed: %s"), *Reason), false);
+		return;
+	}
+
+	UE_LOG(LogBEP, Log, TEXT("[BEP][NodeJSON] Comment JSON saved: %s"), *SavedPath);
+	BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Saved Comment JSON"), true);
+}
+
+void FBEPModule::ExecuteImportComments()
+{
+	BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Use the panel Import button for CSV import."), false);
+	FGlobalTabmanager::Get()->TryInvokeTab(FBEP_NodeJsonTab::TabId);
+}
+
+void FBEPModule::ExecuteWriteGoldenSamples()
+{
+	FString SummaryPath;
+	FString SuperPath;
+	FString AuditPath;
+	FString CommentPath;
+	FString TemplatePath;
+	FString Error;
+	if (!BEP_NodeJson::WriteGoldenSamples(SummaryPath, &Error, &SuperPath, &AuditPath, &CommentPath, &TemplatePath))
+	{
+		const FString Reason = Error.IsEmpty() ? TEXT("Unknown error") : Error;
+		UE_LOG(LogBEP, Warning, TEXT("[BEP][NodeJSON] Golden samples failed: %s"), *Reason);
+		BEPNodeJsonUI::ShowNodeJsonToast(FString::Printf(TEXT("Golden samples failed: %s"), *Reason), false);
+		return;
+	}
+
+	UE_LOG(LogBEP, Log, TEXT("[BEP][NodeJSON] Golden samples saved. Super=%s Audit=%s Comments=%s Template=%s Summary=%s"), *SuperPath, *AuditPath, *CommentPath, *TemplatePath, *SummaryPath);
+	BEPNodeJsonUI::ShowNodeJsonToast(TEXT("Golden samples written"), true);
+}
+
+void FBEPModule::ExecuteSelfCheck()
+{
+	FString Report;
+	const bool bOk = BEP_NodeJson::RunSelfCheck(Report);
+	UE_LOG(LogBEP, Log, TEXT("%s"), *Report);
+	BEPNodeJsonUI::ShowNodeJsonToast(bOk ? TEXT("Node JSON self-check passed") : TEXT("Node JSON self-check found issues"), bOk);
+}
+
+bool FBEPModule::CanRunNodeJsonSelectionAction() const
+{
+	return BEP_NodeJson::HasActiveBlueprintSelection(nullptr);
+}
+
+bool FBEPModule::CanImportComments() const
+{
+	return BEP_NodeJson::HasActiveBlueprintGraph(nullptr);
+}
+
+bool FBEPModule::CanRunSelfCheck() const
+{
+	return true;
 }

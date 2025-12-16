@@ -2,7 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "GameplayTagContainer.h"
+#include "TimerManager.h"
 #include "SOTS_GlobalStealthTypes.h"
+#include "SOTS_ProfileSnapshotProvider.h"
 #include "SOTS_ProfileTypes.h"
 #include "SOTS_StealthConfigDataAsset.h"
 #include "SOTS_GlobalStealthManagerSubsystem.generated.h"
@@ -10,10 +13,41 @@
 class AActor;
 class USOTS_PlayerStealthComponent;
 
+USTRUCT(BlueprintType)
+struct FSOTS_AISuspicionReport
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    TWeakObjectPtr<AActor> SubjectAI;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    float Suspicion01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FGameplayTag ReasonTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    bool bHasLocation = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|GSM|AI")
+    double TimestampSeconds = 0.0;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSOTS_StealthLevelChangedSignature, ESOTSStealthLevel, OldLevel, ESOTSStealthLevel, NewLevel, float, NewScore);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_PlayerDetectionStateChangedSignature, bool, bDetected);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_StealthScoreChangedSignature, const FSOTS_StealthScoreChange&, Change);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_StealthTierTransitionSignature, const FSOTS_StealthTierTransition&, Transition);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnAISuspicionReported, const FSOTS_AISuspicionReport&, Report);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FSOTS_OnAIAwarenessStateChanged, AActor*, SubjectAI, ESOTS_AIAwarenessState, OldState, ESOTS_AIAwarenessState, NewState, const FSOTS_GSM_AIRecord&, Record);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnAIRecordUpdated, const FSOTS_GSM_AIRecord&, Record);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_OnGlobalAlertnessChanged, float, NewValue, float, OldValue);
 
 /**
  * Global, non-ticking stealth aggregator.
@@ -24,7 +58,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_StealthTierTransitionSignature
  * and UI decisions.
  */
 UCLASS()
-class SOTS_GLOBALSTEALTHMANAGER_API USOTS_GlobalStealthManagerSubsystem : public UGameInstanceSubsystem
+class SOTS_GLOBALSTEALTHMANAGER_API USOTS_GlobalStealthManagerSubsystem : public UGameInstanceSubsystem, public ISOTS_ProfileSnapshotProvider
 {
     GENERATED_BODY()
 
@@ -74,6 +108,18 @@ public:
     // Broadcast when the binary detection state changes.
     UPROPERTY(BlueprintAssignable, Category="Stealth")
     FSOTS_PlayerDetectionStateChangedSignature OnPlayerDetectionStateChanged;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|GSM|AI")
+    FSOTS_OnAISuspicionReported OnAISuspicionReported;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|GSM|AI")
+    FSOTS_OnAIAwarenessStateChanged OnAIAwarenessStateChanged;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|GSM|AI")
+    FSOTS_OnAIRecordUpdated OnAIRecordUpdated;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|GSM|Global")
+    FSOTS_OnGlobalAlertnessChanged OnGlobalAlertnessChanged;
 
 public:
     /**
@@ -125,8 +171,24 @@ public:
     // Called when AI bridge updates suspicion (0..1).
     void SetAISuspicion(float In01);
 
+    // LEGACY: Shim for callers that only send suspicion strength; forwards to ReportAISuspicionEx.
     UFUNCTION(BlueprintCallable, Category="SOTS|Stealth|AI")
     void ReportAISuspicion(AActor* GuardActor, float SuspicionNormalized);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|GSM|AI")
+    void ReportAISuspicionEx(AActor* SubjectAI, float Suspicion01, FGameplayTag ReasonTag, const FVector& Location, bool bHasLocation, AActor* InstigatorActor);
+
+    UFUNCTION(BlueprintPure, Category="SOTS|GSM|AI")
+    bool GetLastAISuspicionReport(AActor* SubjectAI, FSOTS_AISuspicionReport& OutReport) const;
+
+    UFUNCTION(BlueprintPure, Category="SOTS|GSM|Global")
+    float GetGlobalAlertness() const { return GlobalAlertness; }
+
+    UFUNCTION(BlueprintPure, Category="SOTS|GSM|AI")
+    bool GetAIRecord(AActor* SubjectAI, FSOTS_GSM_AIRecord& OutRecord) const;
+
+    UFUNCTION(BlueprintPure, Category="SOTS|GSM|AI")
+    ESOTS_AIAwarenessState GetAwarenessStateForAI(AActor* SubjectAI) const;
 
     // Event-driven update from the player component (no Tick required).
     void UpdateFromPlayer(const FSOTS_PlayerStealthState& PlayerState);
@@ -178,6 +240,12 @@ private:
     // aggregated AISuspicion term in the stealth score.
     UPROPERTY()
     TMap<TWeakObjectPtr<AActor>, float> GuardSuspicion;
+
+    UPROPERTY()
+    TMap<TWeakObjectPtr<AActor>, FSOTS_AISuspicionReport> LastAISuspicionReports;
+
+    UPROPERTY()
+    TMap<TWeakObjectPtr<AActor>, FSOTS_GSM_AIRecord> AIRecords;
 
     // Stack of config assets used for scoped overrides (e.g., per-mission).
     TArray<FGSM_ConfigEntry> ConfigEntries;
@@ -250,8 +318,11 @@ public:
 
     void BuildProfileData(FSOTS_GSMProfileData& OutData) const;
     void ApplyProfileData(const FSOTS_GSMProfileData& InData);
+    virtual void BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot) override;
+    virtual void ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot) override;
 
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Deinitialize() override;
 
 private:
     bool IngestSample(const FSOTS_StealthInputSample& Sample, FSOTS_StealthIngestReport& OutReport);
@@ -259,9 +330,24 @@ private:
     double GetWorldTimeSecondsSafe() const;
     float GetMinSecondsBetweenType(const FSOTS_StealthIngestTuning& Tuning, ESOTS_StealthInputType Type) const;
     void ResolveEffectiveConfig();
-    void DebugDumpStackToLog() const;
     void ApplyStealthStateTags(AActor* TargetActor, ESOTS_StealthTier NewTier, float NewScore, const FSOTS_StealthTierTransition& Transition);
     bool ActorHasTag(AActor* Actor, const FGameplayTag& Tag) const;
+    ESOTS_AIAwarenessState ResolveAwarenessStateFromSuspicion(float Suspicion01) const;
+    FGameplayTag GetAwarenessTierTag(ESOTS_AIAwarenessState State) const;
+    FGameplayTag GetFocusTagForTarget(AActor* TargetActor) const;
+    void ApplyAwarenessTags(const FSOTS_GSM_AIRecord& Record);
+    void PruneInvalidAIRecords();
+    void AppendSuspicionEvent(FSOTS_GSM_AIRecord& Record, const FSOTS_AISuspicionReport& Report, double NowSeconds);
+    void PruneOldEvents(FSOTS_GSM_AIRecord& Record, double NowSeconds) const;
+    float ComputeEvidencePoints(const FSOTS_GSM_AIRecord& Record, const FSOTS_AISuspicionReport& Incoming, const FSOTS_GSM_EvidenceConfig& Cfg) const;
+    FGameplayTag RequestTagSafe(const TCHAR* TagName) const;
+    bool ShouldLogMissingTag(const FName& TagName) const;
+    void ApplyGlobalAlertnessFromReport(float IncomingSuspicion, ESOTS_AIAwarenessState NewState, float EvidenceBonus, double TimestampSeconds);
+    void UpdateGlobalAlertnessDecay();
+    void StartGlobalAlertnessDecayTimer();
+    float GetGlobalAlertnessTierWeight(ESOTS_AIAwarenessState State) const;
+    bool ApplyGlobalAlertnessTags(float Value);
+    void SetGlobalAlertnessInternal(float NewValue, double TimestampSeconds, bool bForceBroadcast = false);
 
     void UpdateShadowCandidateForPlayerIfNeeded();
     AActor* FindPlayerActor() const;
@@ -273,11 +359,16 @@ private:
     double LastTierChangeTimeSeconds = 0.0;
     double LastScoreUpdateTimeSeconds = 0.0;
     double LastAlertingInputTimeSeconds = 0.0;
+    double LastGlobalAlertnessUpdateTimeSeconds = 0.0;
     float SmoothedStealthScore = 0.0f;
     float LastBroadcastStealthScore = 0.0f;
+    float GlobalAlertness = 0.0f;
     FGameplayTag LastReasonTag;
+    FGameplayTag LastGlobalAlertnessTag;
     ESOTS_StealthTier LastAppliedTier = ESOTS_StealthTier::Hidden;
     FGameplayTag LastAppliedTierTag;
+    FTimerHandle GlobalAlertnessDecayTimerHandle;
+    mutable TSet<FName> MissingTagWarnings;
 
     FVector DominantDirectionalLightDirWS = FVector::ForwardVector;
     bool bHasDominantDirectionalLightDir = false;

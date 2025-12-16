@@ -3,6 +3,7 @@
 #include "SOTS_MMSSLog.h"
 #include "SOTS_MMSS_MissionMusicLibrary.h"
 #include "SOTS_ProfileTypes.h"
+#include "SOTS_ProfileSubsystem.h"
 
 #include "Components/AudioComponent.h"
 #include "Engine/AssetManager.h"
@@ -26,6 +27,14 @@ void USOTS_MMSSSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     CachedWorld = nullptr;
     CurrentStreamableHandle.Reset();
 
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->RegisterProvider(this, 0);
+        }
+    }
+
     UE_LOG(LogSOTSMusicManager, Log, TEXT("[MusicManager] Initialized."));
 }
 
@@ -46,6 +55,14 @@ void USOTS_MMSSSubsystem::Deinitialize()
     bWasPlayingBeforeWorldChange = false;
     LastFadeOutTimeFromTrack = 0.0f;
     bHasLastFadeOutTime = false;
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->UnregisterProvider(this);
+        }
+    }
 
     UE_LOG(LogSOTSMusicManager, Log, TEXT("[MusicManager] Deinitialized."));
 
@@ -140,6 +157,16 @@ void USOTS_MMSSSubsystem::ApplyProfileData(const FSOTS_MMSSProfileData& InData)
     {
         RequestMusicByTag(nullptr, CurrentMusicRoleTag, true, -1.0f, -1.0f);
     }
+}
+
+void USOTS_MMSSSubsystem::BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot)
+{
+    BuildProfileData(InOutSnapshot.Music);
+}
+
+void USOTS_MMSSSubsystem::ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot)
+{
+    ApplyProfileData(Snapshot.Music);
 }
 
 void USOTS_MMSSSubsystem::StopMusic(float FadeOutTime)

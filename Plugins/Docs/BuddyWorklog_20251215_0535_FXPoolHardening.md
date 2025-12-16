@@ -1,0 +1,22 @@
+# Buddy Worklog — FX Pool Hardening
+
+- Goal: Harden SOTS_FX pooled component lifecycle with caps, reclaim, and visibility into pool usage.
+- Changes made:
+  - Added pooled entry bookkeeping (in-use flag + last use time) and per-cue caps for Niagara/audio pooling with optional recycling when exhausted.
+  - Wired completion callbacks to return components to the pool and detach on release/reclaim to avoid stale attachments.
+  - Added debug stats surface for pooled components plus optional verbose pool logging.
+- Files touched:
+  - Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Public/SOTSFXTypes.h
+  - Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Public/SOTS_FXManagerSubsystem.h
+  - Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXManagerSubsystem.cpp
+  - Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Public/SOTS_FXBlueprintLibrary.h
+  - Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXBlueprintLibrary.cpp
+- Notes:
+  - Pool caps default to 8 pooled / 12 active per cue, with optional recycling when caps are hit and dev-only logging toggle.
+  - Reclaim path reuses oldest component; completion delegates return components to the free list.
+- Verification:
+  - No builds or runtime tests executed (per instructions). Basic sanity via code inspection; relies on delegate callbacks to release pooled components.
+- Cleanup:
+  - Deleted Plugins/SOTS_FX_Plugin/Binaries and Plugins/SOTS_FX_Plugin/Intermediate after edits.
+- Follow-ups:
+  - Consider pooling support for the new tag-driven Niagara/audio path if needed to reduce spawn churn.

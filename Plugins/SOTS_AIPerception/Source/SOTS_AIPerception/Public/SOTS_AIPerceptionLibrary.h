@@ -27,5 +27,16 @@ public:
         FVector Location,
         float Loudness,
         FGameplayTag NoiseTag);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|AIPerception", meta=(WorldContext="WorldContextObject"))
+    static bool SOTS_TryReportDamageStimulus(
+        UObject* WorldContextObject,
+        AActor* VictimActor,
+        AActor* InstigatorActor,
+        float DamageAmount,
+        FGameplayTag DamageTag,
+        FVector Location,
+        bool bHasLocation,
+        bool bLogIfFailed = false);
 };
 

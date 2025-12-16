@@ -7,6 +7,10 @@
 #include "SOTS_GlobalStealthTypes.h"
 #include "SOTS_AbilityBase.generated.h"
 
+struct F_SOTS_AbilityDefinition;
+struct F_SOTS_AbilityHandle;
+struct F_SOTS_AbilityActivationContext;
+
 class UAC_SOTS_Abilitys;
 class AActor;
 
@@ -61,4 +65,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="SOTS|Stealth")
     void RemoveStealthModifierFromWorld(FName SourceId) const;
+
+    static USOTS_AbilityBase* GetAbilityInstance(UObject* Outer, const F_SOTS_AbilityDefinition& Definition, const F_SOTS_AbilityHandle& Handle);
 };

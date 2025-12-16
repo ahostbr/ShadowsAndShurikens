@@ -3,6 +3,7 @@
 #include "SOTS_GAS_AbilityRequirementLibraryAsset.h"
 #include "SOTS_GAS_SkillTreeLibrary.h"
 #include "Subsystems/SOTS_GAS_StealthBridgeSubsystem.h"
+#include "Subsystems/SOTS_AbilityFXSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Internationalization/Text.h"
@@ -264,6 +265,19 @@ bool USOTS_GAS_AbilityRequirementLibrary::EvaluateAbilityFromLibraryWithReason(
     OutDebugDescription = DescribeAbilityRequirementCheckResult(Result);
 
     return Result.bMeetsAllRequirements;
+}
+
+void USOTS_GAS_AbilityRequirementLibrary::TriggerFailureFX(const UObject* WorldContextObject, FGameplayTag FailureFXTag)
+{
+    if (!FailureFXTag.IsValid())
+    {
+        return;
+    }
+
+    if (USOTS_AbilityFXSubsystem* FXSubsystem = USOTS_AbilityFXSubsystem::Get(WorldContextObject))
+    {
+        FXSubsystem->TriggerAbilityFX(FailureFXTag, FGameplayTag(), nullptr);
+    }
 }
 
 FText USOTS_GAS_AbilityRequirementLibrary::DescribeAbilityRequirementCheckResult(

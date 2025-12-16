@@ -18,5 +18,9 @@ class SOTS_FX_PLUGIN_API USOTS_FXDefinitionLibrary : public UDataAsset
 public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
     TArray<FSOTS_FXDefinition> Definitions;
+
+    /** Optional priority used when the library is registered. Higher wins; default 0. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|FX")
+    int32 Priority = 0;
 };
 

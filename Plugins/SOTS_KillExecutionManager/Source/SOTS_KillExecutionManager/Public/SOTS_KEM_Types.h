@@ -10,6 +10,8 @@
 #include "Data/SOTS_AbilityTypes.h"
 #include "SOTS_OmniTraceKEMPresetLibrary.h"
 #include "MovieSceneSequencePlayer.h"
+#include "LevelSequence.h"
+#include "ContextualAnimSceneAsset.h"
 
 #include "SOTS_KEMAuthoringTypes.h"
 #include "SOTS_KEM_Types.generated.h"

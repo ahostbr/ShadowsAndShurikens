@@ -2,11 +2,16 @@
 
 #include "SOTS_FXCueDefinition.h"
 #include "SOTS_FXDefinitionLibrary.h"
+#include "SOTS_ProfileSubsystem.h"
 
+#include "Algo/Sort.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/World.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Sound/SoundBase.h"
+#include "Sound/SoundAttenuation.h"
+#include "Sound/SoundConcurrency.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
@@ -24,10 +29,21 @@ void USOTS_FXManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
     CueMap.Reset();
     CuePools.Reset();
+    RegisteredLibraries.Reset();
+    SortedLibraries.Reset();
     RegisteredLibraryDefinitions.Reset();
+    NextRegistrationOrder = 0;
     bRegistryReady = false;
 
-    BuildRegistryFromLibraries();
+    SeedLibrariesFromConfig();
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->RegisterProvider(this, 0);
+        }
+    }
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bValidateFXRegistryOnInit)
@@ -35,16 +51,25 @@ void USOTS_FXManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         ValidateLibraryDefinitions();
     }
 #endif
-
-    bRegistryReady = true;
 }
 
 void USOTS_FXManagerSubsystem::Deinitialize()
 {
+    SortedLibraries.Reset();
+    RegisteredLibraries.Reset();
     RegisteredLibraryDefinitions.Reset();
     bRegistryReady = false;
     CuePools.Reset();
     CueMap.Reset();
+    NextRegistrationOrder = 0;
+
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USOTS_ProfileSubsystem* ProfileSubsystem = GI->GetSubsystem<USOTS_ProfileSubsystem>())
+        {
+            ProfileSubsystem->UnregisterProvider(this);
+        }
+    }
 
     SingletonInstance = nullptr;
 
@@ -56,42 +81,262 @@ USOTS_FXManagerSubsystem* USOTS_FXManagerSubsystem::Get()
     return SingletonInstance.Get();
 }
 
+bool USOTS_FXManagerSubsystem::RegisterLibrary(USOTS_FXDefinitionLibrary* Library, int32 Priority)
+{
+    return RegisterLibraryInternal(Library, Priority, true);
+}
+
+bool USOTS_FXManagerSubsystem::RegisterLibraries(const TArray<USOTS_FXDefinitionLibrary*>& InLibraries, int32 Priority)
+{
+    bool bChanged = false;
+    for (USOTS_FXDefinitionLibrary* Library : InLibraries)
+    {
+        bChanged |= RegisterLibraryInternal(Library, Priority, false);
+    }
+
+    if (bChanged)
+    {
+        RebuildLibraryOrderAndRegistry();
+    }
+
+    return bChanged;
+}
+
+bool USOTS_FXManagerSubsystem::UnregisterLibrary(USOTS_FXDefinitionLibrary* Library)
+{
+    if (!Library)
+    {
+        return false;
+    }
+
+    const int32 Removed = RegisteredLibraries.RemoveAll([Library](const FSOTS_FXRegisteredLibrary& Entry)
+    {
+        return Entry.Library == Library;
+    });
+
+    if (Removed > 0)
+    {
+        RebuildLibraryOrderAndRegistry();
+        return true;
+    }
+
+    return false;
+}
+
+bool USOTS_FXManagerSubsystem::RegisterLibrarySoft(TSoftObjectPtr<USOTS_FXDefinitionLibrary> Library, int32 Priority)
+{
+    FSOTS_FXSoftLibraryRegistration Entry;
+    Entry.Library = Library;
+    Entry.Priority = Priority;
+
+    return RegisterSoftLibraryInternal(Entry, true);
+}
+
+bool USOTS_FXManagerSubsystem::RegisterLibraryInternal(USOTS_FXDefinitionLibrary* Library, int32 Priority, bool bRebuildRegistry)
+{
+    if (!IsValid(Library))
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bLogLibraryRegistration)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Rejecting library registration (null or pending kill)."));
+        }
+#endif
+        return false;
+    }
+
+    bool bChanged = false;
+    const int32 EffectivePriority = Priority;
+
+    if (FSOTS_FXRegisteredLibrary* Existing = RegisteredLibraries.FindByPredicate([Library](const FSOTS_FXRegisteredLibrary& Entry)
+    {
+        return Entry.Library == Library;
+    }))
+    {
+        if (Existing->Priority != EffectivePriority)
+        {
+            Existing->Priority = EffectivePriority;
+            bChanged = true;
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bLogLibraryRegistration)
+            {
+                UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Updated library %s priority to %d (order %d)."), *Library->GetName(), EffectivePriority, Existing->RegistrationOrder);
+            }
+#endif
+        }
+    }
+    else
+    {
+        FSOTS_FXRegisteredLibrary& NewEntry = RegisteredLibraries.AddDefaulted_GetRef();
+        NewEntry.Library = Library;
+        NewEntry.Priority = EffectivePriority;
+        NewEntry.RegistrationOrder = NextRegistrationOrder++;
+        bChanged = true;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bLogLibraryRegistration)
+        {
+            UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Registered library %s (Priority=%d, Order=%d)."), *Library->GetName(), EffectivePriority, NewEntry.RegistrationOrder);
+        }
+#endif
+    }
+
+    if (bChanged && bRebuildRegistry)
+    {
+        RebuildLibraryOrderAndRegistry();
+    }
+
+    return bChanged;
+}
+
+bool USOTS_FXManagerSubsystem::RegisterSoftLibraryInternal(const FSOTS_FXSoftLibraryRegistration& Entry, bool bRebuildRegistry)
+{
+    if (!Entry.Library.IsValid() && !Entry.Library.ToSoftObjectPath().IsValid())
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bLogLibraryRegistration)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Soft library entry is empty; skipping."));
+        }
+#endif
+        return false;
+    }
+
+    USOTS_FXDefinitionLibrary* Loaded = Entry.Library.LoadSynchronous();
+    if (!Loaded)
+    {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bLogLibraryRegistration)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Soft library %s failed to load."), *Entry.Library.ToString());
+        }
+#endif
+        return false;
+    }
+
+    return RegisterLibraryInternal(Loaded, Entry.Priority, bRebuildRegistry);
+}
+
+void USOTS_FXManagerSubsystem::SeedLibrariesFromConfig()
+{
+    RegisteredLibraries.Reset();
+    SortedLibraries.Reset();
+    RegisteredLibraryDefinitions.Reset();
+    bRegistryReady = false;
+
+    for (const FSOTS_FXLibraryRegistration& Entry : LibraryRegistrations)
+    {
+        RegisterLibraryInternal(Entry.Library, Entry.Priority, false);
+    }
+
+    for (const TObjectPtr<USOTS_FXDefinitionLibrary>& Library : Libraries)
+    {
+        RegisterLibraryInternal(Library.Get(), Library ? Library->Priority : 0, false);
+    }
+
+    for (const FSOTS_FXSoftLibraryRegistration& Entry : SoftLibraryRegistrations)
+    {
+        RegisterSoftLibraryInternal(Entry, false);
+    }
+
+    RebuildLibraryOrderAndRegistry();
+}
+
+void USOTS_FXManagerSubsystem::RebuildSortedLibraries()
+{
+    SortedLibraries.Reset();
+
+    RegisteredLibraries.RemoveAll([this](const FSOTS_FXRegisteredLibrary& Entry)
+    {
+        const bool bInvalid = !Entry.IsValid();
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bInvalid && bLogLibraryRegistration)
+        {
+            const FString Name = Entry.Library ? Entry.Library->GetName() : TEXT("<null>");
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Dropping invalid library entry %s."), *Name);
+        }
+#endif
+        return bInvalid;
+    });
+
+    SortedLibraries = RegisteredLibraries;
+
+    SortedLibraries.StableSort([](const FSOTS_FXRegisteredLibrary& A, const FSOTS_FXRegisteredLibrary& B)
+    {
+        if (A.Priority != B.Priority)
+        {
+            return A.Priority > B.Priority;
+        }
+        return A.RegistrationOrder < B.RegistrationOrder;
+    });
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogCueResolution)
+    {
+        UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Library order => %s"), *BuildLibraryOrderDebugString());
+    }
+#endif
+}
+
+void USOTS_FXManagerSubsystem::RebuildLibraryOrderAndRegistry()
+{
+    bRegistryReady = false;
+    RebuildSortedLibraries();
+    BuildRegistryFromLibraries();
+    bRegistryReady = true;
+}
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+FString USOTS_FXManagerSubsystem::BuildLibraryOrderDebugString() const
+{
+    TArray<FString> Parts;
+    Parts.Reserve(SortedLibraries.Num());
+
+    for (const FSOTS_FXRegisteredLibrary& Entry : SortedLibraries)
+    {
+        const FString Name = Entry.Library ? Entry.Library->GetName() : TEXT("<null>");
+        Parts.Add(FString::Printf(TEXT("%s(P=%d,Idx=%d)"), *Name, Entry.Priority, Entry.RegistrationOrder));
+    }
+
+    return FString::Join(Parts, TEXT(" -> "));
+}
+#endif
+
 void USOTS_FXManagerSubsystem::BuildRegistryFromLibraries()
 {
     RegisteredLibraryDefinitions.Reset();
 
-    for (const TObjectPtr<USOTS_FXDefinitionLibrary>& Library : Libraries)
+    for (const FSOTS_FXRegisteredLibrary& Entry : SortedLibraries)
     {
-        if (!Library)
+        if (!Entry.IsValid())
         {
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-            if (bValidateFXRegistryOnInit && bWarnOnMissingFXAssets)
-            {
-                UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Library reference is null; skipping."));
-            }
-#endif
             continue;
         }
 
-        for (const FSOTS_FXDefinition& Def : Library->Definitions)
+        for (const FSOTS_FXDefinition& Def : Entry.Library->Definitions)
         {
             if (!Def.FXTag.IsValid())
             {
                 continue;
             }
 
-            if (RegisteredLibraryDefinitions.Contains(Def.FXTag))
+            if (FSOTS_FXResolvedDefinitionEntry* Existing = RegisteredLibraryDefinitions.Find(Def.FXTag))
             {
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
                 if (bWarnOnDuplicateFXTags)
                 {
-                    UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s; first definition kept."), *Def.FXTag.ToString());
+                    const FString FirstLib = Existing->SourceLibrary ? Existing->SourceLibrary->GetName() : TEXT("<unknown>");
+                    UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s; keeping %s (P=%d,Order=%d), skipping %s."), *Def.FXTag.ToString(), *FirstLib, Existing->Priority, Existing->RegistrationOrder, *Entry.Library->GetName());
                 }
 #endif
                 continue;
             }
 
-            RegisteredLibraryDefinitions.Add(Def.FXTag, Def);
+            FSOTS_FXResolvedDefinitionEntry& Added = RegisteredLibraryDefinitions.Add(Def.FXTag);
+            Added.Definition = Def;
+            Added.SourceLibrary = Entry.Library;
+            Added.Priority = Entry.Priority;
+            Added.RegistrationOrder = Entry.RegistrationOrder;
         }
     }
 }
@@ -175,22 +420,72 @@ void USOTS_FXManagerSubsystem::GetActiveFXCountsInternal(int32& OutActiveNiagara
     {
         const FSOTS_FXCuePool& Pool = Pair.Value;
 
-        for (UNiagaraComponent* NiagaraComp : Pool.NiagaraComponents)
+        for (const FSOTS_FXPooledNiagaraEntry& Entry : Pool.NiagaraComponents)
         {
+            UNiagaraComponent* NiagaraComp = Entry.Component.Get();
             if (NiagaraComp && NiagaraComp->IsActive())
             {
                 ++OutActiveNiagara;
             }
         }
 
-        for (UAudioComponent* AudioComp : Pool.AudioComponents)
+        for (const FSOTS_FXPooledAudioEntry& Entry : Pool.AudioComponents)
         {
+            UAudioComponent* AudioComp = Entry.Component.Get();
             if (AudioComp && AudioComp->IsPlaying())
             {
                 ++OutActiveAudio;
             }
         }
     }
+}
+
+FSOTS_FXPoolStats USOTS_FXManagerSubsystem::GetPoolStats() const
+{
+    FSOTS_FXPoolStats Stats;
+
+    for (const TPair<TObjectPtr<USOTS_FXCueDefinition>, FSOTS_FXCuePool>& Pair : CuePools)
+    {
+        const FSOTS_FXCuePool& Pool = Pair.Value;
+
+        for (const FSOTS_FXPooledNiagaraEntry& Entry : Pool.NiagaraComponents)
+        {
+            if (!Entry.Component)
+            {
+                continue;
+            }
+
+            ++Stats.TotalPooledNiagara;
+            if (Entry.Component->IsActive())
+            {
+                ++Stats.ActiveNiagara;
+            }
+            else
+            {
+                ++Stats.FreeNiagara;
+            }
+        }
+
+        for (const FSOTS_FXPooledAudioEntry& Entry : Pool.AudioComponents)
+        {
+            if (!Entry.Component)
+            {
+                continue;
+            }
+
+            ++Stats.TotalPooledAudio;
+            if (Entry.Component->IsPlaying())
+            {
+                ++Stats.ActiveAudio;
+            }
+            else
+            {
+                ++Stats.FreeAudio;
+            }
+        }
+    }
+
+    return Stats;
 }
 
 void USOTS_FXManagerSubsystem::GetRegisteredCuesInternal(TArray<FGameplayTag>& OutTags, TArray<USOTS_FXCueDefinition*>& OutDefinitions) const
@@ -241,6 +536,21 @@ void USOTS_FXManagerSubsystem::ApplyProfileData(const FSOTS_FXProfileData& InDat
     bBloodEnabled = InData.bBloodEnabled;
     bHighIntensityFX = InData.bHighIntensityFX;
     bCameraMotionFXEnabled = InData.bCameraMotionFXEnabled;
+}
+
+void USOTS_FXManagerSubsystem::BuildProfileSnapshot(FSOTS_ProfileSnapshot& InOutSnapshot)
+{
+    BuildProfileData(InOutSnapshot.FX);
+}
+
+void USOTS_FXManagerSubsystem::ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot)
+{
+    ApplyProfileData(Snapshot.FX);
+}
+
+void USOTS_FXManagerSubsystem::ApplyFXProfileSettings(const FSOTS_FXProfileData& InData)
+{
+    ApplyProfileData(InData);
 }
 
 void USOTS_FXManagerSubsystem::RequestFXCue(FGameplayTag FXCueTag, AActor* Instigator, AActor* Target)
@@ -464,16 +774,8 @@ FSOTS_FXRequestReport USOTS_FXManagerSubsystem::ProcessFXRequest(const FSOTS_FXR
     }
 
     FString PolicyFail;
-    const ESOTS_FXRequestResult PolicyResult = EvaluatePolicy(Definition, PolicyFail);
-    if (PolicyResult != ESOTS_FXRequestResult::Success)
-    {
-        SetFailure(PolicyResult, ESOTS_FXRequestStatus::MissingContext, PolicyFail);
-        if (OutLegacyResult)
-        {
-            *OutLegacyResult = Legacy;
-        }
-        return Report;
-    }
+    ESOTS_FXRequestResult PolicyResult = ESOTS_FXRequestResult::Success;
+    bool bAllowCameraShake = true;
 
     // Validate attachment requirements.
     if (Request.SpawnSpace != ESOTS_FXSpawnSpace::World && !Request.AttachComponent)
@@ -486,44 +788,28 @@ FSOTS_FXRequestReport USOTS_FXManagerSubsystem::ProcessFXRequest(const FSOTS_FXR
         return Report;
     }
 
-    FVector ResolvedLocation = Request.Location;
-    FRotator ResolvedRotation = Request.Rotation;
+    FSOTS_FXExecutionParams ExecParams = BuildExecutionParams(Request, Definition, ResolvedTag);
 
-    if (Request.SpawnSpace != ESOTS_FXSpawnSpace::World && Request.AttachComponent)
+    if (!EvaluateFXPolicy(*Definition, ExecParams, PolicyResult, PolicyFail, bAllowCameraShake))
     {
-        const FTransform Xf = Request.AttachComponent->GetComponentTransform();
-        ResolvedLocation = Xf.GetLocation();
-        ResolvedRotation = Xf.Rotator();
+        SetFailure(PolicyResult, ESOTS_FXRequestStatus::MissingContext, PolicyFail);
+        if (OutLegacyResult)
+        {
+            *OutLegacyResult = Legacy;
+        }
+        return Report;
     }
 
-    float EffectiveScale = Request.Scale;
-    if (EffectiveScale <= 0.0f)
+    ExecParams.bAllowCameraShake = bAllowCameraShake;
+    const FSOTS_FXRequestReport ExecReport = ExecuteCue(ExecParams, Definition, Request, OutLegacyResult ? OutLegacyResult : &Legacy);
+    (void)Legacy;
+
+    if (ExecReport.Result != ESOTS_FXRequestResult::Success)
     {
-        EffectiveScale = 1.0f;
-    }
-    EffectiveScale *= Definition ? Definition->DefaultScale : 1.0f;
-
-    Report.Result = ESOTS_FXRequestResult::Success;
-    Legacy = ConvertReportToLegacy(Report, Request, ResolvedLocation, ResolvedRotation, EffectiveScale, Definition);
-
-    BroadcastResolvedFX(
-        Report.ResolvedCueTag,
-        Request.Instigator,
-        Request.Target,
-        Definition,
-        ResolvedLocation,
-        ResolvedRotation,
-        Request.SpawnSpace,
-        Request.AttachComponent,
-        Request.AttachSocketName,
-        EffectiveScale);
-
-    if (OutLegacyResult)
-    {
-        *OutLegacyResult = Legacy;
+        MaybeLogFXFailure(ExecReport, TEXT("ExecuteCue"));
     }
 
-    return Report;
+    return ExecReport;
 }
 
 void USOTS_FXManagerSubsystem::MaybeLogFXFailure(const FSOTS_FXRequestReport& Report, const TCHAR* Reason) const
@@ -585,18 +871,47 @@ FSOTS_FXRequestResult USOTS_FXManagerSubsystem::ConvertReportToLegacy(const FSOT
     return Legacy;
 }
 
-ESOTS_FXRequestResult USOTS_FXManagerSubsystem::EvaluatePolicy(const FSOTS_FXDefinition* Definition, FString& OutFailReason) const
+bool USOTS_FXManagerSubsystem::EvaluateFXPolicy(const FSOTS_FXDefinition& Definition, const FSOTS_FXExecutionParams& Params, ESOTS_FXRequestResult& OutResult, FString& OutFailReason, bool& bOutAllowCameraShake) const
 {
-    OutFailReason.Reset();
+    (void)Params;
 
-    if (!Definition)
+    OutResult = ESOTS_FXRequestResult::Success;
+    OutFailReason.Reset();
+    bOutAllowCameraShake = true;
+
+    switch (Definition.ToggleBehavior)
     {
-        OutFailReason = TEXT("Definition missing");
-        return ESOTS_FXRequestResult::NotFound;
+        case ESOTS_FXToggleBehavior::ForceDisable:
+            OutResult = ESOTS_FXRequestResult::DisabledByPolicy;
+            OutFailReason = TEXT("ForceDisabled");
+            return false;
+        case ESOTS_FXToggleBehavior::IgnoreGlobalToggles:
+            // Do nothing – ignore global gating entirely.
+            break;
+        case ESOTS_FXToggleBehavior::RespectGlobalToggles:
+        default:
+            if (!bBloodEnabled && Definition.bIsBloodFX)
+            {
+                OutResult = ESOTS_FXRequestResult::DisabledByPolicy;
+                OutFailReason = TEXT("BloodDisabled");
+                return false;
+            }
+
+            if (!bHighIntensityFX && Definition.bIsHighIntensityFX)
+            {
+                OutResult = ESOTS_FXRequestResult::DisabledByPolicy;
+                OutFailReason = TEXT("HighIntensityDisabled");
+                return false;
+            }
+
+            if (!bCameraMotionFXEnabled && Definition.CameraShakeClass && !Definition.bCameraShakeIgnoresGlobalToggle)
+            {
+                bOutAllowCameraShake = false;
+            }
+            break;
     }
 
-    // No per-cue policy metadata yet; global toggles are currently pass-through.
-    return ESOTS_FXRequestResult::Success;
+    return true;
 }
 
 ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag, const FSOTS_FXDefinition*& OutDefinition, FGameplayTag& OutResolvedTag, FString& OutFailReason) const
@@ -604,6 +919,8 @@ ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag
     OutDefinition = nullptr;
     OutResolvedTag = FXTag;
     OutFailReason.Reset();
+
+    const int32 LibraryCount = SortedLibraries.Num();
 
     if (!FXTag.IsValid())
     {
@@ -617,14 +934,339 @@ ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag
         return ESOTS_FXRequestResult::InvalidWorld;
     }
 
-    if (const FSOTS_FXDefinition* Def = RegisteredLibraryDefinitions.Find(FXTag))
+    if (const FSOTS_FXResolvedDefinitionEntry* Entry = RegisteredLibraryDefinitions.Find(FXTag))
     {
-        OutDefinition = Def;
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bDebugLogCueResolution)
+        {
+            const FString LibName = Entry->SourceLibrary ? Entry->SourceLibrary->GetName() : TEXT("<unknown>");
+            UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Resolved %s via %s (P=%d,Order=%d)."), *FXTag.ToString(), *LibName, Entry->Priority, Entry->RegistrationOrder);
+        }
+#endif
+        OutDefinition = &Entry->Definition;
         return ESOTS_FXRequestResult::Success;
     }
 
-    OutFailReason = TEXT("Definition not found");
+    OutFailReason = FString::Printf(TEXT("Definition not found (searched %d libraries)"), LibraryCount);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugLogCueResolution)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Failed to resolve %s after searching %d libraries."), *FXTag.ToString(), LibraryCount);
+    }
+#endif
     return ESOTS_FXRequestResult::NotFound;
+}
+
+FSOTS_FXExecutionParams USOTS_FXManagerSubsystem::BuildExecutionParams(const FSOTS_FXRequest& Request, const FSOTS_FXDefinition* Definition, const FGameplayTag& ResolvedTag) const
+{
+    FSOTS_FXExecutionParams Params;
+    Params.WorldContextObject = const_cast<USOTS_FXManagerSubsystem*>(this);
+    Params.RequestedTag = Request.FXTag;
+    Params.ResolvedTag = ResolvedTag;
+    Params.Instigator = Request.Instigator;
+    Params.Target = Request.Target;
+    Params.AttachComponent = Request.AttachComponent;
+    Params.AttachSocketName = Request.AttachSocketName;
+    Params.bHasSurfaceNormal = Request.bHasSurfaceNormal;
+    Params.SurfaceNormal = Request.SurfaceNormal;
+    Params.SpawnSpace = (Request.SpawnSpace != ESOTS_FXSpawnSpace::World)
+        ? Request.SpawnSpace
+        : (Definition ? Definition->DefaultSpace : ESOTS_FXSpawnSpace::World);
+    Params.Location = Request.Location;
+    Params.Rotation = Request.Rotation;
+    Params.Scale = Request.Scale > 0.0f ? Request.Scale : 1.0f;
+    Params.bAllowCameraShake = true;
+    if (Definition)
+    {
+        Params.Scale *= Definition->DefaultScale;
+    }
+
+    return Params;
+}
+
+void USOTS_FXManagerSubsystem::ApplySurfaceAlignment(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, FVector& InOutLocation, FRotator& InOutRotation) const
+{
+    if (!Definition || !Definition->bAlignToSurfaceNormal || !Params.bHasSurfaceNormal || Params.SurfaceNormal.IsNearlyZero())
+    {
+        return;
+    }
+
+    const FVector Normal = Params.SurfaceNormal.GetSafeNormal();
+    InOutRotation = FRotationMatrix::MakeFromZ(Normal).Rotator();
+    (void)InOutLocation;
+}
+
+void USOTS_FXManagerSubsystem::ApplyOffsets(const FSOTS_FXDefinition* Definition, bool bAttached, FVector& InOutLocation, FRotator& InOutRotation) const
+{
+    if (!Definition)
+    {
+        return;
+    }
+
+    const FVector Offset = Definition->LocationOffset;
+    const FRotator RotOffset = Definition->RotationOffset;
+
+    if (bAttached)
+    {
+        InOutLocation += Offset;
+        InOutRotation += RotOffset;
+    }
+    else
+    {
+        InOutLocation += InOutRotation.RotateVector(Offset);
+        InOutRotation += RotOffset;
+    }
+}
+
+UNiagaraComponent* USOTS_FXManagerSubsystem::SpawnNiagara(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, const FVector& SpawnLocation, const FRotator& SpawnRotation, float SpawnScale, UWorld* World) const
+{
+    if (!Definition || !World)
+    {
+        return nullptr;
+    }
+
+    UNiagaraSystem* NiagaraSystem = Definition->NiagaraSystem.LoadSynchronous();
+    if (!NiagaraSystem)
+    {
+        return nullptr;
+    }
+
+    UNiagaraComponent* NiagaraComp = nullptr;
+    if (Params.SpawnSpace != ESOTS_FXSpawnSpace::World && Params.AttachComponent)
+    {
+        NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+            NiagaraSystem,
+            Params.AttachComponent,
+            Params.AttachSocketName,
+            SpawnLocation,
+            SpawnRotation,
+            EAttachLocation::KeepRelativeOffset,
+            /*bAutoDestroy=*/true,
+            /*bAutoActivate=*/true,
+            ENCPoolMethod::None,
+            /*bPreCullCheck=*/true);
+
+        if (NiagaraComp)
+        {
+            NiagaraComp->SetRelativeScale3D(FVector(SpawnScale));
+        }
+    }
+    else
+    {
+        NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            World,
+            NiagaraSystem,
+            SpawnLocation,
+            SpawnRotation,
+            FVector(SpawnScale),
+            /*bAutoDestroy=*/true,
+            /*bAutoActivate=*/true,
+            ENCPoolMethod::None,
+            /*bPreCullCheck=*/true);
+    }
+
+    if (NiagaraComp)
+    {
+        ApplyNiagaraParameters(NiagaraComp, Definition);
+    }
+
+    return NiagaraComp;
+}
+
+void USOTS_FXManagerSubsystem::ApplyNiagaraParameters(UNiagaraComponent* NiagaraComp, const FSOTS_FXDefinition* Definition) const
+{
+    if (!NiagaraComp || !Definition)
+    {
+        return;
+    }
+
+    for (const TPair<FName, float>& Pair : Definition->NiagaraFloatParameters)
+    {
+        NiagaraComp->SetVariableFloat(Pair.Key, Pair.Value);
+    }
+
+    for (const TPair<FName, FVector>& Pair : Definition->NiagaraVectorParameters)
+    {
+        NiagaraComp->SetVariableVec3(Pair.Key, Pair.Value);
+    }
+
+    for (const TPair<FName, FLinearColor>& Pair : Definition->NiagaraColorParameters)
+    {
+        NiagaraComp->SetVariableLinearColor(Pair.Key, Pair.Value);
+    }
+}
+
+UAudioComponent* USOTS_FXManagerSubsystem::SpawnAudio(const FSOTS_FXDefinition* Definition, const FSOTS_FXExecutionParams& Params, const FVector& SpawnLocation, const FRotator& SpawnRotation, UWorld* World) const
+{
+    if (!Definition || !World)
+    {
+        return nullptr;
+    }
+
+    USoundBase* Sound = Definition->Sound.LoadSynchronous();
+    if (!Sound)
+    {
+        return nullptr;
+    }
+
+    USoundAttenuation* Attenuation = Definition->SoundAttenuation.IsNull() ? nullptr : Definition->SoundAttenuation.LoadSynchronous();
+    USoundConcurrency* Concurrency = Definition->SoundConcurrency.IsNull() ? nullptr : Definition->SoundConcurrency.LoadSynchronous();
+
+    if (Params.SpawnSpace != ESOTS_FXSpawnSpace::World && Params.AttachComponent)
+    {
+        return UGameplayStatics::SpawnSoundAttached(
+            Sound,
+            Params.AttachComponent,
+            Params.AttachSocketName,
+            SpawnLocation,
+            EAttachLocation::KeepRelativeOffset,
+            /*bStopWhenAttachedToDestroyed=*/false,
+            Definition->VolumeMultiplier,
+            Definition->PitchMultiplier,
+            /*StartTime=*/0.0f,
+            Attenuation,
+            Concurrency,
+            /*bAutoDestroy=*/true);
+    }
+
+    return UGameplayStatics::SpawnSoundAtLocation(
+        World,
+        Sound,
+        SpawnLocation,
+        SpawnRotation,
+        Definition->VolumeMultiplier,
+        Definition->PitchMultiplier,
+        /*StartTime=*/0.0f,
+        Attenuation,
+        Concurrency,
+        /*bAutoDestroy=*/true);
+}
+
+void USOTS_FXManagerSubsystem::TriggerCameraShake(const FSOTS_FXDefinition* Definition, UWorld* World) const
+{
+    if (!Definition || !World || !Definition->CameraShakeClass)
+    {
+        return;
+    }
+
+    if (!bCameraMotionFXEnabled)
+    {
+        return;
+    }
+
+    if (APlayerController* PC = World->GetFirstPlayerController())
+    {
+        PC->ClientStartCameraShake(Definition->CameraShakeClass, Definition->CameraShakeScale);
+    }
+}
+
+FSOTS_FXRequestReport USOTS_FXManagerSubsystem::ExecuteCue(const FSOTS_FXExecutionParams& Params, const FSOTS_FXDefinition* Definition, const FSOTS_FXRequest& OriginalRequest, FSOTS_FXRequestResult* OutLegacyResult)
+{
+    FSOTS_FXRequestReport Report;
+    Report.RequestedCueTag = Params.RequestedTag;
+    Report.ResolvedCueTag = Params.ResolvedTag;
+
+    FSOTS_FXRequestResult Legacy;
+    Legacy.FXTag = Params.ResolvedTag.IsValid() ? Params.ResolvedTag : Params.RequestedTag;
+    Legacy.SpawnSpace = Params.SpawnSpace;
+    Legacy.AttachComponent = Params.AttachComponent;
+    Legacy.AttachSocketName = Params.AttachSocketName;
+    Legacy.Instigator = Params.Instigator;
+    Legacy.Target = Params.Target;
+    Legacy.Location = Params.Location;
+    Legacy.Rotation = Params.Rotation;
+    Legacy.ResolvedScale = Params.Scale;
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        Report.Result = ESOTS_FXRequestResult::InvalidWorld;
+        Legacy.Status = ESOTS_FXRequestStatus::MissingContext;
+        Legacy.bSucceeded = false;
+        if (OutLegacyResult)
+        {
+            *OutLegacyResult = Legacy;
+        }
+        return Report;
+    }
+
+    FVector SpawnLocation = Params.Location;
+    FRotator SpawnRotation = Params.Rotation;
+
+    ApplySurfaceAlignment(Definition, Params, SpawnLocation, SpawnRotation);
+    ApplyOffsets(Definition, Params.SpawnSpace != ESOTS_FXSpawnSpace::World, SpawnLocation, SpawnRotation);
+
+    const float SpawnScale = Params.Scale > 0.0f ? Params.Scale : 1.0f;
+    const bool bShouldTriggerCameraShake = Definition && Definition->CameraShakeClass && Params.bAllowCameraShake;
+    const bool bHasCameraShakeConfigured = Definition && Definition->CameraShakeClass;
+
+    UNiagaraComponent* NiagaraComp = SpawnNiagara(Definition, Params, SpawnLocation, SpawnRotation, SpawnScale, World);
+    UAudioComponent* AudioComp = SpawnAudio(Definition, Params, SpawnLocation, SpawnRotation, World);
+    if (bShouldTriggerCameraShake)
+    {
+        TriggerCameraShake(Definition, World);
+    }
+
+    Report.SpawnedObject = NiagaraComp ? static_cast<UObject*>(NiagaraComp) : static_cast<UObject*>(AudioComp);
+
+    const bool bAnyFXSpawned = (NiagaraComp || AudioComp);
+
+    if (!bShouldTriggerCameraShake && !bAnyFXSpawned && bHasCameraShakeConfigured && !Params.bAllowCameraShake)
+    {
+        Report.Result = ESOTS_FXRequestResult::DisabledByPolicy;
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        const FString ShakeNote = TEXT("ShakeSkipped(CameraMotionDisabled)");
+        Report.DebugMessage = Report.DebugMessage.IsEmpty() ? ShakeNote : FString::Printf(TEXT("%s %s"), *Report.DebugMessage, *ShakeNote);
+#endif
+    }
+    else if (bAnyFXSpawned || bShouldTriggerCameraShake)
+    {
+        Report.Result = ESOTS_FXRequestResult::Success;
+    }
+    else
+    {
+        Report.Result = ESOTS_FXRequestResult::FailedToSpawn;
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        Report.DebugMessage = TEXT("No FX assets spawned.");
+        if (bLogFXRequestFailures)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Failed to spawn FX for %s (no assets)."), *Params.RequestedTag.ToString());
+        }
+#endif
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!Params.bAllowCameraShake && bHasCameraShakeConfigured)
+    {
+        const FString ShakeNote = TEXT("ShakeSkipped(CameraMotionDisabled)");
+        Report.DebugMessage = Report.DebugMessage.IsEmpty() ? ShakeNote : FString::Printf(TEXT("%s %s"), *Report.DebugMessage, *ShakeNote);
+    }
+#endif
+
+    Legacy = ConvertReportToLegacy(Report, OriginalRequest, SpawnLocation, SpawnRotation, SpawnScale, Definition);
+
+    if (OutLegacyResult)
+    {
+        *OutLegacyResult = Legacy;
+    }
+
+    if (Report.Result == ESOTS_FXRequestResult::Success)
+    {
+        BroadcastResolvedFX(
+            Params.ResolvedTag,
+            Params.Instigator,
+            Params.Target,
+            Definition,
+            SpawnLocation,
+            SpawnRotation,
+            Params.SpawnSpace,
+            Params.AttachComponent,
+            Params.AttachSocketName,
+            SpawnScale);
+    }
+
+    return Report;
 }
 
 // -------------------------
@@ -639,33 +1281,109 @@ UNiagaraComponent* USOTS_FXManagerSubsystem::AcquireNiagaraComponent(UWorld* Wor
     }
 
     FSOTS_FXCuePool& Pool = CuePools.FindOrAdd(CueDefinition);
+    CleanupInvalidPoolEntries(Pool);
 
-    // Reuse an inactive component if possible
-    for (TObjectPtr<UNiagaraComponent>& Comp : Pool.NiagaraComponents)
+    const float NowSeconds = World->GetTimeSeconds();
+    const int32 PoolLimit = FMath::Max(1, MaxNiagaraPoolSizePerCue);
+
+    int32 ActiveCount = 0;
+
+    for (FSOTS_FXPooledNiagaraEntry& Entry : Pool.NiagaraComponents)
     {
-        if (Comp && !Comp->IsActive())
+        UNiagaraComponent* Comp = Entry.Component.Get();
+        if (!Comp)
         {
+            continue;
+        }
+
+        if (Comp->IsActive())
+        {
+            ++ActiveCount;
+        }
+        else
+        {
+            Entry.bInUse = false;
+        }
+
+        if (!Entry.bInUse && !Comp->IsActive())
+        {
+            Comp->OnSystemFinished.RemoveDynamic(this, &USOTS_FXManagerSubsystem::HandleNiagaraFinished);
+            Comp->OnSystemFinished.AddUniqueDynamic(this, &USOTS_FXManagerSubsystem::HandleNiagaraFinished);
+
+            Entry.bInUse = true;
+            Entry.LastUseTime = NowSeconds;
             return Comp;
         }
     }
 
-    // No free one – spawn a new component configured for pooling
-    UNiagaraComponent* NewComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-        World,
-        CueDefinition->NiagaraSystem,
-        FVector::ZeroVector,
-        FRotator::ZeroRotator,
-        FVector::OneVector,
-        /*bAutoDestroy=*/false,
-        /*bAutoActivate=*/false
-    );
+    const bool bAtActiveCap = ActiveCount >= MaxActiveNiagaraPerCue;
 
-    if (NewComp)
+    if (bAtActiveCap)
     {
-        Pool.NiagaraComponents.Add(NewComp);
+        if (bRecycleWhenExhausted)
+        {
+            if (UNiagaraComponent* ReclaimedActive = ReclaimNiagaraComponent(Pool, *CueDefinition->GetName(), NowSeconds))
+            {
+                return ReclaimedActive;
+            }
+        }
+        else
+        {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bLogPoolActions)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Niagara active cap hit for %s (Active=%d, Cap=%d)."), *CueDefinition->GetName(), ActiveCount, MaxActiveNiagaraPerCue);
+            }
+#endif
+            return nullptr;
+        }
     }
 
-    return NewComp;
+    if (Pool.NiagaraComponents.Num() < PoolLimit)
+    {
+        UNiagaraComponent* NewComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            World,
+            CueDefinition->NiagaraSystem,
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            FVector::OneVector,
+            /*bAutoDestroy=*/false,
+            /*bAutoActivate=*/false
+        );
+
+        if (NewComp)
+        {
+            NewComp->OnSystemFinished.AddUniqueDynamic(this, &USOTS_FXManagerSubsystem::HandleNiagaraFinished);
+
+            FSOTS_FXPooledNiagaraEntry& NewEntry = Pool.NiagaraComponents.AddDefaulted_GetRef();
+            NewEntry.Component = NewComp;
+            NewEntry.bInUse = true;
+            NewEntry.LastUseTime = NowSeconds;
+            return NewComp;
+        }
+    }
+
+    if (Pool.NiagaraComponents.Num() >= PoolLimit)
+    {
+        if (bRecycleWhenExhausted)
+        {
+            if (UNiagaraComponent* Reclaimed = ReclaimNiagaraComponent(Pool, *CueDefinition->GetName(), NowSeconds))
+            {
+                return Reclaimed;
+            }
+        }
+        else
+        {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bLogPoolActions)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Niagara pool cap reached for %s (Size=%d, Cap=%d)."), *CueDefinition->GetName(), Pool.NiagaraComponents.Num(), PoolLimit);
+            }
+#endif
+        }
+    }
+
+    return nullptr;
 }
 
 UAudioComponent* USOTS_FXManagerSubsystem::AcquireAudioComponent(UWorld* World, USOTS_FXCueDefinition* CueDefinition)
@@ -676,37 +1394,269 @@ UAudioComponent* USOTS_FXManagerSubsystem::AcquireAudioComponent(UWorld* World, 
     }
 
     FSOTS_FXCuePool& Pool = CuePools.FindOrAdd(CueDefinition);
+    CleanupInvalidPoolEntries(Pool);
 
-    // Reuse a non-playing component
-    for (TObjectPtr<UAudioComponent>& Comp : Pool.AudioComponents)
+    const float NowSeconds = World->GetTimeSeconds();
+    const int32 PoolLimit = FMath::Max(1, MaxAudioPoolSizePerCue);
+
+    int32 ActiveCount = 0;
+
+    for (FSOTS_FXPooledAudioEntry& Entry : Pool.AudioComponents)
     {
-        if (Comp && !Comp->IsPlaying())
+        UAudioComponent* Comp = Entry.Component.Get();
+        if (!Comp)
         {
+            continue;
+        }
+
+        if (Comp->IsPlaying())
+        {
+            ++ActiveCount;
+        }
+        else
+        {
+            Entry.bInUse = false;
+        }
+
+        if (!Entry.bInUse && !Comp->IsPlaying())
+        {
+            Comp->OnAudioFinishedNative.RemoveAll(this);
+            Comp->OnAudioFinishedNative.AddUObject(this, &USOTS_FXManagerSubsystem::HandleAudioFinishedNative);
+
+            Entry.bInUse = true;
+            Entry.LastUseTime = NowSeconds;
             return Comp;
         }
     }
 
-    // No free one – spawn a pooled audio component.
-    UAudioComponent* NewComp = UGameplayStatics::SpawnSoundAtLocation(
-        World,
-        CueDefinition->Sound,
-        FVector::ZeroVector,   // Location
-        FRotator::ZeroRotator, // Rotation
-        1.0f,                  // VolumeMultiplier
-        1.0f,                  // PitchMultiplier
-        0.0f,                  // StartTime
-        nullptr,               // Attenuation
-        nullptr,               // Concurrency
-        false                  // bAutoDestroy (we pool)
-    );
+    const bool bAtActiveCap = ActiveCount >= MaxActiveAudioPerCue;
 
-    if (NewComp)
+    if (bAtActiveCap)
     {
-        NewComp->bAutoDestroy = false;
-        Pool.AudioComponents.Add(NewComp);
+        if (bRecycleWhenExhausted)
+        {
+            if (UAudioComponent* ReclaimedActive = ReclaimAudioComponent(Pool, *CueDefinition->GetName(), NowSeconds))
+            {
+                return ReclaimedActive;
+            }
+        }
+        else
+        {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bLogPoolActions)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Audio active cap hit for %s (Active=%d, Cap=%d)."), *CueDefinition->GetName(), ActiveCount, MaxActiveAudioPerCue);
+            }
+#endif
+            return nullptr;
+        }
     }
 
-    return NewComp;
+    if (Pool.AudioComponents.Num() < PoolLimit)
+    {
+        UAudioComponent* NewComp = UGameplayStatics::SpawnSoundAtLocation(
+            World,
+            CueDefinition->Sound,
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            1.0f,
+            1.0f,
+            0.0f,
+            nullptr,
+            nullptr,
+            false
+        );
+
+        if (NewComp)
+        {
+            NewComp->bAutoDestroy = false;
+            NewComp->OnAudioFinishedNative.RemoveAll(this);
+            NewComp->OnAudioFinishedNative.AddUObject(this, &USOTS_FXManagerSubsystem::HandleAudioFinishedNative);
+
+            FSOTS_FXPooledAudioEntry& NewEntry = Pool.AudioComponents.AddDefaulted_GetRef();
+            NewEntry.Component = NewComp;
+            NewEntry.bInUse = true;
+            NewEntry.LastUseTime = NowSeconds;
+            return NewComp;
+        }
+    }
+
+    if (Pool.AudioComponents.Num() >= PoolLimit)
+    {
+        if (bRecycleWhenExhausted)
+        {
+            if (UAudioComponent* Reclaimed = ReclaimAudioComponent(Pool, *CueDefinition->GetName(), NowSeconds))
+            {
+                return Reclaimed;
+            }
+        }
+        else
+        {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            if (bLogPoolActions)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Audio pool cap reached for %s (Size=%d, Cap=%d)."), *CueDefinition->GetName(), Pool.AudioComponents.Num(), PoolLimit);
+            }
+#endif
+        }
+    }
+
+    return nullptr;
+}
+
+void USOTS_FXManagerSubsystem::CleanupInvalidPoolEntries(FSOTS_FXCuePool& Pool) const
+{
+    Pool.NiagaraComponents.RemoveAll([](const FSOTS_FXPooledNiagaraEntry& Entry)
+    {
+        return !IsValid(Entry.Component.Get());
+    });
+
+    Pool.AudioComponents.RemoveAll([](const FSOTS_FXPooledAudioEntry& Entry)
+    {
+        return !IsValid(Entry.Component.Get());
+    });
+}
+
+UNiagaraComponent* USOTS_FXManagerSubsystem::ReclaimNiagaraComponent(FSOTS_FXCuePool& Pool, const TCHAR* CueName, float NowSeconds)
+{
+    FSOTS_FXPooledNiagaraEntry* Oldest = nullptr;
+
+    for (FSOTS_FXPooledNiagaraEntry& Entry : Pool.NiagaraComponents)
+    {
+        if (!Entry.Component)
+        {
+            continue;
+        }
+
+        if (!Oldest || Entry.LastUseTime < Oldest->LastUseTime)
+        {
+            Oldest = &Entry;
+        }
+    }
+
+    if (!Oldest || !Oldest->Component)
+    {
+        return nullptr;
+    }
+
+    Oldest->Component->DeactivateImmediate();
+    Oldest->Component->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    Oldest->Component->OnSystemFinished.AddUniqueDynamic(this, &USOTS_FXManagerSubsystem::HandleNiagaraFinished);
+    Oldest->Component->SetHiddenInGame(true);
+    Oldest->bInUse = true;
+    Oldest->LastUseTime = NowSeconds;
+
+    LogPoolEvent(FString::Printf(TEXT("[SOTS_FX] Reclaimed Niagara component for cue %s."), CueName));
+
+    return Oldest->Component;
+}
+
+UAudioComponent* USOTS_FXManagerSubsystem::ReclaimAudioComponent(FSOTS_FXCuePool& Pool, const TCHAR* CueName, float NowSeconds)
+{
+    FSOTS_FXPooledAudioEntry* Oldest = nullptr;
+
+    for (FSOTS_FXPooledAudioEntry& Entry : Pool.AudioComponents)
+    {
+        if (!Entry.Component)
+        {
+            continue;
+        }
+
+        if (!Oldest || Entry.LastUseTime < Oldest->LastUseTime)
+        {
+            Oldest = &Entry;
+        }
+    }
+
+    if (!Oldest || !Oldest->Component)
+    {
+        return nullptr;
+    }
+
+    Oldest->Component->Stop();
+    Oldest->Component->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    Oldest->Component->OnAudioFinishedNative.RemoveAll(this);
+    Oldest->Component->OnAudioFinishedNative.AddUObject(this, &USOTS_FXManagerSubsystem::HandleAudioFinishedNative);
+    Oldest->bInUse = true;
+    Oldest->LastUseTime = NowSeconds;
+
+    LogPoolEvent(FString::Printf(TEXT("[SOTS_FX] Reclaimed audio component for cue %s."), CueName));
+
+    return Oldest->Component;
+}
+
+void USOTS_FXManagerSubsystem::MarkNiagaraEntryFree(UNiagaraComponent* Component)
+{
+    if (!Component)
+    {
+        return;
+    }
+
+    for (TPair<TObjectPtr<USOTS_FXCueDefinition>, FSOTS_FXCuePool>& Pair : CuePools)
+    {
+        for (FSOTS_FXPooledNiagaraEntry& Entry : Pair.Value.NiagaraComponents)
+        {
+            if (Entry.Component == Component)
+            {
+                Entry.bInUse = false;
+                Entry.LastUseTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+                Component->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+                Component->SetHiddenInGame(true);
+                return;
+            }
+        }
+    }
+}
+
+void USOTS_FXManagerSubsystem::MarkAudioEntryFree(UAudioComponent* Component)
+{
+    if (!Component)
+    {
+        return;
+    }
+
+    for (TPair<TObjectPtr<USOTS_FXCueDefinition>, FSOTS_FXCuePool>& Pair : CuePools)
+    {
+        for (FSOTS_FXPooledAudioEntry& Entry : Pair.Value.AudioComponents)
+        {
+            if (Entry.Component == Component)
+            {
+                Entry.bInUse = false;
+                Entry.LastUseTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+                Component->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+                return;
+            }
+        }
+    }
+}
+
+void USOTS_FXManagerSubsystem::LogPoolEvent(const FString& Message) const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bLogPoolActions)
+    {
+        UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
+    }
+#else
+    (void)Message;
+#endif
+}
+
+void USOTS_FXManagerSubsystem::HandleNiagaraFinished(UNiagaraComponent* FinishedComponent)
+{
+    MarkNiagaraEntryFree(FinishedComponent);
+    LogPoolEvent(TEXT("[SOTS_FX] Niagara component finished and returned to pool."));
+}
+
+void USOTS_FXManagerSubsystem::HandleAudioFinished()
+{
+    // Dynamic delegate no longer provides the component; prefer native binding.
+}
+
+void USOTS_FXManagerSubsystem::HandleAudioFinishedNative(UAudioComponent* FinishedComponent)
+{
+    MarkAudioEntryFree(FinishedComponent);
+    LogPoolEvent(TEXT("[SOTS_FX] Audio component finished and returned to pool."));
 }
 
 void USOTS_FXManagerSubsystem::ApplyContextToNiagara(UNiagaraComponent* NiagaraComp, USOTS_FXCueDefinition* CueDefinition, const FSOTS_FXContext& Context)
@@ -754,6 +1704,7 @@ void USOTS_FXManagerSubsystem::ApplyContextToAudio(UAudioComponent* AudioComp, U
 
     // Ensure it's stopped before repositioning
     AudioComp->Stop();
+    AudioComp->SetComponentTickEnabled(true);
 
     if (Context.bAttach && Context.AttachComponent)
     {
@@ -786,6 +1737,33 @@ FSOTS_FXHandle USOTS_FXManagerSubsystem::SpawnCue_Internal(UWorld* World, USOTS_
     if (!World || !CueDefinition)
     {
         return Handle;
+    }
+
+    bool bAllowCameraShake = true;
+
+    switch (CueDefinition->ToggleBehavior)
+    {
+        case ESOTS_FXToggleBehavior::ForceDisable:
+            return Handle;
+        case ESOTS_FXToggleBehavior::IgnoreGlobalToggles:
+            break;
+        case ESOTS_FXToggleBehavior::RespectGlobalToggles:
+        default:
+            if (!bBloodEnabled && CueDefinition->bIsBloodFX)
+            {
+                return Handle;
+            }
+
+            if (!bHighIntensityFX && CueDefinition->bIsHighIntensityFX)
+            {
+                return Handle;
+            }
+
+            if (!bCameraMotionFXEnabled && CueDefinition->CameraShakeClass && !CueDefinition->bCameraShakeIgnoresGlobalToggle)
+            {
+                bAllowCameraShake = false;
+            }
+            break;
     }
 
     // ---- VFX (Niagara, pooled) ----
@@ -824,7 +1802,7 @@ FSOTS_FXHandle USOTS_FXManagerSubsystem::SpawnCue_Internal(UWorld* World, USOTS_
     }
 
     // ---- Camera Shake (non-pooled, cheap enough) ----
-    if (CueDefinition->CameraShakeClass)
+    if (CueDefinition->CameraShakeClass && bAllowCameraShake)
     {
         if (APlayerController* PC = World->GetFirstPlayerController())
         {
@@ -870,14 +1848,14 @@ void USOTS_FXManagerSubsystem::ValidateLibraryDefinitions() const
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     TSet<FGameplayTag> SeenTags;
 
-    for (const TPair<FGameplayTag, FSOTS_FXDefinition>& Pair : RegisteredLibraryDefinitions)
+    for (const TPair<FGameplayTag, FSOTS_FXResolvedDefinitionEntry>& Pair : RegisteredLibraryDefinitions)
     {
-        ValidateCueDefinition(Pair.Value, SeenTags);
+        ValidateCueDefinition(Pair.Value.Definition, SeenTags);
     }
 
-    for (const TObjectPtr<USOTS_FXDefinitionLibrary>& Library : Libraries)
+    for (const FSOTS_FXRegisteredLibrary& Entry : RegisteredLibraries)
     {
-        if (!Library && bWarnOnMissingFXAssets)
+        if (!Entry.Library && bWarnOnMissingFXAssets)
         {
             UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Validation skipped null library reference."));
         }

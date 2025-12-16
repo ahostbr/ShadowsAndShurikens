@@ -84,6 +84,18 @@ FSOTS_FXActiveCounts USOTS_FXBlueprintLibrary::GetFXActiveCounts()
     return Counts;
 }
 
+FSOTS_FXPoolStats USOTS_FXBlueprintLibrary::GetFXPoolStats()
+{
+    FSOTS_FXPoolStats Stats;
+
+    if (USOTS_FXManagerSubsystem* Manager = USOTS_FXManagerSubsystem::Get())
+    {
+        Stats = Manager->GetPoolStats();
+    }
+
+    return Stats;
+}
+
 void USOTS_FXBlueprintLibrary::GetRegisteredFXCues(TArray<FGameplayTag>& OutCueTags, TArray<USOTS_FXCueDefinition*>& OutCueDefinitions)
 {
     OutCueTags.Reset();
