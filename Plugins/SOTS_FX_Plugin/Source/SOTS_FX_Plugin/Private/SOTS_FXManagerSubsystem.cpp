@@ -982,15 +982,42 @@ FSOTS_FXExecutionParams USOTS_FXManagerSubsystem::BuildExecutionParams(const FSO
     Params.ResolvedTag = ResolvedTag;
     Params.Instigator = Request.Instigator;
     Params.Target = Request.Target;
-    Params.AttachComponent = Request.AttachComponent;
+    USceneComponent* AttachComponent = Request.AttachComponent;
+    if (!AttachComponent && Request.SpawnSpace != ESOTS_FXSpawnSpace::World)
+    {
+        if (Request.Target && Request.Target->GetRootComponent())
+        {
+            AttachComponent = Request.Target->GetRootComponent();
+        }
+        else if (Request.Instigator && Request.Instigator->GetRootComponent())
+        {
+            AttachComponent = Request.Instigator->GetRootComponent();
+        }
+    }
+
+    Params.AttachComponent = AttachComponent;
     Params.AttachSocketName = Request.AttachSocketName;
     Params.bHasSurfaceNormal = Request.bHasSurfaceNormal;
     Params.SurfaceNormal = Request.SurfaceNormal;
-    Params.SpawnSpace = (Request.SpawnSpace != ESOTS_FXSpawnSpace::World)
+    Params.SpawnSpace = (Request.SpawnSpace != ESOTS_FXSpawnSpace::World && AttachComponent)
         ? Request.SpawnSpace
         : (Definition ? Definition->DefaultSpace : ESOTS_FXSpawnSpace::World);
+    Params.bAttach = Params.SpawnSpace != ESOTS_FXSpawnSpace::World && Params.AttachComponent != nullptr;
     Params.Location = Request.Location;
     Params.Rotation = Request.Rotation;
+    if (Params.bAttach && Params.AttachComponent)
+    {
+        const FTransform ParentXf = Params.AttachComponent->GetSocketTransform(Params.AttachSocketName, RTS_World);
+        if (Params.Location.IsNearlyZero())
+        {
+            Params.Location = ParentXf.GetLocation();
+        }
+
+        if (Params.Rotation.IsNearlyZero())
+        {
+            Params.Rotation = ParentXf.Rotator();
+        }
+    }
     Params.Scale = Request.Scale > 0.0f ? Request.Scale : 1.0f;
     Params.bAllowCameraShake = true;
     if (Definition)
@@ -1207,15 +1234,31 @@ FSOTS_FXRequestReport USOTS_FXManagerSubsystem::ExecuteCue(const FSOTS_FXExecuti
         return Report;
     }
 
+    USceneComponent* AttachComponent = Params.AttachComponent;
+    const bool bAttached = Params.bAttach && AttachComponent != nullptr && Params.SpawnSpace != ESOTS_FXSpawnSpace::World;
+
     FVector SpawnLocation = Params.Location;
     FRotator SpawnRotation = Params.Rotation;
 
     ApplySurfaceAlignment(Definition, Params, SpawnLocation, SpawnRotation);
-    ApplyOffsets(Definition, Params.SpawnSpace != ESOTS_FXSpawnSpace::World, SpawnLocation, SpawnRotation);
 
     const float SpawnScale = Params.Scale > 0.0f ? Params.Scale : 1.0f;
     const bool bShouldTriggerCameraShake = Definition && Definition->CameraShakeClass && Params.bAllowCameraShake;
     const bool bHasCameraShakeConfigured = Definition && Definition->CameraShakeClass;
+
+    if (bAttached)
+    {
+        const FTransform ParentXf = AttachComponent->GetSocketTransform(Params.AttachSocketName, RTS_World);
+        const FTransform WorldXf(SpawnRotation.Quaternion(), SpawnLocation, FVector::OneVector);
+        const FTransform RelativeXf = WorldXf.GetRelativeTransform(ParentXf);
+        SpawnLocation = RelativeXf.GetLocation();
+        SpawnRotation = RelativeXf.Rotator();
+        ApplyOffsets(Definition, true, SpawnLocation, SpawnRotation);
+    }
+    else
+    {
+        ApplyOffsets(Definition, false, SpawnLocation, SpawnRotation);
+    }
 
     UNiagaraComponent* NiagaraComp = SpawnNiagara(Definition, Params, SpawnLocation, SpawnRotation, SpawnScale, World);
     UAudioComponent* AudioComp = SpawnAudio(Definition, Params, SpawnLocation, SpawnRotation, World);
