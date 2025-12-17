@@ -5,12 +5,12 @@
 #include "SOTS_GAS_SkillTreeLibrary.h"
 #include "Subsystems/SOTS_GAS_StealthBridgeSubsystem.h"
 #include "SOTS_GlobalStealthTypes.h"
+#include "SOTS_TagLibrary.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Logging/LogMacros.h"
 #include "Misc/ConfigCacheIni.h"
 #include "HAL/IConsoleManager.h"
-#include "GameplayTagAssetInterface.h"
 
 namespace
 {
@@ -103,11 +103,7 @@ void USOTS_GAS_DebugLibrary::LogCurrentSkillAndPlayerTags(const UObject* WorldCo
             {
                 if (AActor* PlayerActor = PC->GetPawn())
                 {
-                    const IGameplayTagAssetInterface* TagInterface = Cast<IGameplayTagAssetInterface>(PlayerActor);
-                    if (TagInterface)
-                    {
-                        TagInterface->GetOwnedGameplayTags(PlayerTags);
-                    }
+                    PlayerTags = USOTS_TagLibrary::GetActorTags(WorldContextObject, PlayerActor);
                 }
             }
         }

@@ -69,6 +69,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "SOTS|Tags")
     bool ActorHasAllTags(const AActor* Actor, const FGameplayTagContainer& Tags) const;
 
+    /** Fills OutTags with the union of owned (interface), loose, and scoped tags for the actor. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Tags")
+    void GetActorTags(const AActor* Actor, FGameplayTagContainer& OutTags) const;
+
     /** Adds a loose gameplay tag to the given actor for SOTS-global state. */
     UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
     void AddTagToActor(AActor* Actor, FGameplayTag Tag);

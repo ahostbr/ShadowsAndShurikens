@@ -235,6 +235,11 @@ bool USOTS_GameplayTagManagerSubsystem::ActorHasAllTags(const AActor* Actor, con
     return UnionTags.HasAll(Tags);
 }
 
+void USOTS_GameplayTagManagerSubsystem::GetActorTags(const AActor* Actor, FGameplayTagContainer& OutTags) const
+{
+    BuildActorTagUnion(Actor, OutTags);
+}
+
 // SOTS TAG SPINE (V2): This is the canonical write surface for adding loose gameplay tags to actors.
 // Use this subsystem or the USOTS_TagLibrary helper functions instead of directly mutating
 // actor-owned tag containers to ensure shared tag consistency across plugins.

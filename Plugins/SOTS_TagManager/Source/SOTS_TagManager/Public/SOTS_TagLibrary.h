@@ -62,6 +62,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "SOTS|Tags", meta = (WorldContext = "WorldContextObject"))
     static bool ActorHasAllTags(const UObject* WorldContextObject, const AActor* Target, const FGameplayTagContainer& Tags);
 
+    /** Returns the union of owned, loose, and scoped tags for the actor. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Tags", meta = (WorldContext = "WorldContextObject"))
+    static FGameplayTagContainer GetActorTags(const UObject* WorldContextObject, const AActor* Target);
+
     /** Adds a scoped loose gameplay tag to the actor. Returns a handle that must be passed back for removal. */
     UFUNCTION(BlueprintCallable, Category = "SOTS|Tags", meta = (WorldContext = "WorldContextObject"))
     static FSOTS_LooseTagHandle AddScopedTagToActor(const UObject* WorldContextObject, AActor* Target, FGameplayTag Tag);
