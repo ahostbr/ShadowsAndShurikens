@@ -1,0 +1,257 @@
+
+"""
+zip_all_docs.py
+
+Scans the repo for any folder named "Docs" (case-insensitive), zips all *.md and *.txt
+files found within, and writes a manifest + log.
+
+Usage (from repo root):
+  python DevTools/python/zip_all_docs.py
+
+Optional:
+  python DevTools/python/zip_all_docs.py --dry-run
+  python DevTools/python/zip_all_docs.py --out-dir DevTools/artifacts/docs_zips
+  python DevTools/python/zip_all_docs.py --zip-name DocsBundle_CustomName.zip
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable, List, Set, Tuple
+import zipfile
+
+EXCLUDED_DIR_NAMES_DEFAULT = {
+    ".git",
+    ".vs",
+    ".vscode",
+    "Binaries",
+    "Intermediate",
+    "Saved",
+    "DerivedDataCache",
+    "node_modules",
+    "__pycache__",
+}
+
+INCLUDE_EXTS_DEFAULT = {".md", ".txt"}
+
+
+@dataclass(frozen=True)
+class FoundFile:
+    abs_path: Path
+    rel_path: Path
+    size_bytes: int
+
+
+def now_stamp() -> str:
+    # YYYYMMDD_HHMMSS local time
+    return time.strftime("%Y%m%d_%H%M%S", time.localtime())
+
+
+def detect_repo_root() -> Path:
+    """
+    Assumes this script lives at: <Root>/DevTools/python/zip_all_docs.py
+    """
+    here = Path(__file__).resolve()
+    # python -> DevTools -> Root
+    return here.parents[2]
+
+
+def should_skip_dir(dir_name: str, excluded: Set[str]) -> bool:
+    return dir_name in excluded
+
+
+def iter_docs_dirs(root: Path, docs_dir_name: str, excluded: Set[str]) -> List[Path]:
+    docs_dirs: List[Path] = []
+    target = docs_dir_name.lower()
+
+    for dirpath, dirnames, filenames in os.walk(root):
+        # prune excluded dirs in-place to speed up
+        pruned = []
+        for d in list(dirnames):
+            if should_skip_dir(d, excluded):
+                pruned.append(d)
+        for d in pruned:
+            dirnames.remove(d)
+
+        p = Path(dirpath)
+        if p.name.lower() == target:
+            docs_dirs.append(p)
+
+    # Stable ordering
+    docs_dirs.sort(key=lambda x: str(x).lower())
+    return docs_dirs
+
+
+def collect_files(root: Path, docs_dirs: Iterable[Path], include_exts: Set[str]) -> List[FoundFile]:
+    out: List[FoundFile] = []
+    seen: Set[Path] = set()
+
+    for d in docs_dirs:
+        for p in d.rglob("*"):
+            if not p.is_file():
+                continue
+            ext = p.suffix.lower()
+            if ext not in include_exts:
+                continue
+
+            # Avoid duplicates if a symlink or odd path appears
+            try:
+                abs_p = p.resolve()
+            except Exception:
+                abs_p = p
+
+            if abs_p in seen:
+                continue
+            seen.add(abs_p)
+
+            rel = abs_p.relative_to(root) if abs_p.is_absolute() else p.relative_to(root)
+            size = abs_p.stat().st_size if abs_p.exists() else 0
+            out.append(FoundFile(abs_path=abs_p, rel_path=rel, size_bytes=size))
+
+    out.sort(key=lambda f: str(f.rel_path).lower())
+    return out
+
+
+def ensure_dir(p: Path) -> None:
+    p.mkdir(parents=True, exist_ok=True)
+
+
+def write_text(p: Path, text: str) -> None:
+    p.write_text(text, encoding="utf-8", errors="replace")
+
+
+def human_bytes(n: int) -> str:
+    # Simple human formatting
+    units = ["B", "KB", "MB", "GB", "TB"]
+    v = float(n)
+    i = 0
+    while v >= 1024.0 and i < len(units) - 1:
+        v /= 1024.0
+        i += 1
+    if i == 0:
+        return f"{int(v)} {units[i]}"
+    return f"{v:.2f} {units[i]}"
+
+
+def main(argv: List[str]) -> int:
+    parser = argparse.ArgumentParser(description="Zip all Docs/*.md and Docs/*.txt files across the repo.")
+    parser.add_argument("--root", type=str, default="", help="Repo root (default: auto-detect from script location).")
+    parser.add_argument("--docs-dir-name", type=str, default="Docs", help='Folder name to match (default: "Docs").')
+    parser.add_argument("--out-dir", type=str, default="", help="Output directory (default: <Root>/DevTools/artifacts/docs_zips).")
+    parser.add_argument("--zip-name", type=str, default="", help="Override zip filename (default: DocsBundle_<timestamp>.zip).")
+    parser.add_argument("--dry-run", action="store_true", help="Discover + report only, do not write zip.")
+    parser.add_argument(
+        "--exclude-dir",
+        action="append",
+        default=[],
+        help="Additional directory name to exclude from traversal (repeatable).",
+    )
+    args = parser.parse_args(argv)
+
+    root = Path(args.root).resolve() if args.root else detect_repo_root()
+    excluded = set(EXCLUDED_DIR_NAMES_DEFAULT)
+    excluded.update(args.exclude_dir)
+
+    out_dir = Path(args.out_dir).resolve() if args.out_dir else (root / "DevTools" / "artifacts" / "docs_zips")
+    ensure_dir(out_dir)
+
+    stamp = now_stamp()
+    zip_name = args.zip_name.strip() if args.zip_name else f"DocsBundle_{stamp}.zip"
+    if not zip_name.lower().endswith(".zip"):
+        zip_name += ".zip"
+
+    zip_path = out_dir / zip_name
+    manifest_path = out_dir / f"{zip_path.stem}_MANIFEST.txt"
+    log_path = out_dir / f"{zip_path.stem}_LOG.txt"
+
+    print("=== DevTools: zip_all_docs ===")
+    print(f"Root:      {root}")
+    print(f"Out dir:   {out_dir}")
+    print(f"Zip path:  {zip_path}")
+    print(f"Dry-run:   {args.dry_run}")
+    print(f"Docs name: {args.docs_dir_name}")
+    print(f"Excluded:  {sorted(excluded)}")
+    print("Scanning for Docs folders...")
+
+    if not root.exists():
+        print(f"ERROR: Root does not exist: {root}", file=sys.stderr)
+        return 2
+
+    docs_dirs = iter_docs_dirs(root, args.docs_dir_name, excluded)
+    print(f"Found {len(docs_dirs)} Docs folder(s).")
+    for d in docs_dirs[:50]:
+        print(f" - {d.relative_to(root)}")
+    if len(docs_dirs) > 50:
+        print(f" - ... (+{len(docs_dirs) - 50} more)")
+
+    print("Collecting .md and .txt files under Docs folders...")
+    files = collect_files(root, docs_dirs, INCLUDE_EXTS_DEFAULT)
+    total_bytes = sum(f.size_bytes for f in files)
+
+    print(f"Files to zip: {len(files)}")
+    print(f"Total size:   {human_bytes(total_bytes)}")
+
+    # Build manifest content
+    manifest_lines: List[str] = []
+    manifest_lines.append(f"Docs Zipper Manifest")
+    manifest_lines.append(f"timestamp: {stamp}")
+    manifest_lines.append(f"root: {root}")
+    manifest_lines.append(f"docs_dir_name: {args.docs_dir_name}")
+    manifest_lines.append(f"docs_dirs_found: {len(docs_dirs)}")
+    manifest_lines.append(f"files_zipped: {len(files)}")
+    manifest_lines.append(f"total_bytes: {total_bytes} ({human_bytes(total_bytes)})")
+    manifest_lines.append("")
+    manifest_lines.append("Files (repo-relative):")
+    for f in files:
+        manifest_lines.append(f"- {f.rel_path.as_posix()}  |  {f.size_bytes} bytes")
+    manifest_text = "\n".join(manifest_lines) + "\n"
+
+    # Write logs/manifest even in dry-run
+    write_text(manifest_path, manifest_text)
+
+    log_lines: List[str] = []
+    log_lines.append("Docs Zipper Log")
+    log_lines.append(f"timestamp: {stamp}")
+    log_lines.append(f"root: {root}")
+    log_lines.append(f"out_dir: {out_dir}")
+    log_lines.append(f"zip_path: {zip_path}")
+    log_lines.append(f"dry_run: {args.dry_run}")
+    log_lines.append(f"docs_dirs_found: {len(docs_dirs)}")
+    log_lines.append(f"files_found: {len(files)}")
+    log_lines.append(f"total_bytes: {total_bytes} ({human_bytes(total_bytes)})")
+    log_lines.append(f"manifest_path: {manifest_path}")
+    log_text = "\n".join(log_lines) + "\n"
+    write_text(log_path, log_text)
+
+    if args.dry_run:
+        print("DRY-RUN: zip not created.")
+        print(f"Manifest: {manifest_path}")
+        print(f"Log:      {log_path}")
+        return 0
+
+    print("Creating zip...")
+    # Overwrite if it already exists (intentional; zip name is timestamped by default)
+    with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        # Put manifest inside the zip too (nice for portability)
+        zf.write(manifest_path, arcname=manifest_path.relative_to(root).as_posix())
+        for f in files:
+            try:
+                zf.write(f.abs_path, arcname=f.rel_path.as_posix())
+            except Exception as e:
+                print(f"WARNING: Failed to add {f.rel_path}: {e}", file=sys.stderr)
+
+    zip_size = zip_path.stat().st_size if zip_path.exists() else 0
+    print("Done.")
+    print(f"Zip created: {zip_path} ({human_bytes(zip_size)})")
+    print(f"Manifest:    {manifest_path}")
+    print(f"Log:         {log_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

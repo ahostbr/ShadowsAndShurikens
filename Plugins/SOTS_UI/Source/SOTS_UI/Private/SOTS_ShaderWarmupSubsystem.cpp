@@ -315,11 +315,12 @@ void USOTS_ShaderWarmupSubsystem::BuildAssetQueue(const F_SOTS_ShaderWarmupReque
 	PackageNames.Add(Request.TargetLevelPackageName);
 
 	TArray<FName> Dependencies;
+	// Collect hard + soft package dependencies for the target level (same intent as old Hard|Soft flags).
 	Registry.GetDependencies(
 		Request.TargetLevelPackageName,
 		Dependencies,
 		UE::AssetRegistry::EDependencyCategory::Package,
-		UE::AssetRegistry::FDependencyQuery());
+		UE::AssetRegistry::FDependencyQuery().WithPackageFlags(UE::AssetRegistry::EDependencyFlags::Hard | UE::AssetRegistry::EDependencyFlags::Soft));
 	for (const FName& Dependency : Dependencies)
 	{
 		PackageNames.Add(Dependency);
