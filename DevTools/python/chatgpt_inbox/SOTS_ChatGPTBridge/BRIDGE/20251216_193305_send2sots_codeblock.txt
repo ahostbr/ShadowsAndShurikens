@@ -1,0 +1,717 @@
+javascript
+Copy code
+Send2SOTS
+// ==UserScript==
+// @name         SOTS Bridge Userscript
+// @namespace    https://sots.devtools/bridge
+// @version      2.37
+// @description  Stable overlay toolbar + Send2SOTS buttons next to Copy code + Save Thoughts + Autoscroll.
+// @author       SOTS
+// @match        https://chatgpt.com/*
+// @match        https://chat.openai.com/*
+// @run-at       document-idle
+// @grant        GM_xmlhttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// ==/UserScript==
+
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // CONFIG
+  // ---------------------------------------------------------------------------
+
+  // Bridge server (Flask) — DevTools/python/sots_bridge_server.py
+  const BRIDGE_HOST = "http://127.0.0.1:5050";
+  const BRIDGE_PATH = "/sots/run_prompt"; // must match Flask route
+
+  // Toolbar placement tweaks
+  // NOTE: Negative moves UP.
+  const TOOLBAR_Y_NUDGE_PX = -15;
+
+  // Gap under the “ChatGPT 5.2 Thinking” header anchor
+  const TOOLBAR_GAP_PX = 8;
+
+  // Centering (keep centered on screen)
+  const TOOLBAR_CENTER_ON_SCREEN = true;
+
+  // Optional: DevTools Bible path for open_file action (edit if you use it)
+  const DEVTOOLS_BIBLE_PATH = "E:/SAS/ShadowsAndShurikens/DevTools/DevTools_Bible.md";
+
+  // Performance throttles
+  const REPOSITION_THROTTLE_MS = 120;
+  const AUTOSCROLL_THROTTLE_MS = 250;
+
+  // Code-block button reinjection (next to "Copy code")
+  const CODEBTN_SCAN_DEBOUNCE_MS = 220;
+
+  // Internal markers
+  const UI_ATTR = "data-sots-bridge-ui";
+  const UI_VERSION = "2.37";
+  const CODEBTN_ATTR = "data-sots-codebtn";
+
+  // ---------------------------------------------------------------------------
+  // STATE
+  // ---------------------------------------------------------------------------
+
+  const state = {
+    autoScroll: !!GM_getValue("sots_autoscroll", false),
+    lastAutoScrollAt: 0,
+    lastRepositionAt: 0,
+    lastHoveredCode: "",
+    toolbarEl: null,
+    toastHostEl: null,
+    anchorEl: null,
+    codeBtnScanTimer: 0,
+  };
+
+  // ---------------------------------------------------------------------------
+  // SMALL UTILS
+  // ---------------------------------------------------------------------------
+
+  function nowISO() {
+    return new Date().toISOString();
+  }
+
+  function clamp(n, a, b) {
+    return Math.max(a, Math.min(b, n));
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+    return true;
+  }
+
+  function safeInnerText(el) {
+    try {
+      return (el && typeof el.innerText === "string") ? el.innerText : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function cleanText(s) {
+    return (s || "").replace(/\r\n/g, "\n").trim();
+  }
+
+  function buildMeta(extra = {}) {
+    return {
+      url: location.href,
+      title: document.title || "",
+      ts: nowISO(),
+      userscript: `SOTS_Bridge_${UI_VERSION}`,
+      ...extra,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // TOASTS
+  // ---------------------------------------------------------------------------
+
+  function ensureToastHost() {
+    if (state.toastHostEl && document.body.contains(state.toastHostEl)) return state.toastHostEl;
+
+    const host = document.createElement("div");
+    host.setAttribute(UI_ATTR, "1");
+    host.style.position = "fixed";
+    host.style.right = "14px";
+    host.style.bottom = "14px";
+    host.style.zIndex = "2147483646";
+    host.style.display = "flex";
+    host.style.flexDirection = "column";
+    host.style.gap = "8px";
+    document.body.appendChild(host);
+
+    state.toastHostEl = host;
+    return host;
+  }
+
+  function toast(msg, isError = false, ttlMs = 2600) {
+    const host = ensureToastHost();
+
+    const t = document.createElement("div");
+    t.setAttribute(UI_ATTR, "1");
+    t.textContent = msg;
+
+    t.style.maxWidth = "520px";
+    t.style.padding = "10px 12px";
+    t.style.borderRadius = "10px";
+    t.style.fontSize = "13px";
+    t.style.lineHeight = "1.25";
+    t.style.boxShadow = "0 10px 24px rgba(0,0,0,0.35)";
+    t.style.border = isError ? "1px solid rgba(255,80,80,0.75)" : "1px solid rgba(255,255,255,0.12)";
+    t.style.background = isError ? "rgba(40,0,0,0.92)" : "rgba(15,15,15,0.92)";
+    t.style.color = "rgba(255,255,255,0.92)";
+    t.style.backdropFilter = "blur(6px)";
+
+    host.appendChild(t);
+
+    setTimeout(() => {
+      try { t.remove(); } catch {}
+    }, ttlMs);
+  }
+
+  // ---------------------------------------------------------------------------
+  // BRIDGE CALL
+  // ---------------------------------------------------------------------------
+
+  function postToBridge(payload) {
+    return new Promise((resolve, reject) => {
+      GM_xmlhttpRequest({
+        method: "POST",
+        url: `${BRIDGE_HOST}${BRIDGE_PATH}`,
+        headers: { "Content-Type": "application/json" },
+        data: JSON.stringify(payload),
+        timeout: 12000,
+        onload: (resp) => {
+          const ok = resp.status >= 200 && resp.status < 300;
+          if (!ok) return reject(new Error(`HTTP ${resp.status}: ${resp.responseText || ""}`));
+          resolve(resp.responseText || "");
+        },
+        ontimeout: () => reject(new Error("Bridge request timed out")),
+        onerror: () => reject(new Error("Bridge request failed")),
+      });
+    });
+  }
+
+  async function sendPrompt(prompt, label, metaExtra = {}) {
+    const payload = {
+      prompt,
+      label,
+      meta: buildMeta(metaExtra),
+      action: "prompt",
+    };
+    await postToBridge(payload);
+  }
+
+  async function openFileInDevTools(devtoolsPath) {
+    const payload = {
+      prompt: "",
+      label: "open_file",
+      meta: buildMeta({ devtools_path: devtoolsPath }),
+      action: "open_file",
+      devtools_path: devtoolsPath,
+    };
+    await postToBridge(payload);
+  }
+
+  // ---------------------------------------------------------------------------
+  // CONTENT COLLECTION
+  // ---------------------------------------------------------------------------
+
+  function getSelectedText() {
+    const sel = window.getSelection ? window.getSelection() : null;
+    if (!sel) return "";
+    const s = (sel.toString && sel.toString()) ? sel.toString() : "";
+    return cleanText(s);
+  }
+
+  function getLastAssistantMessageText() {
+    const nodes = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+    if (!nodes.length) return "";
+    const last = nodes[nodes.length - 1];
+    const text = cleanText(safeInnerText(last));
+    return text;
+  }
+
+  function getBestSendText() {
+    const selected = getSelectedText();
+    if (selected && selected.length >= 10) return selected;
+
+    if (state.lastHoveredCode && state.lastHoveredCode.length >= 10) return state.lastHoveredCode;
+
+    const last = getLastAssistantMessageText();
+    return last;
+  }
+
+  // --- Save Thoughts: capture the RIGHT-SIDE “Activity / Thinking” panel ONLY ---
+  function findRightSideThoughtsPanel() {
+    const candidates = Array.from(document.querySelectorAll("aside, [role='complementary'], [role='dialog'], section, div"))
+      .filter(isVisible)
+      .filter(el => !el.closest(`[${UI_ATTR}]`));
+
+    let best = null;
+    let bestScore = -1;
+
+    for (const el of candidates) {
+      const r = el.getBoundingClientRect();
+
+      if (r.width < 260) continue;
+      if (r.right < window.innerWidth - 6) continue;
+      if (r.top > window.innerHeight * 0.45) continue;
+
+      const txt = safeInnerText(el);
+      if (!txt || txt.length < 30) continue;
+
+      let score = 0;
+      const head = txt.slice(0, 250);
+
+      if (/Activity/i.test(head)) score += 8;
+      if (/Thinking/i.test(txt)) score += 8;
+      if (/Thought for/i.test(txt)) score += 4;
+
+      const tallness = clamp((r.height / window.innerHeight), 0, 1);
+      score += tallness * 2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+
+    return best;
+  }
+
+  function collectThoughtsPanelText() {
+    const panel = findRightSideThoughtsPanel();
+    if (!panel) return "";
+    return cleanText(safeInnerText(panel));
+  }
+
+  function formatThoughtsPayload(thoughtsText) {
+    const lines = [];
+    lines.push("[SOTS_SAVED_THOUGHTS]");
+    lines.push(`ts: ${nowISO()}`);
+    lines.push(`url: ${location.href}`);
+    lines.push(`title: ${document.title || ""}`);
+    lines.push("");
+    lines.push(thoughtsText);
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  // ---------------------------------------------------------------------------
+  // TOOLBAR UI (overlay, NOT inside React DOM)
+  // ---------------------------------------------------------------------------
+
+  function makePillButton(label, onClick) {
+    const b = document.createElement("button");
+    b.setAttribute(UI_ATTR, "1");
+    b.type = "button";
+    b.textContent = label;
+
+    b.style.border = "1px solid rgba(255,255,255,0.12)";
+    b.style.background = "rgba(20,20,20,0.82)";
+    b.style.color = "rgba(255,255,255,0.92)";
+    b.style.borderRadius = "10px";
+    b.style.padding = "6px 10px";
+    b.style.fontSize = "12px";
+    b.style.cursor = "pointer";
+    b.style.userSelect = "none";
+    b.style.backdropFilter = "blur(6px)";
+    b.style.boxShadow = "0 8px 18px rgba(0,0,0,0.25)";
+
+    b.addEventListener("mouseenter", () => {
+      b.style.background = "rgba(30,30,30,0.86)";
+    });
+    b.addEventListener("mouseleave", () => {
+      b.style.background = "rgba(20,20,20,0.82)";
+    });
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
+    });
+
+    return b;
+  }
+
+  function ensureToolbar() {
+    if (state.toolbarEl && document.body.contains(state.toolbarEl)) return state.toolbarEl;
+
+    const bar = document.createElement("div");
+    bar.setAttribute(UI_ATTR, "1");
+    bar.style.position = "fixed";
+    bar.style.zIndex = "2147483645";
+    bar.style.display = "flex";
+    bar.style.gap = "8px";
+    bar.style.alignItems = "center";
+    bar.style.padding = "6px 8px";
+    bar.style.borderRadius = "12px";
+    bar.style.border = "1px solid rgba(255,255,255,0.10)";
+    bar.style.background = "rgba(10,10,10,0.55)";
+    bar.style.backdropFilter = "blur(8px)";
+    bar.style.boxShadow = "0 12px 26px rgba(0,0,0,0.32)";
+    bar.style.maxWidth = "calc(100vw - 24px)";
+    bar.style.flexWrap = "wrap";
+
+    const btnSend = makePillButton("Send2SOTS", async () => {
+      try {
+        const text = getBestSendText();
+        if (!text) return toast("Send2SOTS: nothing found (select text, hover a code block, or ensure an assistant message exists).", true);
+        await sendPrompt(text, "send2sots", { kind: "chat_or_selection" });
+        toast("Send2SOTS: sent.");
+      } catch (err) {
+        toast(`Send2SOTS: ${err.message || err}`, true, 4200);
+      }
+    });
+
+    const btnThoughts = makePillButton("Save Thoughts", async () => {
+      try {
+        const thoughts = collectThoughtsPanelText();
+        if (!thoughts) {
+          return toast("Save Thoughts: open the right-side Activity/Thinking panel first, then click again.", true, 4200);
+        }
+        const payload = formatThoughtsPayload(thoughts);
+        await sendPrompt(payload, "save_thoughts", { kind: "activity_panel" });
+        toast("Save Thoughts: saved.");
+      } catch (err) {
+        toast(`Save Thoughts: ${err.message || err}`, true, 4200);
+      }
+    });
+
+    const btnAuto = makePillButton(`Autoscroll: ${state.autoScroll ? "ON" : "OFF"}`, () => {
+      state.autoScroll = !state.autoScroll;
+      GM_setValue("sots_autoscroll", state.autoScroll);
+      btnAuto.textContent = `Autoscroll: ${state.autoScroll ? "ON" : "OFF"}`;
+      toast(`Autoscroll: ${state.autoScroll ? "enabled" : "disabled"}.`);
+      if (state.autoScroll) scrollToBottom(true);
+    });
+
+    const btnBible = makePillButton("DevTools-Bible", async () => {
+      try {
+        await openFileInDevTools(DEVTOOLS_BIBLE_PATH);
+        toast("DevTools-Bible: open request sent.");
+      } catch (err) {
+        toast(`DevTools-Bible: ${err.message || err}`, true, 4200);
+      }
+    });
+
+    const portPill = document.createElement("span");
+    portPill.setAttribute(UI_ATTR, "1");
+    portPill.textContent = "Port: 5050";
+    portPill.style.padding = "6px 10px";
+    portPill.style.borderRadius = "10px";
+    portPill.style.border = "1px solid rgba(255,255,255,0.08)";
+    portPill.style.background = "rgba(20,20,20,0.55)";
+    portPill.style.color = "rgba(255,255,255,0.65)";
+    portPill.style.fontSize = "12px";
+    portPill.style.userSelect = "none";
+
+    const tagPill = document.createElement("span");
+    tagPill.setAttribute(UI_ATTR, "1");
+    tagPill.textContent = "SOTS";
+    tagPill.style.padding = "6px 10px";
+    tagPill.style.borderRadius = "10px";
+    tagPill.style.border = "1px solid rgba(255,255,255,0.08)";
+    tagPill.style.background = "rgba(20,20,20,0.55)";
+    tagPill.style.color = "rgba(255,255,255,0.65)";
+    tagPill.style.fontSize = "12px";
+    tagPill.style.userSelect = "none";
+
+    bar.appendChild(btnSend);
+    bar.appendChild(btnThoughts);
+    bar.appendChild(btnAuto);
+    bar.appendChild(btnBible);
+    bar.appendChild(portPill);
+    bar.appendChild(tagPill);
+
+    document.body.appendChild(bar);
+    state.toolbarEl = bar;
+
+    return bar;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ANCHOR + POSITIONING
+  // ---------------------------------------------------------------------------
+
+  function findThinkingHeaderAnchor() {
+    const hdr = document.querySelector("header") || document.body;
+    const candidates = Array.from(hdr.querySelectorAll("button, [role='button'], div, span"))
+      .filter(isVisible)
+      .filter(el => !el.closest(`[${UI_ATTR}]`));
+
+    const needles = ["ChatGPT 5.2 Thinking", "ChatGPT 5.2", "ChatGPT", "Thinking"];
+
+    let best = null;
+    let bestScore = -1;
+
+    for (const el of candidates) {
+      const t = (el.textContent || "").trim();
+      if (!t) continue;
+
+      let score = 0;
+      if (t.includes(needles[0])) score += 20;
+      if (t.includes(needles[1])) score += 12;
+      if (t.includes(needles[2])) score += 6;
+      if (t.includes(needles[3])) score += 6;
+
+      const r = el.getBoundingClientRect();
+      if (r.height <= 60) score += 2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+
+    return best;
+  }
+
+  function repositionToolbar(force = false) {
+    const now = performance.now();
+    if (!force && now - state.lastRepositionAt < REPOSITION_THROTTLE_MS) return;
+    state.lastRepositionAt = now;
+
+    const bar = ensureToolbar();
+
+    const anchor = findThinkingHeaderAnchor() || state.anchorEl;
+    state.anchorEl = anchor;
+
+    let top = 10 + TOOLBAR_Y_NUDGE_PX;
+    let left = window.innerWidth * 0.5;
+
+    if (anchor && isVisible(anchor)) {
+      const r = anchor.getBoundingClientRect();
+      top = Math.round(r.bottom + TOOLBAR_GAP_PX + TOOLBAR_Y_NUDGE_PX);
+
+      if (!TOOLBAR_CENTER_ON_SCREEN) {
+        left = Math.round(r.left + r.width * 0.5);
+      }
+    }
+
+    top = clamp(top, 6, window.innerHeight - 60);
+
+    bar.style.top = `${top}px`;
+    if (TOOLBAR_CENTER_ON_SCREEN) {
+      bar.style.left = "50%";
+      bar.style.transform = "translateX(-50%)";
+    } else {
+      bar.style.left = `${clamp(left, 12, window.innerWidth - 12)}px`;
+      bar.style.transform = "translateX(-50%)";
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // AUTOSCROLL
+  // ---------------------------------------------------------------------------
+
+  function scrollToBottom(smooth = false) {
+    const now = performance.now();
+    if (now - state.lastAutoScrollAt < AUTOSCROLL_THROTTLE_MS) return;
+    state.lastAutoScrollAt = now;
+
+    const y = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+
+    window.scrollTo({
+      top: y,
+      behavior: smooth ? "smooth" : "auto",
+    });
+  }
+
+  function setupAutoscrollObserver() {
+    const root = document.querySelector("main") || document.body;
+    const obs = new MutationObserver((mutations) => {
+      if (!state.autoScroll) return;
+
+      for (const m of mutations) {
+        const t = m.target;
+        if (t && t.nodeType === 1) {
+          const el = /** @type {Element} */ (t);
+          if (el.closest && el.closest(`[${UI_ATTR}]`)) return;
+        }
+      }
+
+      let addedMsg = false;
+      for (const m of mutations) {
+        if (m.addedNodes && m.addedNodes.length) {
+          for (const n of m.addedNodes) {
+            if (n && n.nodeType === 1) {
+              const el = /** @type {Element} */ (n);
+              if (el.querySelector && el.querySelector('[data-message-author-role]')) {
+                addedMsg = true;
+                break;
+              }
+            }
+          }
+        }
+        if (addedMsg) break;
+      }
+
+      if (addedMsg) scrollToBottom(false);
+    });
+
+    obs.observe(root, { childList: true, subtree: true });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hovered code tracking (Send2SOTS can grab hovered code)
+  // ---------------------------------------------------------------------------
+
+  function setupHoveredCodeTracking() {
+    document.addEventListener("mouseover", (e) => {
+      const t = e.target;
+      if (!t || !(t instanceof Element)) return;
+      if (t.closest(`[${UI_ATTR}]`)) return;
+
+      const pre = t.closest("pre");
+      if (!pre) return;
+
+      const raw = cleanText(safeInnerText(pre));
+      state.lastHoveredCode = raw.slice(0, 200000);
+    }, { passive: true });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Code-block "Send2SOTS" buttons next to "Copy code"
+  // ---------------------------------------------------------------------------
+
+  function makeInlineCodeButton(onClick) {
+    const b = document.createElement("button");
+    b.setAttribute(CODEBTN_ATTR, "1");
+    b.setAttribute(UI_ATTR, "1"); // still mark as ours for observers
+    b.type = "button";
+    b.textContent = "Send2SOTS";
+
+    // Try to blend with ChatGPT’s pill buttons
+    b.style.border = "1px solid rgba(255,255,255,0.12)";
+    b.style.background = "rgba(20,20,20,0.35)";
+    b.style.color = "rgba(255,255,255,0.82)";
+    b.style.borderRadius = "10px";
+    b.style.padding = "4px 10px";
+    b.style.fontSize = "12px";
+    b.style.cursor = "pointer";
+    b.style.userSelect = "none";
+    b.style.marginLeft = "8px";
+
+    b.addEventListener("mouseenter", () => {
+      b.style.background = "rgba(30,30,30,0.45)";
+    });
+    b.addEventListener("mouseleave", () => {
+      b.style.background = "rgba(20,20,20,0.35)";
+    });
+
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
+    });
+
+    return b;
+  }
+
+  function findNearestCodeTextFromHeaderEl(headerEl) {
+    // Walk up a few levels to find a container holding a <pre>
+    let cur = headerEl;
+    for (let i = 0; i < 8 && cur; i++) {
+      if (cur.querySelector) {
+        const pre = cur.querySelector("pre");
+        if (pre && isVisible(pre)) {
+          const txt = cleanText(safeInnerText(pre));
+          if (txt) return txt.slice(0, 250000);
+        }
+      }
+      cur = cur.parentElement;
+    }
+    return "";
+  }
+
+  function isCopyCodeButton(btn) {
+    if (!btn || btn.nodeType !== 1) return false;
+    if (btn.closest && btn.closest(`[${UI_ATTR}]`)) return false;
+    const t = (btn.textContent || "").trim();
+    if (!t) return false;
+    // Matches current UI string
+    return /copy\s*code/i.test(t);
+  }
+
+  function injectCodeButtonsOnce() {
+    // Find all "Copy code" buttons, add our button beside them if missing.
+    const buttons = Array.from(document.querySelectorAll("button")).filter(isCopyCodeButton);
+
+    for (const copyBtn of buttons) {
+      const parent = copyBtn.parentElement;
+      if (!parent) continue;
+
+      // Avoid duplicates
+      const already = parent.querySelector(`button[${CODEBTN_ATTR}="1"]`);
+      if (already) continue;
+
+      const sotsBtn = makeInlineCodeButton(async () => {
+        try {
+          const codeText = findNearestCodeTextFromHeaderEl(copyBtn);
+          if (!codeText) return toast("Code Send2SOTS: could not find <pre> for this block.", true, 4200);
+          await sendPrompt(codeText, "send2sots_codeblock", { kind: "codeblock" });
+          toast("Code Send2SOTS: sent.");
+        } catch (err) {
+          toast(`Code Send2SOTS: ${err.message || err}`, true, 4200);
+        }
+      });
+
+      // Insert right after Copy code
+      copyBtn.insertAdjacentElement("afterend", sotsBtn);
+    }
+  }
+
+  function scheduleCodeButtonScan() {
+    if (state.codeBtnScanTimer) return;
+    state.codeBtnScanTimer = window.setTimeout(() => {
+      state.codeBtnScanTimer = 0;
+      try { injectCodeButtonsOnce(); } catch {}
+    }, CODEBTN_SCAN_DEBOUNCE_MS);
+  }
+
+  function setupCodeButtonObserver() {
+    // Initial scan
+    scheduleCodeButtonScan();
+
+    const root = document.querySelector("main") || document.body;
+
+    const obs = new MutationObserver((mutations) => {
+      // Only rescan when something likely relevant appears (pre/code/buttons)
+      for (const m of mutations) {
+        if (!m.addedNodes || !m.addedNodes.length) continue;
+
+        for (const n of m.addedNodes) {
+          if (!n || n.nodeType !== 1) continue;
+          const el = /** @type {Element} */ (n);
+          if (el.closest && el.closest(`[${UI_ATTR}]`)) continue;
+
+          if (el.matches && (el.matches("pre") || el.matches("button"))) {
+            scheduleCodeButtonScan();
+            return;
+          }
+          if (el.querySelector && (el.querySelector("pre") || el.querySelector("button"))) {
+            scheduleCodeButtonScan();
+            return;
+          }
+        }
+      }
+    });
+
+    obs.observe(root, { childList: true, subtree: true });
+  }
+
+  // ---------------------------------------------------------------------------
+  // BOOT
+  // ---------------------------------------------------------------------------
+
+  function boot() {
+    ensureToolbar();
+    repositionToolbar(true);
+
+    window.addEventListener("scroll", () => repositionToolbar(false), { passive: true });
+    window.addEventListener("resize", () => repositionToolbar(true), { passive: true });
+
+    // Light mutation observer: just re-anchor if ChatGPT swaps headers
+    const mo = new MutationObserver(() => {
+      repositionToolbar(false);
+      scheduleCodeButtonScan();
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+
+    setupAutoscrollObserver();
+    setupHoveredCodeTracking();
+    setupCodeButtonObserver();
+
+    toast(`SOTS Bridge ${UI_VERSION}: loaded.`);
+  }
+
+  boot();
+})();

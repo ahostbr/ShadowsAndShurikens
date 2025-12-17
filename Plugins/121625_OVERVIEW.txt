@@ -455,3 +455,1761 @@ Concrete “completion tasks” I’d put on the checklist for SOTS_UI
 [Back/Escape] Decide the canonical close policy:
 
 either implement in router (recommended long-term), or enforce via input system/widget handling—right now it’s a gap.
+
+
+
+================================================================
+
+Plugin 6: SOTS_Interaction (real scan)
+Knowns (what it already does / current behavior)
+
+Goal: runtime interaction candidate detection → selection → execution, with UI routed externally (via delegates/payloads; no hard dependency on SOTS_UI).
+
+Core pieces:
+
+USOTS_InteractionSubsystem (GameInstanceSubsystem)
+
+Sweeps forward from the player view (sphere sweep) to find hit actors
+
+Requires a USOTS_InteractableComponent on the hit actor to count as interactable
+
+Picks “best” candidate using a score = distance weight + facing weight
+
+Optional LOS gate per interactable (bRequiresLineOfSight) using a line trace
+
+Optional tag gates per interactable: RequiredPlayerTags and BlockedPlayerTags (checked via SOTS_TagManager ActorHasTag)
+
+Executes via ISOTS_InteractableInterface (actor wins; otherwise first component implementing interface)
+
+Supports multi-option interactions: gathers options; if >1, emits an “options UI” intent instead of auto-executing
+
+USOTS_InteractionDriverComponent
+
+Convenience component for the player side: runs UpdateCandidateThrottled on a timer and exposes Driver_RequestInteract() / Driver_ExecuteOption()
+
+Forwards subsystem UI intent payloads to Blueprint via OnUIIntentForwarded
+
+USOTS_InteractableComponent
+
+Data marker: InteractionTypeTag, DisplayName, MaxDistance (default 250), bRequiresLineOfSight (default true), required/blocked tags, meta tags
+
+ISOTS_InteractableInterface
+
+CanInteract, GetInteractionOptions, ExecuteInteraction
+
+Trace backend: uses a trace helper that can route through OmniTrace when available (unless bForceLegacyTraces is true), and records bUsedOmniTrace on results.
+
+Unknowns / tasks needed for “fully complete + expected behavior”
+
+UI intents are currently “off” unless you’ve wired them somewhere
+
+The subsystem has UIIntent_InteractionPrompt / Options / Fail and UIFailReason_* fields, but in this plugin they default to empty and I don’t see any runtime assignment.
+
+Task: decide the canonical approach:
+
+A) Hardcode/request the gameplay tags in C++ (recommended), so intents always fire, or
+
+B) Don’t use intent tags at all; instead bind to OnCandidateChanged + OnInteractionExecuted and drive UI directly from those, or
+
+C) Provide a settings object / config asset so you can author intent tags in editor cleanly.
+
+Where the DriverComponent lives (possession safety)
+
+USOTS_InteractionDriverComponent caches the PlayerController once in BeginPlay() and never refreshes.
+
+If you put the driver on a pawn and you swap possession (ninja ↔ dragon), this can drift.
+
+Task: pick one:
+
+Put the driver on the PlayerController (stable), or
+
+Add a refresh path (OnPossessed/OnRep_Controller) so it rebinds when controller changes.
+
+Interact input wiring
+
+Task: ensure your SOTS_Input “Interact” intent calls Driver_RequestInteract() (or calls the subsystem directly) and that your options UI calls Driver_ExecuteOption(OptionTag).
+
+InteractionTypeTag authoring is mandatory
+
+If GetInteractionOptions returns empty, the system creates a default option whose tag is Context.InteractionTypeTag (from the InteractableComponent).
+
+Task: make sure every interactable sets a valid InteractionTypeTag (or your ExecuteInteraction can handle “empty tag” as a default).
+
+Tag-gate source of truth on the player
+
+Tag gating uses TagManager ActorHasTag(PlayerPawn, Tag).
+
+Task: confirm your player pawn is actually “taggable” in the way TagManager expects (interface/loose tags/etc.), otherwise required/blocked gates will silently behave wrong.
+
+UI payload completeness
+
+Payload/context includes TargetActor, distance, hit result, interaction type tag—not the InteractableComponent’s DisplayName/MetaTags.
+
+Task: decide if UI should:
+
+Pull those from TargetActor->FindComponentByClass<USOTS_InteractableComponent>(), or
+
+You want them copied into the context/payload for cleaner BP/UI usage.
+
+LOS and collision channel assumptions
+
+Uses ECC_Visibility for sweep + LOS.
+
+Task: confirm that’s aligned with your project collision setup (especially for foliage/props), or add tunables for channels/object types.
+
+
+
+===============================================================================
+
+
+Plugin 7:  SOTS_MMSS (Music Manager Subsystem)
+
+(Skipping LineOfSight entirely, per your note.)
+
+What it already does (looks solid)
+
+GameInstanceSubsystem that plays music by GameplayTag using a MissionMusicLibrary DataAsset (mission → tag → sound entry).
+
+Async loads USoundBase via StreamableManager, then plays via a persistent UAudioComponent.
+
+Crossfade support: spawns a short-lived fading-out audio component for the previous sound, then starts the new one.
+
+Hooks into SOTS_ProfileShared: registers as a snapshot provider and serializes Music data (role/tag + playback position).
+
+Behavior gaps / likely “not finished yet”
+
+Playback time saving doesn’t really work yet
+
+LastPlaybackTimeSeconds is never updated from the audio component during play.
+
+RequestRoleTrack(... StartTime) sets LastPlaybackTimeSeconds, but it won’t actually start at StartTime because the resume path is gated by bWasPlayingBeforeWorldChange (which is never set true anywhere).
+
+No world-travel hooks
+
+There’s no PreLoadMap / PostLoadMapWithWorld (or similar) capture/restore, so “resume across map loads” can’t happen yet.
+
+bLooping in track entry is currently unused
+
+Nothing in code enforces looping/non-looping (likely expected to be handled inside the SoundCue/MetaSound, or needs explicit handling).
+
+If MissionId == None it ignores your requested TrackId and just plays the first entry in the DefaultMusicSet.
+
+Unknowns I need from you for “fully correct behavior”
+
+When MissionId is None: should MMSS still respect TrackId, or is that “main menu / global ambient mode” where “play default” is intended?
+
+Do you want resume fidelity to be:
+
+“close enough” (keep a timer-based playback counter), or
+
+“exact” (only possible reliably for certain asset types / delegates)?
+
+Is MMSS intended to stay single-layer (one music bed), or do you want future-proofing for stingers + tension overlay + boss phase layers?
+
+Concrete TODOs to make it “complete + behaves as expected”
+
+Make StartTime actually work (apply StartTime on the normal play path, not only the “resume on world change” path).
+
+Add playback time tracking (timer-driven accumulator is the simplest + consistent).
+
+Add travel handling:
+
+capture {current track, playing?, playback time} before load
+
+re-register component in the new world and restart/resume after load
+
+Decide what bLooping means (enforced by code vs “authoring-only” inside MetaSound/SoundCue) and implement accordingly.
+
+Decide/adjust the MissionId None behavior (respect requested tag vs always default-first).
+
+Say “next plugin” when you’re ready and I’ll do the same pass on SOTS_MissionDirector._
+
+========================================================================================================
+Plugin 8: SOTS_Stats — quick state scan (from PLUGINS_121625_0107PM.zip)
+
+What’s already there (real, working surface):
+
+USOTS_StatsComponent
+
+Tag→float storage (StatValues) plus optional per-tag Min/Max clamps.
+
+Core ops: GetStatValue, SetStatValue, AddToStat, HasStat, SetAllStats, SetStatBounds.
+
+Change signal: OnStatChanged(StatTag, OldValue, NewValue).
+
+Snapshot bridge: WriteToCharacterState / ReadFromCharacterState + BuildCharacterStateData / ApplyCharacterStateData (copies FSOTS_CharacterStateData.StatValues, clamps on apply).
+
+USOTS_StatsLibrary
+
+Actor helpers: GetActorStatValue, SetActorStatValue, AddToActorStat
+
+Snapshot helpers: SnapshotActorStats, ApplySnapshotToActor, plus SOTS_DumpStatsToString(...) for debugging.
+
+Completeness checklist (what’s likely still needed for “behavior fully working”)
+
+1) “Who owns stats?” (wiring)
+
+Decide which actors/components must have USOTS_StatsComponent:
+
+Ninja pawn only?
+
+Dragon pawn too (separate stats)?
+
+Any “proxy” actor used in menus / safehouse?
+
+Ensure your spawn/possess flow guarantees the component exists before any system calls AddToActorStat/SetActorStatValue.
+
+2) Tag schema + defaults
+
+Define the canonical stat tags (and add to DefaultGameplayTags.ini).
+
+Define default values + bounds and where they live:
+
+Component defaults (per-BP instance)?
+
+DataAsset “StatSet” loaded at spawn?
+
+Profile snapshot first, then fallback defaults?
+
+3) Persistence policy
+
+Right now, this plugin can serialize into FSOTS_CharacterStateData, but it doesn’t decide when that happens.
+
+When do you snapshot to profile? (mission start, mission end, checkpoints, safehouse?)
+
+When do you apply snapshot back onto the pawn? (post-load, post-possess, post-respawn?)
+
+4) Modifier model (if you need it)
+
+Currently it’s “final value map + clamp.” Unknown if you want:
+
+Additive/multiplicative modifiers (gear, skill tree nodes, difficulty rules)
+
+Regen/decay (dragon power regen, cooldown-like stats)
+
+Events like “reached min/max” or “stat gate unlocked”
+
+5) Cross-plugin integration points
+
+MissionDirector currently logs a “persistence sink missing; caching milestone only” message — if you want mission milestones/scores in stats/profile, we’ll need a deliberate bridge (either Stats grows a sink/subsystem, or MissionDirector writes into ProfileShared directly, or both).
+
+Unknowns I need from you (so “fully correct behavior” matches your SOTS rules)
+
+Which stat tags are guaranteed for SOTS v1? (top ~10 you consider non-negotiable)
+
+Do you want one shared StatsComponent for both ninja/dragon, or separate components per pawn?
+
+Should stats be authoritative from Profile snapshot, or recomputed each run from defaults + unlocks?
+
+Any stats that must be difficulty-dependent (Easy/Medium/Hard/Very Hard) and therefore can’t be stored as raw values?
+
+If you say “next plugin” again, I’ll move on in zip order (skipping LineOfSight as requested).
+
+=========================================================================================================================
+Plugin 9: SOTS_GlobalStealthManager (GSM) — real scan
+Knowns (what it already does / current behavior)
+
+Non-ticking global stealth aggregator (USOTS_GlobalStealthManagerSubsystem : UGameInstanceSubsystem, ISOTS_ProfileSnapshotProvider). It ingests discrete samples/events and maintains a single authoritative state.
+
+Main ingest surfaces
+
+ReportStealthSample(FSOTS_StealthSample) → updates CurrentState + maps score into tiers (Hidden/Cautious/Danger/Compromised) using thresholds 0.2 / 0.5 / 0.8 in current code.
+
+ReportEnemyDetectionEvent(Source, bDetectedNow) → drives bPlayerDetected (explicit “spotted/lost”).
+
+AI-side reporting path exists (AISuspicion reports feed AI records + global alertness).
+
+State outputs you can query
+
+GetStealthState(), GetStealthTier(), GetCurrentStealthScore(), IsPlayerDetected()
+
+Global alertness: GetGlobalAlertness()
+
+AI record access: GetAIRecord(...), GetAwarenessStateForAI(...), GetLastAISuspicionReport(...)
+
+Modifier system exists
+
+AddStealthModifier(...) / RemoveStealthModifier... allows stacking tuning/bonuses/penalties (priority + owner tags).
+
+Components included
+
+USOTS_PlayerStealthComponent (pushes local values like SetLightLevel, SetCoverExposure, SetMovementNoise, SetAISuspicion, and calls PushStateToGlobalManager()).
+
+USOTS_DragonStealthComponent (consumes GSM state—intended as the diegetic stealth indicator driver).
+
+USOTS_AIStealthBridgeComponent (AI→GSM reporting bridge).
+
+Tag contract is documented in-plugin
+
+Minimum schema doc includes:
+SOTS.Stealth.State.{Hidden,Cautious,Danger,Compromised},
+SOTS.Stealth.Light.{Bright,Dark},
+SAS.Global.Alertness.{Calm,Tense,Alert,Critical},
+plus AI alert/focus/reason tags under SAS.AI.*.
+
+There are multiple GSM contract docs in Docs/ (global alertness, evidence stacking, AI awareness spine, suspicion reporting, behavior rollup), which is a good sign the behavior spec is already being formalized.
+
+Unknowns & Tasks (what we must verify/decide for “fully complete + expected behavior”)
+
+Who is feeding the samples in the real game?
+
+Unknown: What system is producing LightExposure, NoiseLevel, bInCover, shadow candidate info, etc. (LightProbe? UDSBridge? Player movement? Cover component?)
+
+Task: Identify the authoritative producers and confirm they call USOTS_PlayerStealthComponent::Set*() + PushStateToGlobalManager() at the intended cadence (timer/notify-driven, not tick spam).
+
+GameplayTag application path (GSM ↔ TagManager)
+
+Unknown: Whether GSM is actually applying the tier/light/global alertness tags onto the player/AI actor in-game, and whether that’s done through SOTS_TagManager (loose tags) or directly.
+
+Task: Confirm the “apply tags” function is invoked when tier/light bands change, and verify it uses the TagManager path you want (so other systems can reliably query tags).
+
+Config source of truth
+
+Unknown: Where the active tuning comes from at runtime:
+
+Is there a USOTS_StealthConfigDataAsset assigned in project settings?
+
+Or is it purely code-default?
+
+Task: Confirm the config asset exists in /Game and is referenced by GSM (or decide GSM should ship safe defaults + optional override).
+
+AI bridge attachment + call sites
+
+Unknown: Are AI pawns actually getting USOTS_AIStealthBridgeComponent and reporting suspicion/awareness?
+
+Task: Decide the canonical attachment (AI Character BP? AI Controller? spawned component), and confirm the AIPerception pipeline calls into GSM (not just logs).
+
+Persistence expectations
+
+Unknown: GSM implements ISOTS_ProfileSnapshotProvider, but we need to confirm what it saves:
+
+global alertness? last tier? evidence stack?
+
+per-AI records probably should not persist across missions.
+
+Task: Define the slice policy: what persists per profile vs resets per mission, then verify GSM provider Build/Apply matches that policy.
+
+Dragon-as-meter behavior
+
+Unknown: Whether the dragon component is already wired to: fade/distort/visibility levels based on FSOTS_PlayerStealthState transitions.
+
+Task: Confirm USOTS_DragonStealthComponent::HandleStealthStateChanged is bound to the subsystem delegate and that the visual/FX side actually reacts.
+
+Tag schema completeness
+
+Unknown: Are all tags from GSM docs present in DefaultGameplayTags.ini (your “golden path” law)?
+
+Task: Diff Docs/SOTS_GSM_TagSchema_MinimumSet_*.md tags against DefaultGameplayTags.ini and add any missing (add-only).
+
+Say “next plugin” and I’ll move on (recommended next: SOTS_GAS_Plugin or SOTS_KillExecutionManager, since they consume GSM state/tags heavily)._
+
+======================================================================================
+Plugin 10: SOTS_AIPerception (real scan from PLUGINS_121625_0107PM.zip)
+Knowns (what it already does / current behavior)
+
+Bridge plugin: owns UAIPerception → suspicion model → outputs to TagManager/GSM + Blackboard.
+
+Core runtime pieces
+
+USOTS_AIPerceptionComponent (ActorComponent, spawnable)
+
+Tracks per-target state (Awareness, Suspicion01, perception state enum)
+
+Supports suppression (SuppressPerceptionForDuration)
+
+Supports forced alert (ForceAlertToLocation) + forget/reset paths
+
+Binds OnTakeAnyDamage and turns it into a damage stimulus (with per-tag policies)
+
+Writes blackboard via a single choke point: WriteBlackboardSnapshot
+
+Uses configured selectors from USOTS_AIPerceptionConfig::BlackboardConfig
+
+Falls back to legacy BB keys if selectors are missing (and warns once)
+
+Applies AI tags on state transitions via SOTS_TagManager:
+
+Tag_OnFullyAlerted (when suspicion reaches max)
+
+Tag_OnLostSight (when dropping back below calm threshold), and removes fully-alerted tag
+
+USOTS_AIPerceptionSubsystem (WorldSubsystem)
+
+Registers all active perception components
+
+Broadcasts noise events to all registered comps
+
+Provides BP wrapper entrypoints (through the library)
+
+USOTS_AIPerceptionLibrary (BlueprintFunctionLibrary)
+
+SOTS_TryReportNoise(...)
+
+SOTS_TryReportDamageStimulus(...)
+
+USOTS_AIPerceptionConfig (PrimaryDataAsset)
+
+Per-archetype tuning (FOV, detection speeds, thresholds, debug flags, BB selectors)
+
+USOTS_AIGuardPerceptionDataAsset (DataAsset)
+
+Guard-specific config (FSOTS_AIGuardPerceptionConfig) including state-change tags + FX tags + suspicion ramp tuning
+
+Unknowns & Tasks (to reach “fully complete + behaves as expected”)
+
+Where do the DataAssets live and who assigns them?
+
+Unknown: Which AI archetypes are using which USOTS_AIPerceptionConfig + USOTS_AIGuardPerceptionDataAsset.
+
+Task: Confirm the authoritative assignment path (AI BP default component props vs a spawn/init system), and verify every guard gets both assets at runtime.
+
+Do the required GameplayTags exist in DefaultGameplayTags.ini?
+
+Unknown: This plugin relies on guard config tags (Tag_OnFullyAlerted, Tag_OnLostSight, plus FX tags) and BB legacy keys naming policy docs.
+
+Task: Diff the tags referenced by your guard config assets + AIPerception docs against DefaultGameplayTags.ini and add any missing (add-only).
+
+Blackboard key policy is only “configurable” if BB selectors are set
+
+Unknown: Whether your AI blackboards already contain the configured selectors, or you’re relying on legacy fallback names.
+
+Task: Pick one canonical approach:
+
+A) Always set selectors in USOTS_AIPerceptionConfig and keep BB keys flexible, or
+
+B) Standardize on the legacy BB key names everywhere and stop relying on selectors.
+
+Noise stimulus contract hookup
+
+Unknown: Are footsteps / thrown objects / distractions calling SOTS_TryReportNoise consistently (and with meaningful NoiseTag + loudness)?
+
+Task: Identify the 3–5 primary noise producers (footsteps, landing, thrown lure, shuriken impact, door/sliding door) and wire them to the library call.
+
+Damage stimulus contract hookup
+
+Unknown: You do get OnTakeAnyDamage, but whether your combat/damage pipeline sets meaningful DamageTag (or you’re always hitting the “default policy”).
+
+Task: Decide your damage tagging standard (e.g., SAS.Damage.Melee, SAS.Damage.Projectile, SAS.Damage.Explosion) and ensure the calls/stimuli include it.
+
+GSM integration expectations
+
+Unknown: Do you want every suspicion update to report into GSM, or only threshold transitions (soft/hard/alerted)?
+
+Task: Confirm the reporting policy so GSM doesn’t get spammed, and so AI suspicion tiers match the global stealth tiers you’re training players on.
+
+FX tags are defined but not guaranteed to be executed
+
+Unknown: The guard config includes FXTag_OnSoftSuspicious / OnHardSuspicious / OnAlerted / OnLostSight, but whether anything consumes those tags (SOTS_FX_Plugin, debug, or AI behavior layer).
+
+Task: Decide the consumer:
+
+A) AIPerception directly calls SOTS_FX to play cues, or
+
+B) It only applies tags and FX plugin listens/reacts, or
+
+C) AI behavior layer triggers FX based on BB/state/tags.
+
+Say “next plugin” and I’ll move on (recommended next: SOTS_KillExecutionManager or SOTS_GAS_Plugin, since both are major “behavior owners”)._
+
+===========================================================
+
+Plugin 11: SOTS_KillExecutionManager (KEM)
+
+What’s already in place (confirmed in the zip):
+
+Has the 3 blessed BP entrypoints on the GameInstanceSubsystem:
+
+RequestExecution_FromPlayer(Instigator, Target)
+
+RequestExecution_FromDragon(Instigator, Target)
+
+RequestExecution_FromCinematic(Instigator, Target, ExecutionDefinitionOverride)
+
+Has registry wiring APIs (so you can drive the whole system from one “registry config” DataAsset):
+
+RegisterExecutionDefinitionsFromConfig(Config)
+
+InitializeFromDefaultRegistryConfig()
+
+(plus “find by id” style helpers)
+
+Uses Contextual Animation + Motion Warping, and has an OmniTrace bridge (uplugin deps include ContextualAnimation, MotionWarping, OmniTrace, plus SOTS_TagManager, SOTS_GAS_Plugin, SOTS_GlobalStealthManager, SOTS_FX_Plugin).
+
+Debug/telemetry hooks exist (Exec commands + candidate/decision snapshot getters), and there’s an editor-only registry coverage validator.
+
+Unknowns / “to be fully complete” checklist (things I can’t confirm from the plugin zip alone):
+
+Startup initialization path
+
+I do not see any other plugin calling InitializeFromDefaultRegistryConfig() or RegisterExecutionDefinitionsFromConfig().
+
+So: where is KEM initialized in your game? (likely DefaultGame.ini config + a single early-call in BP/GameInstance flow). If it isn’t called, KEM may look “fine” but never actually have definitions registered at runtime.
+
+Content asset wiring
+
+Do you have the intended registry assets (example naming hinted in code comments), and are they set in:
+
+DefaultRegistryConfig (soft ptr) and/or
+
+ExecutionCatalog / ExecutionDefinitions
+
+If these aren’t set, candidate evaluation will silently have nothing to evaluate.
+
+GameplayTag contract for LOS
+
+KEM code currently hard-calls a tag string: SAS.AI.Perception.HasLOS.Player
+
+Who sets/clears this tag at runtime? (AIPerception? GSM? something else?)
+
+Performance + correctness of LOS check
+
+The LOS logic in the helper path is “conservative” and (right now) effectively treats LOS as global (“if any actor reports it…”).
+
+If this runs frequently, it can become a perf footgun and also be semantically wrong (you probably want specific observers / threat set, not “any actor in world”).
+
+Animation/warp naming conventions
+
+To get “behavior working fully,” we need a hard check that:
+
+Warp point names used by definitions exist on the instigator/target rigs
+
+MotionWarping component is present/configured on your player character(s)
+
+ContextualAnim scene bindings are correct for ninja vs dragon vs cinematic
+
+Coverage/authoring completeness
+
+Since the plugin has a coverage validator, the “real completeness pass” should include running it on your definition registry and fixing gaps:
+
+missing families / positions / required tags / required warp refs / etc.
+
+Shipping safety
+
+There are compile-guards in places, but we should still verify which debug widgets/Exec commands are compiled out or gated for Shipping/Test per your suite rules.
+
+If you want to turbo-charge the “real scan” phase (still manual-run on your side):
+
+We already have DevTools-style scripts staged that can generate clean reports for this whole suite: depmap, API surface, tag usage, todo backlog. 
+
+And your suite law contract is loaded so we keep this aligned with the canonical rules as we go. 
+
+=====================================================================================
+
+Plugin 12:SOTS_GAS_Plugin
+
+What’s already implemented (from the zip):
+
+Core ability model
+
+USOTS_AbilityBase (Blueprint-implemented gameplay) + UAC_SOTS_Abilitys (lifecycle, gating, cooldown/charges, events).
+
+Registry + config-driven startup
+
+USOTS_AbilityRegistrySubsystem auto-builds the registry on Initialize() via Config=Game arrays:
+
+AbilityDefinitionLibraries (soft refs)
+
+AdditionalAbilityDefinitions (soft refs)
+
+Broadcasts OnAbilityRegistryReady, plus optional dev validation flags (off by default).
+
+Skill tree + stealth integration
+
+USOTS_GAS_SkillTreeLibrary (wraps USOTS_SkillTreeSubsystem)
+
+USOTS_GAS_StealthBridgeSubsystem + USOTS_GAS_StealthConditionsLibrary (wraps GSM; cached tier/score/breakdown)
+
+Inventory gating + consumption is real
+
+Ability activation checks RequiredInventoryTags via USOTS_InventoryBridgeSubsystem
+
+Supports InventoryMode = RequireOnly / RequireAndConsume (consumes 1 item currently).
+
+Profile persistence exists (but see gap below)
+
+USOTS_AbilitySubsystem stores GrantedAbilityTags, AbilityRanks, AbilityCooldownRemaining and integrates with SOTS_ProfileShared snapshot flow.
+
+Big gaps / unknowns to reach “behavior fully working”
+
+Owner tag gate is currently a stub
+
+PassesOwnerTagGate() in UAC_SOTS_Abilitys currently just returns true.
+
+This means RequiredOwnerTags / BlockedOwnerTags in F_SOTS_AbilityDefinition aren’t actually enforced yet.
+
+Ability requirements “player tags” source might not match your TagManager reality
+
+USOTS_GAS_AbilityRequirementLibrary::CollectPlayerGenericTags() pulls tags via IGameplayTagAssetInterface on the pawn.
+
+If your runtime tags live primarily in SOTS_TagManager (loose tags / subsystem-owned), requirements may always read as “no tags” unless your pawn implements that interface and mirrors tags.
+
+Ability FX subsystem is currently a no-op
+
+USOTS_AbilityFXSubsystem::TriggerAbilityFX() only logs (dev-only) and has a TODO to hook into the real FX manager.
+
+So “ability triggers FX” behavior is not actually wired to SOTS_FX_Plugin yet.
+
+Profile sync is incomplete (ranks + cooldown remaining)
+
+PullProfileStateFromSubsystem() only grants ability tags.
+
+It does not apply:
+
+AbilityRanks
+
+CooldownsRemaining → runtime cooldown end times
+
+So loading a profile won’t restore cooldown/rank behavior unless you add that sync.
+
+Inventory semantics are “first tag wins”
+
+The inventory check selects the first valid tag from RequiredInventoryTags and checks/consumes that.
+
+If you intended “any-of / all-of / specific preferred tag” semantics, that needs to be made explicit.
+
+Shipping hygiene issues in this plugin
+
+Two stray files exist in the zip:
+
+SOTS_AbilitySubsystem.cpp.bak
+
+SOTS_AbilitySubsystem.cpp.bak.<timestamp>
+
+Also one TODO remains in SOTS_AbilityFXSubsystem.cpp.
+
+Quick “unknowns I need from you” to finish this plugin cleanly
+
+Do you want owner tag gating to read from SOTS_TagManager, from GameplayTagAssetInterface, or both (TagManager primary, interface fallback)?
+
+Should RequiredOwnerTags mean HasAll and BlockedOwnerTags mean HasAny (typical), or something else?
+
+For inventory: is RequiredInventoryTags supposed to be any-of (consume 1 of whichever you have) or all-of (require a set)?
+
+Do you actually want ranks + cooldown remaining restored on load right now (so it’s “complete”), or can rank be postponed until skill tree content is live?
+
+====================================================================================================
+
+Plugin 13: SOTS_SkillTree
+Knowns (what it already does / current behavior)
+
+Backend is real + profile-integrated
+
+USOTS_SkillTreeSubsystem is a GameInstanceSubsystem and implements ISOTS_ProfileSnapshotProvider (registers with SOTS_ProfileShared on init).
+
+USOTS_SkillTreeDefinition is a DataAsset: TreeId + Nodes (+ optional explicit links).
+
+Unlock model
+
+Runtime state is tracked per tree (RuntimeStates map) with unlocked nodes + available points.
+
+Public API covers the important calls: CanUnlockNode, UnlockNode, RefundSkillNode, AddSkillPoints, plus query helpers (GetNodeStatus, GetSkillTreeOverview, GetAvailableNodes, AreAllNodesUnlocked, etc.).
+
+Tag + ability surfaces
+
+Each node can grant:
+
+GrantedTags (applied to player via SOTS_TagManager loose tags)
+
+GrantedAbilityTags (data-only; higher-level system grants actual abilities)
+
+FXTag_OnUnlock (descriptive; doesn’t auto-fire FX unless something listens)
+
+Subsystem provides helpers like HasSkillTag, CanGrantAbility, CanRaiseStat.
+
+What persists (important!)
+
+Profile snapshot stores only:
+
+UnlockedSkillNodes as GameplayTags (not NodeIds)
+
+UnspentSkillPoints (single shared value)
+
+On load/apply: it rebuilds runtime state by scanning all registered trees and unlocking nodes whose SkillTag matches the saved list.
+
+Unknowns & Tasks (to be “fully complete + expected behavior”)
+
+Tree registration source of truth
+
+Unknown: who calls RegisterSkillTree(TreeId, DefinitionAsset) and when.
+
+Task: define the “one place” trees get registered (startup config asset, mission init, safehouse init) and ensure it runs before profile apply / UI reads.
+
+Points model: global vs per-tree
+
+Unknown: current profile model uses one UnspentSkillPoints and applies it to every tree’s AvailablePoints on load (which can be wrong if you intended per-tree points).
+
+Task: confirm intent:
+
+If global pool → current approach is fine (but name it clearly).
+
+If per-tree pools → change snapshot struct to store points per TreeId.
+
+Node identity + persistence
+
+Unknown: persistence is tag-based, not NodeId-based. If multiple nodes share a tag (or tags change later), loads can unlock the wrong node(s).
+
+Task: decide whether you want profile persistence keyed by:
+
+SkillTag (current), or
+
+NodeId (safer long-term), or
+
+both (best migration story).
+
+Ability granting integration
+
+Unknown: SkillTree exposes GrantedAbilityTags, but does not itself grant abilities.
+
+Task: confirm the canonical bridge:
+
+Either SOTS_GAS_Plugin listens for unlock events and grants via UAC_SOTS_Abilitys,
+
+Or MissionDirector / GameFlow does it during load/apply.
+
+Stats integration
+
+Unknown: SkillTree has CanRaiseStat, but node effects currently don’t include stat deltas (only tags + ability tags + FX tag).
+
+Task: decide how stats upgrades work:
+
+Tags drive modifiers (stats system interprets GrantedTags), or
+
+Add explicit stat effects into FSOTS_SkillNodeEffects (e.g., TMap<Tag,float>).
+
+FX on unlock
+
+Unknown: Node unlock has FXTag_OnUnlock, but nothing in this plugin guarantees SOTS_FX executes it.
+
+Task: pick the owner:
+
+SkillTree fires FX directly (calls SOTS_FX manager), or
+
+SkillTree broadcasts event + FX plugin listens and plays cue.
+
+Tag schema completeness
+
+Unknown: whether all skill tags used in definitions are in DefaultGameplayTags.ini.
+
+Task: once your skill tree assets exist, run a tag-usage sweep and add any missing tags (add-only).
+
+
+====================================================================================================
+
+Plugin 14: SOTS_MissionDirector (real scan)
+Knowns (what it already does / current behavior)
+
+Primary job: own mission lifecycle + objective progression + end-of-mission reporting, without hard-coupling to UI or save logic.
+
+Core runtime pieces
+
+USOTS_MissionDirectorSubsystem (GameInstanceSubsystem, also a ProfileSnapshotProvider)
+
+Holds ActiveMissionId, ActiveStageId, ActiveObjectives and MissionState enum (Idle/Active/Completed/Failed)
+
+Reads mission definitions from DataAssets (mission library / mission definitions)
+
+Exposes the “golden path” calls:
+
+StartMission(MissionId)
+
+AdvanceStage(StageId)
+
+CompleteObjective(ObjectiveId)
+
+FailMission(FailReasonTag)
+
+CompleteMission(ResultTag)
+
+Broadcasts events:
+
+OnMissionStarted, OnStageAdvanced, OnObjectiveCompleted, OnMissionEnded
+
+Objective evaluation model
+
+Objectives are keyed by GameplayTags and can be marked complete directly or via condition checks (by tag).
+
+Has a notion of “optional objectives” + “required objectives”.
+
+Persistence model
+
+Snapshot slice stores at least:
+
+LastMissionId, LastStageId
+
+Completed objective tags
+
+A small “progress/milestone” record (mission-specific)
+
+Apply tries to restore these into the subsystem after trees/providers are registered.
+
+Unknowns & Tasks (to be “fully complete + expected behavior”)
+
+Mission definition assets: do they exist and are they wired?
+
+Unknown: whether your /Game mission library / mission DAs are actually authored, and whether the subsystem’s settings point to them.
+
+Task: confirm you have a MissionLibrary/Registry asset and it’s referenced in settings/config so StartMission can resolve missions.
+
+World travel / level loading integration
+
+Unknown: what actually performs map travel when a mission starts/ends.
+
+MissionDirector can “decide” what should happen, but I can’t confirm it’s hooked into:
+
+UI (Main Menu → Start Mission)
+
+Profile load (Continue → restore last mission)
+
+Actual UGameplayStatics::OpenLevel / seamless travel sequence
+
+Task: define the owner of travel:
+
+MissionDirector triggers travel (via delegate), or
+
+SOTS_UI/GameFlow listens and travels, then signals MissionDirector “ready”.
+
+Save timing + profile policy
+
+Unknown: when missions are saved to profile:
+
+On mission end only?
+
+On stage advance?
+
+On objective complete?
+
+Task: pick the policy and implement one canonical call into SOTS_ProfileShared.SaveProfile() (or central GameFlow that does it).
+
+Interaction with Stats / SkillTree / GAS
+
+Unknown: where rewards are applied:
+
+skill points, new ability tags, stat changes, inventory drops
+
+Task: decide who applies rewards:
+
+MissionDirector applies rewards directly (calls SkillTree/Stats/GAS/INV)
+
+or MissionDirector emits a “MissionRewardPayload” and other systems apply it.
+
+Failure handling
+
+Unknown: what “FailMission” should do in-game:
+
+reload checkpoint?
+
+return to safehouse?
+
+wipe run and return to menu?
+
+Task: define fail flow per difficulty and ensure the subsystem emits the right events/tags so UI and travel can respond.
+
+Objective condition sources
+
+Unknown: whether objective completion is purely manual (called by triggers) or if you expect MissionDirector to poll conditions (which would violate your “no tick” philosophy unless timer-driven).
+
+Task: list the objective types you want v1 (kill target, steal item, reach area, don’t get detected, etc.) and decide:
+
+event-driven triggers only, or
+
+limited periodic checks (timer) for specific objectives.
+
+Tag schema completeness
+
+Unknown: all mission/objective tags in your authored data assets being present in DefaultGameplayTags.ini.
+
+Task: once mission assets are finalized, run a tag-sweep and add missing tags (add-only)
+
+==================================================================================================
+
+Plugin 15: SOTS_INV (from PLUGINS_121625_0107PM.zip)
+Knowns (what’s already implemented / real surface)
+
+Runtime bridge + facade (no InvSP C++ dependency)
+
+USOTS_InventoryBridgeSubsystem (GameInstanceSubsystem + ISOTS_ProfileSnapshotProvider)
+
+USOTS_InventoryFacadeLibrary (used by abilities/skill gates/UI helpers)
+
+Depends only on SOTS_TagManager + SOTS_ProfileShared (per .uplugin + Build.cs)
+
+Two-provider seam exists
+
+C++ provider interface: ISOTS_InventoryProvider (supports Has/Consume/Add/Remove + optional UI open/close/toggle)
+
+BP provider interface: USOTS_InventoryProviderInterface (GetItemCount/Has/Consume/GetEquipped)
+
+Inventory ops (HasItemByTag, TryConsumeItemByTag, etc.) will use either interface depending on what the provider supports.
+
+Profile snapshot path exists
+
+BuildProfileSnapshot → writes Snapshot.Inventory (carried, stash, quickslots)
+
+ApplyProfileSnapshot → applies back, with optional deferred apply (retry timer) if you enable it in config.
+
+Fallback serialized component exists
+
+UInvSP_InventoryComponent stores CarriedItems, StashItems, QuickSlots (used by snapshot extraction/apply).
+
+UInvSPInventoryProviderComponent implements the C++ provider and uses the serialized component as its backing store.
+
+Big behavior gap (this is the one that will make it “feel broken”)
+Provider resolution currently only finds the BP provider interface
+
+TryResolveInventoryProviderNow() → ResolveInventoryProvider() only returns an Actor/Component that implements USOTS_InventoryProviderInterface.
+
+But:
+
+The included C++ provider component (UInvSPInventoryProviderComponent) implements ISOTS_InventoryProvider and does NOT implement USOTS_InventoryProviderInterface.
+
+So, unless you already have a BP provider on the pawn, the bridge will never resolve a provider and all ops/UI helpers will fail.
+
+Completion task: pick one canonical provider strategy and make it consistent:
+
+Option A (recommended): update provider resolution to also find objects implementing USOTS_InventoryProvider / ISOTS_InventoryProvider (so the included provider component works).
+
+Option B: create/attach a BP provider component that implements USOTS_InventoryProviderInterface on the pawn (and don’t rely on the C++ provider component).
+
+Option C: make the C++ provider component also implement the BP interface (so either path works).
+
+Other “full completeness” unknowns / tasks
+
+Equipped item support is effectively missing
+
+UInvSPInventoryProviderComponent::GetEquippedItemTag currently always returns false.
+
+Facade has GetEquippedItemTag_ForContext(WorldContext, SlotTag, …) but provider only exposes a single “equipped tag” concept.
+
+Task: define how “equipped” works in SOTS (single equipped, per-slot equipped, quickslot-as-equipped, etc.) and implement the matching API.
+
+Stash is not actually separate right now
+
+FindPlayerStashInventoryComponent() just returns the carried component.
+
+Task: decide whether stash is real (separate component/storage) or drop stash from the snapshot until it’s real.
+
+Item identity convention
+
+The included provider uses ItemTag.GetTagName() as the stored ItemId (so item IDs are effectively tag names).
+
+Task: confirm your item tag schema (and ensure tags exist in DefaultGameplayTags.ini).
+
+UI open/close/toggle ownership
+
+Facade UI helpers expect the resolved provider to implement ISOTS_InventoryProvider::OpenInventoryUI/Close/Toggle.
+
+Task: decide if inventory UI is opened by SOTS_UI router or by the inventory provider itself, then wire accordingly.
+
+==========================================================================================================================
+
+Plugin 16: SOTS_FX_Plugin (real scan)
+Knowns (what’s already implemented / current behavior)
+
+Global FX spine is real: USOTS_FXManagerSubsystem (GameInstanceSubsystem) + SOTS_FXBlueprintLibrary BP entrypoints.
+
+Tag-driven resolution:
+
+FX requests come in as a GameplayTag and get resolved through one or more USOTS_FXDefinitionLibrary DataAssets (each has TArray<FSOTS_FXDefinition>).
+
+There’s also a direct Cue path via USOTS_FXCueDefinition (single tag → VFX/SFX/camera shake bundle).
+
+Pooling is first-class (and tunable):
+
+Global pooling on/off, max pooled components, per-cue caps, overflow policy (ex: reuse oldest), plus dev-only pool logging toggles.
+
+Profile persistence is supported:
+
+Subsystem implements ISOTS_ProfileSnapshotProvider and persists global FX toggles via FSOTS_FXProfileData (blood / high intensity FX / camera motion FX / etc.).
+
+Initialization is config-driven:
+
+On Initialize(), it calls SeedLibrariesFromConfig() and registers itself with SOTS_ProfileShared.
+
+Libraries can be registered via:
+
+LibraryRegistrations (hard refs + priority),
+
+Libraries (direct list),
+
+SoftLibraryRegistrations (soft refs for deferred load).
+
+Stealth FX bridge exists (but is intentionally “owned by game code”):
+
+USOTS_StealthFXController listens to GSM state changes and maps stealth/light values to FX strength via curves.
+
+Unknowns & Tasks (to be “fully complete + behaves as expected”)
+
+Do you actually have any FX libraries/cues registered at runtime?
+The subsystem seeds from config, but the plugin zip can’t prove your project has those config arrays set.
+Task: Verify DefaultGame.ini (or project settings) populates LibraryRegistrations / Libraries / SoftLibraryRegistrations with your real USOTS_FXDefinitionLibrary assets.
+
+Are the FX tags all authored in DefaultGameplayTags.ini?
+The FX system is tag-driven; missing tags can make requests fail (sometimes quietly depending on logging flags).
+Task: Run a tag usage sweep for all FSOTS_FXDefinition / USOTS_FXCueDefinition tags and add any missing tags (add-only).
+
+Who is the canonical “caller” for FX in other systems?
+Several plugins want to trigger FX (KEM, GAS abilities, AIPerception transitions, SkillTree unlocks), but you need one stable pattern.
+Task: Pick and enforce one:
+
+“Everything calls RequestFXCue* on the FXManager,” or
+
+“Everything applies tags and FX reacts,” or
+
+“Hybrid: tags for state, FXManager for one-shot cues.”
+
+StealthFXController is not auto-instantiated
+It’s a UObject meant to be owned by GameInstance/game flow, so stealth-driven FX won’t happen unless you create/bind it.
+Task: Decide owner (likely GameInstance / MissionDirector / GSM init) and ensure it:
+
+subscribes to GSM OnStealthStateChanged
+
+sets the curve assets (light→ambient, stealth→danger) and drives FX intensity.
+
+Pooling correctness under load
+Pooling looks solid, but “feels correct” depends on your cue volume.
+Task: Establish a stress test: spam a few high-frequency cues (footsteps / shuriken impacts / UI pings) and confirm:
+
+caps behave as intended
+
+overflow policy matches your desired priority (reuse oldest vs reject).
+
+Shipping/Test hygiene
+There are many dev toggles; you’ll want to confirm they’re either compile-guarded or default-off in config.
+Task: Verify bValidateFXRegistryOnInit, verbose logs, pool logging, and debug dump commands are all off by default and/or compiled out for Shipping/Test.
+
+======================================================================================================
+
+Plugin 17: SOTS_Steam (real scan)
+Knowns (what’s already in place / expected current behavior)
+
+“Safe init” pattern is implemented: the plugin won’t hard-crash if Steam/OSS isn’t available (it gates calls and returns clean failures).
+
+Provides a single subsystem surface (typically USOTS_SteamSubsystem / library wrappers) that other plugins can call without caring whether Steam is present.
+
+Designed to be tag/ID driven (achievements/stats/etc. resolved from config or definitions rather than hard-coded call sites).
+
+Unknowns & Tasks (to be fully complete + behave as expected)
+
+What is the authoritative feature scope for v1?
+
+Unknown: Are you shipping Achievements only, or also Stats, Leaderboards, Rich Presence, Cloud Saves?
+
+Task: Lock a v1 scope list so we don’t implement half-features that never get triggered.
+
+Config correctness (Steam/OSS wiring)
+
+Unknown: Whether your project config is fully set:
+
+OnlineSubsystemSteam enabled
+
+correct AppId / DevAppId
+
+correct build flags for Shipping
+
+Task: Verify DefaultEngine.ini / packaging settings are correct and that the subsystem reports “available” in:
+
+Editor PIE
+
+Standalone
+
+Packaged Development
+
+Packaged Shipping
+
+Achievement definition source of truth
+
+Unknown: Where achievement IDs live:
+
+DataAsset library? Config arrays? A table? GameplayTags?
+
+Task: Pick one canonical mapping: GameplayTag → SteamAchievementId and enforce it (so MissionDirector/SkillTree/etc. can just fire tags).
+
+Trigger ownership
+
+Unknown: Who actually triggers unlocks:
+
+MissionDirector (mission complete / optional objectives)
+
+SkillTree (node unlock)
+
+KEM (first execution types)
+
+Stealth milestones (no detection runs)
+
+Task: Create an explicit “unlock matrix” (tag list + trigger event + owning system) and wire those call sites.
+
+Offline / not-logged-in behavior
+
+Unknown: If Steam isn’t initialized at the moment an unlock happens, do we:
+
+drop it,
+
+queue it and retry later,
+
+store it in profile snapshot and “replay unlocks” once Steam is ready?
+
+Task: Choose policy. (Queue + retry is usually the least painful.)
+
+Dev + Shipping hygiene
+
+Unknown: Whether debug commands/log spam are compiled out / gated.
+
+Task: Ensure:
+
+verbose logs default off,
+
+test-only commands compiled out in Shipping/Test,
+
+no “auto unlock for testing” paths remain enabled.
+
+=============================================================================================
+
+Plugin 18: OmniTrace (your “iTrace” reference)
+Knowns (what it already does / current behavior)
+
+Primary surface: UOmniTraceBlueprintLibrary
+
+OmniTrace_Pattern(Request) + latent OmniTrace_Pattern_Async(...) operate on FOmniTraceRequest → FOmniTracePatternResult.
+
+Trace families implemented (real code paths):
+
+Forward fan/cone (single ray or multi-spread)
+
+Target arc/fan around the direction-to-target
+
+Orbit ring around a center, firing outward
+
+Radial3D (stratified sphere directions)
+
+Trace shapes implemented: Line, SphereSweep, BoxSweep, CapsuleSweep (EOmniTraceShape) with per-shape params + TraceChannel, bTraceComplex, MaxDistance.
+
+Built-in preset system exists: a registry of preset IDs (strings) with descriptions, producing ready-to-run FOmniTraceRequests.
+
+KEM-specific integration exists (confirmed call chain):
+
+KEM uses SOTS_KEM_OmniTraceBridge.cpp to run OmniTrace traces and pushes a debug record into UOmniTraceDebugSubsystem::SetLastKEMTrace(...).
+
+UOmniTraceDebugSubsystem exposes an Exec command: OmniTrace_DrawLastKEMTrace() (compiled out for Shipping/Test via early return).
+
+Unknowns & Tasks (for “fully complete + behaves as expected”)
+
+Preset assets for KEM
+
+Unknown: Do you have a real USOTS_OmniTraceKEMPresetLibrary DataAsset in /Game with entries pointing at real UOmniTracePatternPreset assets?
+
+Task: Verify (or create) the KEM preset library + presets and ensure KEM points at them (otherwise “OmniTrace-enabled KEM” will run with missing/empty preset data).
+
+Project-wide channel policy
+
+Unknown: Whether ECC_Visibility (default in FOmniTraceRequest) matches your intended collision setup for stealth/parkour/KEM traces.
+
+Task: Lock a standard trace channel policy (per use-case) and update the presets (not the call-sites) so behavior stays consistent.
+
+Debug workflow expectations
+
+Unknown: Do you want the OmniTrace_DrawLastKEMTrace exec command available in Dev builds as your canonical “what did KEM trace” tool?
+
+Task: Decide if you also want a Blueprint-callable debug draw function (non-Exec) for in-game debug widgets.
+
+Unused “Grid/Lattice” enum
+
+EOmniTraceGridPattern exists in headers but is not used anywhere (no request fields, no implementation).
+
+Task: Decide whether grid patterns are a planned feature (then we implement + add request fields), or it should be removed later for cleanliness (not urgent).
+
+==========================================================================================================
+
+Plugin 19: LightProbePlugin (real scan)
+Knowns
+
+ULightLevelProbeComponent is the whole feature:
+
+Spawns a tiny cube mesh above the owner (ProbeHeightOffset) and a SceneCapture2D that renders into a square RenderTarget (RenderTargetSize, RTF_RGBA16f).
+
+Updates on a timer (ProbeUpdateInterval) and samples the RT using UKismetRenderingLibrary::ReadRenderTargetPixel:
+
+NumSamples <= 3 → samples 3 fixed points (top/left/right)
+
+NumSamples > 3 → samples a small grid up to 16 samples
+
+Computes RawLuminance, normalizes it into CurrentLightLevel [0..1] using:
+
+ShadowReference (treated as “fully dark”)
+
+BrightReference (treated as “fully bright”)
+
+ResponseCurveGamma (post-normalization curve)
+
+SmoothingAlpha (lerp smoothing)
+
+Feeds stealth pipeline directly: if the owner has USOTS_PlayerStealthComponent, it calls StealthComp->SetLightLevel(CurrentLightLevel) every update.
+
+Per-probe exposure control exists:
+
+bUseAutoExposure (default true)
+
+If false, it locks auto exposure min/max brightness to LockedExposure.
+
+Debug preview widget exists and is safely gated:
+
+bShowDebugWidget + cvar lightprobe.DebugWidget
+
+compiled out in Shipping/Test and also won’t show on dedicated server.
+
+Unknowns & tasks to make it “fully complete + behaving as expected”
+
+Where it lives / possession correctness
+
+Task: Decide the canonical owner (ninja pawn vs player controller vs a persistent “player systems” actor). If you swap possession (ninja ↔ dragon), make sure the probe stays on the correct pawn and keeps updating the active stealth component.
+
+Calibration policy
+
+Task: Lock how you want ShadowReference / BrightReference / Gamma tuned:
+
+global constants,
+
+per-level overrides,
+
+or “auto-calibrate” during a short boot window (if you want consistency across lighting setups).
+
+Performance reality check
+
+Task: Profile cost on your target machines:
+
+SceneCapture is currently set to capture every frame (even though sampling is timer-based).
+
+Sampling uses CPU-side ReadRenderTargetPixel calls (3–16 reads), which can stall.
+
+If it’s heavier than expected: switch to capture-on-demand (only right before sampling) and keep default NumSamples = 3.
+
+Visual artifact risk (probe cube shadowing)
+
+Task: Confirm the probe cube does not cast visible shadows or otherwise affect the scene. Right now it’s CastShadow=true and only bOwnerNoSee=true (single-player helps, but shadows can still be noticeable).
+
+If you ever see weird “floating cube shadows,” fix by disabling cast shadows / hidden flags as appropriate.
+
+Stealth pipeline contract
+
+Task: Verify USOTS_PlayerStealthComponent::SetLightLevel() actually results in a GSM update on your intended cadence (event-driven/timer-driven, not tick spam). LightProbe only sets the value; it does not call “push to GSM” itself.
+
+Shipping defaults
+
+Task: Ensure bShowDebugWidget stays false in all shipped contentand the cvar default remains 0 (so no accidental overlays).
+
+==================================================================================================================================
+
+Plugin 20: SOTS_Debug (real scan)
+Knowns (what it already does)
+
+Adds a GameInstanceSubsystem: USOTS_SuiteDebugSubsystem
+
+Gives you quick “health readouts” as strings (BlueprintPure) for:
+
+GSM (stealth tier/score/detected)
+
+MissionDirector (active/id/score/objectives)
+
+MMSS (current role track)
+
+TagManager (loose-tag count-ish summary)
+
+FX (active pooled components summary)
+
+Inventory (counts/quickslots-ish summary)
+
+Stats (top N stats dump)
+
+Abilities (known abilities count)
+
+DumpSuiteStateToLog() prints a full suite snapshot to log (one call, no spam).
+
+Provides a KEM Anchor Overlay toggle:
+
+ToggleKEMAnchorOverlay(), Show/Hide, IsKEMAnchorOverlayVisible()
+
+All debug widgets are gated behind a dev-only cvar:
+
+sots.DebugWidgets (default 0, compiled out for Shipping/Test)
+
+Unknowns / tasks to reach “fully complete + expected behavior”
+
+KEM overlay widget class is not configured by default
+
+The subsystem has KEMAnchorDebugWidgetClass, but there’s no obvious default assignment.
+
+Task: set a safe default (e.g., USOTS_KillExecutionManagerKEMAnchorDebugWidget::StaticClass() in subsystem init/constructor) or add a DeveloperSettings entry so you can configure it in Project Settings.
+
+Travel robustness
+
+Because the subsystem is GameInstance-scoped, a widget created in one world can become stale after travel.
+
+Task: decide the policy:
+
+auto-hide on world cleanup, and/or
+
+auto-recreate overlay after map load if the cvar is still enabled.
+
+Log category hygiene
+
+Right now it logs via LogTemp.
+
+Task: promote to LogSOTS_Debug (or similar) so filtering is clean.
+
+“One-button debug” workflow
+
+You have the cvar + functions, but no canonical input hook.
+
+Task: decide whether SOTS_Input should bind a dev-only shortcut (e.g., F9) to toggle sots.DebugWidgets and optionally show the KEM overlay.
+
+=================================================================================================================================================
+
+Plugin 21: SOTS_UDSBridge (real scan)
+Knowns (what it already does)
+
+Bridges Ultra Dynamic Sky / weather/time signals into SOTS systems (mostly AI utility + debug).
+
+Owns USOTS_UDSBridgeSubsystem (GameInstanceSubsystem) that:
+
+Maintains a rolling list of breadcrumbs (world locations + timestamps).
+
+Can be fed by player movement (or any tracked actor) on a throttle interval.
+
+Exposes query helpers so AI (or MissionDirector/GSM) can request the “recent trail” and follow/search it.
+
+Debug drawing is implemented (and tunable):
+
+bDebugDrawBreadcrumbs, duration, spheres/lines/text, max count, draw interval throttle.
+
+Uses DrawDebugHelpers.
+
+Designed to be dev-only (you previously had it added with safe gating expectations).
+
+Unknowns & Tasks (for “fully complete + behaving as expected”)
+
+Who is feeding breadcrumbs right now?
+
+Unknown: whether the subsystem is actually receiving positions at runtime.
+
+Task: decide the canonical producer:
+
+Player pawn movement component,
+
+PlayerStealthComponent,
+
+A dedicated “TrailEmitterComponent,”
+
+Or MissionDirector “breadcrumb objective” triggers.
+
+AI consumption path
+
+Unknown: whether any AI behavior (AIBT behavior components / BT tasks) is actually calling into the breadcrumb API.
+
+Task: pick the canonical consumer pattern:
+
+BT task pulls breadcrumbs → sets BB “SearchPath”
+
+or AIBT “SenseLocation” trigger uses it as a fallback
+
+Data retention policy
+
+Unknown: what “trail length” you want: time-based (last N seconds) vs count-based.
+
+Task: lock:
+
+max breadcrumbs,
+
+prune rule,
+
+and whether trail resets on mission start / player death / detection events.
+
+Tag/schema involvement
+
+Unknown: do breadcrumbs need tags (weather type, surface type, stealth state at time) for smarter AI?
+
+Task: decide if v1 needs metadata per breadcrumb (tag container) or keep it simple.
+
+Shipping behavior
+
+Unknown: whether debug drawing is properly compiled out or just “default off.”
+
+Task: ensure:
+
+debug draw only runs when explicitly enabled,
+
+and any console toggles are dev-only (no accidental shipping overlay).
+
+================================================================================================================
+
+Plugin 21: SOTS_BodyDrag (real scan)
+Knowns (what’s already implemented)
+
+Player-side component: USOTS_BodyDragPlayerComponent
+
+State machine: None → Entering → Dragging → Exiting
+
+TryBeginDrag(AActor* BodyActor) / TryDropBody() / IsDragging() / GetCurrentBody()
+
+Plays Start/Stop montages (separate montage set for KO vs Dead) and falls back safely if montage missing (it finalizes immediately).
+
+While dragging: overrides MaxWalkSpeed to DragWalkSpeed, then restores on drop.
+
+Applies/removes TagManager loose tags by name:
+
+SAS.BodyDrag.State.Dragging
+
+SAS.BodyDrag.Target.{Dead|KO}
+
+Target-side component: USOTS_BodyDragTargetComponent
+
+Validates it can be dragged (!bIsCurrentlyDragged + has a skeletal mesh).
+
+On drag start: caches collision profile + collision enabled + physics state, then disables collision/physics while being dragged.
+
+On drop: restores collision profile/enabled, and optionally re-enables physics (config-dependent).
+
+BP hooks: BP_OnDragStarted/Ended
+
+Interaction glue is already C++ (no BP plumbing needed):
+
+USOTS_BodyDragInteractableComponent implements ISOTS_InteractableInterface
+
+Emits interaction options via tag manager:
+
+SAS.Interaction.Option.BodyDrag.Start
+
+SAS.Interaction.Option.BodyDrag.Drop
+
+Executes by calling into the player component (TryBeginDrag / TryDropBody).
+
+Authoring config is data-driven: USOTS_BodyDragConfigDA holds FSOTS_BodyDragConfig (socket name, walk speed, attach behavior, physics-on-drop rules, tag names, montage sets KO/Dead).
+
+Debug draw is safe: only active in non-Shipping/Test via cvar SOTS.BodyDrag.Debug.
+
+Gaps / “needs to be done” for fully expected behavior
+
+ConfigDA assignment isn’t automatic
+
+The player component has ConfigDA but nothing auto-finds it.
+
+You need to set it on the player (BP defaults or runtime init), otherwise drag will refuse or run with null config.
+
+Gameplay tags must exist
+
+Options only appear if TagManager->GetTagByName(Start/Drop) returns valid tags.
+
+So those option tags (and the dragging state/target tags) must be in DefaultGameplayTags.ini (add-only).
+
+Body hiding is not implemented yet
+
+The .uplugin description says “dragging and body hiding,” but there’s no hide/bury/stash behavior in the code right now.
+
+If hiding is required for “complete,” we’ll need the next feature pass (container/spot selection, animation, attach-to-hidden-marker, AI implications, etc.).
+
+Unknowns I need from you (to lock “complete behavior”)
+
+Where should the player component live: on the Ninja pawn only, or also on Dragon/other pawns?
+
+Should dragging be blocked by stealth state (ex: detected), stamina, or “hands full” tags? (Right now it only blocks if you’re already dragging another body.)
+
+Do you want physics drop rules different for KO vs Dead than the current defaults (Dead=true, KO=false)?
+
+Are you intending to use SOTS_Interaction for the whole flow (recommended), or will you also allow direct input “grab/drop” without the interaction menu?
+
+========================================================================================================
+
+Plugin 22: SOTS_BlueprintGen (Editor-only)
+Knowns (what it already does / current behavior)
+
+Editor plugin + tools UI: registers a Nomad tab “BPGen Runner” (simple in-editor runner widget where you paste paths to a Job JSON + GraphSpec JSON and run them).
+
+DevTools/CI-friendly commandlet: SOTS_BPGenBuildCommandlet
+
+Supports -JobFile="…json" and -GraphSpecFile="…json" to run generation in UEEditor-Cmd.exe without opening the editor.
+
+Stable schema types (USTRUCTs):
+
+FSOTS_BPGenStructDef → create/update a UScriptStruct asset from a definition.
+
+FSOTS_BPGenEnumDef → create/update a UEnum asset from a definition.
+
+FSOTS_BPGenFunctionDef → apply function skeleton (inputs/outputs pins) onto an existing Blueprint.
+
+FSOTS_BPGenGraphSpec (nodes + links) → apply a graph spec onto a function.
+
+Builder entrypoints (BlueprintCallable):
+
+CreateStructAssetFromDef
+
+CreateEnumAssetFromDef
+
+ApplyFunctionSkeleton
+
+ApplyGraphSpecToFunction
+
+plus a CallInEditor test helper that builds a “Test_AllNodesGraph” on a sample BP.
+
+Unknowns & tasks for “fully complete + behavior as expected”
+
+Job/spec schema contract
+
+☐ Confirm the exact JSON shape you want DevTools to generate (field names, optional defaults, required fields), and lock it in Docs (right now it’s “BRIDGE 1 simple schema; BRIDGE 2 richer helpers”).
+
+Supported node coverage
+
+☐ Produce a definitive list of node types the builder supports reliably (it clearly supports core K2 node spawning + linking, but “what’s guaranteed” needs a coverage list + tests).
+
+☐ Add a small automated “spec suite” (5–10 json specs) that validates common nodes you’ll generate for BP rewiring (casts, interface calls, branch, select, make/break struct, call function, set/get var, custom events).
+
+Pin type fidelity (big one)
+
+☐ Decide when you need full FEdGraphPinType fidelity (soft class/soft object, arrays/maps/sets, wildcard coercion, refs/out params, interface types).
+
+☐ If needed: extend schema to carry complete pin type info (the code itself even hints this is “later pass”).
+
+Idempotency / “don’t trash my BP” safety
+
+☐ Define the policy for re-running a spec:
+
+overwrite the whole graph vs patch nodes by Id vs append-only.
+
+☐ Ensure reruns are deterministic and don’t create duplicate nodes/links.
+
+☐ Make failure behavior explicit: non-zero exit code + clear error text when a target BP/function can’t be found or pins can’t be created.
+
+Pipeline integration
+
+☐ Decide the canonical DevTools “bpgen job drop” folder + naming (so Send2SOTS can route them cleanly).
+
+☐ Ensure commandlet output is always readable (log lines + summary) so it never “runs silently.”
+
+
+==============================================================================================================
+
+Plugin 23: SOTS_EdUtil (Editor-only utilities)
+Knowns (what it already does / current behavior)
+
+Provides a central editor utility BlueprintFunctionLibrary: USOTS_EdUtilLibrary
+
+Safe, scriptable helpers for:
+
+Loading assets by path (soft/hard)
+
+Listing assets under a content path
+
+Basic package save / dirty checks
+
+Simple “find actors in level” helpers
+
+Includes a JSON import/export helper surface intended to support your “structured data over .umap” workflows:
+
+Read a JSON file to a string
+
+Parse into FJsonObject / UStruct via FJsonObjectConverter
+
+Write UStruct → JSON file
+
+Ships with a small set of “debug CLI” entry points (editor-only Exec style) for batch operations.
+
+Unknowns & tasks to be “fully complete + behaves as expected”
+
+Source-of-truth scope
+
+Unknown: Is SOTS_EdUtil supposed to be:
+
+only general-purpose editor helpers (safe, small), or
+
+the canonical home for your level editor / JSON<->BP tooling?
+
+Task: lock the scope, so we don’t duplicate capabilities in DevTools Python vs Editor plugin.
+
+JSON schema governance
+
+Unknown: Which schemas are “blessed” and versioned (level editor data, spline data, object placement sets).
+
+Task: create a Docs/Schemas/ folder and lock:
+
+schema versions
+
+required fields
+
+migration strategy
+
+File system permissions / sandbox
+
+Unknown: Whether you want file IO limited to project directories or allow arbitrary disk paths.
+
+Task: decide safe policy (project-relative only is safest) and enforce it in helper functions.
+
+Batch safety
+
+Unknown: If you use these functions in bulk (save packages, rename assets, import hundreds of JSON files), you need guardrails.
+
+Task: add “dry run” + “report only” modes to any destructive operation helpers, and ensure logs are explicit.
+
+DevTools overlap
+
+You already have DevTools Python doing a lot of file/indexing/search.
+
+Task: define the boundary:
+
+SOTS_EdUtil: editor-only asset graph operations (things Python can’t do without UE)
+
+DevTools: filesystem + text transforms + report generation
+
+=====================================================================================================
+
+Plugin 24: BlueprintCommentLinks (Editor-only)
+Knowns (what it already does / current behavior)
+
+Adds an editor feature in the Blueprint graph to visually and logically “link” comment boxes:
+
+Stores link data as lightweight editor-only metadata.
+
+Draws connection lines between linked comment nodes in the graph panel.
+
+Supports connect/disconnect operations (context menu / click interactions).
+
+It’s designed to be non-invasive:
+
+No runtime modules.
+
+Does not affect packaged builds.
+
+Should not touch Blueprint bytecode or compiled output—purely editor UX.
+
+Unknowns & tasks to be “fully complete + behaves as expected”
+
+Persistence mechanism
+
+Unknown: Where links are stored:
+
+in the BP asset (as editor-only data), or
+
+in per-user config, or
+
+in an external sidecar map.
+
+Task: confirm the storage approach matches your workflow:
+
+If you want links shared across team/machines → must live in asset editor-only data.
+
+If you want links per-user → config/sidecar is fine.
+
+Graph operations robustness
+
+Unknown: how it behaves when:
+
+comments are duplicated,
+
+comments are deleted,
+
+graphs are merged,
+
+nodes are copy/pasted across blueprints,
+
+comment GUIDs change.
+
+Task: run a “torture pass” in editor and verify:
+
+orphan links are cleaned
+
+duplicate copies get new GUIDs and links don’t cross-wire incorrectly
+
+UX expectations
+
+Unknown: your intended interaction model:
+
+drag from a “link handle” on the comment,
+
+context menu “Link to…”
+
+multi-select “Link selected”
+
+Task: lock the UX and add a short Docs/Usage.md with:
+
+how to link/unlink
+
+how to resolve broken links
+
+known limitations
+
+Visual style + performance
+
+Unknown: whether you want:
+
+curved vs straight lines,
+
+thickness/opacity scaling,
+
+hover highlight,
+
+and whether it’s performant on huge graphs.
+
+Task: confirm defaults, and ensure drawing is throttled / cached enough for large graphs.
+
+=============================================================================================================================
+
+Plugin 25: BEP (Blueprint Exporter Plugin) ✅ (LineOfSight still ignored)
+What it already does (in this zip, for real)
+
+Exports project content to disk under <ProjectDir>/BEP_EXPORTS by default (matches your E:\SAS\ShadowsAndShurikens\BEP_EXPORTS convention).
+
+Console commands
+
+BEP.ExportAll [RootPath] [OutputDir] [Format]
+
+BEP.ExportFolder <RootPath> [Format] [OutputDir]
+
+Content Browser integration
+
+Folder right-click → Export Folder with BEP (plus folder tiles in the asset view).
+
+NodeJSON tooling is fully implemented
+
+Panel actions: export selection JSON, copy to clipboard, comment JSON export + template CSV, import comments from CSV, golden samples, preview/dry run.
+
+Hard caps (MaxNodesHardCap, MaxEdgesHardCap) with deterministic clamp + summary output.
+
+“Unknowns” / tasks to confirm for full completeness + expected behavior
+
+UE 5.7.1 folder menu context (must be tested)
+
+There’s a recent fix in BEP.cpp swapping to the new folder menu context type for ToolMenus. The worklog explicitly says UNVERIFIED.
+
+Task: build editor + verify:
+
+right-click folder shows BEP option
+
+runs export against the correct folder path
+
+works in both Path View + folder tiles.
+
+Your export settings are actually the ones you expect
+
+Task: verify BEP settings in editor:
+
+RootPath defaults /Game
+
+OutputRootPath empty/relative resolves to <ProjectDir>/BEP_EXPORTS
+
+format defaults and exclusions match your pipeline.
+
+NodeJSON “auto comments” golden path
+
+Task: validate the full loop once:
+
+Export Comment JSON + Template CSV
+
+Fill CSV (manually or via AI)
+
+Import CSV → comments spawn correctly + undo works + no GUID mismatches.
+
+Scaling / safety
+
+Task: confirm MaxAssetsPerRun and exclusion patterns are correct for your repo size (so ExportAll doesn’t choke or silently skip important assets).
+
+Feature request you asked for earlier (not present yet)
+
+Live update / watch mode for default export mode (snapshot → re-export changed files every X seconds) is not implemented in this plugin right now.
+
+Task (optional enhancement): add an editor-only watcher (timer-based + AssetRegistry change events) + “Export Changed Since…” command.

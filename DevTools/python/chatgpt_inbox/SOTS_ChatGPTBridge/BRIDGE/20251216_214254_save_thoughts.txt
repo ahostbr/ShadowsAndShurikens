@@ -1,0 +1,485 @@
+[SOTS_SAVED_THOUGHTS]
+ts: 2025-12-17T02:42:54.733Z
+url: https://chatgpt.com/g/g-p-692a52e132d48191884b9f1868e99825-sots-cgf-5-7-overhaul/c/694214b8-5a0c-8325-a7a1-a7953768a902
+title: SOTS/CGF_5.7_Overhaul - Code review and ownership locks
+
+Activity
+·
+1m 54s
+Thinking
+Reading documents
+
+Reading documents
+
+Inspecting and verifying required gameplay tags
+
+The user provided a DefaultGameplayTags.ini and wants me to inspect and suggest any missing tags. To do this, I'll cross-check the tags listed in the file with the plugin suite and exports. I'll use Python scripts to run an analysis on the necessary files and generate a report based on the tag usage.
+
+Running analysis to suggest missing tags
+
+I’ll use the script sots_tag_usage_report to analyze the provided data. First, I need to check the file paths and make sure the plugin zip files are accessible in the environment. Once everything is set up, I’ll generate a list of missing tags by parsing the ini file and plugin sources, then return the findings to the user as suggested patches.
+
+Focusing on plugin code for tag references
+
+The user wants to ensure that every tag referenced in plugin code is accounted for in the DefaultGameplayTags.ini. While we could check tags in BPs, for now, I'll focus mainly on C++ code. It seems efficient to scan plugin code for hardcoded tags or those using the UGameplayTagsManager. Adding tags from BPs is safe and non-disruptive, but I’ll avoid unnecessary noise.
+
+Addressing missing and potentially conflicting tags
+
+I’m focusing on C++ plugin code first, checking for missing stats tags (like SAS.Player.Stats.Health) and ensuring they’re added to the ini file if missing. I’ve spotted potential conflicts with stealth tags (e.g., SOTS.Stealth.State vs SAS.Stealth.*). Some lines missing a + in GameplayTagList could lead to unexpected behavior, so we need to be cautious.
+
+Scanning for missing tags and proper formatting
+
+I’ll add a + to entries without it, since the law says "add-only," even though this isn’t strictly an addition. I’ll run a scan to count existing tags in the ini file and then analyze the plugin zip for tag patterns (like RequestGameplayTag). I'll also look for UE_DEFINE_GAMEPLAY_TAG to identify static tags from the code.
+
+Evaluating missing gameplay tags for plugin compliance
+import re, zipfile, os, textwrap, json, pathlib, itertools, math, statistics
+ini_path="/mnt/data/DefaultGameplayTags.ini"
+with open(ini_path,'r',encoding='utf-8',errors='ignore') as f:
+    ini_text=f.read()
+# Extract Tag="..." occurrences
+ini_tags=set(re.findall(r'Tag="([^"]+)"', ini_text))
+# also Tag= without quotes?
+ini_tags.update(re.findall(r'Tag=([A-Za-z0-9_.]+)', ini_text))
+len(ini_tags), list(sorted(list(ini_tags)))[0:10], list(sorted(list(ini_tags)))[-10:]
+
+
+(413,
+ ['Abilities.ContextualAnim',
+  'Abilities.MoveTo',
+  'Foley',
+  'Foley.Event',
+  'Foley.Event.Handplant',
+  'Foley.Event.Jump',
+  'Foley.Event.Land',
+  'Foley.Event.Run',
+  'Foley.Event.RunBackwds',
+  'Foley.Event.RunStrafe'],
+ ['UI.Modals.Notification',
+  'UI.Modals.Notification.Error',
+  'UI.Modals.Notification.Generic',
+  'UI.Modals.Notification.Quest',
+  'UI.Modals.Notification.System',
+  'UI.Modals.Notification.Tutorial',
+  'UI.Modals.ProfileManager',
+  'UI.Modals.QuitGame',
+  'UI.Modals.SettingsMenu',
+  'UI.Modals.VideoPlayer'])
+Scanning plugin zip for tags
+
+I’ve counted 413 tags, now I’ll scan the plugin zip for any relevant tag patterns. This will help identify any missing or incorrectly referenced tags and ensure everything aligns with the ini file and code requirements. The next step is to process the plugin zip thoroughly.
+
+Scanning plugin zip for relevant file types
+plugin_zip="/mnt/data/PLUGINS_121625_0107PM.zip"
+zf=zipfile.ZipFile(plugin_zip)
+# list some entries
+entries=[e for e in zf.namelist() if e.lower().endswith(('.h','.hpp','.cpp','.inl','.cs','.uplugin','.ini','.txt','.md'))]
+len(entries), entries[:20]
+
+
+(593,
+ ['BEP/BEP.uplugin',
+  'BEP/Docs/Anchor/CONTEXT_ANCHOR_20251216_1238.md',
+  'BEP/Docs/Anchor/CONTEXT_ANCHOR_BEP_ToolMenus_FolderContextFix_20251216_1250.md',
+  'BEP/Docs/BEP_Documentation.md',
+  'BEP/Docs/BEP_NodeJson_AutoComments.md',
+  'BEP/Docs/BEP_NodeJson_AutoComments_Workflow.md',
+  'BEP/Docs/BEP_NodeJson_Exporter.md',
+  'BEP/Docs/BEP_NodeJson_QuickStart.md',
+  'BEP/Docs/BuddyWorklog_20251215_120000_BEP_NodeJSON_SPINE1.md',
+  'BEP/Docs/BuddyWorklog_20251215_123000_BEP_NodeJSON_SPINE2.md',
+  'BEP/Docs/BuddyWorklog_20251215_173000_BEP_NodeJSON_SPINE3.md',
+  'BEP/Docs/BuddyWorklog_20251215_183000_BEP_NodeJSON_SPINE4_AutoComments.md',
+  'BEP/Docs/BuddyWorklog_20251215_194500_BEP_NodeJSON_SPINE5_Polish.md',
+  'BEP/Docs/BuddyWorklog_20251215_204500_BEP_NodeJSON_SPINE6_Finalize.md',
+  'BEP/Docs/BuddyWorklog_20251216_1238_BEP_ToolMenus_FolderContextFix.md',
+  'BEP/Docs/BuddyWorklog_20251216_125024_BEP_FolderToolMenus_ContextFix.md',
+  'BEP/Docs/BuddyWorklog_20251216_125902_BEP_MenuTrim.md',
+  'BEP/Source/BEP/BEP.Build.cs',
+  'BEP/Source/BEP/Private/BEP.cpp',
+  'BEP/Source/BEP/Private/BEPExportSettings.cpp'])
+Scanning plugin for gameplay tag references
+
+I’ll now scan the plugin zip for references to gameplay tags. Specifically, I'll look for common patterns like UE_DECLARE/DEFINE_GAMEPLAY_TAG, RequestGameplayTag, and AddTag. I'll use a regex to capture potential tag strings and filter by common SOTS tag prefixes (e.g., SAS., UI., etc.). I'll also check for the UE_DEFINE_GAMEPLAY_TAG macro. Time to dive into the code!
+
+Scanning for gameplay tag references
+import fnmatch, io
+prefixes=("SAS.","SOTS.","UI.","InputUserSettings.","Inventory.","MotionMatching.","Abilities.","GameplayCue.","Foley.","OmniTrace","OT.","SOTS_","SOTS.","SAS_","SASTag") # some
+taglike=re.compile(r'["\']([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)["\']')
+macro_tag=re.compile(r'UE_(?:DEFINE|DECLARE)_GAMEPLAY_TAG(?:_STATIC)?\s*\(\s*[^,]+,\s*"([^"]+)"')
+request_tag=re.compile(r'RequestGameplayTag\s*\(\s*FName\s*\(\s*"([^"]+)"\s*\)\s*(?:,|\))')
+fnametag=re.compile(r'FName\s*\(\s*"([^"]+)"\s*\)')
+
+def extract_tags_from_text(text):
+    tags=set()
+    tags.update(macro_tag.findall(text))
+    tags.update(request_tag.findall(text))
+    # generic taglike strings with prefixes and context
+    for m in taglike.finditer(text):
+        s=m.group(1)
+        if s.startswith(prefixes) or s.startswith("SAS") or s.startswith("SOTS"):
+            tags.add(s)
+    return tags
+
+# Only scan source folders under plugins
+source_entries=[e for e in zf.namelist() if "/Source/" in e and e.lower().endswith(('.h','.hpp','.cpp','.inl','.cs'))]
+len(source_entries), source_entries[:5]
+
+
+(411,
+ ['BEP/Source/BEP/BEP.Build.cs',
+  'BEP/Source/BEP/Private/BEP.cpp',
+  'BEP/Source/BEP/Private/BEPExportSettings.cpp',
+  'BEP/Source/BEP/Private/BEP_NodeJsonCommands.cpp',
+  'BEP/Source/BEP/Private/BEP_NodeJsonCommands.h'])
+Scanning for gameplay tag strings in source code
+from collections import defaultdict
+plugin_tags=defaultdict(set)
+file_tags=defaultdict(set)
+
+for path in source_entries:
+    try:
+        data=zf.read(path)
+    except KeyError:
+        continue
+    try:
+        txt=data.decode('utf-8')
+    except UnicodeDecodeError:
+        txt=data.decode('latin-1',errors='ignore')
+    tags=extract_tags_from_text(txt)
+    if tags:
+        # plugin name is top folder
+        plugin=path.split('/')[0]
+        plugin_tags[plugin].update(tags)
+        file_tags[path]=tags
+
+len(plugin_tags), {k:len(v) for k,v in sorted(plugin_tags.items(), key=lambda x:-len(x[1]))
+
+(23,
+ {'SOTS_KillExecutionManager': 79,
+  'SOTS_GlobalStealthManager': 58,
+  'SOTS_UI': 54,
+  'SOTS_GAS_Plugin': 40,
+  'SOTS_MissionDirector': 31,
+  'SOTS_Input': 29,
+  'SOTS_Steam': 26,
+  'SOTS_Interaction': 22})
+Identifying missing or redirected tags
+
+We’ve extracted tag-like strings from C++ code, which is great. Now, we need to compute which tags are missing from the ini file, comparing them to the tag entries. Some might be imported from DataTables, like from the ParkourSystem and InventorySystemPro tags. I’ll also treat any tags defined by UE_DEFINE_GAMEPLAY_TAG as required, even though they typically don’t need to be in the ini file. Better safe than sorry!
+
+Handling DataTables and tag auditing concerns
+
+The ini_tags extraction only pulls from the tag list, not DataTables, but those tags—like Parkour tags—will exist at runtime when imported. Our audit requires including all referenced tags in the ini, even if they’re already in DataTables. While duplicates might be allowed, I'd err on the side of avoiding them.
+
+Handling missing tags and DataTables
+
+Tags with the "Parkour" prefix might exist in DataTables, but it's unclear if SOTS plugin tags are included there. Some tags, like "SAS.Traces", could already be in DataTables, but we’ve spotted them in the list already. I’ll need to compute which tags are still missing from the current setup.
+
+Computing missing gameplay tags from code and ini
+all_code_tags=set().union(*plugin_tags.values())
+missing=sorted([t for t in all_code_tags if t not in ini_tags])
+len(all_code_tags), len(missing), missing[:50]
+
+
+(422,
+ 366,
+ ['GameplayCue.Default',
+  'OmniTrace.h',
+  'OmniTraceBlueprintLibrary.generated.h',
+  'OmniTraceBlueprintLibrary.h',
+  'OmniTraceDebugSubsystem.generated.h',
+  'OmniTraceDebugSubsystem.h',
+  'OmniTraceDebugTypes.generated.h',
+  'OmniTraceDebugTypes.h',
+  'OmniTracePatternPreset.generated.h',
+  'OmniTracePatternPreset.h',
+  'OmniTracePresetLibrary.generated.h',
+  'OmniTracePresetLibrary.h',
+  'OmniTraceTraceLabActor.generated.h',
+  'OmniTraceTraceLabActor.h',
+  'OmniTraceTypes.generated.h',
+  'OmniTraceTypes.h',
+  'SAS.Input.Buffer.Default',
+  'SAS.Mission.NoAlerts',
+  'SAS.Mission.NoKills',
+  'SAS.Mission.PerfectStealth',
+  'SAS.Stealth.Detected',
+  'SAS.Stealth.InCover',
+  'SAS.Stealth.InShadow',
+  'SAS.Stealth.Tier.Cautious',
+  'SAS.Stealth.Tier.Compromised',
+  'SAS.Stealth.Tier.Danger',
+  'SAS.Stealth.Tier.Hidden',
+  'SAS.UI.CGF.Modal.DialogPrompt',
+  'SAS.UI.InvSP.ContainerMenu',
+  'SAS.UI.InvSP.InventoryMenu',
+  'SAS.UI.InvSP.PickupNotification',
+  'SAS.UI.InvSP.PickupNotification.FirstTime',
+  'SOTS.BodyDrag.Debug',
+  'SOTS.KEM.Pattern.Corner.Left',
+  'SOTS.KEM.Pattern.Corner.Right',
+  'SOTS.KEM.Pattern.Ground.Front',
+  'SOTS.KEM.Pattern.Ground.Left',
+  'SOTS.KEM.Pattern.Ground.Rear',
+  'SOTS.KEM.Pattern.Ground.Right',
+  'SOTS.KEM.Pattern.Ground.Unknown',
+  'SOTS.KEM.Pattern.Vertical.Above',
+  'SOTS.KEM.Pattern.Vertical.Below',
+  'SOTS.KEM.Position.Corner',
+  'SOTS.KEM.Position.Corner.FrontLeft',
+  'SOTS.KEM.Position.Corner.FrontRight',
+  'SOTS.KEM.Position.Corner.Left',
+  'SOTS.KEM.Position.Corner.RearLeft',
+  'SOTS.KEM.Position.Corner.RearRight',
+  'SOTS.KEM.Position.Corner.Right',
+  'SOTS.KEM.Position.Front'])
+Refining tag extraction process
+
+It seems our extraction method mistakenly included file names like "OmniTrace.h" as tags because they contain periods. To refine this, we need to filter out file names by excluding those ending in extensions like .h, .cpp, or .cs. We'll also focus on strings with at least one period, but without the "generated" segments.
+
+Refining tag filtering
+
+To refine the candidate tags, we'll keep strings containing periods but exclude ones ending in file extensions like ".h", ".cpp", ".cs", etc. We won't filter based on uppercase segments since both tags and file names can have those. I'll use a smaller, targeted prefix list for scanning: SAS, SOTS, UI, InputUserSettings, Inventory, MotionMatching, Abilities, GameplayCue, and Foley. “OmniTrace” will be removed since it's more of a file prefix, but I’ll include “Input.”
+
+Filtering and refining candidate tags
+prefixes=("SAS.","SOTS.","UI.","InputUserSettings.","Inventory.","MotionMatching.","Abilities.","GameplayCue.","Foley.","Input.")
+taglike=re.compile(r'["\']([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)["\']')
+def extract_tags_from_text2(text):
+    tags=set()
+    tags.update(macro_tag.findall(text))
+    tags.update(request_tag.findall(text))
+    for m in taglike.finditer(text):
+        s=m.group(1)
+        if s.startswith(prefixes) or s.startswith("SAS.") or s.startswith("SOTS."):
+            tags.add(s)
+    # filter out common file extensions at end
+    bad_ext=('.h','.hpp','.cpp','.cs','.ini','.md','.txt','.uplugin')
+    tags={t for t in tags if not t.lower().endswith(bad_ext)}
+    return tags
+
+plugin_tags2=defaultdict(set)
+all_tags2=set()
+for path in source_entries:
+    data=zf.read(path)
+    try:
+        txt=data.decode('utf-8')
+    except UnicodeDecodeError:
+        txt=data.decode('latin-1',errors='ignore')
+    tags=extract_tags_from_text2(txt)
+    if tags:
+        plugin=path.split('/')[0]
+        plugin_tags2[plugin].update(tags)
+        all_tags2.update(tags)
+len(all_tags2), {k:len(v) for k,v in sorted(plugin_tags2.items(), key=lambda x:-len(x[1]))[:8]}
+
+
+(114,
+ {'SOTS_GlobalStealthManager': 33,
+  'SOTS_KillExecutionManager': 29,
+  'SOTS_UI': 26,
+  'SOTS_MissionDirector': 12,
+  'SOTS_BodyDrag': 6,
+  'SOTS_Input': 3,
+  'SOTS_Steam': 3,
+  'SOTS_BlueprintGen': 1})
+Comparing missing tags to ini_tags
+
+Now that the filtering rules are set, I’ll compare the tags from the current set against the ini_tags. This will help identify any tags that are missing or need to be added. I'll make sure that everything referenced is accounted for whether it's in the ini file or not.
+
+Computing missing tags from initial tag list
+missing2=sorted([t for t in all_tags2 if t not in ini_tags])
+len(missing2), missing2[:80]
+
+
+(58,
+ ['GameplayCue.Default',
+  'Input.Intent.Gameplay.Interact',
+  'Input.Intent.UI.Back',
+  'Input.Layer.UI.Nav',
+  'SAS.Input.Buffer.Default',
+  'SAS.Mission.NoAlerts',
+  'SAS.Mission.NoKills',
+  'SAS.Mission.PerfectStealth',
+  'SAS.Stealth.Detected',
+  'SAS.Stealth.InCover',
+  'SAS.Stealth.InShadow',
+  'SAS.Stealth.Tier.Cautious',
+  'SAS.Stealth.Tier.Compromised',
+  'SAS.Stealth.Tier.Danger',
+  'SAS.Stealth.Tier.Hidden',
+  'SAS.UI.CGF.Modal.DialogPrompt',
+  'SAS.UI.InvSP.ContainerMenu',
+  'SAS.UI.InvSP.InventoryMenu',
+  'SAS.UI.InvSP.PickupNotification',
+  'SAS.UI.InvSP.PickupNotification.FirstTime',
+  'SOTS.BodyDrag.Debug',
+  'SOTS.KEM.Pattern.Corner.Left',
+  'SOTS.KEM.Pattern.Corner.Right',
+  'SOTS.KEM.Pattern.Ground.Front',
+  'SOTS.KEM.Pattern.Ground.Left',
+  'SOTS.KEM.Pattern.Ground.Rear',
+  'SOTS.KEM.Pattern.Ground.Right',
+  'SOTS.KEM.Pattern.Ground.Unknown',
+  'SOTS.KEM.Pattern.Vertical.Above',
+  'SOTS.KEM.Pattern.Vertical.Below',
+  'SOTS.KEM.Position.Corner',
+  'SOTS.KEM.Position.Corner.FrontLeft',
+  'SOTS.KEM.Position.Corner.FrontRight',
+  'SOTS.KEM.Position.Corner.Left',
+  'SOTS.KEM.Position.Corner.RearLeft',
+  'SOTS.KEM.Position.Corner.RearRight',
+  'SOTS.KEM.Position.Corner.Right',
+  'SOTS.KEM.Position.Front',
+  'SOTS.KEM.Position.Ground.Front',
+  'SOTS.KEM.Position.Ground.Left',
+  'SOTS.KEM.Position.Ground.Rear',
+  'SOTS.KEM.Position.Ground.Right',
+  'SOTS.KEM.Position.Left',
+  'SOTS.KEM.Position.Rear',
+  'SOTS.KEM.Position.Right',
+  'SOTS.KEM.Position.Vertical',
+  'SOTS.KEM.Position.Vertical.Above',
+  'SOTS.KEM.Position.Vertical.Below',
+  'SOTS.OmniTrace',
+  'SOTS.UDSBridge.Refresh',
+  'UI.HUD.PickupNotification',
+  'UI.HUD.PickupNotification.FirstTime',
+  'UI.Menu.Container',
+  'UI.Menu.Inventory',
+  'UI.Menu.Profiles',
+  'UI.Menu.Settings',
+  'UI.Notification.Pickup',
+  'UI.Notification.Pickup.FirstTime'])
+Listing all missing tags
+
+I need to compile a complete list of all the tags that are missing. I’ll focus on displaying everything that hasn’t been accounted for yet, so I can better track what still needs to be added. This helps to make sure no tags are overlooked.
+
+Displaying full list of missing2 items
+missing2
+
+
+['GameplayCue.Default',
+ 'Input.Intent.Gameplay.Interact',
+ 'Input.Intent.UI.Back',
+ 'Input.Layer.UI.Nav',
+ 'SAS.Input.Buffer.Default',
+ 'SAS.Mission.NoAlerts',
+ 'SAS.Mission.NoKills',
+ 'SAS.Mission.PerfectStealth',
+ 'SAS.Stealth.Detected',
+ 'SAS.Stealth.InCover',
+ 'SAS.Stealth.InShadow',
+ 'SAS.Stealth.Tier.Cautious',
+ 'SAS.Stealth.Tier.Compromised',
+ 'SAS.Stealth.Tier.Danger',
+ 'SAS.Stealth.Tier.Hidden',
+ 'SAS.UI.CGF.Modal.DialogPrompt',
+ 'SAS.UI.InvSP.ContainerMenu',
+ 'SAS.UI.InvSP.InventoryMenu',
+ 'SAS.UI.InvSP.PickupNotification',
+ 'SAS.UI.InvSP.PickupNotification.FirstTime',
+ 'SOTS.BodyDrag.Debug',
+ 'SOTS.KEM.Pattern.Corner.Left',
+ 'SOTS.KEM.Pattern.Corner.Right',
+ 'SOTS.KEM.Pattern.Ground.Front',
+ 'SOTS.KEM.Pattern.Ground.Left',
+ 'SOTS.KEM.Pattern.Ground.Rear',
+ 'SOTS.KEM.Pattern.Ground.Right',
+ 'SOTS.KEM.Pattern.Ground.Unknown',
+ 'SOTS.KEM.Pattern.Vertical.Above',
+ 'SOTS.KEM.Pattern.Vertical.Below',
+ 'SOTS.KEM.Position.Corner',
+ 'SOTS.KEM.Position.Corner.FrontLeft',
+ 'SOTS.KEM.Position.Corner.FrontRight',
+ 'SOTS.KEM.Position.Corner.Left',
+ 'SOTS.KEM.Position.Corner.RearLeft',
+ 'SOTS.KEM.Position.Corner.RearRight',
+ 'SOTS.KEM.Position.Corner.Right',
+ 'SOTS.KEM.Position.Front',
+ 'SOTS.KEM.Position.Ground.Front',
+ 'SOTS.KEM.Position.Ground.Left',
+ 'SOTS.KEM.Position.Ground.Rear',
+ 'SOTS.KEM.Position.Ground.Right',
+ 'SOTS.KEM.Position.Left',
+ 'SOTS.KEM.Position.Rear',
+ 'SOTS.KEM.Position.Right',
+ 'SOTS.KEM.Position.Vertical',
+ 'SOTS.KEM.Position.Vertical.Above',
+ 'SOTS.KEM.Position.Vertical.Below',
+ 'SOTS.OmniTrace',
+ 'SOTS.UDSBridge.Refresh',
+ 'UI.HUD.PickupNotification',
+ 'UI.HUD.PickupNotification.FirstTime',
+ 'UI.Menu.Container',
+ 'UI.Menu.Inventory',
+ 'UI.Menu.Profiles',
+ 'UI.Menu.Settings',
+ 'UI.Notification.Pickup',
+ 'UI.Notification.Pickup.FirstTime']
+Displaying the full missing tags list
+
+The current display seems to be cutting off the list. I’ll need to make sure the full list of missing tags is shown, without truncation. It’s important to see everything that’s missing so I can properly track and address any incomplete information. Let’s fix that!
+
+Displaying full list without truncation
+for t in missing2:
+    print(t)
+
+
+GameplayCue.Default
+Input.Intent.Gameplay.Interact
+Input.Intent.UI.Back
+Input.Layer.UI.Nav
+SAS.Input.Buffer.Default
+SAS.Mission.NoAlerts
+SAS.Mission.NoKills
+SAS.Mission.PerfectStealth
+SAS.Stealth.Detected
+SAS.Stealth.InCover
+SAS.Stealth.InShadow
+SAS.Stealth.Tier.Cautious
+SAS.Stealth.Tier.Compromised
+SAS.Stealth.Tier.Danger
+SAS.Stealth.Tier.Hidden
+SAS.UI.CGF.Modal.DialogPrompt
+SAS.UI.InvSP.ContainerMenu
+SAS.UI.InvSP.InventoryMenu
+SAS.UI.InvSP.PickupNotification
+SAS.UI.InvSP.PickupNotification.FirstTime
+SOTS.BodyDrag.Debug
+SOTS.KEM.Pattern.Corner.Left
+SOTS.KEM.Pattern.Corner.Right
+SOTS.KEM.Pattern.Ground.Front
+SOTS.KEM.Pattern.Ground.Left
+SOTS.KEM.Pattern.Ground.Rear
+SOTS.KEM.Pattern.Ground.Right
+SOTS.KEM.Pattern.Ground.Unknown
+SOTS.KEM.Pattern.Vertical.Above
+SOTS.KEM.Pattern.Vertical.Below
+SOTS.KEM.Position.Corner
+SOTS.KEM.Position.Corner.FrontLeft
+SOTS.KEM.Position.Corner.FrontRight
+SOTS.KEM.Position.Corner.Left
+SOTS.KEM.Position.Corner.RearLeft
+SOTS.KEM.Position.Corner.RearRight
+SOTS.KEM.Position.Corner.Right
+SOTS.KEM.Position.Front
+SOTS.KEM.Position.Ground.Front
+SOTS.KEM.Position.Ground.Left
+SOTS.KEM.Position.Ground.Rear
+SOTS.KEM.Position.Ground.Right
+SOTS.KEM.Position.Left
+SOTS.KEM.Position.Rear
+SOTS.KEM.Position.Right
+SOTS.KEM.Position.Vertical
+SOTS.KEM.Position.Vertical.Above
+SOTS.KEM.Position.Vertical.Below
+SOTS.OmniTrace
+SOTS.UDSBridge.Refresh
+UI.HUD.PickupNotification
+UI.HUD.PickupNotification.FirstTime
+UI.Menu.Container
+UI.Menu.Inventory
+UI.Menu.Profiles
+UI.Menu.Settings
+UI.Notification.Pickup
+UI.Notification.Pickup.FirstTime
