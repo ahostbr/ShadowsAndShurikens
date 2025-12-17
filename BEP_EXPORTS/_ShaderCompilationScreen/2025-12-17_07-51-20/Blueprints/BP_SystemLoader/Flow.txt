@@ -1,0 +1,137 @@
+Blueprint: BP_SystemLoader (/ShaderCompilationScreen/Blueprints/BP_SystemLoader.BP_SystemLoader)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Async Load Asset.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Async Load Asset (K2Node_LoadAsset)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Cast To NiagaraSystem.execute
+      Pin: Asset (softobject) Dir=In
+        -> Get SystemToLoad.SystemToLoad
+      Pin: Object (object) Dir=Out
+        -> Cast To NiagaraSystem.Object
+    Node: Set isLoaded (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Call Loaded.execute
+      Pin: isLoaded (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call Loaded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set isLoaded.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+    Node: Loading Material to memory and applying it to meshes (EdGraphNode_Comment)
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call Loaded.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get SystemToLoad (K2Node_VariableGet)
+      Pin: SystemToLoad (softobject) Dir=Out
+        -> Async Load Asset.Asset
+      Pin: self (object) Dir=In
+    Node: Cast To NiagaraSystem (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Async Load Asset.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Call Loaded.execute
+      Pin: Object (object) Dir=In
+        -> Async Load Asset.Object
+      Pin: AsNiagara System (object) Dir=Out
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.InAsset
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Niagara (K2Node_VariableGet)
+      Pin: Niagara (object) Dir=Out
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.self
+      Pin: self (object) Dir=In
+    Node: Set Niagara System Asset
+Target is Niagara Particle System Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To NiagaraSystem.then
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+        -> Get Niagara.Niagara
+      Pin: InAsset (object) Dir=In
+        -> Cast To NiagaraSystem.AsNiagara System
+      Pin: bResetExistingOverrideParameters (bool) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Niagara System Asset
+Target is Niagara Particle System Component.then
+      Pin: then (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Call Loaded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Cast To NiagaraSystem.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Are Shaders Compiling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Are Shaders Compiling.then
+      Pin: Condition (bool) Dir=In
+        -> Are Shaders Compiling.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: else (exec) Dir=Out
+        -> Set isLoaded.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: Loaded
+    Node: Loaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

@@ -1,0 +1,164 @@
+Blueprint: BP_MaterialLoader (/ShaderCompilationScreen/Blueprints/BP_MaterialLoader.BP_MaterialLoader)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Get MaterialToLoad (K2Node_VariableGet)
+      Pin: MaterialToLoad (softobject) Dir=Out
+        -> Async Load Asset.Asset
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Async Load Asset.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Get Sphere (K2Node_VariableGet)
+      Pin: Sphere (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get SkeletalMesh (K2Node_VariableGet)
+      Pin: SkeletalMesh (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Get Sphere1 (K2Node_VariableGet)
+      Pin: Sphere1 (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.self
+      Pin: self (object) Dir=In
+    Node: Set Material
+Target is Primitive Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To Material.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+        -> Get Sphere.Sphere
+        -> Get SkeletalMesh.SkeletalMesh
+        -> Get Sphere1.Sphere1
+      Pin: ElementIndex (int) Dir=In
+      Pin: Material (object) Dir=In
+        -> Cast To Material.AsMaterial
+    Node: Async Load Asset (K2Node_LoadAsset)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+        -> Cast To Material.execute
+      Pin: Asset (softobject) Dir=In
+        -> Get MaterialToLoad.MaterialToLoad
+      Pin: Object (object) Dir=Out
+        -> Cast To Material.Object
+    Node: Cast To Material (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Async Load Asset.Completed
+      Pin: then (exec) Dir=Out
+        -> Set Material
+Target is Primitive Component.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Call Loaded.execute
+      Pin: Object (object) Dir=In
+        -> Async Load Asset.Object
+      Pin: AsMaterial (object) Dir=Out
+        -> Set Material
+Target is Primitive Component.Material
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set isLoaded (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Call Loaded.execute
+      Pin: isLoaded (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Material
+Target is Primitive Component.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Call Loaded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Set isLoaded.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: self (object) Dir=In
+    Node: Loading Material to memory and applying it to meshes (EdGraphNode_Comment)
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Call Loaded.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Call Loaded (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> Cast To Material.CastFailed
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Are Shaders Compiling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Are Shaders Compiling.then
+      Pin: Condition (bool) Dir=In
+        -> Are Shaders Compiling.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: else (exec) Dir=Out
+        -> Set isLoaded.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: Loaded
+    Node: Loaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

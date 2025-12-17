@@ -139,6 +139,81 @@ bool USOTS_TagLibrary::ActorHasAllTags(const UObject* WorldContextObject, const 
     return false;
 }
 
+FSOTS_LooseTagHandle USOTS_TagLibrary::AddScopedTagToActor(const UObject* WorldContextObject, AActor* Target, FGameplayTag Tag)
+{
+    if (!Target || !Tag.IsValid())
+    {
+        return FSOTS_LooseTagHandle();
+    }
+
+    if (USOTS_GameplayTagManagerSubsystem* Manager = GetManager(WorldContextObject))
+    {
+        return Manager->AddScopedTagToActor(Target, Tag);
+    }
+
+    return FSOTS_LooseTagHandle();
+}
+
+FSOTS_LooseTagHandle USOTS_TagLibrary::AddScopedTagToActorByName(const UObject* WorldContextObject, AActor* Target, FName TagName)
+{
+    if (!Target || TagName.IsNone())
+    {
+        return FSOTS_LooseTagHandle();
+    }
+
+    if (USOTS_GameplayTagManagerSubsystem* Manager = GetManager(WorldContextObject))
+    {
+        return Manager->AddScopedTagToActorByName(Target, TagName);
+    }
+
+    return FSOTS_LooseTagHandle();
+}
+
+bool USOTS_TagLibrary::RemoveScopedTagByHandle(const UObject* WorldContextObject, FSOTS_LooseTagHandle Handle)
+{
+    if (!Handle.IsValid())
+    {
+        return false;
+    }
+
+    if (USOTS_GameplayTagManagerSubsystem* Manager = GetManager(WorldContextObject))
+    {
+        return Manager->RemoveScopedTagByHandle(Handle);
+    }
+
+    return false;
+}
+
+FSOTS_LooseTagHandle USOTS_TagLibrary::AddScopedLooseTag(const UObject* WorldContextObject, AActor* Target, FGameplayTag Tag)
+{
+    return AddScopedTagToActor(WorldContextObject, Target, Tag);
+}
+
+FSOTS_LooseTagHandle USOTS_TagLibrary::AddScopedLooseTagByName(const UObject* WorldContextObject, AActor* Target, FName TagName)
+{
+    return AddScopedTagToActorByName(WorldContextObject, Target, TagName);
+}
+
+bool USOTS_TagLibrary::RemoveScopedLooseTagByHandle(const UObject* WorldContextObject, const FSOTS_LooseTagHandle& Handle)
+{
+    return RemoveScopedTagByHandle(WorldContextObject, Handle);
+}
+
+bool USOTS_TagLibrary::IsScopedHandleValid(const UObject* WorldContextObject, const FSOTS_LooseTagHandle& Handle)
+{
+    if (!Handle.IsValid())
+    {
+        return false;
+    }
+
+    if (USOTS_GameplayTagManagerSubsystem* Manager = GetManager(WorldContextObject))
+    {
+        return Manager->IsScopedHandleValid(Handle);
+    }
+
+    return false;
+}
+
 bool USOTS_TagLibrary::ActorHasTagByName(const UObject* WorldContextObject, const AActor* Actor, FName TagName)
 {
     if (!Actor)

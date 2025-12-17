@@ -65,4 +65,14 @@ namespace SOTS_UIIntentTags
 	{
 		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Interaction.Marker.Remove")), false);
 	}
+
+	static FORCEINLINE FGameplayTag GetLoadingBeginTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Loading.Begin")), false);
+	}
+
+	static FORCEINLINE FGameplayTag GetLoadingEndTag()
+	{
+		return FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Intent.Loading.End")), false);
+	}
 }

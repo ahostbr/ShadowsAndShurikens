@@ -1,0 +1,682 @@
+Blueprint: BP_ShaderCompiler (/ShaderCompilationScreen/Blueprints/BP_ShaderCompiler.BP_ShaderCompiler)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+    Node: Get All Materials (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set MaterialsToCompile.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (softobject) Dir=Out
+        -> Set MaterialsToCompile.MaterialsToCompile
+    Node: Get CurrentMaterialIndex (K2Node_VariableGet)
+      Pin: CurrentMaterialIndex (int) Dir=Out
+        -> integer >= integer.A
+      Pin: self (object) Dir=In
+    Node: Set MaterialsToCompile (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get All Materials.then
+      Pin: then (exec) Dir=Out
+        -> Set isCompilingMaterials.execute
+      Pin: MaterialsToCompile (softobject) Dir=In
+        -> Get All Materials.ReturnValue
+      Pin: Output_Get (softobject) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set isCompilingMaterials (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set MaterialsToCompile.then
+      Pin: then (exec) Dir=Out
+        -> Get All Niagara Particle Systems.execute
+      Pin: isCompilingMaterials (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Global Time Dilation.then
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+    Node: Create User Widget Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Add to Viewport
+Target is User Widget.execute
+      Pin: Class (class) Dir=In
+        -> Get LoadingWidget.LoadingWidget
+      Pin: ReturnValue (object) Dir=Out
+        -> Add to Viewport
+Target is User Widget.self
+        -> Reroute Node.InputPin
+      Pin: OwningPlayer (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Create User Widget Widget.execute
+    Node: Add to Viewport
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Create User Widget Widget.then
+      Pin: then (exec) Dir=Out
+        -> Set Shader Compiler
+Target is BP IShader Compilation Loading Screen.execute
+      Pin: self (object) Dir=In
+        -> Create User Widget Widget.ReturnValue
+      Pin: ZOrder (int) Dir=In
+    Node: Get LoadedMaterials (K2Node_VariableGet)
+      Pin: LoadedMaterials (int) Dir=Out
+        -> integer >= integer.B
+      Pin: self (object) Dir=In
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get CurrentMaterialIndex.CurrentMaterialIndex
+      Pin: B (int) Dir=In
+        -> Get LoadedMaterials.LoadedMaterials
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Loop with Break.Execute
+      Pin: else (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Start Compiling Shader at Index
+Target is BP Shader Compiler (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get CurrentMaterialIndex.CurrentMaterialIndex
+    Node: Get CurrentMaterialIndex (K2Node_VariableGet)
+      Pin: CurrentMaterialIndex (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Start Compiling Shader at Index
+Target is BP Shader Compiler.then
+      Pin: Value (int) Dir=In
+        -> Get CurrentMaterialIndex.CurrentMaterialIndex
+      Pin:    (exec) Dir=Out
+        -> Branch.execute
+      Pin: Result (int) Dir=Out
+        -> Is Valid Index.IndexToTest
+    Node: Get CurrentMaterialIndex (K2Node_VariableGet)
+      Pin: CurrentMaterialIndex (int) Dir=Out
+        -> Start Compiling Shader at Index
+Target is BP Shader Compiler.Index
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: then (exec) Dir=Out
+        -> Get All Materials.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: For Loop with Break (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Branch.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Start Compiling Shader at Index
+Target is BP Shader Compiler.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get MaterialsToCompile (K2Node_VariableGet)
+      Pin: MaterialsToCompile (softobject) Dir=Out
+        -> Is Valid Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Valid Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (softobject) Dir=In
+        -> Get MaterialsToCompile.MaterialsToCompile
+      Pin: IndexToTest (int) Dir=In
+        -> Increment Int.Result
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Index.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then_0 (exec) Dir=Out
+        -> Set isCompilingMaterials.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Set isCompilingMaterials (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: isCompilingMaterials (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get isCompilingMaterials.isCompilingMaterials
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get isCompilingMaterials (K2Node_VariableGet)
+      Pin: isCompilingMaterials (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Global Time Dilation.then
+      Pin: then (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Open Level (by Object Reference) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Level (softobject) Dir=In
+        -> Get OpenLevelOnFinish.OpenLevelOnFinish
+      Pin: bAbsolute (bool) Dir=In
+      Pin: Options (string) Dir=In
+    Node: Get OpenLevelOnFinish (K2Node_VariableGet)
+      Pin: OpenLevelOnFinish (softobject) Dir=Out
+        -> Open Level (by Object Reference).Level
+      Pin: self (object) Dir=In
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> For Loop with Break.LastIndex
+    Node: Get All Niagara Particle Systems (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set isCompilingMaterials.then
+      Pin: then (exec) Dir=Out
+        -> Set SystemsToCompile.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (softobject) Dir=Out
+        -> Set SystemsToCompile.SystemsToCompile
+    Node: Set SystemsToCompile (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get All Niagara Particle Systems.then
+      Pin: then (exec) Dir=Out
+        -> Set isComlilingSystems.execute
+      Pin: SystemsToCompile (softobject) Dir=In
+        -> Get All Niagara Particle Systems.ReturnValue
+      Pin: Output_Get (softobject) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then_0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_0
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set isCompilingMaterials.then
+      Pin: Condition (bool) Dir=In
+        -> Get isComlilingSystems.isComlilingSystems
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+    Node: Get isComlilingSystems (K2Node_VariableGet)
+      Pin: isComlilingSystems (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Get CurrentSystemIndex (K2Node_VariableGet)
+      Pin: CurrentSystemIndex (int) Dir=Out
+        -> integer >= integer.A
+      Pin: self (object) Dir=In
+    Node: Get LoadedSystems (K2Node_VariableGet)
+      Pin: LoadedSystems (int) Dir=Out
+        -> integer >= integer.B
+      Pin: self (object) Dir=In
+    Node: integer >= integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get CurrentSystemIndex.CurrentSystemIndex
+      Pin: B (int) Dir=In
+        -> Get LoadedSystems.LoadedSystems
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Loop with Break.Execute
+      Pin: else (exec) Dir=Out
+    Node: Get CurrentSystemIndex (K2Node_VariableGet)
+      Pin: CurrentSystemIndex (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> Start Compiling System at Index
+Target is BP Shader Compiler.then
+      Pin: Value (int) Dir=In
+        -> Get CurrentSystemIndex.CurrentSystemIndex
+      Pin:    (exec) Dir=Out
+        -> Branch.execute
+      Pin: Result (int) Dir=Out
+        -> Is Valid Index.IndexToTest
+    Node: Get CurrentSystemIndex (K2Node_VariableGet)
+      Pin: CurrentSystemIndex (int) Dir=Out
+        -> Start Compiling System at Index
+Target is BP Shader Compiler.Index
+      Pin: self (object) Dir=In
+    Node: For Loop with Break (K2Node_MacroInstance)
+      Pin: Execute (exec) Dir=In
+        -> Branch.then
+      Pin: FirstIndex (int) Dir=In
+      Pin: LastIndex (int) Dir=In
+        -> Random Integer in Range.ReturnValue
+      Pin: Break (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: LoopBody (exec) Dir=Out
+        -> Start Compiling System at Index
+Target is BP Shader Compiler.execute
+      Pin: Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get SystemsToCompile (K2Node_VariableGet)
+      Pin: SystemsToCompile (softobject) Dir=Out
+        -> Is Valid Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Valid Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (softobject) Dir=In
+        -> Get SystemsToCompile.SystemsToCompile
+      Pin: IndexToTest (int) Dir=In
+        -> Increment Int.Result
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Increment Int.  
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Index.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Sequence.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then_0 (exec) Dir=Out
+        -> Set isComlilingSystems.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> For Loop with Break.Break
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get isComlilingSystems.isComlilingSystems
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get isComlilingSystems (K2Node_VariableGet)
+      Pin: isComlilingSystems (bool) Dir=Out
+        -> AND Boolean.B
+      Pin: self (object) Dir=In
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Global Time Dilation.then
+      Pin: then (exec) Dir=Out
+        -> Open Level (by Object Reference).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Open Level (by Object Reference) (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Level (softobject) Dir=In
+        -> Get OpenLevelOnFinish.OpenLevelOnFinish
+      Pin: bAbsolute (bool) Dir=In
+      Pin: Options (string) Dir=In
+    Node: Get OpenLevelOnFinish (K2Node_VariableGet)
+      Pin: OpenLevelOnFinish (softobject) Dir=Out
+        -> Open Level (by Object Reference).Level
+      Pin: self (object) Dir=In
+    Node: Random Integer in Range (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> For Loop with Break.LastIndex
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set isComlilingSystems.then
+      Pin: Condition (bool) Dir=In
+        -> Get isCompilingMaterials.isCompilingMaterials
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Set Global Time Dilation.execute
+    Node: Get isCompilingMaterials (K2Node_VariableGet)
+      Pin: isCompilingMaterials (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Set isComlilingSystems (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: isComlilingSystems (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Set Global Time Dilation (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Delay.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TimeDilation (real) Dir=In
+    Node: Start Compiling System at Index
+Target is BP Shader Compiler (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Loop with Break.LoopBody
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+      Pin: self (object) Dir=In
+      Pin: Index (int) Dir=In
+        -> Get CurrentSystemIndex.CurrentSystemIndex
+    Node: Set Shader Compiler
+Target is BP IShader Compilation Loading Screen (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Add to Viewport
+Target is User Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Compiler (object) Dir=In
+        -> Self-Reference.self
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Set Shader Compiler
+Target is BP IShader Compilation Loading Screen.Compiler
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Create User Widget Widget.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Shader Compiler
+Target is BP IShader Compilation Loading Screen.self
+    Node: Get LoadingWidget (K2Node_VariableGet)
+      Pin: LoadingWidget (class) Dir=Out
+        -> Create User Widget Widget.Class
+      Pin: self (object) Dir=In
+    Node: Are Shaders Compiling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Are Shaders Compiling.then
+      Pin: Condition (bool) Dir=In
+        -> Are Shaders Compiling.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Sequence.execute
+    Node: Set isComlilingSystems (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set SystemsToCompile.then
+      Pin: then (exec) Dir=Out
+      Pin: isComlilingSystems (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Are Shaders Compiling (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay.then
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Are Shaders Compiling.then
+      Pin: Condition (bool) Dir=In
+        -> Are Shaders Compiling.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: else (exec) Dir=Out
+        -> Delay.execute
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Are Shaders Compiling.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Delay (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Open Level (by Object Reference).execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+  Graph: StartCompilingShaderAtIndex
+    Node: StartCompilingShaderAtIndex (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP Material Loader.execute
+      Pin: Index (int) Dir=Out
+        -> GET.Dimension 1
+    Node: SpawnActor BP Material Loader (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> StartCompilingShaderAtIndex.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Loaded.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Bind Event to Loaded.self
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: MaterialToLoad (softobject) Dir=In
+        -> GET.Output
+      Pin: Instigator (object) Dir=In
+    Node: Get MaterialsToCompile (K2Node_VariableGet)
+      Pin: MaterialsToCompile (softobject) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (softobject) Dir=In
+        -> Get MaterialsToCompile.MaterialsToCompile
+      Pin: Dimension 1 (int) Dir=In
+        -> StartCompilingShaderAtIndex.Index
+      Pin: Output (softobject) Dir=Out
+        -> SpawnActor BP Material Loader.MaterialToLoad
+    Node: Bind Event to Loaded (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP Material Loader.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor BP Material Loader.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Loaded.Delegate
+  Graph: StartCompilingSystemAtIndex
+    Node: StartCompilingSystemAtIndex (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> SpawnActor BP System Loader.execute
+      Pin: Index (int) Dir=Out
+        -> GET.Dimension 1
+    Node: SpawnActor BP System Loader (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> StartCompilingSystemAtIndex.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Loaded.execute
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Bind Event to Loaded.self
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: SystemToLoad (softobject) Dir=In
+        -> GET.Output
+      Pin: Instigator (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (softobject) Dir=In
+        -> Get SystemsToCompile.SystemsToCompile
+      Pin: Dimension 1 (int) Dir=In
+        -> StartCompilingSystemAtIndex.Index
+      Pin: Output (softobject) Dir=Out
+        -> SpawnActor BP System Loader.SystemToLoad
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Loaded.Delegate
+    Node: Get SystemsToCompile (K2Node_VariableGet)
+      Pin: SystemsToCompile (softobject) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: Bind Event to Loaded (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor BP System Loader.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> SpawnActor BP System Loader.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+  Graph: MaterialLoaded
+    Node: MaterialLoaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+    Node: Get LoadedMaterials (K2Node_VariableGet)
+      Pin: LoadedMaterials (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> MaterialLoaded.then
+      Pin: Value (int) Dir=In
+        -> Get LoadedMaterials.LoadedMaterials
+      Pin:    (exec) Dir=Out
+      Pin: Result (int) Dir=Out
+  Graph: NiagaraSystemLoaded
+    Node: NiagaraSystemLoaded (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Increment Int. 
+    Node: Get LoadedSystems (K2Node_VariableGet)
+      Pin: LoadedSystems (int) Dir=Out
+        -> Increment Int.Value
+      Pin: self (object) Dir=In
+    Node: Increment Int (K2Node_MacroInstance)
+      Pin:   (exec) Dir=In
+        -> NiagaraSystemLoaded.then
+      Pin: Value (int) Dir=In
+        -> Get LoadedSystems.LoadedSystems
+      Pin:    (exec) Dir=Out
+      Pin: Result (int) Dir=Out

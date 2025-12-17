@@ -1,0 +1,495 @@
+# Ryan locked this in — CODE REVIEW STAGE (12-16-25)
+
+## Stage policy (locked)
+- Shipping / shipping-hygiene passes are DEFERRED until we are actually approaching ship (years from now).
+- This is a CODE-ONLY review: we are verifying that the code surfaces exist + are correct; runtime behavior verification will be done by Ryan later, plugin-by-plugin.
+- DataAssets + config wiring are DEFERRED until the very end (after code is verified across the suite).
+- GameplayTags are NOT deferred: for each plugin, we must ensure all tag paths used by that plugin have corresponding tags authored in DefaultGameplayTags.ini (add-only).
+- Even though DA/config wiring is deferred, all BEHAVIOR OWNERSHIP decisions must be locked now (who owns what, what calls what, what the intended semantics are).
+
+---
+
+# Questionnaire — remaining unknowns to lock (answer inline)
+
+> Rule for answers:
+> - If you want to defer something to DA/config stage, answer: **DEFER (DA/Config Stage)**.
+> - If you want to defer something to runtime behavior verification, answer: **DEFER (Runtime Verify)**.
+> - Otherwise, lock it with a direct choice.
+
+---
+
+## SUITE-WIDE behavior ownership (must lock now)
+SUITE-01: Who owns map travel (mission start/end/fail → OpenLevel / seamless travel)?
+- Answer: SOTS_ProfileShared > SOTS_UI > Mission Director (Meaing profileshared contains all save data, mission director sets up the world, map and actors based on the snapshot (May Require New Comp On Player/Dragon and Enemies), SOTS_UI routes player choices to Mission Director .... example they just click restart vs return to main menu)
+
+SUITE-02: Who owns “SaveProfile() happens now” decisions (mission end only? mission start? objective complete?)?
+- Answer: Save will happen in the 3 ways,1 auto saves based on time. 2 player uses SOTS_UI to directly save, 3 checkpoints at specific times threwout a mission.
+
+SUITE-03: Who is the canonical owner of Input layer push/pop decisions (beyond UI.Nav auto behavior)?
+- Answer: SOTS_UI owns all UI
+
+SUITE-04: Canonical “FX trigger pattern” across the whole suite (pick ONE):
+A) everyone calls FXManager one-shots directly
+B) systems apply tags; FX reacts
+C) hybrid: tags for state, FXManager for one-shots
+- Answer: (A) / B / C (circle one)
+
+SUITE-05: Tag authority preference for gating (pick ONE default stance):
+A) TagManager only
+B) IGameplayTagAssetInterface only
+C) TagManager primary + interface fallback
+- Answer: (A) / B / C
+
+---
+
+## Plugin 1 — SOTS_TagManager
+TM-01: Which core actors MUST implement IGameplayTagAssetInterface in SOTS v1?
+(player, dragon, guards, etc.)
+- Answer: those 3 and any pickup BPs i create later... such as item pickups etc... but that is mostly handled threw SOTS_INV
+
+TM-02: Are ANY systems allowed to bypass TagManager for tag reads/writes (direct container mutation, legacy tag mgr)?
+- Answer: Yes (list) / No: NO
+
+TM-03: Do we need reactive tag-change events (OnTagAdded/Removed) as part of TagManager’s contract?
+- Answer: Yes / No / Later: YES
+
+TM-04: Do you want a prune/cleanup API for transient actors (projectiles, spawned props, short-lived AI)?
+- Answer: Yes / No / Later: yes most likely but I will need further explanation 
+
+TM-TAGS: Tag audit action for this plugin:
+- “All TagManager-related tags are in DefaultGameplayTags.ini (add-only)”
+- Answer: In-progress ... mostly done as far as i know we can do a complete scan soon.
+-
+
+---
+
+## Plugin 2 — SOTS_ProfileShared
+PS-01: Profile identity scheme (slot key safety):
+Do we sanitize profile keys for SaveGame slot usage (replace invalid chars), or enforce a safe key at creation?
+- Answer: Sanitize / Enforce / Other: Sanitize via the widget enter name checkbox, it does not allow certain chars already.
+
+PS-02: Long-term persistence authority (even if wiring is deferred):
+A) SaveGame slots are canonical
+B) Profile folders are canonical (profile folder + central metadata save)
+C) Hybrid (define authority rules)
+- Answer: A / (B) / C (+ rules if C): B
+
+PS-03: Who owns TotalPlaySeconds accumulation?
+- Answer: SOTS_MissionDirector
+
+PS-04: Snapshot providers: which ones are intentionally allowed to be no-op for now?
+- Answer: None / List: None
+
+PS-05: Provider ordering: do we lock an explicit priority table now (even if all 0 today)?
+- Answer: Yes / No: Yes
+
+PS-06: Snapshot versioning: do we add SnapshotVersion now (so future struct changes don’t brick loads)?
+- Answer: Yes / No / Later: Yes
+
+PS-07: Transform restore policy:
+A) always set transform (current)
+B) only in safehouse / non-mission
+C) gated “spawn phase” only
+- Answer: (A) / B / C
+
+PS-TAGS: Tag audit action for this plugin:
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 3 — SOTS_Input
+IN-01: Dragon control layer:
+Do we have a Dragon control layer in v1?
+- Answer: Yes / No / Later: No We Need This Still, in the BEP CGF EXPORT there is example dragon controls i made already.
+
+IN-02: Canonical attachment point for input ownership:
+(PlayerController vs Pawn vs both)
+- Answer: PlayerController
+
+IN-03: Montage buffer windows:
+List the montage categories that should open Input.Buffer.Channel.Execution (executions, interact, vanish, etc.)
+- Answer: I dont understand the question and will need clarification
+
+IN-04: OnInputDeviceChanged consumer (cursor hiding, prompts, etc.):
+Who consumes it and owns the behavior?
+- Answer: PlayerController > SOTS_UI
+
+IN-TAGS: Input tag audit action (all Input.* tags used by code exist in DefaultGameplayTags.ini):
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 5 — SOTS_UI
+UI-01: Back/Escape close policy owner:
+A) router enforces close behavior
+B) input system enforces close behavior
+C) widgets enforce close behavior
+- Answer: (A) / B / C
+
+Input System takes in players input sends it to the router which closes the widget
+
+UI-02: ReturnToMainMenu flow owner (the thing that actually performs the flow):
+- Answer: Input > Router
+
+UI-03: UI Intent/Action tag policy:
+Do we standardize a single tag namespace + ensure all are in DefaultGameplayTags.ini now?
+- Answer: Yes / No (explain): Yes
+
+UI-TAGS: UI tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+
+RYAN NOTES :
+INVSP is an exlusion to this, its BP UI SYSTEM IS TO HEAVY TO DIRECTLY CONVERT TO ANY OTHER SYSTEM CURRENTLY ... IT WILL ONLY BE PUSHED AND POPED VIA SOTS_UI
+INVSP will handle all its internal navigation itself And i will do the small edits to the main widgets only like the inventory menu, to get them to push and pop via SOTS_UI
+---
+
+## Plugin 6 — SOTS_Interaction
+IX-01: Interactable data policy:
+A) UI pulls everything from USOTS_InteractableComponent at display/execute time
+B) Interaction copies needed data into the interaction payload/context
+C) Hybrid
+- Answer: A / B / (C)
+
+IX-02: LOS + collision semantics:
+Keep ECC_Visibility fixed, or make sweep/LOS channels tunable?
+- Answer: Fixed / Tunable / Hybrid: Tunable
+
+IX-TAGS: Interaction tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 7 — SOTS_MMSS
+MMSS-01: MissionId == None behavior:
+A) still respect TrackId if provided
+B) treat as “global ambient / menu mode” and play default
+C) other rule
+- Answer: A / B / C (explain if C): A
+
+MMSS-02: Resume fidelity expectation:
+A) “close enough” timer-based
+B) “exact where possible” (asset/delegate dependent)
+- Answer: (A) / B
+
+MMSS-03: Layering:
+A) single-layer only (one bed)
+B) plan for multi-layer (stingers/overlay/boss phases)
+- Answer: A / (B)
+
+MMSS-TAGS: Music tag audit action (SAS.Music.* etc.):
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 8 — SOTS_Stats
+ST-01: Lock your v1 non-negotiable stat tags (top ~10):
+- Answer: 
+SAS.Player.Stats.Health
+SAS.Player.Stats.Sneak
+SAS.Player.Stats.Tooling
+SAS.Player.Stats.DragonPowerLevel
+SAS.Player.Stats.PoisioningSkill
+SAS.Player.Stats.OverallSkillTreeLevel
+
+THESE ARE VERY TIED INTO THE SKILL TREE AND MUST BE MANAGED AND CREATED AT THE SAME TIME	
+
+ST-02: StatsComponent placement:
+A) shared one component for ninja+dragon
+B) separate components per pawn
+- Answer: A / (B)
+
+ST-03: Stat authority model:
+A) snapshot is authoritative
+B) recompute each run from defaults + unlocks
+C) hybrid
+- Answer: A / B / (C) (rules if C): A
+
+ST-04: Difficulty-dependent stats exist (can’t store raw)?
+- Answer: Yes (list) / No: NO, difficulty only currently effects saving... and AI
+
+ST-TAGS: Stats tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 9 — SOTS_GlobalStealthManager
+GSM-01: Authoritative producers list (who feeds LightExposure/Noise/InCover/etc. into GSM):
+- Answer: Lightprobe and Player Stealth Comp.
+
+GSM-02: Dragon-as-meter behavior:
+Is the dragon already intended to react directly to stealth state transitions (fade/distort/etc.) as the canonical “stealth meter”?
+- Answer: Yes / No / Later: YES
+
+GSM-03: Suspicion reporting granularity:
+A) continuous updates into GSM
+B) only threshold transitions (soft/hard/alerted)
+C) hybrid
+- Answer: (A) / B / C
+
+GSM-TAGS: GSM schema audit action (Docs min-set tags all present in DefaultGameplayTags.ini):
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 10 — SOTS_AIPerception
+AIP-01: FX trigger consumer (pick ONE):
+A) AIPerception calls FXManager directly
+B) AIPerception applies tags; FX reacts
+C) AI behavior layer triggers FX
+- Answer: (A) / B / C
+
+AIP-02: Noise/reporting expectation:
+Which systems MUST call ReportNoise/ReportDamage (footsteps, thrown items, distractions, etc.)?
+- Answer: players stealth comp, AIs perception comp, interaction comp on thrown items etc...
+
+AIP-03: AIP → GSM integration:
+Do we want GSM to ingest every suspicion update or only state transitions?
+- Answer: Every update / Transitions only / Hybrid: Every Update
+
+AIP-TAGS: AIP tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 12 — SOTS_GAS_Plugin
+GAS-01: Owner tag gating reads from:
+A) TagManager
+B) IGameplayTagAssetInterface
+C) TagManager primary + interface fallback
+- Answer: (A) / B / C
+
+GAS-02: RequiredOwnerTags / BlockedOwnerTags semantics:
+Typical = Required=HasAll, Blocked=HasAny — keep that?
+- Answer: Yes / No (define): Yes Keep That
+
+GAS-03: RequiredInventoryTags semantics:
+A) any-of
+B) all-of
+- Answer: A / B : NEW OPTION C ... both must be supported
+
+
+GAS-04: Restore ranks + cooldown remaining on load?
+- Answer: Yes / No / Later: Restore Ranks ... aka skilltrees progression of any one skill or items type usage (example thrown items vs traps vs poisons)
+
+GAS-TAGS: GAS tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 13 — SOTS_SkillTree
+SK-01: Tree registration “one place”:
+Who registers trees and when (startup, safehouse init, mission init)?
+- Answer: All three must be supported. startup for fistt play and beyond ... safehouse for mid missions ... mission init for first player and direct loads...
+
+SK-02: Skill points model:
+A) global pool
+B) per-tree pools
+C) hybrid
+- Answer: A / B / C (rules if C): A
+
+SK-03: Unlock persistence identity:
+A) tag-based
+B) NodeId-based
+C) hybrid
+- Answer: A / B / (C)
+
+SK-04: FX on unlock owner:
+A) SkillTree calls FXManager
+B) broadcast event + FX listens
+- Answer: A / (B)
+
+SK-TAGS: SkillTree tag audit action:
+- Answer: Done / In-progress / (Not started)
+
+OTHER NOTES BY RYAN :
+SKILL TREE IS ONE OF THE LAST SYSTEM TO FULLY FLESH OUT... ONLY DEFAULT PATHS MUST BE CREATED EARLY FOR TESTING. THIS IS A EVER EVOLVING SYSTEM.
+
+---
+
+## Plugin 14 — SOTS_MissionDirector
+MD-01: Mission travel owner (re-state SUITE-01 but mission-specific):
+Who actually performs travel on StartMission/EndMission?
+- Answer: See Previous Response in SUITE-01
+
+MD-02: Objective evaluation policy:
+A) event-driven only (no tick)
+B) timer-based checks for specific objective types
+C) hybrid
+- Answer: (A) / B / C
+
+MD-03: Lock v1 objective type list (your canonical set):
+- Answer: Kill, Non Lethal, Steal, Locate, Sabotage, Question/Interogate 
+
+MD-04: Reward application owner:
+Who applies mission rewards (inventory/stats/skill points/etc.)?
+- Answer: Mission Director > Skilltree > SOTS_Stats > SOTS_UI 
+
+MD-TAGS: MissionDirector tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+---
+
+## Plugin 15 — SOTS_INV
+INV-01: Item identity convention:
+Is “ItemId == ItemTag.GetTagName()” locked for v1?
+- Answer: Yes / No / Later: Yes, make sure its fleshed out ...
+
+INV-02: Provider seam decision:
+Which provider is canonical in v1?
+A) C++ provider only
+B) BP provider only
+C) both supported, resolver priority rules locked
+- Answer: A / B / C (rules if C): BP
+
+INV-03: Inventory UI ownership:
+A) SOTS_UI router owns opening/closing inventory UI
+B) Inventory provider owns opening/closing inventory UI
+C) hybrid
+- Answer: A / (B) / C
+
+INV-TAGS: Inventory tag audit action:
+- Answer: Done / (In-progress) / Not started
+
+
+Ryan Notes :
+SOTS_INV is a bridge only to INVSP it only needs to link SOTS_INPUT to INVSP via its already defined blueprints setup.
+---
+
+## Plugin 16 — SOTS_FX_Plugin
+FX-01: Canonical FX trigger pattern (same as SUITE-04):
+A) direct FXManager calls
+B) tags → FX reacts
+C) hybrid
+- Answer: (A) / B / C
+
+FX-02: Pool overflow policy preference:
+A) reuse oldest
+B) reject new
+C) priority-based (define)
+- Answer: A / (B) / C: B, and log
+
+FX-TAGS: FX tag audit action (all cue/definition tags exist in DefaultGameplayTags.ini):
+- Answer: Done / (In-progress) / Not started
+
+FX are ever changing and evolving ... currently only a small amount of sound/music and particle effects are locked in currently which will be authored as defaults in dataassets myself.
+
+---
+
+## Plugin 17 — SOTS_Steam (scope only; shipping/config deferred)
+STEAM-01: Lock v1 feature scope (even if shipping later):
+Achievements only? +Stats? +Leaderboards? +RichPresence? +Cloud?
+- Answer: Leaderboard are number 1 priortiy, achievments secondary and the only things were supporting in v1
+
+---
+
+## Plugin 18 — OmniTrace
+OT-01: Debug surface:
+Keep exec command “DrawLastKEMTrace” as the canonical KEM trace visualization tool in Dev builds?
+- Answer: Yes / (No) / Later: omnitrace debug is improtant for many systems not just KEM
+
+OT-02: Do you want a Blueprint-callable debug draw function too (for debug widgets)?
+- Answer: Yes / No / Later: YES
+
+OT-03: EOmniTraceGridPattern future:
+A) planned feature → keep and implement later
+B) not planned → keep for now, remove later
+- Answer: A / B
+
+C: remove was from SOTS_Parkour
+
+---
+
+## Plugin 19 — LightProbePlugin
+LP-01: Stealth pipeline contract:
+Should LightProbe ONLY set PlayerStealthComponent light level, OR should it also push into GSM directly?
+- Answer: Set-only / Also-push / Later: Set-only . the stealth comp does the pushing to GSM as its already talking to it.
+
+LP-02: Visual artifact policy:
+Probe cube must never cast visible shadows (enforce via component settings)?
+- Answer: Yes / No: YES
+
+---
+
+## Plugin 20 — SOTS_Debug
+DBG-01: Log category:
+Promote LogTemp → LogSOTS_Debug (or similar)?
+- Answer: Yes / No: Yes
+
+DBG-02: “One-button debug” owner:
+Should SOTS_Input bind a dev-only shortcut to toggle debug widgets/cvars?
+- Answer: Yes / No / Later: Yes
+
+---
+
+## Plugin 21 — SOTS_UDSBridge
+UDS-01: Are breadcrumbs expected to be used in v1 gameplay (not just debug)?
+- Answer: Yes / No / Later: Yes
+
+UDS-02: Trail length model:
+A) time-based (last N seconds)
+B) count-based (last N points)
+C) hybrid
+- Answer: A / B / (C) C: valid for 30s ... max count 30
+
+UDS-03: Breadcrumb metadata:
+Do breadcrumbs carry tags (weather/surface/stealth-at-time) in v1?
+- Answer: Yes (list) / No / Later: No just direction to next breadcrumb
+
+UDS-04: Who is the expected consumer of breadcrumbs (AI BT tasks, AIBT components, etc.)?
+- Answer: SOTS_AIPerception > AIBT
+
+---
+
+## Plugin 21 — SOTS_BodyDrag
+BD-01: Component placement:
+Ninja only, or also Dragon/other pawns?
+- Answer: Player ONLY
+
+BD-02: Drag blocking rules:
+Block dragging when detected / in combat / other stealth states?
+- Answer: Yes to all via tags
+
+BD-03: Physics drop defaults:
+Keep Dead=true, KO=false as default drop flags?
+- Answer: Yes / No (define): Yes
+
+BD-04: Flow owner:
+Use SOTS_Interaction for grab/drop, or allow direct grab/drop input without menu?
+- Answer: (Interaction-only) / Direct-only / Hybrid: SOTS_Input > SOTS_Interaction  > SOTS_BODYDrag
+
+---
+
+## Plugin 23 — SOTS_EdUtil (Editor-only)
+EDU-01: Scope lock:
+A) small general editor helpers only
+B) canonical home for level editor / JSON<->BP tooling
+C) hybrid (define boundary)
+- Answer: A / B / C: A
+
+EDU-02: Schema governance:
+Which schemas are “blessed” + versioned (level/spline/placement/etc.)?
+- Answer: unknown
+
+EDU-03: File IO policy:
+Project directories only, or allow arbitrary disk paths?
+- Answer: Project-only / Any-path / Hybrid: Project-only
+
+EDU-04: Guardrails requirement:
+Do destructive operations require dry-run/report-only modes by contract?
+- Answer: Yes / No / Later: Yes 
+
+---
+
+## Plugin 24 — BlueprintCommentLinks (Editor-only)
+
+RYAN SAYS : NOT APPLICABLE DONE PLUGIN
+---
+
+## Plugin 25 — BEP
+BEP-01: Do we want “live update mode” for default exports (snapshot → re-export changed files every N seconds)?
+- Answer: Yes / No / Later: Later
+
+BEP-02: Tag relevance:
+Do we need BEP to report tag usage per plugin automatically (DevTools assist), or keep BEP strictly export-only?
+- Answer: Yes / No / Later: No

@@ -1,11 +1,28 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
+#include "SOTS_LooseTagHandle.h"
 #include "SOTS_GameplayTagManagerSubsystem.generated.h"
 
 class AActor;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_LooseTagChangedSignature, AActor*, Actor, FGameplayTag, Tag);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_OnLooseTagChanged, AActor*, Actor, FGameplayTag, Tag);
+
+USTRUCT()
+struct FScopedTagRecord
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    TWeakObjectPtr<AActor> Actor;
+
+    UPROPERTY()
+    FGameplayTag Tag;
+};
 
 /**
  * Central gameplay tag helper used by SOTS plugins.
@@ -71,6 +88,42 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
     void RemoveTagFromActorByName(AActor* Actor, FName TagName);
 
+    /** Adds a scoped loose gameplay tag to the actor. Returns a handle that must be passed back to remove this specific contribution. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
+    FSOTS_LooseTagHandle AddScopedTagToActor(AActor* Actor, FGameplayTag Tag);
+
+    /** Adds a scoped loose gameplay tag to the actor, resolving the tag by name. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
+    FSOTS_LooseTagHandle AddScopedTagToActorByName(AActor* Actor, FName TagName);
+
+    /** Removes a scoped loose gameplay tag contribution using the handle returned from AddScopedTagToActor. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
+    bool RemoveScopedTagByHandle(FSOTS_LooseTagHandle Handle);
+
+    /** SPINE1 alias: scoped loose tag add (Blueprint) using requested naming. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
+    FSOTS_LooseTagHandle AddScopedLooseTag(AActor* Actor, FGameplayTag Tag);
+
+    /** SPINE1 alias: scoped loose tag add by name. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
+    FSOTS_LooseTagHandle AddScopedLooseTagByName(AActor* Actor, FName TagName);
+
+    /** SPINE1 alias: scoped loose tag remove by handle. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Tags")
+    bool RemoveScopedLooseTagByHandle(const FSOTS_LooseTagHandle& Handle);
+
+    /** Optional helper: returns true if a handle is currently valid in the manager. */
+    UFUNCTION(BlueprintPure, Category = "SOTS|Tags")
+    bool IsScopedHandleValid(const FSOTS_LooseTagHandle& Handle) const;
+
+    /** Fired when the union-visible loose tag state transitions from absent to present. */
+    UPROPERTY(BlueprintAssignable, Category = "SOTS|Tags|Events")
+    FSOTS_OnLooseTagChanged OnLooseTagAdded;
+
+    /** Fired when the union-visible loose tag state transitions from present to absent. */
+    UPROPERTY(BlueprintAssignable, Category = "SOTS|Tags|Events")
+    FSOTS_OnLooseTagChanged OnLooseTagRemoved;
+
 protected:
     /** Simple cache from FName to tag for faster repeated lookups. */
     UPROPERTY(Transient)
@@ -80,6 +133,34 @@ protected:
     UPROPERTY(Transient)
     TMap<TWeakObjectPtr<const AActor>, FGameplayTagContainer> ActorLooseTags;
 
+    /** Scoped tag handle record linking the GUID back to actor and tag. */
+    UPROPERTY(Transient)
+    TMap<FGuid, FScopedTagRecord> HandleToRecord;
+
+    /** Scoped tag counts per actor, allowing multiple handles per tag without losing legacy semantics. */
+    UPROPERTY(Transient)
+    TMap<TWeakObjectPtr<const AActor>, TMap<FGameplayTag, int32>> ActorScopedTagCounts;
+
+    /** Optional end-play bindings for cleanup per actor. */
+    UPROPERTY(Transient)
+    TMap<TWeakObjectPtr<const AActor>, FDelegateHandle> ActorEndPlayBindings;
+
     /** Internal helper to resolve and cache a tag. */
     FGameplayTag ResolveAndCacheTag(FName TagName);
+
+    /** Build the union of owned (interface), unscoped loose, and scoped-count tags for the actor. */
+    void BuildActorTagUnion(const AActor* Actor, FGameplayTagContainer& OutTags) const;
+
+    /** Returns true if the union-visible tags include the provided tag. */
+    bool IsTagVisibleOnActor(const AActor* Actor, const FGameplayTag& Tag) const;
+
+    /** Returns true if the union-visible tags include the provided tag (utility wrapper). */
+    bool UnionHasTag(const AActor* Actor, const FGameplayTag& Tag) const;
+
+    /** Ensure we are listening for EndPlay on this actor to perform cleanup. */
+    void EnsureEndPlayBinding(AActor* Actor);
+
+    /** Clean up all loose and scoped tags when an actor ends play or is destroyed. */
+    void HandleActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason);
+
 };

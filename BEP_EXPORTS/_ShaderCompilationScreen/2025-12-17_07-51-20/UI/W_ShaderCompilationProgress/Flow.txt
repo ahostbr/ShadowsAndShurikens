@@ -1,0 +1,221 @@
+Blueprint: W_ShaderCompilationProgress (/ShaderCompilationScreen/UI/W_ShaderCompilationProgress.W_ShaderCompilationProgress)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+    Node: Event SetShaderCompiler
+From BP IShader Compilation Loading Screen (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set ShaderCompiler.execute
+      Pin: Compiler (object) Dir=Out
+        -> Set ShaderCompiler.ShaderCompiler
+    Node: Set ShaderCompiler (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Event SetShaderCompiler
+From BP IShader Compilation Loading Screen.then
+      Pin: then (exec) Dir=Out
+      Pin: ShaderCompiler (object) Dir=In
+        -> Event SetShaderCompiler
+From BP IShader Compilation Loading Screen.Compiler
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: GetText
+    Node: GetText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetText.then
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get ShaderCompiler (K2Node_VariableGet)
+      Pin: ShaderCompiler (object) Dir=Out
+        -> Get MaterialsToCompile.self
+        -> Get LoadedMaterials.self
+        -> Get LoadedSystems.self
+        -> Get SystemsToCompile.self
+      Pin: self (object) Dir=In
+    Node: Get MaterialsToCompile (K2Node_VariableGet)
+      Pin: MaterialsToCompile (softobject) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (softobject) Dir=In
+        -> Get MaterialsToCompile.MaterialsToCompile
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> To String (Integer).ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+      Pin: C (string) Dir=In
+        -> To String (Integer).ReturnValue
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Clamp (Integer).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Append.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get LoadedMaterials (K2Node_VariableGet)
+      Pin: LoadedMaterials (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: Get LoadedSystems (K2Node_VariableGet)
+      Pin: LoadedSystems (int) Dir=Out
+        -> int + int.B
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get LoadedMaterials.LoadedMaterials
+      Pin: B (int) Dir=In
+        -> Get LoadedSystems.LoadedSystems
+      Pin: ReturnValue (int) Dir=Out
+        -> Clamp (Integer).Value
+    Node: Get SystemsToCompile (K2Node_VariableGet)
+      Pin: SystemsToCompile (softobject) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (softobject) Dir=In
+        -> Get SystemsToCompile.SystemsToCompile
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.B
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+        -> Length.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+        -> Clamp (Integer).Max
+    Node: Clamp (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+  Graph: GetPercent
+    Node: GetPercent (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetPercent.then
+      Pin: ReturnValue (real) Dir=In
+        -> float / float.ReturnValue
+    Node: Get ShaderCompiler (K2Node_VariableGet)
+      Pin: ShaderCompiler (object) Dir=Out
+        -> Get MaterialsToCompile.self
+        -> Get LoadedMaterials.self
+        -> Get LoadedSystems.self
+        -> Get SystemsToCompile.self
+      Pin: self (object) Dir=In
+    Node: Get MaterialsToCompile (K2Node_VariableGet)
+      Pin: MaterialsToCompile (softobject) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (softobject) Dir=In
+        -> Get MaterialsToCompile.MaterialsToCompile
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.A
+    Node: Get LoadedMaterials (K2Node_VariableGet)
+      Pin: LoadedMaterials (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Clamp (Integer).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.A
+    Node: To Float (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> float / float.B
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: B (real) Dir=In
+        -> To Float (Integer).ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get LoadedSystems (K2Node_VariableGet)
+      Pin: LoadedSystems (int) Dir=Out
+        -> int + int.B
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get LoadedMaterials.LoadedMaterials
+      Pin: B (int) Dir=In
+        -> Get LoadedSystems.LoadedSystems
+      Pin: ReturnValue (int) Dir=Out
+        -> Clamp (Integer).Value
+    Node: Get SystemsToCompile (K2Node_VariableGet)
+      Pin: SystemsToCompile (softobject) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+        -> Get ShaderCompiler.ShaderCompiler
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (softobject) Dir=In
+        -> Get SystemsToCompile.SystemsToCompile
+      Pin: ReturnValue (int) Dir=Out
+        -> int + int.B
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Length.ReturnValue
+      Pin: B (int) Dir=In
+        -> Length.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt
+        -> Clamp (Integer).Max
+    Node: Clamp (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To Float (Integer).InInt

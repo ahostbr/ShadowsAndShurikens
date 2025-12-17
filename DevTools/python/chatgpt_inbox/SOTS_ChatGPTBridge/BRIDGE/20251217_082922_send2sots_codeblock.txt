@@ -1,0 +1,84 @@
+txt
+Copy code
+Send2SOTS
+SOTS_TagManager_SPINE2 (CODE REVIEW STAGE)
+
+OBJECTIVE (SPINE2)
+Finish correctness + safety:
+- True UNION semantics for tag queries (Owned tags + Unscoped loose + Scoped loose-count tags).
+- Robust EndPlay cleanup backstop (invalidate handles, clear all maps, best-effort remove events).
+- Produce “no bypass” scan report for follow-up migration passes (report only; do not refactor other plugins here).
+All changes must be additive (no removals/renames).
+
+LOCKS THIS MUST SATISFY
+- TagManager is the only tag authority (suite-wide; this pass provides the enforcement tooling/report).
+- Reactive tag-change events required (OnTagAdded/Removed) — already added; refine semantics.
+- Handle-based scoped tags: Remove(handle) removes exactly what it added.
+- Handles invalidated/cleaned automatically on EndPlay as safety backstop.
+- No “clear by prefix/source” tooling required.
+
+BUDDY WORK RULES
+- Work off live repo copy.
+- First step for any string search: DevTools/ad_hoc_regex_search.py
+- Do NOT build. After edits: delete plugin Binaries/ and Intermediate/.
+- Add a worklog doc under Plugins/SOTS_TagManager/Docs/Worklogs/ (timestamped, unique).
+
+-----------------------------------------------------------------------
+SPINE2 TASKS
+-----------------------------------------------------------------------
+
+1) Implement union tag view (authoritative query semantics)
+Goal: Any “ActorHasTag/Any/All” calls must see:
+A) Actor-owned tags (via IGameplayTagAssetInterface / GetOwnedGameplayTags)
+B) Unscoped loose tags (added via existing AddTagToActor/RemoveTagFromActor APIs)
+C) Scoped loose tags (count > 0 via AddScoped/RemoveByHandle)
+
+Implementation approach (recommended, additive, minimal risk):
+- Add a private helper:
+  void BuildActorTagUnion(AActor* Actor, FGameplayTagContainer& OutUnion) const;
+
+Inside:
+- Clear OutUnion
+- If Actor implements IGameplayTagAssetInterface:
+    Actor->GetOwnedGameplayTags(OutUnion)  (or interface call)
+- Append unscoped loose tags from your existing storage map (ActorLooseTags…)
+- Append scoped tags:
+    For ScopedTagCountsByActor[Actor]:
+      if Count > 0 -> OutUnion.AddTag(Tag)
+
+Then modify these query functions to use OutUnion:
+- ActorHasTag
+- ActorHasAnyTags
+- ActorHasAllTags
+- and their ByName variants
+
+NOTE:
+- Do NOT change any external signatures.
+- Keep the existing tag-cache logic; this is about how queries assemble the container.
+
+2) Fix “remove(handle) removes exactly what it added” vs unscoped tags
+If a tag exists because:
+- unscoped added (legacy) AND scoped count drops to zero,
+then RemoveScoped should NOT remove the tag from the union.
+How to do it safely:
+- Treat the existing unscoped loose tag container as the authoritative “unscoped source”.
+- When scoped count hits 0, only remove from “scoped presence” (counts), not from unscoped container.
+- Union is recomputed for queries, so visibility remains if unscoped still has it.
+
+Event semantics refinement:
+- OnLooseTagRemoved should fire ONLY if the tag is no longer visible in the UNION after the removal.
+Similarly, OnLooseTagAdded fires only when tag becomes newly visible in the UNION.
+To implement:
+- Before changing scoped counts, compute WasVisible = UnionHasTag(Actor, Tag)
+- Apply change
+- After, compute IsVisible = UnionHasTag(Actor, Tag)
+- If !WasVisible && IsVisible -> Broadcast Added
+- If WasVisible && !IsVisible -> Broadcast Removed
+
+(Use a small helper UnionHasTag(Actor, Tag) that calls BuildActorTagUnion + HasTagExact.)
+
+3) Robust EndPlay cleanup backstop (required)
+Goal: if an actor is destroyed/endplay:
+- All scoped handles referencing it are invalidated
+- Scoped counts cleared
+- Unscoped loose tags cleared (if your policy is “loose tags are transient” — whi
