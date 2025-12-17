@@ -124,6 +124,35 @@ bool USOTS_UIRouterSubsystem::PushWidgetById(FGameplayTag WidgetId, FInstancedSt
 	return PushOrReplaceWidget(WidgetId, Payload, false);
 }
 
+UUserWidget* USOTS_UIRouterSubsystem::CreateWidgetById(FGameplayTag WidgetId)
+{
+	FSOTS_WidgetRegistryEntry Entry;
+	if (!ResolveEntry(WidgetId, Entry))
+	{
+		UE_LOG(LogSOTS_UIRouter, Warning, TEXT("Router: WidgetId %s not found in registry"), *WidgetId.ToString());
+		return nullptr;
+	}
+
+	return ResolveWidgetInstance(Entry);
+}
+
+bool USOTS_UIRouterSubsystem::PushWidgetByIdWithInstance(FGameplayTag WidgetId, UUserWidget* Widget, FInstancedStruct Payload)
+{
+	if (!Widget)
+	{
+		return false;
+	}
+
+	FSOTS_WidgetRegistryEntry Entry;
+	if (!ResolveEntry(WidgetId, Entry))
+	{
+		UE_LOG(LogSOTS_UIRouter, Warning, TEXT("Router: WidgetId %s not found in registry"), *WidgetId.ToString());
+		return false;
+	}
+
+	return PushWidgetByEntry(Entry, Payload, false, Widget);
+}
+
 bool USOTS_UIRouterSubsystem::ReplaceTopWidgetById(FGameplayTag WidgetId, FInstancedStruct Payload)
 {
 	return PushOrReplaceWidget(WidgetId, Payload, true);
@@ -511,7 +540,7 @@ bool USOTS_UIRouterSubsystem::PushOrReplaceWidget(FGameplayTag WidgetId, FInstan
 	return PushWidgetByEntry(Entry, Payload, bReplaceTop);
 }
 
-bool USOTS_UIRouterSubsystem::PushWidgetByEntry(const FSOTS_WidgetRegistryEntry& Entry, FInstancedStruct Payload, bool bReplaceTop)
+bool USOTS_UIRouterSubsystem::PushWidgetByEntry(const FSOTS_WidgetRegistryEntry& Entry, FInstancedStruct Payload, bool bReplaceTop, UUserWidget* WidgetOverride)
 {
 	APlayerController* PC = GetPlayerController();
 	if (!PC)
@@ -542,10 +571,15 @@ bool USOTS_UIRouterSubsystem::PushWidgetByEntry(const FSOTS_WidgetRegistryEntry&
 		RemoveTopFromLayer(Entry.Layer);
 	}
 
-	UUserWidget* WidgetInstance = ResolveWidgetInstance(Entry);
+	UUserWidget* WidgetInstance = WidgetOverride ? WidgetOverride : ResolveWidgetInstance(Entry);
 	if (!WidgetInstance)
 	{
 		return false;
+	}
+
+	if (WidgetOverride)
+	{
+		CacheWidgetIfNeeded(Entry, WidgetOverride);
 	}
 
 	const int32 ZOrder = GetLayerBaseZOrder(Entry.Layer) + Entry.ZOrder;
@@ -803,6 +837,25 @@ UUserWidget* USOTS_UIRouterSubsystem::ResolveWidgetInstance(const FSOTS_WidgetRe
 	}
 
 	return Widget;
+}
+
+void USOTS_UIRouterSubsystem::CacheWidgetIfNeeded(const FSOTS_WidgetRegistryEntry& Entry, UUserWidget* Widget)
+{
+	if (!Widget)
+	{
+		return;
+	}
+
+	const bool bCanUseCache = Entry.CachePolicy == ESOTS_UICachePolicy::KeepAlive && !Entry.bAllowMultiple;
+	if (!bCanUseCache)
+	{
+		return;
+	}
+
+	if (!CachedWidgets.Contains(Entry.WidgetId))
+	{
+		CachedWidgets.Add(Entry.WidgetId, Widget);
+	}
 }
 
 APlayerController* USOTS_UIRouterSubsystem::GetPlayerController() const

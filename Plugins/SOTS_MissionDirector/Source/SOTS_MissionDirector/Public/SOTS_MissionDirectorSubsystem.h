@@ -12,6 +12,7 @@
 
 class AActor;
 class USOTS_GlobalStealthManagerSubsystem;
+class USOTS_ShaderWarmupSubsystem;
 struct FSOTS_MissionProfileData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSOTS_MissionScoreChangedSignature, float, NewScore, float, Delta, FGameplayTagContainer, ContextTags);
@@ -92,6 +93,14 @@ public:
     /** Starts a new mission run. Resets all state and begins logging. */
     UFUNCTION(BlueprintCallable, Category="Mission")
     void StartMissionRun(FName MissionId, FGameplayTag InDifficultyTag);
+
+    // Mission travel entrypoint that waits for shader warmup completion before opening the level.
+    UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
+    void RequestMissionTravelWithWarmup(FName TargetLevelPackageName);
+
+    // Optional abort path if travel is cancelled by UI or back-out flow.
+    UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
+    void CancelWarmupTravel();
 
     /** Records an objective completion. */
     UFUNCTION(BlueprintCallable, Category="Mission")
@@ -244,6 +253,12 @@ private:
     UFUNCTION()
     void HandleExecutionEvent(const struct FSOTS_KEM_ExecutionEvent& Event);
 
+    UFUNCTION()
+    void HandleWarmupReadyToTravel();
+
+    UFUNCTION()
+    void HandleWarmupCancelled(FText Reason);
+
     void ClearMissionStealthConfigOverride();
 
 private:
@@ -305,6 +320,15 @@ private:
 
     bool bLoggedMissingStatsOnce = false;
     bool bLoggedMissingUIRouterOnce = false;
+
+    UPROPERTY()
+    bool bWarmupTravelPending = false;
+
+    UPROPERTY()
+    FName PendingWarmupTargetLevelPackage = NAME_None;
+
+    UPROPERTY()
+    TWeakObjectPtr<USOTS_ShaderWarmupSubsystem> ActiveWarmupSubsystem;
 
     // Profile-oriented mirrors of mission progression.
     UPROPERTY()

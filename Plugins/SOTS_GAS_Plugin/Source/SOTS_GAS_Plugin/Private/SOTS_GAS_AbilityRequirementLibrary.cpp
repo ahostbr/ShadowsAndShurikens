@@ -3,11 +3,11 @@
 #include "SOTS_GAS_AbilityRequirementLibraryAsset.h"
 #include "SOTS_GAS_SkillTreeLibrary.h"
 #include "Subsystems/SOTS_GAS_StealthBridgeSubsystem.h"
+#include "SOTS_TagLibrary.h"
 #include "Subsystems/SOTS_AbilityFXSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Internationalization/Text.h"
-#include "GameplayTagAssetInterface.h"
 
 namespace
 {
@@ -31,6 +31,23 @@ namespace
 
         return nullptr;
     }
+
+    static const AActor* GetPlayerActor_Requirement(const UObject* WorldContextObject)
+    {
+        if (!WorldContextObject)
+        {
+            return nullptr;
+        }
+
+        const UWorld* World = WorldContextObject->GetWorld();
+        if (!World)
+        {
+            return nullptr;
+        }
+
+        APlayerController* PC = World->GetFirstPlayerController();
+        return PC ? PC->GetPawn() : nullptr;
+    }
 }
 
 bool USOTS_GAS_AbilityRequirementLibrary::CollectPlayerSkillTags(
@@ -38,40 +55,6 @@ bool USOTS_GAS_AbilityRequirementLibrary::CollectPlayerSkillTags(
     FGameplayTagContainer& OutSkillTags)
 {
     OutSkillTags = USOTS_GAS_SkillTreeLibrary::GetAllSkillTags(WorldContextObject);
-    return true;
-}
-
-bool USOTS_GAS_AbilityRequirementLibrary::CollectPlayerGenericTags(
-    const UObject* WorldContextObject,
-    FGameplayTagContainer& OutPlayerTags)
-{
-    OutPlayerTags.Reset();
-
-    if (!WorldContextObject)
-    {
-        return true;
-    }
-
-    const UWorld* World = WorldContextObject->GetWorld();
-    if (!World)
-    {
-        return true;
-    }
-
-    APlayerController* PC = World->GetFirstPlayerController();
-    const AActor* PlayerActor = PC ? PC->GetPawn() : nullptr;
-    if (!PlayerActor)
-    {
-        return true;
-    }
-
-    const IGameplayTagAssetInterface* TagInterface = Cast<IGameplayTagAssetInterface>(PlayerActor);
-    if (TagInterface)
-    {
-        TagInterface->GetOwnedGameplayTags(OutPlayerTags);
-    }
-
-    // An empty container is a valid state (player just has no tags yet).
     return true;
 }
 
@@ -140,12 +123,14 @@ FSOTS_AbilityRequirementCheckResult USOTS_GAS_AbilityRequirementLibrary::Evaluat
     }
 
     // 2) Player generic tags (optional, only if we have data)
-    FGameplayTagContainer PlayerTags;
-    CollectPlayerGenericTags(WorldContextObject, PlayerTags);
-
     if (!Requirements.RequiredPlayerTags.IsEmpty())
     {
-        if (!PlayerTags.HasAll(Requirements.RequiredPlayerTags))
+        const AActor* PlayerActor = GetPlayerActor_Requirement(WorldContextObject);
+        const bool bHasAllRequiredTags =
+            PlayerActor &&
+            USOTS_TagLibrary::ActorHasAllTags(WorldContextObject, PlayerActor, Requirements.RequiredPlayerTags);
+
+        if (!bHasAllRequiredTags)
         {
             Result.bMissingPlayerTags = true;
         }

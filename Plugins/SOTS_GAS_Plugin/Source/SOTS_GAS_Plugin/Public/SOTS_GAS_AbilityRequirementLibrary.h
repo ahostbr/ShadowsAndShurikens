@@ -93,6 +93,5 @@ public:
 
 private:
     static bool CollectPlayerSkillTags(const UObject* WorldContextObject, FGameplayTagContainer& OutSkillTags);
-    static bool CollectPlayerGenericTags(const UObject* WorldContextObject, FGameplayTagContainer& OutPlayerTags);
     static bool GetCurrentStealthState(const UObject* WorldContextObject, int32& OutTier, float& OutScore01);
 };

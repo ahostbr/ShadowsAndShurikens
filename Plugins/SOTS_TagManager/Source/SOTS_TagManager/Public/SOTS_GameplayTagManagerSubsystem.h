@@ -138,15 +138,16 @@ protected:
     TMap<FGuid, FScopedTagRecord> HandleToRecord;
 
     /** Scoped tag counts per actor, allowing multiple handles per tag without losing legacy semantics. */
-    UPROPERTY(Transient)
     TMap<TWeakObjectPtr<const AActor>, TMap<FGameplayTag, int32>> ActorScopedTagCounts;
 
     /** Optional end-play bindings for cleanup per actor. */
-    UPROPERTY(Transient)
-    TMap<TWeakObjectPtr<const AActor>, FDelegateHandle> ActorEndPlayBindings;
+    TSet<TWeakObjectPtr<const AActor>> ActorEndPlayBindings;
 
     /** Internal helper to resolve and cache a tag. */
     FGameplayTag ResolveAndCacheTag(FName TagName);
+
+    /** Append scoped tags for the actor into the union container. */
+    void AppendActorScopedTags(const AActor* Actor, FGameplayTagContainer& OutTags) const;
 
     /** Build the union of owned (interface), unscoped loose, and scoped-count tags for the actor. */
     void BuildActorTagUnion(const AActor* Actor, FGameplayTagContainer& OutTags) const;
@@ -161,6 +162,7 @@ protected:
     void EnsureEndPlayBinding(AActor* Actor);
 
     /** Clean up all loose and scoped tags when an actor ends play or is destroyed. */
+    UFUNCTION()
     void HandleActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason);
 
 };

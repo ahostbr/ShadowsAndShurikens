@@ -1,0 +1,18 @@
+Those errors are coming from UHT parsing UPROPERTY fields it doesn’t support:
+
+TMap<..., TMap<...>> is not a legal UPROPERTY value type.
+FDelegateHandle is not a UPROPERTY‑compatible type, so UHT can’t reflect it.
+I removed the UPROPERTY markers from those two internal maps so UHT stops parsing them. No runtime behavior change (they’re transient, internal caches).
+
+Changes:
+
+Plugins/SOTS_TagManager/Source/SOTS_TagManager/Public/SOTS_GameplayTagManagerSubsystem.h
+Cleanup:
+
+Plugins/SOTS_TagManager/Binaries, Plugins/SOTS_TagManager/Intermediate (already absent)
+Tests not run.
+
+Next steps:
+
+Rebuild to confirm UHT gets past those errors.
+If anything still complains about FDelegateHandle, I can add an explicit include for it, but removing UPROPERTY usually resolves it.

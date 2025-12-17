@@ -42,8 +42,17 @@ struct F_SOTS_ShaderWarmupRequest
 	TObjectPtr<USOTS_ShaderWarmupLoadListDataAsset> LoadListOverride = nullptr;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_OnShaderWarmupProgress, float, Percent, FText, StatusText);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_SevenParams(FSOTS_OnShaderWarmupProgress,
+	float, Percent,
+	int32, LoadedAssets,
+	int32, TotalAssets,
+	bool, bIsCompiling,
+	int32, RemainingCompileJobs,
+	float, ElapsedSeconds,
+	FText, StatusText);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnShaderWarmupReadyToTravel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnShaderWarmupFinished);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnShaderWarmupCancelled, FText, Reason);
 
 inline F_SOTS_ShaderWarmupRequest::F_SOTS_ShaderWarmupRequest()
 {

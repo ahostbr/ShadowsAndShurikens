@@ -74,6 +74,12 @@ public:
 	bool PushWidgetById(FGameplayTag WidgetId, FInstancedStruct Payload);
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	UUserWidget* CreateWidgetById(FGameplayTag WidgetId);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	bool PushWidgetByIdWithInstance(FGameplayTag WidgetId, UUserWidget* Widget, FInstancedStruct Payload);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
 	bool ReplaceTopWidgetById(FGameplayTag WidgetId, FInstancedStruct Payload);
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
@@ -124,6 +130,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
 	bool ToggleInventoryMenu();
 
+	// Expose widget pop by id for external flows (e.g., shader warmup teardown).
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
+	bool PopWidgetById(FGameplayTag WidgetId);
+
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Inventory")
 	bool OpenItemContainerMenu(AActor* ContainerActor);
 
@@ -169,7 +179,7 @@ protected:
 
 private:
 	bool PushOrReplaceWidget(FGameplayTag WidgetId, FInstancedStruct Payload, bool bReplaceTop);
-	bool PushWidgetByEntry(const FSOTS_WidgetRegistryEntry& Entry, FInstancedStruct Payload, bool bReplaceTop);
+	bool PushWidgetByEntry(const FSOTS_WidgetRegistryEntry& Entry, FInstancedStruct Payload, bool bReplaceTop, UUserWidget* WidgetOverride = nullptr);
 	bool ResolveEntry(FGameplayTag WidgetId, FSOTS_WidgetRegistryEntry& OutEntry);
 	void RefreshInputAndPauseState();
 	void ApplyInputPolicy(const FSOTS_ActiveWidgetEntry* TopEntry);
@@ -190,7 +200,6 @@ private:
 	FGameplayTag ResolveFirstValidTag(const TArray<FName>& Names) const;
 	bool PushNotificationWidget(FGameplayTag WidgetTag, const F_SOTS_UINotificationPayload& Payload);
 	bool PushInventoryWidget(FGameplayTag WidgetTag, ESOTS_UIInventoryRequestType RequestType, AActor* ContainerActor = nullptr, bool bPauseOverride = false);
-	bool PopWidgetById(FGameplayTag WidgetId);
 	bool IsWidgetActive(FGameplayTag WidgetId, ESOTS_UILayer* OutLayer = nullptr) const;
 	bool PopFirstMatchingFromLayer(ESOTS_UILayer Layer, FGameplayTag WidgetId);
 	bool DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload);

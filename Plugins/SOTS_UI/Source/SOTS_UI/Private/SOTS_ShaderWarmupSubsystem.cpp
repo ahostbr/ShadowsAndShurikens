@@ -10,7 +10,9 @@
 #include "Engine/StreamableManager.h"
 #include "Engine/World.h"
 #include "InstancedStruct.h"
+#include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
 #include "Materials/MaterialInterface.h"
 #include "Modules/ModuleManager.h"
 #include "MoviePlayer.h"
@@ -20,8 +22,8 @@
 #include "SOTS_ShaderWarmupLoadListDataAsset.h"
 #include "SOTS_UIRouterSubsystem.h"
 #include "SOTS_UISettings.h"
-#include "UObject/CoreUObjectDelegates.h"
-#include "Widgets/Text/STextBlock.h"
+#include "UObject/UObjectGlobals.h"
+#include "UObject/Package.h"
 
 #if WITH_EDITOR
 #include "ShaderCompiler.h"
@@ -47,6 +49,41 @@ USOTS_ShaderWarmupSubsystem* USOTS_ShaderWarmupSubsystem::Get(const UObject* Wor
 	return nullptr;
 }
 
+USOTS_ShaderWarmupLoadListDataAsset* USOTS_ShaderWarmupSubsystem::ResolveLoadList(const F_SOTS_ShaderWarmupRequest& Request) const
+{
+	if (Request.LoadListOverride)
+	{
+		return Request.LoadListOverride;
+	}
+
+	if (const USOTS_UISettings* Settings = USOTS_UISettings::Get())
+	{
+		if (!Settings->DefaultShaderWarmupLoadList.IsNull())
+		{
+			return Settings->DefaultShaderWarmupLoadList.LoadSynchronous();
+		}
+	}
+
+	return nullptr;
+}
+
+void USOTS_ShaderWarmupSubsystem::Deinitialize()
+{
+	if (bWarmupActive)
+	{
+		EndWarmup(true);
+	}
+
+	if (bMoviePlayerHooksBound)
+	{
+		FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
+		FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
+		bMoviePlayerHooksBound = false;
+	}
+
+	Super::Deinitialize();
+}
+
 bool USOTS_ShaderWarmupSubsystem::BeginWarmup(const F_SOTS_ShaderWarmupRequest& Request)
 {
 	if (bWarmupActive)
@@ -69,6 +106,9 @@ bool USOTS_ShaderWarmupSubsystem::BeginWarmup(const F_SOTS_ShaderWarmupRequest& 
 		return false;
 	}
 
+	UUserWidget* LoadingWidget = Router->CreateWidgetById(WidgetId);
+	LoadingWidgetRef = LoadingWidget;
+
 	if (!Router->PushWidgetById(WidgetId, FInstancedStruct()))
 	{
 		UE_LOG(LogSOTS_ShaderWarmup, Warning, TEXT("Shader warmup failed: widget id %s was not found in the registry."), *WidgetId.ToString());
@@ -77,6 +117,8 @@ bool USOTS_ShaderWarmupSubsystem::BeginWarmup(const F_SOTS_ShaderWarmupRequest& 
 
 	ActiveRequest = Request;
 	bWarmupActive = true;
+	bWarmupReadyToTravel = false;
+	WarmupStartTimeSeconds = FPlatformTime::Seconds();
 
 	if (Request.bFreezeWithGlobalTimeDilation)
 	{
@@ -99,17 +141,21 @@ bool USOTS_ShaderWarmupSubsystem::BeginWarmup(const F_SOTS_ShaderWarmupRequest& 
 		bMoviePlayerHooksBound = true;
 	}
 
+	if (Request.bUseMoviePlayerDuringMapLoad)
+	{
+		SetupMoviePlayerScreen();
+	}
+
 	BuildAssetQueue(Request);
 	TotalCount = AssetQueue.Num();
 	DoneCount = 0;
 	QueueIndex = 0;
 
-	OnProgress.Broadcast(0.0f, FText::FromString(TEXT("Warming up shaders...")));
+	BroadcastProgress(0.0f, FText::FromString(TEXT("Warming up shaders...")));
 
 	if (TotalCount == 0)
 	{
-		EndWarmup();
-		OnFinished.Broadcast();
+		HandleWarmupComplete();
 		return true;
 	}
 
@@ -124,15 +170,19 @@ void USOTS_ShaderWarmupSubsystem::EndWarmup(bool bRestoreTimeDilation)
 		return;
 	}
 
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	UE_LOG(LogSOTS_ShaderWarmup, Log, TEXT("UI: ShaderWarmup teardown (StopMovie/PopWidget/RestoreDilation)"));
+#endif
+
 	if (CompilePollHandle.IsValid())
 	{
 		FTSTicker::GetCoreTicker().RemoveTicker(CompilePollHandle);
-		CompilePollHandle.Reset();
+		CompilePollHandle = FTSTicker::FDelegateHandle();
 	}
 
 	if (ActiveLoadHandle.IsValid())
 	{
-		ActiveLoadHandle->CancelHandle();
+		ActiveLoadHandle->ReleaseHandle();
 		ActiveLoadHandle.Reset();
 	}
 
@@ -155,22 +205,60 @@ void USOTS_ShaderWarmupSubsystem::EndWarmup(bool bRestoreTimeDilation)
 		}
 	}
 
-	if (ActiveRequest.bUseMoviePlayerDuringMapLoad && IsMoviePlayerEnabled())
+	if (ActiveRequest.bUseMoviePlayerDuringMapLoad && bMoviePlayerPlaying && IsMoviePlayerEnabled())
 	{
 		GetMoviePlayer()->StopMovie();
 	}
+
+	if (bMoviePlayerHooksBound)
+	{
+		FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
+		FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
+		bMoviePlayerHooksBound = false;
+	}
+
+	LoadingWidgetRef.Reset();
+	bMoviePlayerConfigured = false;
+	bMoviePlayerPlaying = false;
 
 	AssetQueue.Reset();
 	TotalCount = 0;
 	DoneCount = 0;
 	QueueIndex = 0;
 	bWarmupActive = false;
+	bWarmupReadyToTravel = false;
+	WarmupStartTimeSeconds = 0.0;
+}
+
+void USOTS_ShaderWarmupSubsystem::CancelWarmup(const FText& Reason)
+{
+	if (!bWarmupActive)
+	{
+		return;
+	}
+
+	EndWarmup(true);
+	OnCancelled.Broadcast(Reason);
 }
 
 void USOTS_ShaderWarmupSubsystem::BuildAssetQueue(const F_SOTS_ShaderWarmupRequest& Request)
 {
 	AssetQueue.Reset();
 	TSet<FSoftObjectPath> SeenPaths;
+	const TArray<FString> AllowedRoots = { TEXT("/Game/") };
+	const TArray<FString> WhitelistedRoots;
+
+	int32 TotalDepsVisited = 0;
+	int32 TotalAssetsFound = 0;
+	int32 AcceptedAssets = 0;
+	int32 RejectedEngine = 0;
+	int32 RejectedPlugins = 0;
+	int32 RejectedScript = 0;
+	int32 RejectedNiagara = 0;
+	int32 RejectedOther = 0;
+	int32 RejectedRedirector = 0;
+	int32 RejectedEditorOnly = 0;
+	bool bUsedFallbackScan = false;
 
 	auto AddUniquePath = [&SeenPaths, this](const FSoftObjectPath& Path)
 	{
@@ -186,17 +274,7 @@ void USOTS_ShaderWarmupSubsystem::BuildAssetQueue(const F_SOTS_ShaderWarmupReque
 	bool bLoadedList = false;
 	if (Request.SourceMode == ESOTS_ShaderWarmupSourceMode::UseLoadListDA)
 	{
-		USOTS_ShaderWarmupLoadListDataAsset* LoadList = Request.LoadListOverride;
-		if (!LoadList)
-		{
-			if (const USOTS_UISettings* Settings = USOTS_UISettings::Get())
-			{
-				if (!Settings->DefaultShaderWarmupLoadList.IsNull())
-				{
-					LoadList = Settings->DefaultShaderWarmupLoadList.LoadSynchronous();
-				}
-			}
-		}
+		USOTS_ShaderWarmupLoadListDataAsset* LoadList = ResolveLoadList(Request);
 
 		if (LoadList)
 		{
@@ -206,11 +284,20 @@ void USOTS_ShaderWarmupSubsystem::BuildAssetQueue(const F_SOTS_ShaderWarmupReque
 			}
 
 			bLoadedList = AssetQueue.Num() > 0;
+			TotalAssetsFound = AssetQueue.Num();
+			AcceptedAssets = AssetQueue.Num();
 		}
 	}
 
 	if (bLoadedList)
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		UE_LOG(LogSOTS_ShaderWarmup, Log,
+			TEXT("WarmupQueue: Level=%s Deps=0 Found=%d Accepted=%d Rejected(Engine=0, Plugins=0, Script=0, Niagara=0, Other=0)"),
+			*Request.TargetLevelPackageName.ToString(),
+			TotalAssetsFound,
+			AcceptedAssets);
+#endif
 		return;
 	}
 
@@ -220,6 +307,7 @@ void USOTS_ShaderWarmupSubsystem::BuildAssetQueue(const F_SOTS_ShaderWarmupReque
 		return;
 	}
 
+	bUsedFallbackScan = true;
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	IAssetRegistry& Registry = AssetRegistryModule.Get();
 
@@ -227,24 +315,123 @@ void USOTS_ShaderWarmupSubsystem::BuildAssetQueue(const F_SOTS_ShaderWarmupReque
 	PackageNames.Add(Request.TargetLevelPackageName);
 
 	TArray<FName> Dependencies;
-	Registry.GetDependencies(Request.TargetLevelPackageName, Dependencies, EAssetRegistryDependencyType::Hard | EAssetRegistryDependencyType::Soft);
+	Registry.GetDependencies(
+		Request.TargetLevelPackageName,
+		Dependencies,
+		UE::AssetRegistry::EDependencyCategory::Package,
+		UE::AssetRegistry::FDependencyQuery());
 	for (const FName& Dependency : Dependencies)
 	{
 		PackageNames.Add(Dependency);
 	}
 
+	auto IsWhitelisted = [&AllowedRoots, &WhitelistedRoots](const FString& PackagePath) -> bool
+	{
+		for (const FString& Root : AllowedRoots)
+		{
+			if (PackagePath.StartsWith(Root))
+			{
+				return true;
+			}
+		}
+
+		for (const FString& Root : WhitelistedRoots)
+		{
+			if (PackagePath.StartsWith(Root))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	for (const FName& PackageName : PackageNames)
 	{
+		++TotalDepsVisited;
+		const FString PackagePath = PackageName.ToString();
 		TArray<FAssetData> AssetDataArray;
 		Registry.GetAssetsByPackageName(PackageName, AssetDataArray);
 
 		for (const FAssetData& AssetData : AssetDataArray)
 		{
+			++TotalAssetsFound;
+
+			if (AssetData.IsRedirector())
+			{
+				++RejectedOther;
+				++RejectedRedirector;
+				continue;
+			}
+
+			if ((AssetData.PackageFlags & PKG_EditorOnly) != 0)
+			{
+				++RejectedOther;
+				++RejectedEditorOnly;
+				continue;
+			}
+
+			if (PackagePath.StartsWith(TEXT("/Engine/")))
+			{
+				++RejectedEngine;
+				continue;
+			}
+
+			if (PackagePath.StartsWith(TEXT("/Script/")))
+			{
+				++RejectedScript;
+				continue;
+			}
+
+			if (PackagePath.StartsWith(TEXT("/Niagara/")))
+			{
+				++RejectedNiagara;
+				continue;
+			}
+
+			if (PackagePath.StartsWith(TEXT("/Plugins/")))
+			{
+				++RejectedPlugins;
+				continue;
+			}
+
+			if (!IsWhitelisted(PackagePath))
+			{
+				++RejectedOther;
+				continue;
+			}
+
 			if (AssetData.IsInstanceOf(UMaterialInterface::StaticClass()) || AssetData.IsInstanceOf(UNiagaraSystem::StaticClass()))
 			{
 				AddUniquePath(AssetData.ToSoftObjectPath());
+				++AcceptedAssets;
+			}
+			else
+			{
+				++RejectedOther;
 			}
 		}
+	}
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	UE_LOG(LogSOTS_ShaderWarmup, Log,
+		TEXT("WarmupQueue: Level=%s Deps=%d Found=%d Accepted=%d Rejected(Engine=%d, Plugins=%d, Script=%d, Niagara=%d, Other=%d)"),
+		*Request.TargetLevelPackageName.ToString(),
+		TotalDepsVisited,
+		TotalAssetsFound,
+		AcceptedAssets,
+		RejectedEngine,
+		RejectedPlugins,
+		RejectedScript,
+		RejectedNiagara,
+		RejectedOther);
+#endif
+
+	if (bUsedFallbackScan && AcceptedAssets == 0)
+	{
+		UE_LOG(LogSOTS_ShaderWarmup, Warning,
+			TEXT("WarmupQueue: Level=%s produced zero accepted assets after filtering."),
+			*Request.TargetLevelPackageName.ToString());
 	}
 }
 
@@ -319,19 +506,33 @@ void USOTS_ShaderWarmupSubsystem::HandleAssetLoaded(FSoftObjectPath LoadedPath)
 
 	const float Percent = TotalCount > 0 ? static_cast<float>(DoneCount) / static_cast<float>(TotalCount) : 1.0f;
 	const FString Status = FString::Printf(TEXT("Loaded %d / %d"), DoneCount, TotalCount);
-	OnProgress.Broadcast(Percent, FText::FromString(Status));
+	BroadcastProgress(Percent, FText::FromString(Status));
 
 	LoadNext();
 }
 
 void USOTS_ShaderWarmupSubsystem::BeginWaitForCompiling()
 {
-	OnProgress.Broadcast(1.0f, FText::FromString(TEXT("Finalizing shaders...")));
+	int32 RemainingJobs = 0;
+	const bool bIsCompiling = GetCompileStatus(RemainingJobs);
+	FString Status = TEXT("Finalizing...");
+#if WITH_EDITOR
+	if (bIsCompiling && RemainingJobs > 0)
+	{
+		Status = FString::Printf(TEXT("Finalizing... (Jobs remaining: %d)"), RemainingJobs);
+	}
+#else
+	if (bIsCompiling && RemainingJobs > 0)
+	{
+		Status = FString::Printf(TEXT("Finalizing... (PSOs remaining: %d)"), RemainingJobs);
+	}
+#endif
+	BroadcastProgress(1.0f, FText::FromString(Status), bIsCompiling, RemainingJobs);
 
 	if (CompilePollHandle.IsValid())
 	{
 		FTSTicker::GetCoreTicker().RemoveTicker(CompilePollHandle);
-		CompilePollHandle.Reset();
+		CompilePollHandle = FTSTicker::FDelegateHandle();
 	}
 
 	CompilePollHandle = FTSTicker::GetCoreTicker().AddTicker(
@@ -341,33 +542,102 @@ void USOTS_ShaderWarmupSubsystem::BeginWaitForCompiling()
 
 bool USOTS_ShaderWarmupSubsystem::HandleCompilePoll(float DeltaTime)
 {
-	UE_UNUSED(DeltaTime);
+	(void)DeltaTime;
 	if (!bWarmupActive)
 	{
 		return false;
 	}
 
-	if (IsStillCompiling())
+	int32 RemainingJobs = 0;
+	const bool bIsCompiling = GetCompileStatus(RemainingJobs);
+	if (bIsCompiling)
 	{
+		FString Status = TEXT("Finalizing...");
+#if WITH_EDITOR
+		if (RemainingJobs > 0)
+		{
+			Status = FString::Printf(TEXT("Finalizing... (Jobs remaining: %d)"), RemainingJobs);
+		}
+#else
+		if (RemainingJobs > 0)
+		{
+			Status = FString::Printf(TEXT("Finalizing... (PSOs remaining: %d)"), RemainingJobs);
+		}
+#endif
+		BroadcastProgress(1.0f, FText::FromString(Status), bIsCompiling, RemainingJobs);
 		return true;
 	}
 
-	EndWarmup();
-	OnFinished.Broadcast();
+	HandleWarmupComplete();
 	return false;
 }
 
 bool USOTS_ShaderWarmupSubsystem::IsStillCompiling() const
 {
+	int32 RemainingJobs = 0;
+	return GetCompileStatus(RemainingJobs);
+}
+
+bool USOTS_ShaderWarmupSubsystem::GetCompileStatus(int32& OutRemainingJobs) const
+{
 #if WITH_EDITOR
 	if (GShaderCompilingManager)
 	{
-		return (GShaderCompilingManager->GetNumPendingJobs() + GShaderCompilingManager->GetNumRemainingJobs()) > 0;
+		OutRemainingJobs = GShaderCompilingManager->GetNumPendingJobs() + GShaderCompilingManager->GetNumRemainingJobs();
+		return OutRemainingJobs > 0;
 	}
+
+	OutRemainingJobs = 0;
 	return false;
 #else
-	return FShaderPipelineCache::NumPrecompilesRemaining() > 0;
+	OutRemainingJobs = FShaderPipelineCache::NumPrecompilesRemaining();
+	return OutRemainingJobs > 0;
 #endif
+}
+
+void USOTS_ShaderWarmupSubsystem::HandleWarmupComplete()
+{
+	if (!bWarmupActive)
+	{
+		return;
+	}
+
+	if (!bWarmupReadyToTravel)
+	{
+		bWarmupReadyToTravel = true;
+		OnReadyToTravel.Broadcast();
+	}
+
+	if (!ActiveRequest.bUseMoviePlayerDuringMapLoad)
+	{
+		FinalizeWarmup();
+	}
+}
+
+void USOTS_ShaderWarmupSubsystem::FinalizeWarmup()
+{
+	if (!bWarmupActive)
+	{
+		return;
+	}
+
+	EndWarmup();
+	OnFinished.Broadcast();
+}
+
+void USOTS_ShaderWarmupSubsystem::BroadcastProgress(float Percent, const FText& StatusText)
+{
+	int32 RemainingJobs = 0;
+	const bool bIsCompiling = GetCompileStatus(RemainingJobs);
+	BroadcastProgress(Percent, StatusText, bIsCompiling, RemainingJobs);
+}
+
+void USOTS_ShaderWarmupSubsystem::BroadcastProgress(float Percent, const FText& StatusText, bool bIsCompiling, int32 RemainingCompileJobs)
+{
+	const double NowSeconds = FPlatformTime::Seconds();
+	const float ElapsedSeconds = WarmupStartTimeSeconds > 0.0 ? static_cast<float>(NowSeconds - WarmupStartTimeSeconds) : 0.0f;
+
+	OnProgress.Broadcast(Percent, DoneCount, TotalCount, bIsCompiling, RemainingCompileJobs, ElapsedSeconds, StatusText);
 }
 
 void USOTS_ShaderWarmupSubsystem::EnsureTouchActor()
@@ -462,21 +732,35 @@ void USOTS_ShaderWarmupSubsystem::EnsureTouchNiagara()
 
 void USOTS_ShaderWarmupSubsystem::HandlePreLoadMap(const FString& MapName)
 {
-	UE_UNUSED(MapName);
+	(void)MapName;
 	if (!bWarmupActive || !ActiveRequest.bUseMoviePlayerDuringMapLoad)
 	{
 		return;
 	}
 
-	SetupMoviePlayerScreen();
+	if (!bMoviePlayerConfigured)
+	{
+		SetupMoviePlayerScreen();
+	}
+
+	if (bMoviePlayerConfigured && IsMoviePlayerEnabled())
+	{
+		GetMoviePlayer()->PlayMovie();
+		bMoviePlayerPlaying = true;
+	}
 }
 
 void USOTS_ShaderWarmupSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
 {
-	UE_UNUSED(LoadedWorld);
+	(void)LoadedWorld;
 	if (!bWarmupActive || !ActiveRequest.bUseMoviePlayerDuringMapLoad)
 	{
 		return;
+	}
+
+	if (bWarmupReadyToTravel)
+	{
+		FinalizeWarmup();
 	}
 }
 
@@ -488,12 +772,21 @@ void USOTS_ShaderWarmupSubsystem::SetupMoviePlayerScreen()
 		return;
 	}
 
+	UUserWidget* LoadingWidget = LoadingWidgetRef.Get();
+	if (!LoadingWidget)
+	{
+		UE_LOG(LogSOTS_ShaderWarmup, Warning, TEXT("MoviePlayer setup skipped: loading widget was not created."));
+		return;
+	}
+
 	FLoadingScreenAttributes Attributes;
 	Attributes.bAutoCompleteWhenLoadingCompletes = false;
+	Attributes.bWaitForManualStop = true;
 	Attributes.MinimumLoadingScreenDisplayTime = 0.0f;
-	Attributes.WidgetLoadingScreen = SNew(STextBlock).Text(FText::FromString(TEXT("Loading...")));
+	Attributes.WidgetLoadingScreen = LoadingWidget->TakeWidget();
 
 	GetMoviePlayer()->SetupLoadingScreen(Attributes);
+	bMoviePlayerConfigured = true;
 }
 
 FGameplayTag USOTS_ShaderWarmupSubsystem::ResolveWidgetId(const F_SOTS_ShaderWarmupRequest& Request) const

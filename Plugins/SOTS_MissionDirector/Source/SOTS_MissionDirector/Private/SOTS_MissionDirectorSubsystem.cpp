@@ -11,7 +11,9 @@
 #include "SOTS_ProfileSubsystem.h"
 #include "SOTS_TagAccessHelpers.h"
 #include "SOTS_UIRouterSubsystem.h"
+#include "SOTS_ShaderWarmupSubsystem.h"
 #include "SOTS_UIPayloadTypes.h"
+#include "Misc/PackageName.h"
 
 USOTS_MissionDirectorSubsystem::USOTS_MissionDirectorSubsystem()
     : bMissionActive(false)
@@ -84,6 +86,8 @@ void USOTS_MissionDirectorSubsystem::Initialize(FSubsystemCollectionBase& Collec
 
 void USOTS_MissionDirectorSubsystem::Deinitialize()
 {
+    CancelWarmupTravel();
+
     if (CachedStealthSubsystem)
     {
         CachedStealthSubsystem->OnStealthLevelChanged.RemoveDynamic(
@@ -159,6 +163,82 @@ void USOTS_MissionDirectorSubsystem::StartMissionRun(FName MissionId, FGameplayT
     EventLog.Reset();
 
     UE_LOG(LogSOTSMissionDirector, Log, TEXT("Mission run started: %s"), *CurrentMissionId.ToString());
+}
+
+void USOTS_MissionDirectorSubsystem::RequestMissionTravelWithWarmup(FName TargetLevelPackageName)
+{
+    if (bWarmupTravelPending)
+    {
+        UE_LOG(LogSOTSMissionDirector, Warning, TEXT("Mission travel warmup already pending; ignoring new request."));
+        return;
+    }
+
+    if (TargetLevelPackageName.IsNone())
+    {
+        UE_LOG(LogSOTSMissionDirector, Warning, TEXT("Mission travel warmup requested with empty target level."));
+        return;
+    }
+
+    USOTS_ShaderWarmupSubsystem* WarmupSubsystem = nullptr;
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        WarmupSubsystem = GI->GetSubsystem<USOTS_ShaderWarmupSubsystem>();
+    }
+
+    if (!WarmupSubsystem)
+    {
+        UE_LOG(LogSOTSMissionDirector, Warning, TEXT("Warmup subsystem missing; traveling immediately."));
+        const FString MapName = FPackageName::GetShortName(TargetLevelPackageName.ToString());
+        UGameplayStatics::OpenLevel(this, FName(*MapName));
+        return;
+    }
+
+    F_SOTS_ShaderWarmupRequest Request;
+    Request.TargetLevelPackageName = TargetLevelPackageName;
+    Request.ScreenWidgetId = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.Screen.Loading.ShaderWarmup")), false);
+    Request.bUseMoviePlayerDuringMapLoad = true;
+    Request.bFreezeWithGlobalTimeDilation = true;
+    Request.FrozenTimeDilation = 5.0f;
+    Request.SourceMode = ESOTS_ShaderWarmupSourceMode::UseLoadListDA;
+
+    WarmupSubsystem->OnReadyToTravel.AddDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupReadyToTravel);
+    WarmupSubsystem->OnCancelled.AddDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupCancelled);
+    bWarmupTravelPending = true;
+    PendingWarmupTargetLevelPackage = TargetLevelPackageName;
+    ActiveWarmupSubsystem = WarmupSubsystem;
+
+    if (!WarmupSubsystem->BeginWarmup(Request))
+    {
+        UE_LOG(LogSOTSMissionDirector, Warning, TEXT("Warmup BeginWarmup failed; traveling immediately."));
+        WarmupSubsystem->OnReadyToTravel.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupReadyToTravel);
+        WarmupSubsystem->OnCancelled.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupCancelled);
+        bWarmupTravelPending = false;
+        PendingWarmupTargetLevelPackage = NAME_None;
+        ActiveWarmupSubsystem = nullptr;
+
+        const FString MapName = FPackageName::GetShortName(TargetLevelPackageName.ToString());
+        UGameplayStatics::OpenLevel(this, FName(*MapName));
+        return;
+    }
+}
+
+void USOTS_MissionDirectorSubsystem::CancelWarmupTravel()
+{
+    if (!bWarmupTravelPending)
+    {
+        return;
+    }
+
+    if (USOTS_ShaderWarmupSubsystem* WarmupSubsystem = ActiveWarmupSubsystem.Get())
+    {
+        WarmupSubsystem->OnReadyToTravel.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupReadyToTravel);
+        WarmupSubsystem->OnCancelled.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupCancelled);
+        WarmupSubsystem->CancelWarmup(FText::FromString(TEXT("Travel cancelled")));
+    }
+
+    bWarmupTravelPending = false;
+    PendingWarmupTargetLevelPackage = NAME_None;
+    ActiveWarmupSubsystem = nullptr;
 }
 
 void USOTS_MissionDirectorSubsystem::StartMission(USOTS_MissionDefinition* MissionDef)
@@ -1911,6 +1991,47 @@ void USOTS_MissionDirectorSubsystem::HandleExecutionEvent(const FSOTS_KEM_Execut
     {
         EvaluateMissionCompletion();
     }
+}
+
+void USOTS_MissionDirectorSubsystem::HandleWarmupReadyToTravel()
+{
+    if (USOTS_ShaderWarmupSubsystem* WarmupSubsystem = ActiveWarmupSubsystem.Get())
+    {
+        WarmupSubsystem->OnReadyToTravel.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupReadyToTravel);
+        WarmupSubsystem->OnCancelled.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupCancelled);
+    }
+
+    const FName TargetLevel = PendingWarmupTargetLevelPackage;
+    bWarmupTravelPending = false;
+    PendingWarmupTargetLevelPackage = NAME_None;
+    ActiveWarmupSubsystem = nullptr;
+
+    if (TargetLevel.IsNone())
+    {
+        UE_LOG(LogSOTSMissionDirector, Warning, TEXT("Warmup ready, but no pending target level was set."));
+        return;
+    }
+
+    const FString MapName = FPackageName::GetShortName(TargetLevel.ToString());
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    UE_LOG(LogSOTSMissionDirector, Log, TEXT("MD: ShaderWarmup -> OpenLevel(%s)"), *MapName);
+#endif
+    UGameplayStatics::OpenLevel(this, FName(*MapName));
+}
+
+void USOTS_MissionDirectorSubsystem::HandleWarmupCancelled(FText Reason)
+{
+    if (USOTS_ShaderWarmupSubsystem* WarmupSubsystem = ActiveWarmupSubsystem.Get())
+    {
+        WarmupSubsystem->OnFinished.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupReadyToTravel);
+        WarmupSubsystem->OnCancelled.RemoveDynamic(this, &USOTS_MissionDirectorSubsystem::HandleWarmupCancelled);
+    }
+
+    UE_LOG(LogSOTSMissionDirector, Log, TEXT("Warmup cancelled; travel aborted. Reason=%s"), *Reason.ToString());
+
+    bWarmupTravelPending = false;
+    PendingWarmupTargetLevelPackage = NAME_None;
+    ActiveWarmupSubsystem = nullptr;
 }
 
 TArray<FSOTS_MissionObjectiveRuntimeState> USOTS_MissionDirectorSubsystem::GetCurrentMissionObjectives() const

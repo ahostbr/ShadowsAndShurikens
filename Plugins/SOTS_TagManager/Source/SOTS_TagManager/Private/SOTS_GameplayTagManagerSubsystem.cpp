@@ -118,8 +118,8 @@ void USOTS_GameplayTagManagerSubsystem::EnsureEndPlayBinding(AActor* Actor)
         return;
     }
 
-    const FDelegateHandle Handle = Actor->OnEndPlay.AddUObject(this, &USOTS_GameplayTagManagerSubsystem::HandleActorEndPlay);
-    ActorEndPlayBindings.Add(Key, Handle);
+    Actor->OnEndPlay.AddDynamic(this, &USOTS_GameplayTagManagerSubsystem::HandleActorEndPlay);
+    ActorEndPlayBindings.Add(Key);
 }
 
 void USOTS_GameplayTagManagerSubsystem::HandleActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason)
@@ -152,9 +152,9 @@ void USOTS_GameplayTagManagerSubsystem::HandleActorEndPlay(AActor* Actor, EEndPl
         HandleToRecord.Remove(HandleId);
     }
 
-    if (FDelegateHandle* Binding = ActorEndPlayBindings.Find(Key))
+    if (ActorEndPlayBindings.Contains(Key))
     {
-        Actor->OnEndPlay.Remove(*Binding);
+        Actor->OnEndPlay.RemoveDynamic(this, &USOTS_GameplayTagManagerSubsystem::HandleActorEndPlay);
         ActorEndPlayBindings.Remove(Key);
     }
 
