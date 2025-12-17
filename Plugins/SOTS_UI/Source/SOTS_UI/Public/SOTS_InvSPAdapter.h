@@ -4,6 +4,8 @@
 #include "UObject/Object.h"
 #include "SOTS_InvSPAdapter.generated.h"
 
+class AActor;
+
 UCLASS(Blueprintable, BlueprintType)
 class SOTS_UI_API USOTS_InvSPAdapter : public UObject
 {
@@ -18,4 +20,10 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, Category = "SOTS|UI|InvSP")
 	void RefreshInventoryView();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "SOTS|UI|InvSP")
+	void OpenContainer(AActor* ContainerActor);
+
+	UFUNCTION(BlueprintNativeEvent, Category = "SOTS|UI|InvSP")
+	void CloseContainer();
 };

@@ -425,6 +425,12 @@ bool USOTS_UIRouterSubsystem::OpenItemContainerMenu(AActor* ContainerActor)
 		return false;
 	}
 
+	EnsureAdapters();
+	if (InvSPAdapter)
+	{
+		InvSPAdapter->OpenContainer(ContainerActor);
+	}
+
 	return PushInventoryWidget(ContainerTag, ESOTS_UIInventoryRequestType::OpenContainer, ContainerActor);
 }
 
@@ -438,6 +444,11 @@ bool USOTS_UIRouterSubsystem::CloseItemContainerMenu()
 	if (!ContainerTag.IsValid())
 	{
 		return false;
+	}
+
+	if (InvSPAdapter)
+	{
+		InvSPAdapter->CloseContainer();
 	}
 
 	return PopWidgetById(ContainerTag);
