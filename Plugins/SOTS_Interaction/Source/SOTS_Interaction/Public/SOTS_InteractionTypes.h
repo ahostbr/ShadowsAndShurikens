@@ -77,11 +77,51 @@ struct FSOTS_InteractionOption
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
     FGameplayTagContainer MetaTags;
 
+    /** Optional: player must have all of these tags. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tags")
+    FGameplayTagContainer RequiredPlayerTags;
+
+    /** Optional: interaction blocked if player has any of these tags. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tags")
+    FGameplayTagContainer BlockedPlayerTags;
+
+    /** Optional: target must have all of these tags. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tags")
+    FGameplayTagContainer RequiredTargetTags;
+
+    /** Optional: interaction blocked if target has any of these tags. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tags")
+    FGameplayTagContainer BlockedTargetTags;
+
+    /** Optional: per-option LOS override. Ignored unless bOverrideRequiresLineOfSight is true. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tuning")
+    bool bRequiresLineOfSight;
+
+    /** When true, bRequiresLineOfSight is respected; otherwise component/global defaults apply. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tuning")
+    bool bOverrideRequiresLineOfSight;
+
+    /** Optional: per-option range override (<= 0 uses component/global defaults). */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tuning", meta=(ClampMin="0.0"))
+    float MaxDistanceOverride;
+
+    /** Optional: priority hint for selection/UI sorting (higher = preferred). */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tuning")
+    float Priority;
+
     FSOTS_InteractionOption()
         : OptionTag()
         , DisplayText(FText::GetEmpty())
         , BlockedReasonTag()
         , MetaTags()
+        , RequiredPlayerTags()
+        , BlockedPlayerTags()
+        , RequiredTargetTags()
+        , BlockedTargetTags()
+        , bRequiresLineOfSight(false)
+        , bOverrideRequiresLineOfSight(false)
+        , MaxDistanceOverride(0.f)
+        , Priority(0.f)
     {}
 };
 
@@ -118,6 +158,10 @@ struct FSOTS_InteractionContext
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
     FHitResult HitResult;
 
+    /** Score assigned during candidate selection (higher is better). */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    float Score = 0.f;
+
     FSOTS_InteractionContext()
         : PlayerController(nullptr)
         , PlayerPawn(nullptr)
@@ -125,6 +169,7 @@ struct FSOTS_InteractionContext
         , InteractionTypeTag()
         , Distance(0.f)
         , HitResult()
+        , Score(0.f)
     {}
 };
 
@@ -174,4 +219,72 @@ struct FSOTS_InteractionExecuteReport
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
     FString DebugReason;
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_InteractionTraceShape : uint8
+{
+    Sphere UMETA(DisplayName="Sphere"),
+    Line   UMETA(DisplayName="Line")
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_InteractionTraceConfig
+{
+    GENERATED_BODY()
+
+    /** Max distance for search/LOS traces. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Trace", meta=(ClampMin="0.0"))
+    float MaxDistance;
+
+    /** Whether LOS is globally required (component/option may add stricter rules). */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Trace")
+    bool bRequireLineOfSight;
+
+    /** Trace channel used for search and LOS. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Trace")
+    TEnumAsByte<ECollisionChannel> TraceChannel;
+
+    /** Shape used for candidate search. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Trace")
+    ESOTS_InteractionTraceShape TraceShape;
+
+    /** Radius used when TraceShape is Sphere. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Trace", meta=(ClampMin="0.0"))
+    float SphereRadius;
+
+    /** Optional socket/bone to use as target aim point. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Trace")
+    FName TargetSocketName;
+
+    FSOTS_InteractionTraceConfig()
+        : MaxDistance(400.f)
+        , bRequireLineOfSight(true)
+        , TraceChannel(ECC_Visibility)
+        , TraceShape(ESOTS_InteractionTraceShape::Sphere)
+        , SphereRadius(30.f)
+        , TargetSocketName(NAME_None)
+    {}
+};
+
+/** Canonical interaction data package (provider + options + score). */
+USTRUCT(BlueprintType)
+struct FSOTS_InteractionData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    FSOTS_InteractionContext Context;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    TArray<FSOTS_InteractionOption> Options;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    bool bFromComponent = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    bool bFromInterface = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
+    float Score = 0.f;
 };

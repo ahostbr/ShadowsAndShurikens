@@ -19,7 +19,7 @@ public:
     virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 
 private:
-    USOTS_InputRouterComponent* ResolveRouter(USkeletalMeshComponent* MeshComp) const;
+    class USOTS_InputBufferComponent* ResolveBuffer(USkeletalMeshComponent* MeshComp) const;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
@@ -27,4 +27,8 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
     bool bFlushOnEnd = true;
+
+    // Optional list of intents this window is expected to capture (informational only for now)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Input")
+    TArray<FGameplayTag> AllowedIntentTags;
 };

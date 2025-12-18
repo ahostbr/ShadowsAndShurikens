@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
+#include "SOTS_InteractionTypes.h"
 #include "SOTS_InteractableComponent.generated.h"
 
 /**
@@ -41,9 +42,21 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
     FGameplayTagContainer BlockedPlayerTags;
 
+    /** Tags required on the target (self) for an option to be available. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
+    FGameplayTagContainer RequiredTargetTags;
+
+    /** Tags that block interaction if present on the target (self). */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
+    FGameplayTagContainer BlockedTargetTags;
+
     /** Optional: extra tags describing this interactable (category, rarity, etc). */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
     FGameplayTagContainer MetaTags;
+
+    /** Optional options defined on the component. Component options take priority over interface options. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
+    TArray<FSOTS_InteractionOption> Options;
 
     /** Convenience accessor: does owner implement ISOTS_InteractableInterface? */
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction")

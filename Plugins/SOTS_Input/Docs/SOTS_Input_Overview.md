@@ -7,6 +7,7 @@ Scope: runtime-only Enhanced Input routing and buffering without GAS or UI focus
 - **USOTS_InputLayerDataAsset**: config for a layer (layer tag, priority, block flag, mapping contexts, handler templates). Templates are duplicated at runtime when the layer is pushed.
 - **USOTS_InputHandler**: per-action/per-event handling unit. Supports buffering via `bAllowBuffering` + `BufferChannel` and exposes `HandleInput`/`HandleBufferedInput` plus activation hooks.
 - **USOTS_InputBufferComponent**: tracks open buffer channels and holds buffered events until the channel closes. Flush uses the router to redispatch.
+- **USOTS_InputBufferComponent**: tracks open buffer channels and holds buffered events until the channel closes. Flush uses the router to redispatch. IN-03 montage buffer windows (Execution/Vanish, latest-wins, auto-clear on montage end/cancel/abort) are documented in `SOTS_Input_BufferWindows.md`.
 - **UAnimNotifyState_SOTS_InputBufferWindow**: opens a buffer channel on `NotifyBegin` and closes (optionally flushing) on `NotifyEnd`.
 - **Optional Tag Gating**: router can query `USOTS_GameplayTagManagerSubsystem` (reflection to `ActorHasTag`) using `GateRules` to allow/deny buffering or live dispatch. If the subsystem/class is absent, gating is a no-op.
 - **Consume Policy**: each layer can choose `None`, `ConsumeHandled`, or `ConsumeAllMatches` to control how input propagation stops within the stack (independent of `bBlocksLowerPriorityLayers`).
@@ -39,7 +40,7 @@ Scope: runtime-only Enhanced Input routing and buffering without GAS or UI focus
 - SOTS_UI, dragon possession, or mission director should call the BlueprintLibrary seam to push/pop as needed.
 
 ## Device detection hook
-- Use `NotifyKeyInput(FKey)` on the router (e.g., from an “Any Key” binding) to update `LastDevice` and broadcast `OnInputDeviceChanged` (KBM vs Gamepad). No UI/input mode changes are performed here.
+- Use `ReportInputDeviceFromKey(FKey)`/`NotifyKeyInput(FKey)` on the router (e.g., from an “Any Key” binding) to update `LastDevice` and broadcast `OnInputDeviceChanged` (KBM vs Gamepad). No UI/input mode changes are performed here. PlayerController-aware helper available via `USOTS_InputBlueprintLibrary::ReportInputDeviceFromKey`.
 
 ## Intent broadcasting handler
 - `USOTS_InputHandler_IntentTag` maps (InputAction, TriggerEvent) → `FGameplayTag` intent and broadcasts via `OnInputIntent` on the router for both live and buffered inputs.

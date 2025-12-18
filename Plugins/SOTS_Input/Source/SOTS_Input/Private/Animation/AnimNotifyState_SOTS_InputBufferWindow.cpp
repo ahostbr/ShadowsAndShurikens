@@ -1,19 +1,20 @@
 #include "Animation/AnimNotifyState_SOTS_InputBufferWindow.h"
 
-#include "SOTS_InputRouterComponent.h"
+#include "SOTS_InputBlueprintLibrary.h"
+#include "SOTS_InputBufferComponent.h"
 
 UAnimNotifyState_SOTS_InputBufferWindow::UAnimNotifyState_SOTS_InputBufferWindow()
 {
-    BufferChannel = FGameplayTag::RequestGameplayTag(TEXT("SAS.Input.Buffer.Default"), false);
+    BufferChannel = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.Execution"), false);
 }
 
 void UAnimNotifyState_SOTS_InputBufferWindow::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
     Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
-    if (USOTS_InputRouterComponent* Router = ResolveRouter(MeshComp))
+    if (USOTS_InputBufferComponent* Buffer = ResolveBuffer(MeshComp))
     {
-        Router->OpenInputBuffer(BufferChannel);
+        Buffer->OpenBufferWindow(BufferChannel);
     }
 }
 
@@ -21,13 +22,13 @@ void UAnimNotifyState_SOTS_InputBufferWindow::NotifyEnd(USkeletalMeshComponent* 
 {
     Super::NotifyEnd(MeshComp, Animation, EventReference);
 
-    if (USOTS_InputRouterComponent* Router = ResolveRouter(MeshComp))
+    if (USOTS_InputBufferComponent* Buffer = ResolveBuffer(MeshComp))
     {
-        Router->CloseInputBuffer(BufferChannel, bFlushOnEnd);
+        Buffer->CloseBufferWindow(BufferChannel);
     }
 }
 
-USOTS_InputRouterComponent* UAnimNotifyState_SOTS_InputBufferWindow::ResolveRouter(USkeletalMeshComponent* MeshComp) const
+USOTS_InputBufferComponent* UAnimNotifyState_SOTS_InputBufferWindow::ResolveBuffer(USkeletalMeshComponent* MeshComp) const
 {
     if (!MeshComp)
     {
@@ -36,7 +37,12 @@ USOTS_InputRouterComponent* UAnimNotifyState_SOTS_InputBufferWindow::ResolveRout
 
     if (AActor* Owner = MeshComp->GetOwner())
     {
-        return Owner->FindComponentByClass<USOTS_InputRouterComponent>();
+        if (USOTS_InputBufferComponent* Existing = Owner->FindComponentByClass<USOTS_InputBufferComponent>())
+        {
+            return Existing;
+        }
+
+        return USOTS_InputBlueprintLibrary::EnsureBufferOnPlayerController(MeshComp->GetWorld(), Owner);
     }
 
     return nullptr;

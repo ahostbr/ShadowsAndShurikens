@@ -6,6 +6,10 @@
 #include "SOTS_InputBufferComponent.generated.h"
 
 class USOTS_InputRouterComponent;
+class UAnimInstance;
+class AActor;
+class APawn;
+class UAnimMontage;
 
 // STABLE API: used by SOTS_UI and gameplay systems
 UCLASS(ClassGroup=(SOTS), meta=(BlueprintSpawnableComponent))
@@ -29,6 +33,25 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Input Buffer")
     void BufferEvent(const FSOTS_BufferedInputEvent& Evt);
 
+    // IN-03 minimal windowed intent buffering (queue size 1, latest wins)
+    UFUNCTION(BlueprintCallable, Category = "Input Buffer")
+    void OpenBufferWindow(FGameplayTag ChannelTag);
+
+    UFUNCTION(BlueprintCallable, Category = "Input Buffer")
+    void CloseBufferWindow(FGameplayTag ChannelTag);
+
+    UFUNCTION(BlueprintCallable, Category = "Input Buffer")
+    void TryBufferIntent(FGameplayTag ChannelTag, FGameplayTag IntentTag, bool& bBuffered);
+
+    UFUNCTION(BlueprintCallable, Category = "Input Buffer")
+    void ConsumeBufferedIntent(FGameplayTag ChannelTag, FGameplayTag& OutIntentTag, bool& bHadBuffered);
+
+    UFUNCTION(BlueprintCallable, Category = "Input Buffer")
+    void ClearAllBufferWindowsAndInputs();
+
+    UFUNCTION(BlueprintCallable, Category = "Input Buffer")
+    void ClearChannel(FGameplayTag ChannelTag);
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Buffer")
     int32 MaxBufferedEventsPerChannel = 16;
 
@@ -41,4 +64,29 @@ private:
 
     UPROPERTY()
     TMap<FGameplayTag, FSOTS_BufferedInputEventArray> BufferedByChannel;
+
+private:
+    bool IsChannelAllowedForWindow(const FGameplayTag& ChannelTag) const;
+    void BindToAnimInstance();
+    void UnbindFromAnimInstance();
+    void HandleMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+    void HandleMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+    AActor* ResolveOwnerActor() const;
+    APawn* ResolveOwningPawn() const;
+    UAnimInstance* ResolveAnimInstance() const;
+    void CleanupWindowIfEmpty();
+
+private:
+    // Open window tracking (queue size = 1 per channel, latest wins)
+    UPROPERTY()
+    TMap<FGameplayTag, bool> OpenWindows;
+
+    UPROPERTY()
+    TMap<FGameplayTag, FSOTS_BufferedIntent> BufferedIntentByChannel;
+
+    UPROPERTY()
+    TWeakObjectPtr<UAnimInstance> BoundAnimInstance;
+
+    FDelegateHandle MontageEndedHandle;
+    FDelegateHandle MontageBlendingOutHandle;
 };

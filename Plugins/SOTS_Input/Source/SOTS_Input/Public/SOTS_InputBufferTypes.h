@@ -40,3 +40,16 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FSOTS_BufferedInputEvent> Events;
 };
+
+USTRUCT(BlueprintType)
+struct SOTS_INPUT_API FSOTS_BufferedIntent
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FGameplayTag IntentTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    double TimeSeconds = 0.0;
+};

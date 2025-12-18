@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
+#include "InputCoreTypes.h"
 #include "SOTS_InputBlueprintLibrary.generated.h"
 
 class USOTS_InputRouterComponent;
@@ -26,6 +27,15 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|Input", meta = (WorldContext = "WorldContextObject"))
     static USOTS_InputBufferComponent* EnsureBufferOnPlayerController(UObject* WorldContextObject, AActor* ContextActor);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Input", meta = (WorldContext = "WorldContextObject"))
+    static void ReportInputDeviceFromKey(UObject* WorldContextObject, AActor* ContextActor, FKey Key);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Input", meta = (WorldContext = "WorldContextObject"))
+    static void PushDragonControlLayer(UObject* WorldContextObject, AActor* ContextActor);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Input", meta = (WorldContext = "WorldContextObject"))
+    static void PopDragonControlLayer(UObject* WorldContextObject, AActor* ContextActor);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|Input")
     static void PushLayerTag(AActor* ContextActor, FGameplayTag LayerTag);

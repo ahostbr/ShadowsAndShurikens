@@ -58,6 +58,14 @@ struct FSOTS_InteractionCandidateState
     /** Whether the last query used OmniTrace */
     UPROPERTY()
     bool bLastUsedOmniTrace = false;
+
+    /** Cached options for current candidate. */
+    UPROPERTY()
+    TArray<FSOTS_InteractionOption> CachedOptions;
+
+    /** Cached score for current candidate. */
+    UPROPERTY()
+    float CachedScore = 0.f;
 };
 
 /**
@@ -145,6 +153,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tuning")
     bool bWarnOnUnboundUIIntent;
 
+    /** Trace + LOS configuration surface. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Tuning")
+    FSOTS_InteractionTraceConfig TraceConfig;
+
     // --- Events ---
     /** Fired whenever the best candidate changes (including clearing to none). */
     UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction")
@@ -187,6 +199,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction")
     FSOTS_InteractionExecuteReport ExecuteInteractionOption_WithResult(APlayerController* PlayerController, FGameplayTag OptionTag);
 
+    /** Get full interaction data (context + options + provider flags) for current candidate. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|Interaction")
+    bool GetCurrentInteractionData(APlayerController* PlayerController, FSOTS_InteractionData& OutData) const;
+
+    /** Convenience: only fetch options for current candidate. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|Interaction")
+    bool GetCurrentInteractionOptions(APlayerController* PlayerController, TArray<FSOTS_InteractionOption>& OutOptions) const;
+
 private:
     UPROPERTY()
     TMap<TWeakObjectPtr<APlayerController>, FSOTS_InteractionCandidateState> CandidateStates;
@@ -213,13 +233,16 @@ private:
 
     void UpdateCandidateInternal(APlayerController* PlayerController, const FVector& ViewLoc, const FRotator& ViewRot);
 
-    void FindBestCandidate(APlayerController* PC, const FVector& ViewLoc, const FRotator& ViewRot, FSOTS_InteractionContext& OutBest, bool& bOutHasBest, ESOTS_InteractionNoCandidateReason& OutNoCandidateReason, bool& bOutUsedOmniTrace) const;
+    void FindBestCandidate(APlayerController* PC, const FVector& ViewLoc, const FRotator& ViewRot, FSOTS_InteractionContext& OutBest, FSOTS_InteractionData& OutBestData, bool& bOutHasBest, ESOTS_InteractionNoCandidateReason& OutNoCandidateReason, bool& bOutUsedOmniTrace) const;
 
-    bool MakeContextForActor(APlayerController* PC, APawn* Pawn, AActor* Target, const FVector& ViewLoc, const FRotator& ViewRot, const FHitResult& Hit, FSOTS_InteractionContext& OutContext) const;
+    bool MakeContextForActor(APlayerController* PC, APawn* Pawn, AActor* Target, const FHitResult& Hit, FSOTS_InteractionContext& OutContext) const;
+
+    FVector ResolveTargetLocation(AActor* Target) const;
 
     bool PassesLOS(APlayerController* PC, const FVector& ViewLoc, AActor* Target, const FHitResult& CandidateHit, bool& bOutUsedOmniTrace) const;
 
     bool PassesTagGates(APlayerController* PC, const USOTS_InteractableComponent* Interactable, FGameplayTag& OutFailReason) const;
+    bool EvaluateTagGates(const AActor* PlayerActor, const AActor* TargetActor, const FSOTS_InteractionOption& Option, FGameplayTag& OutFailReason) const;
 
     float ScoreCandidate(const FVector& ViewLoc, const FVector& ViewDir, const FSOTS_InteractionContext& Ctx) const;
 
@@ -228,6 +251,9 @@ private:
     bool ValidateCanInteract(const FSOTS_InteractionContext& Context, FGameplayTag& OutFailReason) const;
 
     void GatherOptions(const FSOTS_InteractionContext& Context, TArray<FSOTS_InteractionOption>& OutOptions) const;
+    bool BuildInteractionData(const FSOTS_InteractionContext& Context, FSOTS_InteractionData& OutData) const;
+    void ApplyComponentDefaultsToOptions(const USOTS_InteractableComponent* Interactable, TArray<FSOTS_InteractionOption>& Options) const;
+    void ApplyBlockedReason(FSOTS_InteractionOption& Option, const FGameplayTag& FailReason) const;
 
     bool ExecuteOptionInternal(const FSOTS_InteractionContext& Context, FGameplayTag OptionTag);
 

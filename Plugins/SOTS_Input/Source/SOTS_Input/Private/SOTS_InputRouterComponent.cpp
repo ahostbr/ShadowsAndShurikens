@@ -349,6 +349,11 @@ void USOTS_InputRouterComponent::NotifyKeyInput(const FKey& Key)
     }
 }
 
+void USOTS_InputRouterComponent::ReportInputDeviceFromKey(const FKey& Key)
+{
+    NotifyKeyInput(Key);
+}
+
 void USOTS_InputRouterComponent::BroadcastIntent(FGameplayTag IntentTag, ETriggerEvent TriggerEvent, FInputActionValue Value)
 {
     FSOTS_InputIntentEvent Event;

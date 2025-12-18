@@ -216,3 +216,29 @@ void USOTS_InputBlueprintLibrary::CloseBuffer(AActor* ContextActor, FGameplayTag
         Router->CloseInputBuffer(ChannelTag, bFlush);
     }
 }
+
+void USOTS_InputBlueprintLibrary::ReportInputDeviceFromKey(UObject* WorldContextObject, AActor* ContextActor, FKey Key)
+{
+    if (USOTS_InputRouterComponent* Router = EnsureRouterOnPlayerController(WorldContextObject, ContextActor))
+    {
+        Router->ReportInputDeviceFromKey(Key);
+    }
+}
+
+void USOTS_InputBlueprintLibrary::PushDragonControlLayer(UObject* WorldContextObject, AActor* ContextActor)
+{
+    static const FGameplayTag DragonLayerTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Layer.Dragon.Control"), false);
+    if (USOTS_InputRouterComponent* Router = EnsureRouterOnPlayerController(WorldContextObject, ContextActor))
+    {
+        Router->PushLayerByTag(DragonLayerTag);
+    }
+}
+
+void USOTS_InputBlueprintLibrary::PopDragonControlLayer(UObject* WorldContextObject, AActor* ContextActor)
+{
+    static const FGameplayTag DragonLayerTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Layer.Dragon.Control"), false);
+    if (USOTS_InputRouterComponent* Router = EnsureRouterOnPlayerController(WorldContextObject, ContextActor))
+    {
+        Router->PopLayerByTag(DragonLayerTag);
+    }
+}

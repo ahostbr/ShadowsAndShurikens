@@ -156,10 +156,16 @@ public:
     void NotifyKeyInput(const FKey& Key);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|Input")
+    void ReportInputDeviceFromKey(const FKey& Key);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Input")
     void BroadcastIntent(FGameplayTag IntentTag, ETriggerEvent TriggerEvent, FInputActionValue Value);
 
     UFUNCTION(BlueprintPure, Category = "SOTS|Input")
     ESOTS_InputDevice GetLastDevice() const { return LastDevice; }
+
+    UFUNCTION(BlueprintPure, Category = "SOTS|Input")
+    bool IsGamepadActive() const { return LastDevice == ESOTS_InputDevice::Gamepad; }
 
     UFUNCTION(BlueprintPure, Category = "SOTS|Input")
     void GetActiveLayerTags(TArray<FGameplayTag>& OutTags) const;

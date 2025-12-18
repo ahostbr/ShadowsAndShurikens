@@ -11,6 +11,21 @@
 #include "SOTS_GameplayTagManagerSubsystem.h"
 #include "DrawDebugHelpers.h"
 #include "Components/ActorComponent.h"
+#include "Components/PrimitiveComponent.h"
+
+namespace
+{
+    FGameplayTag FirstTagOrInvalid(const FGameplayTagContainer& Container)
+    {
+        if (Container.Num() == 0)
+        {
+            return FGameplayTag();
+        }
+
+        const TArray<FGameplayTag>& Tags = Container.GetGameplayTagArray();
+        return Tags.Num() > 0 ? Tags[0] : FGameplayTag();
+    }
+}
 
 USOTS_InteractionSubsystem::USOTS_InteractionSubsystem()
 {
@@ -43,6 +58,13 @@ USOTS_InteractionSubsystem::USOTS_InteractionSubsystem()
     UIFailReason_NoCandidate = FGameplayTag();
     UIFailReason_BlockedByTags = FGameplayTag();
     UIFailReason_InterfaceDenied = FGameplayTag();
+
+    TraceConfig.MaxDistance = SearchDistance;
+    TraceConfig.SphereRadius = SearchRadius;
+    TraceConfig.bRequireLineOfSight = true;
+    TraceConfig.TraceChannel = ECC_Visibility;
+    TraceConfig.TraceShape = ESOTS_InteractionTraceShape::Sphere;
+    TraceConfig.TargetSocketName = NAME_None;
 }
 
 bool USOTS_InteractionSubsystem::BuildViewContext(APlayerController* PC, FVector& OutViewLoc, FRotator& OutViewRot) const
@@ -101,24 +123,42 @@ void USOTS_InteractionSubsystem::UpdateCandidateNow(APlayerController* PlayerCon
 void USOTS_InteractionSubsystem::UpdateCandidateInternal(APlayerController* PlayerController, const FVector& ViewLoc, const FRotator& ViewRot)
 {
     FSOTS_InteractionContext Best;
+    FSOTS_InteractionData BestData;
     bool bHasBest = false;
     ESOTS_InteractionNoCandidateReason NoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
     bool bUsedOmniTrace = false;
-    FindBestCandidate(PlayerController, ViewLoc, ViewRot, Best, bHasBest, NoCandidateReason, bUsedOmniTrace);
+    FindBestCandidate(PlayerController, ViewLoc, ViewRot, Best, BestData, bHasBest, NoCandidateReason, bUsedOmniTrace);
 
     FSOTS_InteractionCandidateState& State = CandidateStates.FindOrAdd(PlayerController);
     State.LastNoCandidateReason = NoCandidateReason;
     State.bLastUsedOmniTrace = bUsedOmniTrace;
 
-    const bool bChanged =
+    const bool bChangedTarget =
         (State.bHasCandidate != bHasBest) ||
         (bHasBest && !AreSameTarget(State.Current, Best));
 
-    if (bChanged)
-    {
-        State.bHasCandidate = bHasBest;
-        State.Current = bHasBest ? Best : FSOTS_InteractionContext();
+    const TArray<FSOTS_InteractionOption> PreviousOptions = State.CachedOptions;
 
+    State.bHasCandidate = bHasBest;
+    State.Current = bHasBest ? Best : FSOTS_InteractionContext();
+    State.CachedOptions = bHasBest ? BestData.Options : TArray<FSOTS_InteractionOption>();
+    State.CachedScore = bHasBest ? Best.Score : 0.f;
+
+    bool bOptionsChanged = PreviousOptions.Num() != State.CachedOptions.Num();
+    if (!bOptionsChanged)
+    {
+        for (int32 Index = 0; Index < PreviousOptions.Num(); ++Index)
+        {
+            if (PreviousOptions[Index].OptionTag != State.CachedOptions[Index].OptionTag || PreviousOptions[Index].BlockedReasonTag != State.CachedOptions[Index].BlockedReasonTag)
+            {
+                bOptionsChanged = true;
+                break;
+            }
+        }
+    }
+
+    if (bChangedTarget || bOptionsChanged)
+    {
         OnCandidateChanged.Broadcast(PlayerController, State.Current);
 
         if (UIIntent_InteractionPrompt.IsValid())
@@ -143,6 +183,8 @@ void USOTS_InteractionSubsystem::ClearCandidate(APlayerController* PlayerControl
     State.Current = FSOTS_InteractionContext();
     State.LastNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
     State.bLastUsedOmniTrace = false;
+    State.CachedOptions.Reset();
+    State.CachedScore = 0.f;
 
     if (bWas)
     {
@@ -170,6 +212,44 @@ bool USOTS_InteractionSubsystem::GetCurrentCandidate(APlayerController* PlayerCo
     }
 
     OutContext = Found->Current;
+    return true;
+}
+
+bool USOTS_InteractionSubsystem::GetCurrentInteractionData(APlayerController* PlayerController, FSOTS_InteractionData& OutData) const
+{
+    OutData = FSOTS_InteractionData();
+
+    FSOTS_InteractionContext Context;
+    if (!GetCurrentCandidate(PlayerController, Context))
+    {
+        return false;
+    }
+
+    if (const FSOTS_InteractionCandidateState* Found = CandidateStates.Find(PlayerController))
+    {
+        if (Found->bHasCandidate && Found->CachedOptions.Num() > 0)
+        {
+            OutData.Context = Found->Current;
+            OutData.Options = Found->CachedOptions;
+            OutData.Score = Found->CachedScore;
+            // Provider flags are unknown from the cache; leave defaults.
+            return true;
+        }
+    }
+
+    return BuildInteractionData(Context, OutData);
+}
+
+bool USOTS_InteractionSubsystem::GetCurrentInteractionOptions(APlayerController* PlayerController, TArray<FSOTS_InteractionOption>& OutOptions) const
+{
+    FSOTS_InteractionData Data;
+    if (!GetCurrentInteractionData(PlayerController, Data))
+    {
+        OutOptions.Reset();
+        return false;
+    }
+
+    OutOptions = Data.Options;
     return true;
 }
 
@@ -295,29 +375,32 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInt
     }
 
     USOTS_InteractableComponent* Interactable = Context.TargetActor->FindComponentByClass<USOTS_InteractableComponent>();
-    if (!Interactable)
+    UObject* Implementer = ResolveInteractableImplementer(Context);
+
+    if (!Interactable && !Implementer)
     {
         Report.Result = ESOTS_InteractionExecuteResult::MissingInteractableComponent;
-        Report.DebugReason = TEXT("Missing interactable component");
+        Report.DebugReason = TEXT("Missing interactable component/interface");
         return Report;
     }
 
     FGameplayTag FailReason;
-    if (!PassesTagGates(Context.PlayerController.Get(), Interactable, FailReason))
+    if (Interactable && !PassesTagGates(Context.PlayerController.Get(), Interactable, FailReason))
     {
         Report.Result = ESOTS_InteractionExecuteResult::CandidateBlocked;
         Report.DebugReason = FailReason.IsValid() ? FailReason.ToString() : TEXT("Tag gate failed");
         return Report;
     }
 
-    if (Interactable->MaxDistance > 0.f && Context.Distance > Interactable->MaxDistance)
+    if (Interactable && Interactable->MaxDistance > 0.f && Context.Distance > Interactable->MaxDistance)
     {
         Report.Result = ESOTS_InteractionExecuteResult::CandidateOutOfRange;
         Report.DebugReason = TEXT("Out of range");
         return Report;
     }
 
-    if (Interactable->bRequiresLineOfSight)
+    const bool bComponentRequiresLOS = Interactable ? Interactable->bRequiresLineOfSight : false;
+    if (TraceConfig.bRequireLineOfSight && bComponentRequiresLOS)
     {
         FVector ViewLoc = Context.HitResult.TraceStart;
         FRotator ViewRot = FRotator::ZeroRotator;
@@ -357,9 +440,34 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInt
             Report.DebugReason = FoundOpt->BlockedReasonTag.ToString();
             return Report;
         }
+
+        if (FoundOpt->MaxDistanceOverride > 0.f && Context.Distance > FoundOpt->MaxDistanceOverride)
+        {
+            Report.Result = ESOTS_InteractionExecuteResult::CandidateOutOfRange;
+            Report.DebugReason = TEXT("Out of range (option override)");
+            return Report;
+        }
+
+        const bool bOptionNeedsLOS = TraceConfig.bRequireLineOfSight && (FoundOpt->bOverrideRequiresLineOfSight ? FoundOpt->bRequiresLineOfSight : bComponentRequiresLOS);
+        if (bOptionNeedsLOS)
+        {
+            FVector ViewLoc = Context.HitResult.TraceStart;
+            FRotator ViewRot = FRotator::ZeroRotator;
+            if (ViewLoc.IsNearlyZero() && Context.PlayerController.IsValid())
+            {
+                BuildViewContext(Context.PlayerController.Get(), ViewLoc, ViewRot);
+            }
+
+            bool bUsedOmni = false;
+            if (!PassesLOS(Context.PlayerController.Get(), ViewLoc, Context.TargetActor.Get(), Context.HitResult, bUsedOmni))
+            {
+                Report.Result = ESOTS_InteractionExecuteResult::CandidateNoLineOfSight;
+                Report.DebugReason = TEXT("LOS blocked (option override)");
+                return Report;
+            }
+        }
     }
 
-    UObject* Implementer = ResolveInteractableImplementer(Context);
     if (!Implementer)
     {
         Report.Result = ESOTS_InteractionExecuteResult::MissingInteractableInterface;
@@ -514,11 +622,12 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionOpt
     return Report;
 }
 
-void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const FVector& ViewLoc, const FRotator& ViewRot, FSOTS_InteractionContext& OutBest, bool& bOutHasBest, ESOTS_InteractionNoCandidateReason& OutNoCandidateReason, bool& bOutUsedOmniTrace) const
+void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const FVector& ViewLoc, const FRotator& ViewRot, FSOTS_InteractionContext& OutBest, FSOTS_InteractionData& OutBestData, bool& bOutHasBest, ESOTS_InteractionNoCandidateReason& OutNoCandidateReason, bool& bOutUsedOmniTrace) const
 {
     bOutHasBest = false;
     OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
     bOutUsedOmniTrace = false;
+    OutBestData = FSOTS_InteractionData();
 
     UWorld* World = GetWorld();
     if (!World || !PC)
@@ -534,33 +643,71 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
         return;
     }
 
+    const float EffectiveMaxDistance = TraceConfig.MaxDistance > 0.f ? TraceConfig.MaxDistance : SearchDistance;
+    const float EffectiveRadius = TraceConfig.SphereRadius > 0.f ? TraceConfig.SphereRadius : SearchRadius;
+
     const FVector ViewDir = ViewRot.Vector();
     const FVector Start = ViewLoc;
-    const FVector End = Start + (ViewDir * SearchDistance);
+    const FVector End = Start + (ViewDir * EffectiveMaxDistance);
 
     TArray<FHitResult> Hits;
     TArray<const AActor*> Ignore;
     Ignore.Add(Pawn);
 
     bool bSweepUsedOmniTrace = false;
-    const bool bHit = SOTSInteractionTrace::SphereSweepMulti(
-        World,
-        Hits,
-        Start,
-        End,
-        SearchRadius,
-        ECC_Visibility,
-        Ignore,
-        bForceLegacyTraces,
-        bSweepUsedOmniTrace,
-    #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        bDebugDrawInteractionTraces,
-        bDebugLogInteractionTraceHits
-    #else
-        false,
-        false
-    #endif
-    );
+    bool bHit = false;
+
+    if (TraceConfig.TraceShape == ESOTS_InteractionTraceShape::Sphere)
+    {
+        bHit = SOTSInteractionTrace::SphereSweepMulti(
+            World,
+            Hits,
+            Start,
+            End,
+            EffectiveRadius,
+            TraceConfig.TraceChannel,
+            Ignore,
+            bForceLegacyTraces,
+            bSweepUsedOmniTrace,
+        #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            bDebugDrawInteractionTraces,
+            bDebugLogInteractionTraceHits
+        #else
+            false,
+            false
+        #endif
+        );
+    }
+    else
+    {
+        FHitResult Hit;
+        bool bLineUsedOmni = false;
+        const bool bBlocked = SOTSInteractionTrace::LineTraceBlocked(
+            World,
+            Hit,
+            Start,
+            End,
+            TraceConfig.TraceChannel,
+            Ignore,
+            bForceLegacyTraces,
+            bLineUsedOmni,
+        #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            bDebugDrawInteractionTraces,
+            bDebugLogInteractionTraceHits
+        #else
+            false,
+            false
+        #endif
+        );
+
+        if (bBlocked)
+        {
+            Hits.Add(Hit);
+            bHit = true;
+        }
+        bSweepUsedOmniTrace = bSweepUsedOmniTrace || bLineUsedOmni;
+    }
+
     bOutUsedOmniTrace = bOutUsedOmniTrace || bSweepUsedOmniTrace;
 
     if (!bHit)
@@ -581,36 +728,41 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
         }
 
         USOTS_InteractableComponent* Interactable = HitActor->FindComponentByClass<USOTS_InteractableComponent>();
-        if (!Interactable)
+        FSOTS_InteractionContext InterfaceCheckContext;
+        InterfaceCheckContext.TargetActor = HitActor;
+        const bool bHasInterface = ResolveInteractableImplementer(InterfaceCheckContext) != nullptr;
+
+        if (!Interactable && !bHasInterface)
         {
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::NotInteractable;
             continue;
         }
 
         FGameplayTag FailReason;
-        if (!PassesTagGates(PC, Interactable, FailReason))
+        if (Interactable && !PassesTagGates(PC, Interactable, FailReason))
         {
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::BlockedByTags;
             continue;
         }
 
         FSOTS_InteractionContext Ctx;
-        if (!MakeContextForActor(PC, Pawn, HitActor, ViewLoc, ViewRot, Hit, Ctx))
+        if (!MakeContextForActor(PC, Pawn, HitActor, Hit, Ctx))
         {
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::Unknown;
             continue;
         }
 
-        // Gate by component max distance
-        if (Interactable->MaxDistance > 0.f && Ctx.Distance > Interactable->MaxDistance)
+        // Gate by component max distance (component-first rule)
+        if (Interactable && Interactable->MaxDistance > 0.f && Ctx.Distance > Interactable->MaxDistance)
         {
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::OutOfRange;
             continue;
         }
 
-        // Gate by LOS if required
+        // Gate by LOS if required by global + component defaults
         bool bLosUsedOmni = false;
-        if (Interactable->bRequiresLineOfSight && !PassesLOS(PC, ViewLoc, HitActor, Hit, bLosUsedOmni))
+        const bool bNeedsLOS = TraceConfig.bRequireLineOfSight && (!Interactable || Interactable->bRequiresLineOfSight);
+        if (bNeedsLOS && !PassesLOS(PC, ViewLoc, HitActor, Hit, bLosUsedOmni))
         {
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::BlockedByLOS;
             bOutUsedOmniTrace = bOutUsedOmniTrace || bLosUsedOmni;
@@ -618,7 +770,32 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
         }
         bOutUsedOmniTrace = bOutUsedOmniTrace || bLosUsedOmni;
 
+        // Build options via hybrid provider. If none available, skip.
+        FSOTS_InteractionData CandidateData;
+        CandidateData.Context = Ctx;
+        if (!BuildInteractionData(Ctx, CandidateData))
+        {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::Unknown;
+            continue;
+        }
+
+        Ctx.InteractionTypeTag = CandidateData.Context.InteractionTypeTag;
+
+        const bool bHasAvailableOption = CandidateData.Options.ContainsByPredicate([](const FSOTS_InteractionOption& Opt)
+        {
+            return !Opt.BlockedReasonTag.IsValid();
+        });
+
+        if (!bHasAvailableOption)
+        {
+            OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::BlockedByTags;
+            continue;
+        }
+
         const float Score = ScoreCandidate(ViewLoc, ViewDir, Ctx);
+        CandidateData.Context.Score = Score;
+        CandidateData.Score = Score;
+
         if (bLogScoreDebug)
         {
             LogCandidateScoreDebug(Ctx, Score);
@@ -627,6 +804,9 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
         {
             BestScore = Score;
             OutBest = Ctx;
+            OutBest.Score = Score;
+            OutBestData = CandidateData;
+            BestData = CandidateData;
             bOutHasBest = true;
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
         }
@@ -650,24 +830,41 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
 #endif
 }
 
-bool USOTS_InteractionSubsystem::MakeContextForActor(APlayerController* PC, APawn* Pawn, AActor* Target, const FVector& ViewLoc, const FRotator& ViewRot, const FHitResult& Hit, FSOTS_InteractionContext& OutContext) const
+bool USOTS_InteractionSubsystem::MakeContextForActor(APlayerController* PC, APawn* Pawn, AActor* Target, const FHitResult& Hit, FSOTS_InteractionContext& OutContext) const
 {
     if (!PC || !Pawn || !Target) return false;
 
-    USOTS_InteractableComponent* Interactable = Target->FindComponentByClass<USOTS_InteractableComponent>();
-    if (!Interactable) return false;
-
-    (void)ViewLoc;
-    (void)ViewRot;
+    const USOTS_InteractableComponent* Interactable = Target->FindComponentByClass<USOTS_InteractableComponent>();
 
     OutContext.PlayerController = PC;
     OutContext.PlayerPawn = Pawn;
     OutContext.TargetActor = Target;
-    OutContext.InteractionTypeTag = Interactable->InteractionTypeTag;
-    OutContext.Distance = FVector::Dist(Pawn->GetActorLocation(), Target->GetActorLocation());
+    OutContext.InteractionTypeTag = Interactable ? Interactable->InteractionTypeTag : FGameplayTag();
+    OutContext.Distance = FVector::Dist(Pawn->GetActorLocation(), ResolveTargetLocation(Target));
     OutContext.HitResult = Hit;
 
     return true;
+}
+
+FVector USOTS_InteractionSubsystem::ResolveTargetLocation(AActor* Target) const
+{
+    if (!Target)
+    {
+        return FVector::ZeroVector;
+    }
+
+    if (TraceConfig.TargetSocketName != NAME_None)
+    {
+        if (const UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Target->GetRootComponent()))
+        {
+            if (Prim->DoesSocketExist(TraceConfig.TargetSocketName))
+            {
+                return Prim->GetSocketLocation(TraceConfig.TargetSocketName);
+            }
+        }
+    }
+
+    return Target->GetActorLocation();
 }
 
 bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector& ViewLoc, AActor* Target, const FHitResult& CandidateHit, bool& bOutUsedOmniTrace) const
@@ -680,7 +877,7 @@ bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector&
     FVector TargetLoc = CandidateHit.ImpactPoint;
     if (TargetLoc.IsNearlyZero())
     {
-        TargetLoc = Target->GetActorLocation();
+        TargetLoc = ResolveTargetLocation(Target);
     }
 
     FHitResult LOSHit;
@@ -694,7 +891,7 @@ bool USOTS_InteractionSubsystem::PassesLOS(APlayerController* PC, const FVector&
         LOSHit,
         ViewLoc,
         TargetLoc,
-        ECC_Visibility,
+        TraceConfig.TraceChannel,
         Ignore,
         bForceLegacyTraces,
         bLineUsedOmniTrace,
@@ -716,7 +913,8 @@ float USOTS_InteractionSubsystem::ScoreCandidate(const FVector& ViewLoc, const F
     if (!Target) return -FLT_MAX;
 
     // Distance score: nearer = better (normalized against search distance)
-    const float DistNorm = FMath::Clamp(Ctx.Distance / FMath::Max(1.f, SearchDistance), 0.f, 1.f);
+    const float EffectiveMaxDistance = TraceConfig.MaxDistance > 0.f ? TraceConfig.MaxDistance : SearchDistance;
+    const float DistNorm = FMath::Clamp(Ctx.Distance / FMath::Max(1.f, EffectiveMaxDistance), 0.f, 1.f);
     const float DistanceScore = (1.f - DistNorm) * DistanceScoreWeight;
 
     // Facing score: dot of view dir vs direction to target
@@ -768,7 +966,7 @@ bool USOTS_InteractionSubsystem::PassesTagGates(APlayerController* PC, const USO
         return true;
     }
 
-    if (Interactable->RequiredPlayerTags.IsEmpty() && Interactable->BlockedPlayerTags.IsEmpty())
+    if (Interactable->RequiredPlayerTags.IsEmpty() && Interactable->BlockedPlayerTags.IsEmpty() && Interactable->RequiredTargetTags.IsEmpty() && Interactable->BlockedTargetTags.IsEmpty())
     {
         return true;
     }
@@ -808,7 +1006,7 @@ bool USOTS_InteractionSubsystem::PassesTagGates(APlayerController* PC, const USO
         }
         if (!OutFailReason.IsValid() && Interactable->BlockedPlayerTags.Num() > 0)
         {
-            OutFailReason = Interactable->BlockedPlayerTags.First();
+            OutFailReason = FirstTagOrInvalid(Interactable->BlockedPlayerTags);
         }
         return false;
     }
@@ -825,9 +1023,156 @@ bool USOTS_InteractionSubsystem::PassesTagGates(APlayerController* PC, const USO
         }
         if (!OutFailReason.IsValid() && Interactable->RequiredPlayerTags.Num() > 0)
         {
-            OutFailReason = Interactable->RequiredPlayerTags.First();
+            OutFailReason = FirstTagOrInvalid(Interactable->RequiredPlayerTags);
         }
         return false;
+    }
+
+    const AActor* TargetActor = Interactable->GetOwner();
+
+    if (TargetActor)
+    {
+        if (!Interactable->BlockedTargetTags.IsEmpty() && Manager->ActorHasAnyTags(TargetActor, Interactable->BlockedTargetTags))
+        {
+            for (const FGameplayTag& Tag : Interactable->BlockedTargetTags)
+            {
+                if (Manager->ActorHasTag(TargetActor, Tag))
+                {
+                    OutFailReason = Tag;
+                    break;
+                }
+            }
+            if (!OutFailReason.IsValid() && Interactable->BlockedTargetTags.Num() > 0)
+            {
+                OutFailReason = FirstTagOrInvalid(Interactable->BlockedTargetTags);
+            }
+            return false;
+        }
+
+        if (!Interactable->RequiredTargetTags.IsEmpty() && !Manager->ActorHasAllTags(TargetActor, Interactable->RequiredTargetTags))
+        {
+            for (const FGameplayTag& Tag : Interactable->RequiredTargetTags)
+            {
+                if (!Manager->ActorHasTag(TargetActor, Tag))
+                {
+                    OutFailReason = Tag;
+                    break;
+                }
+            }
+            if (!OutFailReason.IsValid() && Interactable->RequiredTargetTags.Num() > 0)
+            {
+                OutFailReason = FirstTagOrInvalid(Interactable->RequiredTargetTags);
+            }
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool USOTS_InteractionSubsystem::EvaluateTagGates(const AActor* PlayerActor, const AActor* TargetActor, const FSOTS_InteractionOption& Option, FGameplayTag& OutFailReason) const
+{
+    OutFailReason = FGameplayTag();
+
+    AActor* PlayerMutable = const_cast<AActor*>(PlayerActor);
+    AActor* TargetMutable = const_cast<AActor*>(TargetActor);
+
+    const bool bNeedsPlayerCheck = !Option.RequiredPlayerTags.IsEmpty() || !Option.BlockedPlayerTags.IsEmpty();
+    const bool bNeedsTargetCheck = !Option.RequiredTargetTags.IsEmpty() || !Option.BlockedTargetTags.IsEmpty();
+
+    if (!bNeedsPlayerCheck && !bNeedsTargetCheck)
+    {
+        return true;
+    }
+
+    // Prefer a manager resolved from the player; fallback to target if needed.
+    USOTS_GameplayTagManagerSubsystem* Manager = nullptr;
+    if (PlayerMutable)
+    {
+        Manager = SOTS_GetTagSubsystem(PlayerMutable);
+    }
+    if (!Manager && TargetMutable)
+    {
+        Manager = SOTS_GetTagSubsystem(TargetMutable);
+    }
+
+    if (!Manager)
+    {
+        return true; // Fail open if no tag manager available.
+    }
+
+    if (bNeedsPlayerCheck && PlayerMutable)
+    {
+        if (!Option.BlockedPlayerTags.IsEmpty() && Manager->ActorHasAnyTags(PlayerMutable, Option.BlockedPlayerTags))
+        {
+            for (const FGameplayTag& Tag : Option.BlockedPlayerTags)
+            {
+                if (Manager->ActorHasTag(PlayerMutable, Tag))
+                {
+                    OutFailReason = Tag;
+                    break;
+                }
+            }
+            if (!OutFailReason.IsValid() && Option.BlockedPlayerTags.Num() > 0)
+            {
+                OutFailReason = FirstTagOrInvalid(Option.BlockedPlayerTags);
+            }
+            return false;
+        }
+
+        if (!Option.RequiredPlayerTags.IsEmpty() && !Manager->ActorHasAllTags(PlayerMutable, Option.RequiredPlayerTags))
+        {
+            for (const FGameplayTag& Tag : Option.RequiredPlayerTags)
+            {
+                if (!Manager->ActorHasTag(PlayerMutable, Tag))
+                {
+                    OutFailReason = Tag;
+                    break;
+                }
+            }
+            if (!OutFailReason.IsValid() && Option.RequiredPlayerTags.Num() > 0)
+            {
+                OutFailReason = FirstTagOrInvalid(Option.RequiredPlayerTags);
+            }
+            return false;
+        }
+    }
+
+    if (bNeedsTargetCheck && TargetMutable)
+    {
+        if (!Option.BlockedTargetTags.IsEmpty() && Manager->ActorHasAnyTags(TargetMutable, Option.BlockedTargetTags))
+        {
+            for (const FGameplayTag& Tag : Option.BlockedTargetTags)
+            {
+                if (Manager->ActorHasTag(TargetMutable, Tag))
+                {
+                    OutFailReason = Tag;
+                    break;
+                }
+            }
+            if (!OutFailReason.IsValid() && Option.BlockedTargetTags.Num() > 0)
+            {
+                OutFailReason = FirstTagOrInvalid(Option.BlockedTargetTags);
+            }
+            return false;
+        }
+
+        if (!Option.RequiredTargetTags.IsEmpty() && !Manager->ActorHasAllTags(TargetMutable, Option.RequiredTargetTags))
+        {
+            for (const FGameplayTag& Tag : Option.RequiredTargetTags)
+            {
+                if (!Manager->ActorHasTag(TargetMutable, Tag))
+                {
+                    OutFailReason = Tag;
+                    break;
+                }
+            }
+            if (!OutFailReason.IsValid() && Option.RequiredTargetTags.Num() > 0)
+            {
+                OutFailReason = FirstTagOrInvalid(Option.RequiredTargetTags);
+            }
+            return false;
+        }
     }
 
     return true;
@@ -859,13 +1204,133 @@ bool USOTS_InteractionSubsystem::ValidateCanInteract(const FSOTS_InteractionCont
 void USOTS_InteractionSubsystem::GatherOptions(const FSOTS_InteractionContext& Context, TArray<FSOTS_InteractionOption>& OutOptions) const
 {
     OutOptions.Reset();
-
-    const AActor* Target = Context.TargetActor.Get();
-    if (!Target) return;
-
-    if (UObject* Implementer = ResolveInteractableImplementer(Context))
+    FSOTS_InteractionData Data;
+    if (BuildInteractionData(Context, Data))
     {
-        ISOTS_InteractableInterface::Execute_GetInteractionOptions(Implementer, Context, OutOptions);
+        OutOptions = Data.Options;
+    }
+}
+
+bool USOTS_InteractionSubsystem::BuildInteractionData(const FSOTS_InteractionContext& Context, FSOTS_InteractionData& OutData) const
+{
+    OutData = FSOTS_InteractionData();
+    OutData.Context = Context;
+
+    AActor* Target = Context.TargetActor.Get();
+    if (!Target)
+    {
+        return false;
+    }
+
+    const USOTS_InteractableComponent* Interactable = Target->FindComponentByClass<USOTS_InteractableComponent>();
+    UObject* Implementer = ResolveInteractableImplementer(Context);
+
+    TArray<FSOTS_InteractionOption> Options;
+
+    if (Interactable && Interactable->Options.Num() > 0)
+    {
+        Options = Interactable->Options;
+        OutData.bFromComponent = true;
+    }
+
+    if (Options.Num() == 0 && Interactable && Implementer)
+    {
+        ISOTS_InteractableInterface::Execute_GetInteractionOptions(Implementer, Context, Options);
+        OutData.bFromInterface = true;
+    }
+    else if (Options.Num() == 0 && !Interactable && Implementer)
+    {
+        ISOTS_InteractableInterface::Execute_GetInteractionOptions(Implementer, Context, Options);
+        OutData.bFromInterface = true;
+    }
+
+    if (Options.Num() == 0 && Interactable)
+    {
+        FSOTS_InteractionOption DefaultOpt;
+        DefaultOpt.OptionTag = Interactable->InteractionTypeTag;
+        DefaultOpt.DisplayText = Interactable->DisplayName;
+        Options.Add(DefaultOpt);
+        OutData.bFromComponent = true;
+    }
+
+    if (Interactable)
+    {
+        ApplyComponentDefaultsToOptions(Interactable, Options);
+    }
+
+    if (!OutData.Context.InteractionTypeTag.IsValid() && Options.Num() > 0)
+    {
+        OutData.Context.InteractionTypeTag = Options[0].OptionTag;
+    }
+
+    AActor* PlayerActor = nullptr;
+    if (Context.PlayerPawn.IsValid())
+    {
+        PlayerActor = Context.PlayerPawn.Get();
+    }
+    else if (Context.PlayerController.IsValid())
+    {
+        PlayerActor = Context.PlayerController.Get();
+    }
+
+    for (FSOTS_InteractionOption& Opt : Options)
+    {
+        FGameplayTag FailReason;
+        if (!EvaluateTagGates(PlayerActor, Target, Opt, FailReason))
+        {
+            ApplyBlockedReason(Opt, FailReason);
+        }
+    }
+
+    OutData.Options = Options;
+    OutData.Score = Context.Score;
+    OutData.Context.Score = Context.Score;
+
+    return OutData.Options.Num() > 0;
+}
+
+void USOTS_InteractionSubsystem::ApplyComponentDefaultsToOptions(const USOTS_InteractableComponent* Interactable, TArray<FSOTS_InteractionOption>& Options) const
+{
+    if (!Interactable)
+    {
+        return;
+    }
+
+    for (FSOTS_InteractionOption& Opt : Options)
+    {
+        if (!Opt.OptionTag.IsValid())
+        {
+            Opt.OptionTag = Interactable->InteractionTypeTag;
+        }
+
+        if (Opt.DisplayText.IsEmpty())
+        {
+            Opt.DisplayText = Interactable->DisplayName;
+        }
+
+        Opt.RequiredPlayerTags.AppendTags(Interactable->RequiredPlayerTags);
+        Opt.BlockedPlayerTags.AppendTags(Interactable->BlockedPlayerTags);
+        Opt.RequiredTargetTags.AppendTags(Interactable->RequiredTargetTags);
+        Opt.BlockedTargetTags.AppendTags(Interactable->BlockedTargetTags);
+        Opt.MetaTags.AppendTags(Interactable->MetaTags);
+
+        if (!Opt.bOverrideRequiresLineOfSight)
+        {
+            Opt.bRequiresLineOfSight = Interactable->bRequiresLineOfSight;
+        }
+
+        if (Opt.MaxDistanceOverride <= 0.f && Interactable->MaxDistance > 0.f)
+        {
+            Opt.MaxDistanceOverride = Interactable->MaxDistance;
+        }
+    }
+}
+
+void USOTS_InteractionSubsystem::ApplyBlockedReason(FSOTS_InteractionOption& Option, const FGameplayTag& FailReason) const
+{
+    if (!Option.BlockedReasonTag.IsValid() && FailReason.IsValid())
+    {
+        Option.BlockedReasonTag = FailReason;
     }
 }
 
