@@ -143,6 +143,35 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
 	void EnsureGameplayHUDReady();
 
+	// InvSP adapter accessors
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	USOTS_InvSPAdapter* EnsureInvSPAdapter();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	USOTS_InvSPAdapter* GetInvSPAdapter() const;
+
+	// InvSP adapter requests (forwarded to BlueprintNativeEvents)
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_ToggleInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_OpenInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_CloseInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_RefreshInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_SetShortcutMenuVisible(bool bVisible);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_NotifyPickupItem(FGameplayTag ItemTag, int32 Quantity);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void RequestInvSP_NotifyFirstTimePickup(FGameplayTag ItemTag);
+
 	// Modal result channel
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnModalResult, const F_SOTS_UIModalResult&, Result);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnReturnToMainMenuRequested);
@@ -173,6 +202,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Config, Category = "SOTS|UI")
 	TSubclassOf<USOTS_InvSPAdapter> InvSPAdapterClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|UI|Adapters")
+	TSubclassOf<USOTS_InvSPAdapter> InvSPAdapterClassOverride;
 
 	UPROPERTY(EditAnywhere, Config, Category = "SOTS|UI")
 	TSubclassOf<USOTS_InteractionEssentialsAdapter> InteractionAdapterClass;
@@ -215,7 +247,7 @@ private:
 	TObjectPtr<USOTS_ProHUDAdapter> ProHUDAdapter;
 
 	UPROPERTY()
-	TObjectPtr<USOTS_InvSPAdapter> InvSPAdapter;
+	TObjectPtr<USOTS_InvSPAdapter> InvSPAdapterInstance;
 
 	UPROPERTY()
 	TObjectPtr<USOTS_InteractionEssentialsAdapter> InteractionAdapter;

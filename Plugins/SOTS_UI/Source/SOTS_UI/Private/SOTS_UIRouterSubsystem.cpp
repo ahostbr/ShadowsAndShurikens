@@ -110,7 +110,7 @@ void USOTS_UIRouterSubsystem::Deinitialize()
 	ActiveLayerStacks.Empty();
 	CachedWidgets.Empty();
 	ProHUDAdapter = nullptr;
-	InvSPAdapter = nullptr;
+	InvSPAdapterInstance = nullptr;
 	InteractionAdapter = nullptr;
 	LoadedRegistry = nullptr;
 	bGamePausedForUI = false;
@@ -352,10 +352,9 @@ bool USOTS_UIRouterSubsystem::OpenInventoryMenu()
 		return false;
 	}
 
-	EnsureAdapters();
-	if (InvSPAdapter)
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
 	{
-		InvSPAdapter->OpenInventory();
+		Adapter->OpenInventory();
 	}
 
 	return PushInventoryWidget(InventoryTag, ESOTS_UIInventoryRequestType::OpenInventory);
@@ -373,9 +372,9 @@ bool USOTS_UIRouterSubsystem::CloseInventoryMenu()
 		return false;
 	}
 
-	if (InvSPAdapter)
+	if (USOTS_InvSPAdapter* Adapter = GetInvSPAdapter())
 	{
-		InvSPAdapter->CloseInventory();
+		Adapter->CloseInventory();
 	}
 
 	return PopWidgetById(InventoryTag);
@@ -396,17 +395,16 @@ bool USOTS_UIRouterSubsystem::ToggleInventoryMenu()
 	ESOTS_UILayer ActiveLayer = ESOTS_UILayer::HUD;
 	if (IsWidgetActive(InventoryTag, &ActiveLayer))
 	{
-		if (InvSPAdapter)
+		if (USOTS_InvSPAdapter* Adapter = GetInvSPAdapter())
 		{
-			InvSPAdapter->CloseInventory();
+			Adapter->CloseInventory();
 		}
 		return PopFirstMatchingFromLayer(ActiveLayer, InventoryTag);
 	}
 
-	EnsureAdapters();
-	if (InvSPAdapter)
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
 	{
-		InvSPAdapter->OpenInventory();
+		Adapter->OpenInventory();
 	}
 
 	return PushInventoryWidget(InventoryTag, ESOTS_UIInventoryRequestType::ToggleInventory);
@@ -425,10 +423,9 @@ bool USOTS_UIRouterSubsystem::OpenItemContainerMenu(AActor* ContainerActor)
 		return false;
 	}
 
-	EnsureAdapters();
-	if (InvSPAdapter)
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
 	{
-		InvSPAdapter->OpenContainer(ContainerActor);
+		Adapter->OpenContainer(ContainerActor);
 	}
 
 	return PushInventoryWidget(ContainerTag, ESOTS_UIInventoryRequestType::OpenContainer, ContainerActor);
@@ -446,9 +443,9 @@ bool USOTS_UIRouterSubsystem::CloseItemContainerMenu()
 		return false;
 	}
 
-	if (InvSPAdapter)
+	if (USOTS_InvSPAdapter* Adapter = GetInvSPAdapter())
 	{
-		InvSPAdapter->CloseContainer();
+		Adapter->CloseContainer();
 	}
 
 	return PopWidgetById(ContainerTag);
@@ -460,6 +457,92 @@ void USOTS_UIRouterSubsystem::EnsureGameplayHUDReady()
 	if (ProHUDAdapter)
 	{
 		ProHUDAdapter->EnsureHUDCreated();
+	}
+}
+
+USOTS_InvSPAdapter* USOTS_UIRouterSubsystem::EnsureInvSPAdapter()
+{
+	if (InvSPAdapterInstance)
+	{
+		return InvSPAdapterInstance;
+	}
+
+	UClass* ClassToUse = nullptr;
+	if (InvSPAdapterClassOverride)
+	{
+		ClassToUse = InvSPAdapterClassOverride;
+	}
+	else if (InvSPAdapterClass)
+	{
+		ClassToUse = InvSPAdapterClass;
+	}
+	else
+	{
+		ClassToUse = USOTS_InvSPAdapter::StaticClass();
+	}
+
+	InvSPAdapterInstance = NewObject<USOTS_InvSPAdapter>(GetGameInstance(), ClassToUse);
+	return InvSPAdapterInstance;
+}
+
+USOTS_InvSPAdapter* USOTS_UIRouterSubsystem::GetInvSPAdapter() const
+{
+	return InvSPAdapterInstance;
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_ToggleInventory()
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->ToggleInventory();
+	}
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_OpenInventory()
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->OpenInventory();
+	}
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_CloseInventory()
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->CloseInventory();
+	}
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_RefreshInventory()
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->RefreshInventoryView();
+	}
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_SetShortcutMenuVisible(bool bVisible)
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->SetShortcutMenuVisible(bVisible);
+	}
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_NotifyPickupItem(FGameplayTag ItemTag, int32 Quantity)
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->NotifyPickupItem(ItemTag, Quantity);
+	}
+}
+
+void USOTS_UIRouterSubsystem::RequestInvSP_NotifyFirstTimePickup(FGameplayTag ItemTag)
+{
+	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
+	{
+		Adapter->NotifyFirstTimePickup(ItemTag);
 	}
 }
 
@@ -890,10 +973,7 @@ void USOTS_UIRouterSubsystem::EnsureAdapters()
 		}
 	}
 
-	if (!InvSPAdapter && InvSPAdapterClass)
-	{
-		InvSPAdapter = NewObject<USOTS_InvSPAdapter>(GetGameInstance(), InvSPAdapterClass);
-	}
+	EnsureInvSPAdapter();
 
 	EnsureInteractionAdapter();
 }

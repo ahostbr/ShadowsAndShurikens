@@ -4,6 +4,27 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "TimerManager.h"
+#include "SOTS_InputBlueprintLibrary.h"
+#include "SOTS_InputRouterComponent.h"
+
+namespace
+{
+    bool AreOptionsEquivalent(const FSOTS_InteractionOption& A, const FSOTS_InteractionOption& B)
+    {
+        return A.OptionTag == B.OptionTag
+            && A.BlockedReasonTag == B.BlockedReasonTag
+            && A.DisplayText.EqualTo(B.DisplayText)
+            && A.RequiredPlayerTags == B.RequiredPlayerTags
+            && A.BlockedPlayerTags == B.BlockedPlayerTags
+            && A.RequiredTargetTags == B.RequiredTargetTags
+            && A.BlockedTargetTags == B.BlockedTargetTags
+            && A.bRequiresLineOfSight == B.bRequiresLineOfSight
+            && A.bOverrideRequiresLineOfSight == B.bOverrideRequiresLineOfSight
+            && FMath::IsNearlyEqual(A.MaxDistanceOverride, B.MaxDistanceOverride)
+            && FMath::IsNearlyEqual(A.Priority, B.Priority)
+            && A.MetaTags == B.MetaTags;
+    }
+}
 
 USOTS_InteractionDriverComponent::USOTS_InteractionDriverComponent()
 {
@@ -11,6 +32,9 @@ USOTS_InteractionDriverComponent::USOTS_InteractionDriverComponent()
 
     bAutoUpdate = true;
     AutoUpdateIntervalSeconds = 0.10f;
+    SelectedOptionIndex = INDEX_NONE;
+    bInputRouterBound = false;
+    InteractIntentTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Intent.Gameplay.Interact"), false);
 }
 
 void USOTS_InteractionDriverComponent::BeginPlay()
@@ -36,8 +60,10 @@ void USOTS_InteractionDriverComponent::BeginPlay()
     }
 
     BindSubsystemEvents();
+    BindInputRouterIfAvailable();
 
     RefreshCachedData();
+    RefreshPromptSpec();
 
     if (bAutoUpdate && CachedPC.IsValid() && GetWorld())
     {
@@ -59,6 +85,7 @@ void USOTS_InteractionDriverComponent::EndPlay(const EEndPlayReason::Type EndPla
     }
 
     UnbindSubsystemEvents();
+    UnbindInputRouter();
 
     Super::EndPlay(EndPlayReason);
 }
@@ -79,6 +106,49 @@ void USOTS_InteractionDriverComponent::UnbindSubsystemEvents()
         Subsystem->OnUIIntentPayload.RemoveDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemUIIntentPayload);
         Subsystem->OnCandidateChanged.RemoveDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemCandidateChanged);
     }
+}
+
+void USOTS_InteractionDriverComponent::BindInputRouterIfAvailable()
+{
+    if (bInputRouterBound)
+    {
+        return;
+    }
+
+    AActor* OwnerActor = GetOwner();
+    if (!OwnerActor)
+    {
+        return;
+    }
+
+    USOTS_InputRouterComponent* Router = USOTS_InputBlueprintLibrary::GetRouterFromActor(OwnerActor);
+    if (!Router)
+    {
+        Router = USOTS_InputBlueprintLibrary::EnsureRouterOnPlayerController(this, OwnerActor);
+    }
+
+    if (Router)
+    {
+        Router->OnInputIntent.AddDynamic(this, &USOTS_InteractionDriverComponent::HandleRouterIntentEvent);
+        InputRouter = Router;
+        bInputRouterBound = true;
+    }
+}
+
+void USOTS_InteractionDriverComponent::UnbindInputRouter()
+{
+    if (!bInputRouterBound)
+    {
+        return;
+    }
+
+    if (InputRouter.IsValid())
+    {
+        InputRouter->OnInputIntent.RemoveDynamic(this, &USOTS_InteractionDriverComponent::HandleRouterIntentEvent);
+    }
+
+    InputRouter.Reset();
+    bInputRouterBound = false;
 }
 
 void USOTS_InteractionDriverComponent::HandleSubsystemUIIntentPayload(APlayerController* PlayerController, const FSOTS_InteractionUIIntentPayload& Payload)
@@ -109,10 +179,12 @@ void USOTS_InteractionDriverComponent::HandleSubsystemCandidateChanged(APlayerCo
     {
         OnFocusChanged.Broadcast(OldActor, NewActor);
         OnOptionsChanged.Broadcast(NewActor, CachedData.Options);
+        RefreshPromptSpec();
         return;
     }
 
     BroadcastOptionChangeIfNeeded(PreviousData.Options, CachedData.Options);
+    RefreshPromptSpec();
 }
 
 void USOTS_InteractionDriverComponent::RefreshCachedData()
@@ -142,7 +214,7 @@ void USOTS_InteractionDriverComponent::BroadcastOptionChangeIfNeeded(const TArra
     {
         for (int32 Index = 0; Index < OldOptions.Num(); ++Index)
         {
-            if (OldOptions[Index].OptionTag != NewOptions[Index].OptionTag || OldOptions[Index].BlockedReasonTag != NewOptions[Index].BlockedReasonTag)
+            if (!AreOptionsEquivalent(OldOptions[Index], NewOptions[Index]))
             {
                 bChanged = true;
                 break;
@@ -185,6 +257,8 @@ FSOTS_InteractionResult USOTS_InteractionDriverComponent::Driver_RequestInteract
     if (Subsystem.IsValid() && CachedPC.IsValid())
     {
         Result = Subsystem->RequestInteraction(CachedPC.Get());
+        RefreshCachedData();
+        RefreshPromptSpec();
     }
     return Result;
 }
@@ -195,6 +269,8 @@ FSOTS_InteractionResult USOTS_InteractionDriverComponent::Driver_ExecuteOption(F
     if (Subsystem.IsValid() && CachedPC.IsValid())
     {
         Result = Subsystem->ExecuteInteractionOption(CachedPC.Get(), OptionTag);
+        RefreshCachedData();
+        RefreshPromptSpec();
     }
     return Result;
 }
@@ -270,5 +346,178 @@ bool USOTS_InteractionDriverComponent::TryInteract(FGameplayTag OptionTag, FSOTS
     }
 
     RefreshCachedData();
+    RefreshPromptSpec();
     return OutResult.Result == ESOTS_InteractionResultCode::Success;
+}
+
+bool USOTS_InteractionDriverComponent::HandleInputIntentTag(FGameplayTag IntentTag)
+{
+    if (!InteractIntentTag.IsValid() || !IntentTag.MatchesTagExact(InteractIntentTag))
+    {
+        return false;
+    }
+
+    FGameplayTag PreferredTag;
+    if (CachedData.Options.IsValidIndex(SelectedOptionIndex))
+    {
+        PreferredTag = CachedData.Options[SelectedOptionIndex].OptionTag;
+    }
+
+    FSOTS_InteractionResult Result;
+    FSOTS_InteractionOption ChosenOption;
+    TryInteract(PreferredTag, Result, ChosenOption);
+    RefreshPromptSpec();
+    return true;
+}
+
+void USOTS_InteractionDriverComponent::BindToInputRouter()
+{
+    BindInputRouterIfAvailable();
+}
+
+bool USOTS_InteractionDriverComponent::GetCurrentPromptSpec(FSOTS_InteractionPromptSpec& OutSpec) const
+{
+    OutSpec = CachedPromptSpec;
+    return CachedPromptSpec.bHasFocus;
+}
+
+void USOTS_InteractionDriverComponent::HandleRouterIntentEvent(const FSOTS_InputIntentEvent& Event)
+{
+    if (!InteractIntentTag.IsValid())
+    {
+        return;
+    }
+
+    if (!Event.IntentTag.MatchesTagExact(InteractIntentTag))
+    {
+        return;
+    }
+
+    if (Event.TriggerEvent == ETriggerEvent::Triggered || Event.TriggerEvent == ETriggerEvent::Started)
+    {
+        HandleInputIntentTag(Event.IntentTag);
+    }
+}
+
+void USOTS_InteractionDriverComponent::RefreshPromptSpec()
+{
+    ApplySelectionForCurrentOptions();
+
+    FSOTS_InteractionPromptSpec NewSpec;
+    NewSpec.FocusedActor = CachedData.Context.TargetActor;
+    NewSpec.bHasFocus = CachedData.Context.TargetActor.IsValid();
+    NewSpec.Options = CachedData.Options;
+    NewSpec.SelectedOptionIndex = SelectedOptionIndex;
+    NewSpec.SuggestedVerbTag = CachedData.Context.InteractionTypeTag;
+
+    if (NewSpec.bHasFocus && CachedData.Options.Num() > 0)
+    {
+        NewSpec.bShowPrompt = true;
+
+        const FSOTS_InteractionOption* SelectedOption = CachedData.Options.IsValidIndex(SelectedOptionIndex)
+            ? &CachedData.Options[SelectedOptionIndex]
+            : nullptr;
+
+        const FSOTS_InteractionOption& OptionForPrompt = SelectedOption ? *SelectedOption : CachedData.Options[0];
+        NewSpec.PromptText = OptionForPrompt.DisplayText;
+        NewSpec.SuggestedVerbTag = OptionForPrompt.OptionTag;
+    }
+    else
+    {
+        NewSpec.bShowPrompt = false;
+        NewSpec.PromptText = FText::GetEmpty();
+    }
+
+    BroadcastPromptChanged(NewSpec);
+}
+
+void USOTS_InteractionDriverComponent::BroadcastPromptChanged(const FSOTS_InteractionPromptSpec& PromptSpec)
+{
+    const FSOTS_InteractionPromptSpec Previous = CachedPromptSpec;
+
+    bool bChanged = Previous.bHasFocus != PromptSpec.bHasFocus
+        || Previous.bShowPrompt != PromptSpec.bShowPrompt
+        || Previous.SelectedOptionIndex != PromptSpec.SelectedOptionIndex
+        || Previous.FocusedActor.Get() != PromptSpec.FocusedActor.Get()
+        || !Previous.PromptText.EqualTo(PromptSpec.PromptText)
+        || Previous.SuggestedVerbTag != PromptSpec.SuggestedVerbTag
+        || Previous.Options.Num() != PromptSpec.Options.Num();
+
+    if (!bChanged)
+    {
+        for (int32 Index = 0; Index < Previous.Options.Num(); ++Index)
+        {
+            if (!AreOptionsEquivalent(Previous.Options[Index], PromptSpec.Options[Index]))
+            {
+                bChanged = true;
+                break;
+            }
+        }
+    }
+
+    if (bChanged)
+    {
+        CachedPromptSpec = PromptSpec;
+        OnInteractionPromptChanged.Broadcast(CachedPromptSpec);
+    }
+}
+
+int32 USOTS_InteractionDriverComponent::ChoosePreferredOptionIndex(const TArray<FSOTS_InteractionOption>& Options) const
+{
+    if (Options.Num() == 0)
+    {
+        return INDEX_NONE;
+    }
+
+    int32 BestAvailableIndex = INDEX_NONE;
+    float BestAvailablePriority = 0.f;
+    bool bHasAvailable = false;
+
+    int32 BestAnyIndex = 0;
+    float BestAnyPriority = Options[0].Priority;
+
+    for (int32 Index = 0; Index < Options.Num(); ++Index)
+    {
+        const float Priority = Options[Index].Priority;
+
+        if (!bHasAvailable || Priority > BestAvailablePriority)
+        {
+            if (!Options[Index].BlockedReasonTag.IsValid())
+            {
+                BestAvailableIndex = Index;
+                BestAvailablePriority = Priority;
+                bHasAvailable = true;
+            }
+        }
+
+        if (Priority > BestAnyPriority)
+        {
+            BestAnyPriority = Priority;
+            BestAnyIndex = Index;
+        }
+    }
+
+    if (bHasAvailable)
+    {
+        return BestAvailableIndex;
+    }
+
+    return BestAnyIndex;
+}
+
+void USOTS_InteractionDriverComponent::ApplySelectionForCurrentOptions()
+{
+    const TArray<FSOTS_InteractionOption>& Options = CachedData.Options;
+    if (Options.Num() == 0)
+    {
+        SelectedOptionIndex = INDEX_NONE;
+        return;
+    }
+
+    if (Options.IsValidIndex(SelectedOptionIndex))
+    {
+        return;
+    }
+
+    SelectedOptionIndex = ChoosePreferredOptionIndex(Options);
 }

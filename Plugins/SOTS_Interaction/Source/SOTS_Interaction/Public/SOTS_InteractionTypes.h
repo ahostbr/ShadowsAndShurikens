@@ -288,3 +288,40 @@ struct FSOTS_InteractionData
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction")
     float Score = 0.f;
 };
+
+USTRUCT(BlueprintType)
+struct FSOTS_InteractionPromptSpec
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    TWeakObjectPtr<AActor> FocusedActor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    bool bHasFocus = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    bool bShowPrompt = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    FText PromptText;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    FGameplayTag SuggestedVerbTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    TArray<FSOTS_InteractionOption> Options;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Prompt")
+    int32 SelectedOptionIndex = INDEX_NONE;
+
+    FSOTS_InteractionPromptSpec()
+        : FocusedActor(nullptr)
+        , bHasFocus(false)
+        , bShowPrompt(false)
+        , PromptText(FText::GetEmpty())
+        , SuggestedVerbTag()
+        , Options()
+        , SelectedOptionIndex(INDEX_NONE)
+    {}
+};

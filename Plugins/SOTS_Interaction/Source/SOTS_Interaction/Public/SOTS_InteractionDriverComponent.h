@@ -5,9 +5,12 @@
 #include "GameplayTagContainer.h"
 #include "SOTS_InteractionTypes.h"
 #include "SOTS_InteractionUIIntentPayload.h"
+#include "InputTriggers.h"
 #include "SOTS_InteractionDriverComponent.generated.h"
 
 class USOTS_InteractionSubsystem;
+class USOTS_InputRouterComponent;
+struct FSOTS_InputIntentEvent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
     FSOTS_OnDriverUIIntentPayload,
@@ -30,6 +33,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FSOTS_OnDriverInteractRequested,
     AActor*, FocusedActor,
     FGameplayTag, OptionTag
+);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+    FSOTS_OnInteractionPromptChanged,
+    const FSOTS_InteractionPromptSpec&, Prompt
 );
 
 UCLASS(ClassGroup=(SOTS), meta=(BlueprintSpawnableComponent))
@@ -64,6 +72,10 @@ public:
     UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction|Driver")
     FSOTS_OnDriverInteractRequested OnInteractRequested;
 
+    /** Fired when prompt data changes (focus/options/selection). */
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction|Driver")
+    FSOTS_OnInteractionPromptChanged OnInteractionPromptChanged;
+
     /** Call from input binding (Interact). */
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
     FSOTS_InteractionResult Driver_RequestInteract();
@@ -96,6 +108,18 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
     bool TryInteract(FGameplayTag OptionTag, FSOTS_InteractionResult& OutResult, FSOTS_InteractionOption& OutChosenOption);
 
+    /** Handle an input intent tag (from SOTS_Input). Returns true if consumed. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
+    bool HandleInputIntentTag(FGameplayTag IntentTag);
+
+    /** Optionally bind to the input router intent delegate at runtime. Safe no-op if router missing. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
+    void BindToInputRouter();
+
+    /** Get the current prompt spec for UI. */
+    UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
+    bool GetCurrentPromptSpec(FSOTS_InteractionPromptSpec& OutSpec) const;
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -110,10 +134,26 @@ private:
     UPROPERTY(Transient)
     FSOTS_InteractionData CachedData;
 
+    UPROPERTY(Transient)
+    FSOTS_InteractionPromptSpec CachedPromptSpec;
+
+    UPROPERTY(Transient)
+    TWeakObjectPtr<USOTS_InputRouterComponent> InputRouter;
+
     FTimerHandle AutoUpdateTimer;
+
+    /** Preferred interact intent tag (from SOTS_Input). */
+    FGameplayTag InteractIntentTag;
+
+    int32 SelectedOptionIndex;
+
+    bool bInputRouterBound;
 
     void BindSubsystemEvents();
     void UnbindSubsystemEvents();
+
+    void BindInputRouterIfAvailable();
+    void UnbindInputRouter();
 
     UFUNCTION()
     void HandleSubsystemUIIntentPayload(APlayerController* PlayerController, const FSOTS_InteractionUIIntentPayload& Payload);
@@ -121,9 +161,17 @@ private:
     UFUNCTION()
     void HandleSubsystemCandidateChanged(APlayerController* PlayerController, const FSOTS_InteractionContext& NewCandidate);
 
+    UFUNCTION()
+    void HandleRouterIntentEvent(const FSOTS_InputIntentEvent& Event);
+
     void RefreshCachedData();
+    void RefreshPromptSpec();
 
     void BroadcastOptionChangeIfNeeded(const TArray<FSOTS_InteractionOption>& OldOptions, const TArray<FSOTS_InteractionOption>& NewOptions);
+
+    int32 ChoosePreferredOptionIndex(const TArray<FSOTS_InteractionOption>& Options) const;
+    void ApplySelectionForCurrentOptions();
+    void BroadcastPromptChanged(const FSOTS_InteractionPromptSpec& PromptSpec);
 
     void AutoUpdateTick();
 };
