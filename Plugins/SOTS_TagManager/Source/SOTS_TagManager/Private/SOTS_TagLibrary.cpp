@@ -154,6 +154,21 @@ FGameplayTagContainer USOTS_TagLibrary::GetActorTags(const UObject* WorldContext
     return Tags;
 }
 
+void USOTS_TagLibrary::GetActorTags(const UObject* WorldContextObject, AActor* Target, FGameplayTagContainer& OutTags)
+{
+    OutTags.Reset();
+
+    if (!Target)
+    {
+        return;
+    }
+
+    if (USOTS_GameplayTagManagerSubsystem* Manager = GetManager(WorldContextObject))
+    {
+        Manager->GetActorTags(Target, OutTags);
+    }
+}
+
 FSOTS_LooseTagHandle USOTS_TagLibrary::AddScopedTagToActor(const UObject* WorldContextObject, AActor* Target, FGameplayTag Tag)
 {
     if (!Target || !Tag.IsValid())

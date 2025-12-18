@@ -1,0 +1,870 @@
+# sots_capture_ffmpeg.py
+# SOTS Debug Capture wrapper for Windows + ffmpeg (gdigrab).
+#
+# NEW UX (menu-first):
+#   - Launching the script opens an interactive menu
+#   - You must confirm before recording starts
+#   - When you press 'q' to stop ffmpeg, the script returns to the menu
+#   - While recording, ffmpeg shows progress/stats as usual; we print "Press Q to stop" too
+#
+# Defaults (menu “Start recording” uses these unless you edit):
+#   - 1 fps
+#   - FULL virtual desktop (multi-monitor) at native resolution (no scaling)
+#   - mouse cursor included
+#   - no audio
+#   - saves to: <script_dir>/SOTS_Capture/YYYYMMDD/<auto_filename>.mp4
+#   - writes:  <same>.log (the exact ffmpeg command)
+#
+# Stop capture:
+#   - Press 'q' in the ffmpeg window/console, OR use --duration.
+#
+# ffmpeg location:
+#   - First tries your project-local ffmpeg at:
+#       DevTools/python/ffmpeg/win64/bin/ffmpeg.exe   (relative to this script)
+#   - Then tries a couple other nearby layouts
+#   - Finally falls back to PATH (shutil.which("ffmpeg"))
+#
+# Notes:
+#   - Requires Windows.
+#   - Some protected/hardware surfaces may not capture correctly with gdigrab.
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import shlex
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+import ctypes
+from ctypes import wintypes
+
+
+# -----------------------------
+# Win32 helpers (ctypes)
+# -----------------------------
+
+user32 = ctypes.WinDLL("user32", use_last_error=True)
+
+SM_XVIRTUALSCREEN = 76
+SM_YVIRTUALSCREEN = 77
+SM_CXVIRTUALSCREEN = 78
+SM_CYVIRTUALSCREEN = 79
+
+
+def get_virtual_screen_rect() -> Tuple[int, int, int, int]:
+    """Returns (x, y, w, h) for the full virtual desktop (all monitors)."""
+    x = user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
+    y = user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
+    w = user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
+    h = user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
+    return int(x), int(y), int(w), int(h)
+
+
+@dataclass
+class MonitorInfo:
+    index: int
+    device: str
+    left: int
+    top: int
+    right: int
+    bottom: int
+
+    @property
+    def width(self) -> int:
+        return self.right - self.left
+
+    @property
+    def height(self) -> int:
+        return self.bottom - self.top
+
+
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", wintypes.LONG),
+        ("top", wintypes.LONG),
+        ("right", wintypes.LONG),
+        ("bottom", wintypes.LONG),
+    ]
+
+
+class MONITORINFOEXW(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", wintypes.DWORD),
+        ("rcMonitor", RECT),
+        ("rcWork", RECT),
+        ("dwFlags", wintypes.DWORD),
+        ("szDevice", wintypes.WCHAR * 32),
+    ]
+
+
+MONITORENUMPROC = ctypes.WINFUNCTYPE(
+    wintypes.BOOL,
+    wintypes.HMONITOR,
+    wintypes.HDC,
+    ctypes.POINTER(RECT),
+    wintypes.LPARAM,
+)
+
+
+def get_monitors() -> List[MonitorInfo]:
+    monitors: List[MonitorInfo] = []
+
+    def _callback(hMonitor, hdcMonitor, lprcMonitor, dwData):
+        info = MONITORINFOEXW()
+        info.cbSize = ctypes.sizeof(MONITORINFOEXW)
+        if not user32.GetMonitorInfoW(hMonitor, ctypes.byref(info)):
+            return True
+
+        rc = info.rcMonitor
+        idx = len(monitors)
+        monitors.append(
+            MonitorInfo(
+                index=idx,
+                device=str(info.szDevice),
+                left=int(rc.left),
+                top=int(rc.top),
+                right=int(rc.right),
+                bottom=int(rc.bottom),
+            )
+        )
+        return True
+
+    cb = MONITORENUMPROC(_callback)
+    if not user32.EnumDisplayMonitors(0, 0, cb, 0):
+        raise RuntimeError("EnumDisplayMonitors failed")
+
+    return monitors
+
+
+# -----------------------------
+# Config / presets
+# -----------------------------
+
+SCALE_PRESETS = {
+    "none": None,  # default: no scaling, keep native clarity
+    "4k": (3840, 2160),
+    "2160p": (3840, 2160),
+    "1440p": (2560, 1440),
+    "1080p": (1920, 1080),
+    "720p": (1280, 720),
+}
+
+PIX_FMT_PRESETS = ["yuv420p", "yuv444p", "rgb24"]
+
+
+@dataclass
+class CaptureConfig:
+    mode: str = "virtual"          # virtual|desktop|monitor|window
+    fps: float = 1.0
+    out: str = ""                  # optional; absolute or relative
+    duration: float = 0.0          # 0 => until 'q'
+    crf: int = 30
+    preset: str = "veryfast"
+    draw_mouse: int = 1
+    window_title: str = ""
+    monitor_index: int = 0
+    scale_preset: str = "none"
+    scale_w: int = 0
+    scale_h: int = 0
+    pix_fmt: str = "yuv420p"
+    ffmpeg_path: str = ""
+    ffprobe_path: str = ""
+
+
+# -----------------------------
+# Helpers
+# -----------------------------
+
+def build_vf(scale_preset: str, scale_w: int, scale_h: int) -> Optional[str]:
+    """
+    Returns a -vf string or None.
+    Default: None (no scaling, no filters) for max clarity.
+    If scaling is requested, scales to exact WxH.
+    """
+    if scale_preset.lower() != "none":
+        preset = SCALE_PRESETS.get(scale_preset.lower())
+        if preset is None:
+            raise ValueError(f"Unknown scale preset: {scale_preset}")
+        w, h = preset
+        return f"scale={w}:{h}"
+
+    if scale_w > 0 and scale_h > 0:
+        return f"scale={scale_w}:{scale_h}"
+
+    return None
+
+
+def quote_cmd(cmd: List[str]) -> str:
+    return " ".join(shlex.quote(c) for c in cmd)
+
+
+def print_extended_help(parser: argparse.ArgumentParser) -> None:
+    print(parser.format_help())
+    print(
+        "\n"
+        "----------------------------------------\n"
+        "SOTS_CAPTURE Extended Help (-help)\n"
+        "----------------------------------------\n"
+        "Purpose:\n"
+        "  Evidence-grade screen captures for debugging. Defaults are tuned for YOU->ME:\n"
+        "    - 1 fps\n"
+        "    - full multi-monitor (virtual desktop)\n"
+        "    - native resolution (no downscaling)\n"
+        "    - outputs auto-saved under <script_dir>/SOTS_Capture/YYYYMMDD/\n"
+        "\n"
+        "Menu mode (default):\n"
+        "  - Script starts in a menu\n"
+        "  - You confirm before recording starts\n"
+        "  - When you press 'q' in ffmpeg, you return to the menu\n"
+        "\n"
+        "Stop capture:\n"
+        "  - Press 'q' in the ffmpeg window/console\n"
+        "  - OR set a fixed capture time: --duration 20\n"
+        "\n"
+        "Common commands:\n"
+        "  (DEFAULT) open menu using defaults:\n"
+        "    python sots_capture_ffmpeg.py\n"
+        "\n"
+        "  Start immediately (skip menu):\n"
+        "    python sots_capture_ffmpeg.py --auto\n"
+        "\n"
+        "  List monitors + indices:\n"
+        "    python sots_capture_ffmpeg.py --list-monitors\n"
+        "\n"
+        "Clarity control:\n"
+        "  - Pixel format default is yuv420p (good compatibility).\n"
+        "  - For sharper UI text at the cost of size/compatibility, try yuv444p.\n"
+        "\n"
+        "Outputs:\n"
+        "  - Writes <output>.mp4\n"
+        "  - Writes <output>.log (the exact ffmpeg command used)\n"
+    )
+
+
+def find_local_tool(script_dir: Path, explicit_path: str, exe_name: str) -> Optional[str]:
+    """
+    Locate ffmpeg/ffprobe.
+    Priority:
+      1) explicit path (if provided)
+      2) known relative locations near this script
+      3) PATH
+    """
+    if explicit_path:
+        p = Path(explicit_path)
+        if p.exists():
+            return str(p)
+        return None
+
+    candidates = [
+        # Your current layout:
+        script_dir / "ffmpeg" / "win64" / "bin" / exe_name,
+        # Alternate layout if you later move script under SOTS_Capture/
+        script_dir / "SOTS_Capture" / "ffmpeg" / "win64" / "bin" / exe_name,
+        # Safety (rare): if script_dir differs
+        script_dir.parent / "python" / "ffmpeg" / "win64" / "bin" / exe_name,
+    ]
+
+    for c in candidates:
+        if c.exists():
+            return str(c)
+
+    which = shutil.which(Path(exe_name).stem)  # "ffmpeg" from "ffmpeg.exe"
+    return which
+
+
+def resolve_output_path(script_dir: Path, out_arg: str, filename_default: str) -> Path:
+    """
+    Default output location:
+      <script_dir>/SOTS_Capture/YYYYMMDD/<filename_default>
+
+    If --out is provided:
+      - absolute path => use as-is
+      - relative path (including just a filename) => place it under the default date folder
+    """
+    day_folder = script_dir / "SOTS_Capture" / dt.datetime.now().strftime("%Y%m%d")
+    day_folder.mkdir(parents=True, exist_ok=True)
+
+    if not out_arg:
+        return day_folder / filename_default
+
+    p = Path(out_arg)
+
+    # Absolute (drive letter / UNC) => respect fully
+    if p.is_absolute():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
+
+    # Relative => treat as filename or relative subpath under day folder
+    target = day_folder / p
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def yes_no(prompt: str, default: bool = False) -> bool:
+    suffix = " [Y/n]: " if default else " [y/N]: "
+    while True:
+        ans = input(prompt + suffix).strip().lower()
+        if not ans:
+            return default
+        if ans in ("y", "yes"):
+            return True
+        if ans in ("n", "no"):
+            return False
+        print("Please enter y or n.")
+
+
+def pause(msg: str = "Press Enter to continue...") -> None:
+    try:
+        input(msg)
+    except EOFError:
+        pass
+
+
+def safe_int(prompt: str, cur: int, min_v: Optional[int] = None, max_v: Optional[int] = None) -> int:
+    while True:
+        s = input(f"{prompt} (current: {cur}) > ").strip()
+        if s == "":
+            return cur
+        try:
+            v = int(s)
+        except ValueError:
+            print("Enter a valid integer (or blank to keep current).")
+            continue
+        if min_v is not None and v < min_v:
+            print(f"Must be >= {min_v}")
+            continue
+        if max_v is not None and v > max_v:
+            print(f"Must be <= {max_v}")
+            continue
+        return v
+
+
+def safe_float(prompt: str, cur: float, min_v: Optional[float] = None, max_v: Optional[float] = None) -> float:
+    while True:
+        s = input(f"{prompt} (current: {cur}) > ").strip()
+        if s == "":
+            return cur
+        try:
+            v = float(s)
+        except ValueError:
+            print("Enter a valid number (or blank to keep current).")
+            continue
+        if min_v is not None and v < min_v:
+            print(f"Must be >= {min_v}")
+            continue
+        if max_v is not None and v > max_v:
+            print(f"Must be <= {max_v}")
+            continue
+        return v
+
+
+def safe_str(prompt: str, cur: str, allow_blank_keep: bool = True) -> str:
+    s = input(f"{prompt} (current: {cur}) > ").strip()
+    if s == "" and allow_blank_keep:
+        return cur
+    return s
+
+
+def print_config_summary(cfg: CaptureConfig, script_dir: Path) -> None:
+    print("\n==============================")
+    print("SOTS_CAPTURE Current Settings")
+    print("==============================")
+    print(f"mode         : {cfg.mode}")
+    print(f"fps          : {cfg.fps}")
+    print(f"duration     : {cfg.duration}  (0 = until 'q')")
+    print(f"draw_mouse   : {cfg.draw_mouse}")
+    print(f"crf          : {cfg.crf}")
+    print(f"preset       : {cfg.preset}")
+    print(f"pix_fmt      : {cfg.pix_fmt}")
+    print(f"scale_preset : {cfg.scale_preset}")
+    print(f"scale_w/h    : {cfg.scale_w} x {cfg.scale_h}")
+    print(f"monitor_index: {cfg.monitor_index}")
+    print(f"window_title : {cfg.window_title}")
+    print(f"out          : {cfg.out if cfg.out else '(auto)'}")
+    day_folder = script_dir / "SOTS_Capture" / dt.datetime.now().strftime("%Y%m%d")
+    print(f"save folder  : {day_folder}")
+    print("==============================\n")
+
+
+def build_ffmpeg_cmd(
+    ffmpeg: str,
+    cfg: CaptureConfig,
+    script_dir: Path,
+) -> Tuple[List[str], Path, Path]:
+    """
+    Builds the ffmpeg command + resolves output/log paths.
+    Each recording gets a fresh timestamped name if cfg.out is empty.
+    """
+    ts = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename_default = f"SOTS_capture_{cfg.mode}_{cfg.fps}fps_{ts}.mp4"
+    out_path = resolve_output_path(script_dir, cfg.out, filename_default)
+    log_path = out_path.with_suffix(".log")
+
+    vf = build_vf(cfg.scale_preset, cfg.scale_w, cfg.scale_h)
+
+    cmd: List[str] = [
+        ffmpeg,
+        "-y",
+        "-f",
+        "gdigrab",
+        "-framerate",
+        str(cfg.fps),
+        "-draw_mouse",
+        str(cfg.draw_mouse),
+        "-stats",  # ensure progress/stats are printed
+    ]
+
+    # Target selection
+    if cfg.mode == "virtual":
+        vx, vy, vw, vh = get_virtual_screen_rect()
+        cmd += [
+            "-offset_x",
+            str(vx),
+            "-offset_y",
+            str(vy),
+            "-video_size",
+            f"{vw}x{vh}",
+            "-i",
+            "desktop",
+        ]
+    elif cfg.mode == "desktop":
+        cmd += ["-i", "desktop"]
+    elif cfg.mode == "monitor":
+        mons = get_monitors()
+        if cfg.monitor_index < 0 or cfg.monitor_index >= len(mons):
+            raise ValueError(f"monitor_index out of range (0..{len(mons)-1})")
+        m = mons[cfg.monitor_index]
+        cmd += [
+            "-offset_x",
+            str(m.left),
+            "-offset_y",
+            str(m.top),
+            "-video_size",
+            f"{m.width}x{m.height}",
+            "-i",
+            "desktop",
+        ]
+    elif cfg.mode == "window":
+        if not cfg.window_title.strip():
+            raise ValueError("window_title is required for mode=window")
+        cmd += ["-i", f"title={cfg.window_title}"]
+    else:
+        raise ValueError(f"Unknown mode: {cfg.mode}")
+
+    # Optional duration
+    if cfg.duration and cfg.duration > 0:
+        cmd += ["-t", str(cfg.duration)]
+
+    # Optional downscale
+    if vf:
+        cmd += ["-vf", vf]
+
+    # Encoding (no audio)
+    cmd += [
+        "-c:v",
+        "libx264",
+        "-preset",
+        cfg.preset,
+        "-crf",
+        str(cfg.crf),
+        "-pix_fmt",
+        str(cfg.pix_fmt),
+        "-movflags",
+        "+faststart",
+        str(out_path),
+    ]
+
+    return cmd, out_path, log_path
+
+
+def run_recording(ffmpeg: str, cfg: CaptureConfig, script_dir: Path) -> int:
+    cmd, out_path, log_path = build_ffmpeg_cmd(ffmpeg, cfg, script_dir)
+    printable = quote_cmd(cmd)
+
+    # Overwrite warning if user explicitly chose an output name that already exists
+    if cfg.out and out_path.exists():
+        if not yes_no(f"[SOTS_CAPTURE] File exists:\n  {out_path}\nOverwrite?", default=False):
+            print("[SOTS_CAPTURE] Cancelled (no overwrite).")
+            return 0
+
+    # Always log the exact command
+    log_path.write_text(printable + "\n", encoding="utf-8")
+
+    print("\n[SOTS_CAPTURE] ========================================")
+    print(f"[SOTS_CAPTURE] Saving folder: {out_path.parent}")
+    print(f"[SOTS_CAPTURE] Writing:       {out_path}")
+    print(f"[SOTS_CAPTURE] Log:           {log_path}")
+    print(f"[SOTS_CAPTURE] Cmd:           {printable}")
+    print("[SOTS_CAPTURE] ========================================")
+    print("\n[SOTS_CAPTURE] RECORDING...")
+    print("[SOTS_CAPTURE] Press 'q' in the ffmpeg window/console to stop.")
+    print("[SOTS_CAPTURE] (After stop, you'll return to this menu.)\n")
+
+    try:
+        # Let ffmpeg own the console output so progress is visible.
+        proc = subprocess.Popen(cmd)
+        rc = proc.wait()
+    except KeyboardInterrupt:
+        print("\n[SOTS_CAPTURE] KeyboardInterrupt received. Stopping ffmpeg...")
+        try:
+            proc.terminate()  # type: ignore[name-defined]
+        except Exception:
+            pass
+        rc = 130
+
+    print(f"\n[SOTS_CAPTURE] ffmpeg exit code: {rc}")
+    if rc == 0:
+        print(f"[SOTS_CAPTURE] Saved: {out_path}")
+    else:
+        print(f"[SOTS_CAPTURE] Recording may be incomplete. Check log/console output.")
+    return int(rc)
+
+
+# -----------------------------
+# Menu UI
+# -----------------------------
+
+def edit_settings_menu(cfg: CaptureConfig, script_dir: Path) -> None:
+    while True:
+        print_config_summary(cfg, script_dir)
+        print("Edit Settings")
+        print("  1) mode (virtual/desktop/monitor/window)")
+        print("  2) fps")
+        print("  3) duration (0 = until 'q')")
+        print("  4) output name/path (blank = auto)")
+        print("  5) quality (crf/preset/pix_fmt)")
+        print("  6) target details (monitor_index/window_title)")
+        print("  7) scaling (preset or custom)")
+        print("  8) draw_mouse (0/1)")
+        print("  B) back to main menu")
+        choice = input("> ").strip().lower()
+
+        if choice == "b":
+            return
+
+        if choice == "1":
+            print("\nSelect mode:")
+            print("  1) virtual (ALL monitors)  [default]")
+            print("  2) desktop (primary only)")
+            print("  3) monitor (single monitor by index)")
+            print("  4) window (by title)")
+            sel = input("> ").strip()
+            if sel == "1":
+                cfg.mode = "virtual"
+            elif sel == "2":
+                cfg.mode = "desktop"
+            elif sel == "3":
+                cfg.mode = "monitor"
+            elif sel == "4":
+                cfg.mode = "window"
+            else:
+                print("Invalid selection.")
+                continue
+
+        elif choice == "2":
+            cfg.fps = safe_float("fps", cfg.fps, min_v=0.1, max_v=60.0)
+
+        elif choice == "3":
+            cfg.duration = safe_float("duration seconds (0=until q)", cfg.duration, min_v=0.0)
+
+        elif choice == "4":
+            print("\nOutput:")
+            print("  - Blank means AUTO name under <script_dir>/SOTS_Capture/YYYYMMDD/")
+            print("  - Relative path/name will be placed under that date folder")
+            print("  - Absolute path will be used exactly (folder auto-created)")
+            new_out = input(f"out (current: {cfg.out if cfg.out else '(auto)'}) > ").strip()
+            cfg.out = new_out  # allow empty
+
+        elif choice == "5":
+            cfg.crf = safe_int("crf (higher=smaller, lower=better)", cfg.crf, min_v=0, max_v=51)
+            cfg.preset = safe_str("preset (ultrafast..veryslow)", cfg.preset)
+            print("\nPixel format presets:")
+            for i, pf in enumerate(PIX_FMT_PRESETS, start=1):
+                print(f"  {i}) {pf}")
+            sel = input(f"pix_fmt (current: {cfg.pix_fmt}) [1-{len(PIX_FMT_PRESETS)} or blank to keep] > ").strip()
+            if sel:
+                try:
+                    idx = int(sel) - 1
+                    if 0 <= idx < len(PIX_FMT_PRESETS):
+                        cfg.pix_fmt = PIX_FMT_PRESETS[idx]
+                    else:
+                        print("Invalid pix_fmt selection.")
+                except ValueError:
+                    print("Invalid pix_fmt selection.")
+
+        elif choice == "6":
+            if cfg.mode == "monitor":
+                print("\nTip: run 'List monitors' in the main menu if you need indices.")
+                cfg.monitor_index = safe_int("monitor_index", cfg.monitor_index, min_v=0)
+            elif cfg.mode == "window":
+                cfg.window_title = safe_str("window_title", cfg.window_title, allow_blank_keep=False)
+            else:
+                print("\nCurrent mode is not monitor/window, nothing to edit here.")
+                pause()
+
+        elif choice == "7":
+            print("\nScaling:")
+            print("  1) preset (none/720p/1080p/1440p/2160p/4k)")
+            print("  2) custom (scale_w/scale_h)")
+            print("  3) clear scaling (none)")
+            sel = input("> ").strip()
+            if sel == "1":
+                print("\nPresets:")
+                keys = list(SCALE_PRESETS.keys())
+                for i, k in enumerate(keys, start=1):
+                    print(f"  {i}) {k}")
+                pick = input(f"Select preset (current: {cfg.scale_preset}) > ").strip()
+                try:
+                    idx = int(pick) - 1
+                    if 0 <= idx < len(keys):
+                        cfg.scale_preset = keys[idx]
+                        cfg.scale_w = 0
+                        cfg.scale_h = 0
+                    else:
+                        print("Invalid preset.")
+                except ValueError:
+                    print("Invalid preset.")
+            elif sel == "2":
+                cfg.scale_preset = "none"
+                cfg.scale_w = safe_int("scale_w", cfg.scale_w, min_v=0)
+                cfg.scale_h = safe_int("scale_h", cfg.scale_h, min_v=0)
+                if (cfg.scale_w == 0) != (cfg.scale_h == 0):
+                    print("Custom scaling requires BOTH scale_w and scale_h (set both or set both to 0).")
+            elif sel == "3":
+                cfg.scale_preset = "none"
+                cfg.scale_w = 0
+                cfg.scale_h = 0
+            else:
+                print("Invalid selection.")
+
+        elif choice == "8":
+            cfg.draw_mouse = safe_int("draw_mouse (0/1)", cfg.draw_mouse, min_v=0, max_v=1)
+
+        else:
+            print("Unknown option.")
+
+
+def list_monitors_ui() -> None:
+    mons = get_monitors()
+    print("\n[SOTS_CAPTURE] Monitors:")
+    for m in mons:
+        print(
+            f"  [{m.index}] {m.device} rect=({m.left},{m.top})-({m.right},{m.bottom}) "
+            f"size={m.width}x{m.height}"
+        )
+    vx, vy, vw, vh = get_virtual_screen_rect()
+    print(f"[SOTS_CAPTURE] VirtualScreen rect=({vx},{vy}) size={vw}x{vh}\n")
+    pause()
+
+
+def main_menu_loop(ffmpeg: str, cfg: CaptureConfig, script_dir: Path, ap: argparse.ArgumentParser) -> int:
+    while True:
+        print_config_summary(cfg, script_dir)
+        print("Main Menu")
+        print("  1) Start recording (uses current settings)")
+        print("  2) Edit settings")
+        print("  3) Show ffmpeg command (preview)")
+        print("  4) List monitors")
+        print("  5) Show help (-help)")
+        print("  Q) Quit")
+        choice = input("> ").strip().lower()
+
+        if choice == "q":
+            print("[SOTS_CAPTURE] Bye.")
+            return 0
+
+        if choice == "1":
+            if not yes_no("Start recording now?", default=True):
+                continue
+            try:
+                rc = run_recording(ffmpeg, cfg, script_dir)
+            except ValueError as e:
+                print(f"[SOTS_CAPTURE] ERROR: {e}")
+                pause()
+                continue
+            # return to menu after ffmpeg exits (on 'q' or duration)
+            pause("Press Enter to return to menu...")
+            continue
+
+        if choice == "2":
+            edit_settings_menu(cfg, script_dir)
+            continue
+
+        if choice == "3":
+            try:
+                cmd, out_path, log_path = build_ffmpeg_cmd(ffmpeg, cfg, script_dir)
+                print("\n[SOTS_CAPTURE] Command preview:")
+                print(quote_cmd(cmd))
+                print(f"\n[SOTS_CAPTURE] Would write: {out_path}")
+                print(f"[SOTS_CAPTURE] Would log:   {log_path}\n")
+            except ValueError as e:
+                print(f"[SOTS_CAPTURE] ERROR: {e}")
+            pause()
+            continue
+
+        if choice == "4":
+            list_monitors_ui()
+            continue
+
+        if choice == "5":
+            print_extended_help(ap)
+            pause()
+            continue
+
+        print("Unknown option.")
+
+
+# -----------------------------
+# Entry
+# -----------------------------
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="SOTS Debug Capture (ffmpeg + gdigrab, Windows)")
+
+    # Dedicated long help flag (single dash) as requested.
+    ap.add_argument(
+        "-help",
+        dest="help_long",
+        action="store_true",
+        help="Show extended help (examples + troubleshooting) and exit.",
+    )
+
+    # NEW: start immediately (skip menu) if you want the old behavior.
+    ap.add_argument(
+        "--auto",
+        action="store_true",
+        help="Start recording immediately (skip menu + confirmation).",
+    )
+
+    ap.add_argument(
+        "--mode",
+        choices=["virtual", "desktop", "monitor", "window"],
+        default="virtual",
+        help="Capture target. virtual=all monitors (default). desktop=primary. monitor=single monitor rect. window=by title.",
+    )
+    ap.add_argument("--fps", type=float, default=1.0, help="Capture framerate (default 1 fps)")
+    ap.add_argument(
+        "--out",
+        default="",
+        help="Output mp4 path. Default saves under <script_dir>/SOTS_Capture/YYYYMMDD/<auto_filename>. "
+             "If you pass a relative name, it will also be placed under that date folder.",
+    )
+    ap.add_argument(
+        "--duration",
+        type=float,
+        default=0.0,
+        help="Optional duration in seconds (0 = until you press q)",
+    )
+    ap.add_argument(
+        "--crf",
+        type=int,
+        default=30,
+        help="x264 CRF (higher=smaller, lower=better). Default 30",
+    )
+    ap.add_argument(
+        "--preset",
+        default="veryfast",
+        help="x264 preset (ultrafast..veryslow). Default veryfast",
+    )
+    ap.add_argument(
+        "--draw-mouse",
+        type=int,
+        default=1,
+        choices=[0, 1],
+        help="Include mouse cursor (default 1)",
+    )
+
+    ap.add_argument("--window-title", default="", help='For --mode window, example: "Unreal Editor"')
+    ap.add_argument("--monitor-index", type=int, default=0, help="For --mode monitor, index from --list-monitors")
+
+    ap.add_argument(
+        "--scale-preset",
+        default="none",
+        choices=list(SCALE_PRESETS.keys()),
+        help="Optional downscale preset (default none)",
+    )
+    ap.add_argument("--scale-w", type=int, default=0, help="Optional custom scale width (requires --scale-h)")
+    ap.add_argument("--scale-h", type=int, default=0, help="Optional custom scale height (requires --scale-w)")
+
+    ap.add_argument(
+        "--pix-fmt",
+        default="yuv420p",
+        help="Output pixel format (default yuv420p). Try yuv444p for sharper UI text.",
+    )
+
+    ap.add_argument("--list-monitors", action="store_true", help="Print monitor list and exit")
+
+    ap.add_argument(
+        "--ffmpeg-path",
+        default="",
+        help="Optional explicit path to ffmpeg.exe (overrides local/PATH lookup).",
+    )
+    ap.add_argument(
+        "--ffprobe-path",
+        default="",
+        help="Optional explicit path to ffprobe.exe (not required, but logged if found).",
+    )
+
+    args = ap.parse_args()
+
+    if args.help_long:
+        print_extended_help(ap)
+        return 0
+
+    script_dir = Path(__file__).resolve().parent
+
+    ffmpeg = find_local_tool(script_dir, args.ffmpeg_path, "ffmpeg.exe")
+    ffprobe = find_local_tool(script_dir, args.ffprobe_path, "ffprobe.exe")
+
+    if not ffmpeg:
+        print("[SOTS_CAPTURE] ERROR: ffmpeg not found.")
+        print("[SOTS_CAPTURE] Expected local path (example): DevTools/python/ffmpeg/win64/bin/ffmpeg.exe")
+        print("[SOTS_CAPTURE] Or put ffmpeg on PATH.")
+        print("[SOTS_CAPTURE] Tip: run:  python sots_capture_ffmpeg.py -help")
+        return 2
+
+    print(f"[SOTS_CAPTURE] Using ffmpeg:  {ffmpeg}")
+    print(f"[SOTS_CAPTURE] Using ffprobe: {ffprobe if ffprobe else '(not found - ok)'}")
+
+    if args.list_monitors:
+        list_monitors_ui()
+        return 0
+
+    # Seed config from CLI args (menu edits will modify this).
+    cfg = CaptureConfig(
+        mode=args.mode,
+        fps=float(args.fps),
+        out=args.out,
+        duration=float(args.duration),
+        crf=int(args.crf),
+        preset=str(args.preset),
+        draw_mouse=int(args.draw_mouse),
+        window_title=str(args.window_title),
+        monitor_index=int(args.monitor_index),
+        scale_preset=str(args.scale_preset),
+        scale_w=int(args.scale_w),
+        scale_h=int(args.scale_h),
+        pix_fmt=str(args.pix_fmt),
+        ffmpeg_path=str(args.ffmpeg_path),
+        ffprobe_path=str(args.ffprobe_path),
+    )
+
+    # If --auto, run immediately (no menu, no confirmation)
+    if args.auto:
+        try:
+            return run_recording(ffmpeg, cfg, script_dir)
+        except ValueError as e:
+            print(f"[SOTS_CAPTURE] ERROR: {e}")
+            return 4
+
+    # Default: menu-first flow
+    return main_menu_loop(ffmpeg, cfg, script_dir, ap)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

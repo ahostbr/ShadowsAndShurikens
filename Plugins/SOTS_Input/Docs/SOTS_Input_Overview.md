@@ -21,13 +21,13 @@ Scope: runtime-only Enhanced Input routing and buffering without GAS or UI focus
 - `PopLayerByTag`, `ClearAllLayers`, `IsLayerActive` remain available for stack maintenance.
 
 ## Integration seam
-- Use `USOTS_InputBlueprintLibrary` to get/push/pop: `GetRouterFromActor`, `PushLayerTag`, `PopLayerTag`, `OpenBuffer`, `CloseBuffer`. ContextActor can be controller, pawn, or any actor (falls back to first player controller). This is the surface SOTS_UI and other plugins should call.
+- Use `USOTS_InputBlueprintLibrary` to get/push/pop: `GetRouterFromActor`, `GetRouterForPlayerController`, `EnsureRouterOnPlayerController`, `EnsureBufferOnPlayerController`, `PushLayerTag`, `PopLayerTag`, `OpenBuffer`, `CloseBuffer`. ContextActor can be controller, pawn, or any actor (falls back to first player controller). This is the surface SOTS_UI and other plugins should call.
 - Stable include for consumers: `SOTS_InputAPI.h`.
-- Integration rules live in `SOTS_Input_IntegrationContract.md`; checkpoint in `SOTS_Input_LOCK.md`.
+- Attachment/discovery details live in `SOTS_Input_AttachmentAndDiscovery.md`; integration rules live in `SOTS_Input_IntegrationContract.md`; checkpoint in `SOTS_Input_LOCK.md`.
 
 ## Usage sketch
-1) Add `SOTS_InputTags.ini` to project config (already in plugin Config/Tags). Ensure `SAS.Input.Buffer.*` and `SAS.Input.Layer.*` tags exist in TagManager.
-2) Place `USOTS_InputRouterComponent` and `USOTS_InputBufferComponent` on the pawn/actor receiving input. Router auto-resolves `EnhancedInputComponent` (on owner or controller) and the local player subsystem.
+1) Add `SOTS_InputTags.ini` to project config (already in plugin Config/Tags). Ensure `Input.Buffer.*`, `Input.Layer.*`, and intent/device tags exist in TagManager.
+2) Prefer attaching `USOTS_InputRouterComponent` and `USOTS_InputBufferComponent` to the local player controller (use BlueprintLibrary ensure helpers). Router auto-resolves `EnhancedInputComponent` (on owner or controller) and the local player subsystem.
 3) Author `USOTS_InputLayerDataAsset` assets: assign a layer gameplay tag, priority, mapping contexts, handler templates, and blocking preference. Handlers declare actions, trigger events, buffering permissions, and channels.
 4) At runtime, push/pop layers via the router (`PushLayer`, `PopLayerByTag`, `ClearAllLayers`, `IsLayerActive`). The highest-priority layers apply until a blocking layer is encountered.
 5) Use buffering when desired: open a channel via code or `AnimNotifyState_SOTS_InputBufferWindow`, let handlers with matching `BufferChannel` capture events, then close+flush to replay through handlers.

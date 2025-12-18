@@ -1,0 +1,500 @@
+# sots_capture_ffmpeg.py
+# SOTS Debug Capture wrapper for Windows + ffmpeg (gdigrab).
+#
+# Defaults (no args):
+#   - 1 fps
+#   - FULL virtual desktop (multi-monitor) at native resolution (no scaling)
+#   - mouse cursor included
+#   - no audio
+#   - saves to: <script_dir>/SOTS_Capture/YYYYMMDD/<auto_filename>.mp4
+#   - writes:  <same>.log (the exact ffmpeg command)
+#
+# Stop capture:
+#   - Press 'q' in the ffmpeg window/console, OR use --duration.
+#
+# ffmpeg location:
+#   - First tries your project-local ffmpeg at:
+#       DevTools/python/ffmpeg/win64/bin/ffmpeg.exe   (relative to this script)
+#   - Then tries a couple other nearby layouts
+#   - Finally falls back to PATH (shutil.which("ffmpeg"))
+#
+# Notes:
+#   - Requires Windows.
+#   - Some protected/hardware surfaces may not capture correctly with gdigrab.
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import shlex
+import shutil
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+import ctypes
+from ctypes import wintypes
+
+
+# -----------------------------
+# Win32 helpers (ctypes)
+# -----------------------------
+
+user32 = ctypes.WinDLL("user32", use_last_error=True)
+
+SM_XVIRTUALSCREEN = 76
+SM_YVIRTUALSCREEN = 77
+SM_CXVIRTUALSCREEN = 78
+SM_CYVIRTUALSCREEN = 79
+
+
+def get_virtual_screen_rect() -> Tuple[int, int, int, int]:
+    """Returns (x, y, w, h) for the full virtual desktop (all monitors)."""
+    x = user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
+    y = user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
+    w = user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
+    h = user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
+    return int(x), int(y), int(w), int(h)
+
+
+@dataclass
+class MonitorInfo:
+    index: int
+    device: str
+    left: int
+    top: int
+    right: int
+    bottom: int
+
+    @property
+    def width(self) -> int:
+        return self.right - self.left
+
+    @property
+    def height(self) -> int:
+        return self.bottom - self.top
+
+
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", wintypes.LONG),
+        ("top", wintypes.LONG),
+        ("right", wintypes.LONG),
+        ("bottom", wintypes.LONG),
+    ]
+
+
+class MONITORINFOEXW(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", wintypes.DWORD),
+        ("rcMonitor", RECT),
+        ("rcWork", RECT),
+        ("dwFlags", wintypes.DWORD),
+        ("szDevice", wintypes.WCHAR * 32),
+    ]
+
+
+MONITORENUMPROC = ctypes.WINFUNCTYPE(
+    wintypes.BOOL,
+    wintypes.HMONITOR,
+    wintypes.HDC,
+    ctypes.POINTER(RECT),
+    wintypes.LPARAM,
+)
+
+
+def get_monitors() -> List[MonitorInfo]:
+    monitors: List[MonitorInfo] = []
+
+    def _callback(hMonitor, hdcMonitor, lprcMonitor, dwData):
+        info = MONITORINFOEXW()
+        info.cbSize = ctypes.sizeof(MONITORINFOEXW)
+        if not user32.GetMonitorInfoW(hMonitor, ctypes.byref(info)):
+            return True
+
+        rc = info.rcMonitor
+        idx = len(monitors)
+        monitors.append(
+            MonitorInfo(
+                index=idx,
+                device=str(info.szDevice),
+                left=int(rc.left),
+                top=int(rc.top),
+                right=int(rc.right),
+                bottom=int(rc.bottom),
+            )
+        )
+        return True
+
+    cb = MONITORENUMPROC(_callback)
+    if not user32.EnumDisplayMonitors(0, 0, cb, 0):
+        raise RuntimeError("EnumDisplayMonitors failed")
+
+    return monitors
+
+
+# -----------------------------
+# ffmpeg command construction
+# -----------------------------
+
+SCALE_PRESETS = {
+    "none": None,  # default: no scaling, keep native clarity
+    "4k": (3840, 2160),
+    "2160p": (3840, 2160),
+    "1440p": (2560, 1440),
+    "1080p": (1920, 1080),
+    "720p": (1280, 720),
+}
+
+
+def build_vf(scale_preset: str, scale_w: int, scale_h: int) -> Optional[str]:
+    """
+    Returns a -vf string or None.
+    Default: None (no scaling, no filters) for max clarity.
+    If scaling is requested, scales to exact WxH.
+    """
+    if scale_preset.lower() != "none":
+        preset = SCALE_PRESETS.get(scale_preset.lower())
+        if preset is None:
+            raise ValueError(f"Unknown scale preset: {scale_preset}")
+        w, h = preset
+        return f"scale={w}:{h}"
+
+    if scale_w > 0 and scale_h > 0:
+        return f"scale={scale_w}:{scale_h}"
+
+    return None
+
+
+def quote_cmd(cmd: List[str]) -> str:
+    return " ".join(shlex.quote(c) for c in cmd)
+
+
+def print_extended_help(parser: argparse.ArgumentParser) -> None:
+    print(parser.format_help())
+    print(
+        "\n"
+        "----------------------------------------\n"
+        "SOTS_CAPTURE Extended Help (-help)\n"
+        "----------------------------------------\n"
+        "Purpose:\n"
+        "  Evidence-grade screen captures for debugging. Defaults are tuned for YOU->ME:\n"
+        "    - 1 fps\n"
+        "    - full multi-monitor (virtual desktop)\n"
+        "    - native resolution (no downscaling)\n"
+        "    - outputs auto-saved under <script_dir>/SOTS_Capture/YYYYMMDD/\n"
+        "\n"
+        "Stop capture:\n"
+        "  - Press 'q' in the ffmpeg window/console\n"
+        "  - OR set a fixed capture time: --duration 20\n"
+        "\n"
+        "Common commands:\n"
+        "  (DEFAULT) 1 fps, all monitors, native res:\n"
+        "    python sots_capture_ffmpeg.py\n"
+        "\n"
+        "  Capture 30 seconds:\n"
+        "    python sots_capture_ffmpeg.py --duration 30\n"
+        "\n"
+        "  List monitors + indices:\n"
+        "    python sots_capture_ffmpeg.py --list-monitors\n"
+        "\n"
+        "  Capture monitor #1 only:\n"
+        "    python sots_capture_ffmpeg.py --mode monitor --monitor-index 1\n"
+        "\n"
+        "  Capture a specific window:\n"
+        "    python sots_capture_ffmpeg.py --mode window --window-title \"Unreal Editor\"\n"
+        "\n"
+        "File size controls (optional):\n"
+        "  - Keep 1 fps but downscale when you WANT smaller files:\n"
+        "      python sots_capture_ffmpeg.py --scale-preset 1080p\n"
+        "  - Or custom scale:\n"
+        "      python sots_capture_ffmpeg.py --scale-w 1920 --scale-h 1080\n"
+        "  - Increase compression (smaller file): raise CRF\n"
+        "      --crf 32  (smaller)\n"
+        "      --crf 28  (clearer)\n"
+        "\n"
+        "Clarity control:\n"
+        "  - Pixel format default is yuv420p (good compatibility).\n"
+        "  - For sharper UI text at the cost of size/compatibility, try:\n"
+        "      --pix-fmt yuv444p\n"
+        "\n"
+        "ffmpeg location:\n"
+        "  - Default: tries project-local ffmpeg at DevTools/python/ffmpeg/win64/bin/ffmpeg.exe\n"
+        "  - Override explicitly:\n"
+        "      --ffmpeg-path \"E:\\SAS\\ShadowsAndShurikens\\DevTools\\python\\ffmpeg\\win64\\bin\\ffmpeg.exe\"\n"
+        "\n"
+        "Outputs:\n"
+        "  - Writes <output>.mp4\n"
+        "  - Writes <output>.log (the exact ffmpeg command used)\n"
+    )
+
+
+def find_local_tool(script_dir: Path, explicit_path: str, exe_name: str) -> Optional[str]:
+    """
+    Locate ffmpeg/ffprobe.
+    Priority:
+      1) explicit path (if provided)
+      2) known relative locations near this script
+      3) PATH
+    """
+    if explicit_path:
+        p = Path(explicit_path)
+        if p.exists():
+            return str(p)
+        return None
+
+    # Your current layout (per screenshot):
+    #   DevTools/python/ffmpeg/win64/bin/ffmpeg.exe
+    candidates = [
+        script_dir / "ffmpeg" / "win64" / "bin" / exe_name,
+        script_dir / "SOTS_Capture" / "ffmpeg" / "win64" / "bin" / exe_name,
+        script_dir.parent / "python" / "ffmpeg" / "win64" / "bin" / exe_name,
+    ]
+
+    for c in candidates:
+        if c.exists():
+            return str(c)
+
+    which = shutil.which(Path(exe_name).stem)  # "ffmpeg" from "ffmpeg.exe"
+    return which
+
+
+def resolve_output_path(script_dir: Path, out_arg: str, filename_default: str) -> Path:
+    """
+    Default output location:
+      <script_dir>/SOTS_Capture/YYYYMMDD/<filename_default>
+
+    If --out is provided:
+      - absolute path => use as-is
+      - relative path (including just a filename) => place it under the default date folder
+    """
+    day_folder = script_dir / "SOTS_Capture" / dt.datetime.now().strftime("%Y%m%d")
+    day_folder.mkdir(parents=True, exist_ok=True)
+
+    if not out_arg:
+        return day_folder / filename_default
+
+    p = Path(out_arg)
+
+    # Absolute (drive letter / UNC) => respect fully
+    if p.is_absolute():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
+
+    # Relative => treat as filename or relative subpath under day folder
+    target = day_folder / p
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="SOTS Debug Capture (ffmpeg + gdigrab, Windows)")
+
+    # Dedicated long help flag (single dash) as requested.
+    ap.add_argument(
+        "-help",
+        dest="help_long",
+        action="store_true",
+        help="Show extended help (examples + troubleshooting) and exit.",
+    )
+
+    ap.add_argument(
+        "--mode",
+        choices=["virtual", "desktop", "monitor", "window"],
+        default="virtual",
+        help="Capture target. virtual=all monitors (default). desktop=primary. monitor=single monitor rect. window=by title.",
+    )
+    ap.add_argument("--fps", type=float, default=1.0, help="Capture framerate (default 1 fps)")
+    ap.add_argument(
+        "--out",
+        default="",
+        help="Output mp4 path. Default saves under <script_dir>/SOTS_Capture/YYYYMMDD/<auto_filename>. "
+             "If you pass a relative name, it will also be placed under that date folder.",
+    )
+    ap.add_argument(
+        "--duration",
+        type=float,
+        default=0.0,
+        help="Optional duration in seconds (0 = until you press q)",
+    )
+    ap.add_argument(
+        "--crf",
+        type=int,
+        default=30,
+        help="x264 CRF (higher=smaller, lower=better). Default 30",
+    )
+    ap.add_argument(
+        "--preset",
+        default="veryfast",
+        help="x264 preset (ultrafast..veryslow). Default veryfast",
+    )
+    ap.add_argument(
+        "--draw-mouse",
+        type=int,
+        default=1,
+        choices=[0, 1],
+        help="Include mouse cursor (default 1)",
+    )
+
+    ap.add_argument("--window-title", default="", help='For --mode window, example: "Unreal Editor"')
+    ap.add_argument("--monitor-index", type=int, default=0, help="For --mode monitor, index from --list-monitors")
+
+    ap.add_argument(
+        "--scale-preset",
+        default="none",
+        choices=list(SCALE_PRESETS.keys()),
+        help="Optional downscale preset (default none)",
+    )
+    ap.add_argument("--scale-w", type=int, default=0, help="Optional custom scale width (requires --scale-h)")
+    ap.add_argument("--scale-h", type=int, default=0, help="Optional custom scale height (requires --scale-w)")
+
+    ap.add_argument(
+        "--pix-fmt",
+        default="yuv420p",
+        help="Output pixel format (default yuv420p). Try yuv444p for sharper UI text.",
+    )
+
+    ap.add_argument("--list-monitors", action="store_true", help="Print monitor list and exit")
+
+    ap.add_argument(
+        "--ffmpeg-path",
+        default="",
+        help="Optional explicit path to ffmpeg.exe (overrides local/PATH lookup).",
+    )
+    ap.add_argument(
+        "--ffprobe-path",
+        default="",
+        help="Optional explicit path to ffprobe.exe (not required, but logged if found).",
+    )
+
+    args = ap.parse_args()
+
+    if args.help_long:
+        print_extended_help(ap)
+        return 0
+
+    script_dir = Path(__file__).resolve().parent
+
+    ffmpeg = find_local_tool(script_dir, args.ffmpeg_path, "ffmpeg.exe")
+    ffprobe = find_local_tool(script_dir, args.ffprobe_path, "ffprobe.exe")
+
+    if not ffmpeg:
+        print("[SOTS_CAPTURE] ERROR: ffmpeg not found.")
+        print("[SOTS_CAPTURE] Expected local path (example): DevTools/python/ffmpeg/win64/bin/ffmpeg.exe")
+        print("[SOTS_CAPTURE] Or put ffmpeg on PATH.")
+        print("[SOTS_CAPTURE] Tip: run:  python sots_capture_ffmpeg.py -help")
+        return 2
+
+    print(f"[SOTS_CAPTURE] Using ffmpeg:  {ffmpeg}")
+    print(f"[SOTS_CAPTURE] Using ffprobe: {ffprobe if ffprobe else '(not found - ok)'}")
+
+    if args.list_monitors:
+        mons = get_monitors()
+        print("[SOTS_CAPTURE] Monitors:")
+        for m in mons:
+            print(
+                f"  [{m.index}] {m.device} rect=({m.left},{m.top})-({m.right},{m.bottom}) "
+                f"size={m.width}x{m.height}"
+            )
+        vx, vy, vw, vh = get_virtual_screen_rect()
+        print(f"[SOTS_CAPTURE] VirtualScreen rect=({vx},{vy}) size={vw}x{vh}")
+        return 0
+
+    ts = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename_default = f"SOTS_capture_{args.mode}_{args.fps}fps_{ts}.mp4"
+    out = resolve_output_path(script_dir, args.out, filename_default)
+    log_path = out.with_suffix(".log")
+
+    vf = build_vf(args.scale_preset, args.scale_w, args.scale_h)
+
+    cmd: List[str] = [
+        ffmpeg,
+        "-y",
+        "-f",
+        "gdigrab",
+        "-framerate",
+        str(args.fps),
+        "-draw_mouse",
+        str(args.draw_mouse),
+    ]
+
+    # Target selection
+    if args.mode == "virtual":
+        vx, vy, vw, vh = get_virtual_screen_rect()
+        cmd += [
+            "-offset_x",
+            str(vx),
+            "-offset_y",
+            str(vy),
+            "-video_size",
+            f"{vw}x{vh}",
+            "-i",
+            "desktop",
+        ]
+    elif args.mode == "desktop":
+        cmd += ["-i", "desktop"]
+    elif args.mode == "monitor":
+        mons = get_monitors()
+        if args.monitor_index < 0 or args.monitor_index >= len(mons):
+            print(f"[SOTS_CAPTURE] ERROR: monitor-index {args.monitor_index} out of range (0..{len(mons)-1})")
+            print("[SOTS_CAPTURE] Tip: run with --list-monitors")
+            return 3
+        m = mons[args.monitor_index]
+        cmd += [
+            "-offset_x",
+            str(m.left),
+            "-offset_y",
+            str(m.top),
+            "-video_size",
+            f"{m.width}x{m.height}",
+            "-i",
+            "desktop",
+        ]
+    elif args.mode == "window":
+        if not args.window_title.strip():
+            print('[SOTS_CAPTURE] ERROR: --window-title is required for --mode window')
+            print("[SOTS_CAPTURE] Tip: run:  python sots_capture_ffmpeg.py -help")
+            return 4
+        cmd += ["-i", f"title={args.window_title}"]
+
+    # Optional duration
+    if args.duration and args.duration > 0:
+        cmd += ["-t", str(args.duration)]
+
+    # Optional downscale
+    if vf:
+        cmd += ["-vf", vf]
+
+    # Encoding (no audio)
+    cmd += [
+        "-c:v",
+        "libx264",
+        "-preset",
+        args.preset,
+        "-crf",
+        str(args.crf),
+        "-pix_fmt",
+        str(args.pix_fmt),
+        "-movflags",
+        "+faststart",
+        str(out),
+    ]
+
+    printable = quote_cmd(cmd)
+
+    print(f"[SOTS_CAPTURE] Saving folder: {out.parent}")
+    print(f"[SOTS_CAPTURE] Writing:       {out}")
+    print(f"[SOTS_CAPTURE] Log:           {log_path}")
+    print(f"[SOTS_CAPTURE] Cmd:           {printable}")
+
+    log_path.write_text(printable + "\n", encoding="utf-8")
+
+    proc = subprocess.Popen(cmd)
+    rc = proc.wait()
+    print(f"[SOTS_CAPTURE] ffmpeg exit code: {rc}")
+    return int(rc)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

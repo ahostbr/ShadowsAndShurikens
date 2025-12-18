@@ -79,6 +79,9 @@ For transient boundary tags (projectiles, temporary states, short-lived AI):
 - RemoveLooseTag(handle) removes exactly what was added
 - EndPlay cleanup is a safety backstop
 
+### Canonical APIs
+- `GetActorTags` (Subsystem + TagLibrary) returns the union of owned (interface), TagManager loose tags, and scoped/handle tags; use this for boundary reads.
+
 ---
 
 ## Ownership model: “One writer, many readers”
