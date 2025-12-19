@@ -1,0 +1,17 @@
+# Buddy Worklog — BPGen UE5.7 follow-up compile fixes
+- goal: clear remaining UBT errors (AddFunctionGraph template, Inspector local statics, spawner API drift, missing bridge module headers).
+- what changed:
+  - GraphResolver now calls AddFunctionGraph with explicit UFunction template arg for UE5.7.
+  - Inspector helpers moved to namespace scope; TWeakObjectPtr check replaced with Get() to avoid deleted bool operator.
+  - SpawnerRegistry builds keys using const UFunction*, FieldVariant outer, and VarProperty name instead of removed GetVarName.
+  - Added stub bridge server + module headers/impl so ControlCenter compiles (basic no-op server info/recent requests).
+- files changed:
+  - Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenGraphResolver.cpp
+  - Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenInspector.cpp
+  - Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenSpawnerRegistry.cpp
+  - Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGen_BridgeModule.cpp
+  - Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGen_BridgeModule.h
+  - Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Public/SOTS_BPGenBridgeServer.h
+- notes/risks/unknowns: Bridge server is a stub (no real behavior); replace with real implementation when available. Spawner key formatting assumes VarProperty present; otherwise key empty. No build/run yet.
+- verification status: not built or run.
+- follow-ups / next steps: rerun UBT; if bridge functionality is needed, wire to real server module; confirm inspector outputs remain stable after helper refactor.

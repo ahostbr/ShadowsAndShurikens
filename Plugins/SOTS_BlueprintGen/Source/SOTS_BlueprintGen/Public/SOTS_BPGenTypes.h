@@ -435,6 +435,10 @@ struct FSOTS_BPGenGraphEditResult
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	bool bSuccess = false;
 
+	/** JSON: "error_message" (output). Primary error message when failing. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString ErrorMessage;
+
 	/** JSON: "blueprint_path" (output). Blueprint asset path. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	FString BlueprintPath;
@@ -566,6 +570,22 @@ USTRUCT(BlueprintType)
 struct FSOTS_BPGenCanonicalizeResult
 {
 	GENERATED_BODY()
+
+	/** JSON: "b_success" (output). Canonicalization currently always succeeds; included for envelope parity. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec", meta = (JsonKey = "b_success"))
+	bool bSuccess = true;
+
+	/** JSON: "error_message" (output). Populated if canonicalization fails. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec", meta = (JsonKey = "error_message"))
+	FString ErrorMessage;
+
+	/** JSON: "errors" (output). Non-empty only on failure. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec", meta = (JsonKey = "errors"))
+	TArray<FString> Errors;
+
+	/** JSON: "warnings" (output). Non-fatal warnings emitted during canonicalization. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec", meta = (JsonKey = "warnings"))
+	TArray<FString> Warnings;
 
 	/** JSON: "canonical_spec" (output). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec", meta = (JsonKey = "canonical_spec"))
@@ -774,6 +794,18 @@ struct FSOTS_BPGenAssetResult
 	/** JSON: "Message" (output only). Human-readable info or error text. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	FString Message;
+
+	/** JSON: "ErrorMessage" (output only). Primary error text on failure. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString ErrorMessage;
+
+	/** JSON: "Errors" (output only). Detailed errors, if any. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Errors;
+
+	/** JSON: "Warnings" (output only). Non-fatal warnings. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Warnings;
 };
 
 /**
@@ -868,6 +900,10 @@ struct FSOTS_BPGenApplyResult
 	/** JSON: "ErrorCode" (output only). Structured error code when available. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	FString ErrorCode;
+
+	/** JSON: "errors" (output only, array). Error messages encountered during apply. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Errors;
 
 	/** JSON: "error_codes" (output only, array). Non-fatal error codes during apply. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")

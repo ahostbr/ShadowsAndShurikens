@@ -16,6 +16,8 @@ public class SOTS_BlueprintGen : ModuleRules
                 "Kismet",
                 "BlueprintGraph",
                 "KismetCompiler",
+                "UMG",
+                "UMGEditor",
                 "GameplayTags",
                 "GameplayTagsEditor",
                 "AssetTools",

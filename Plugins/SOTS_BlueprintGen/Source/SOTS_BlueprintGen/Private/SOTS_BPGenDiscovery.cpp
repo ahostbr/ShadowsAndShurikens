@@ -6,9 +6,11 @@
 #include "BlueprintVariableNodeSpawner.h"
 #include "BlueprintNodeBinder.h"
 #include "EdGraph/EdGraph.h"
-#include "EdGraph/EdGraphSchema_K2.h"
+#include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 
 namespace
 {
@@ -52,7 +54,7 @@ namespace
 		}
 
 		UEdGraph* TempGraph = NewObject<UEdGraph>(GetTransientPackage(), TEXT("BPGenDiscoveryTempGraph"));
-		TempGraph->Schema = GetDefault<UEdGraphSchema_K2>();
+		TempGraph->Schema = UEdGraphSchema_K2::StaticClass();
 
 		UEdGraphNode* NewNode = Spawner->Invoke(TempGraph, IBlueprintNodeBinder::FBindingSet(), FVector2D::ZeroVector);
 		if (!NewNode)
@@ -76,7 +78,7 @@ namespace
 			return;
 		}
 
-		const FBlueprintActionUiSpec UiSpec = Spawner->GetDefaultMenuSignature();
+		const FBlueprintActionUiSpec UiSpec = Spawner->PrimeDefaultUiSpec();
 		OutDesc.DisplayName = UiSpec.MenuName.ToString();
 		OutDesc.Category = UiSpec.Category.ToString();
 		OutDesc.Tooltip = UiSpec.Tooltip.ToString();
@@ -100,7 +102,7 @@ namespace
 			return;
 		}
 
-		if (UFunction* Function = FunctionSpawner->GetFunction())
+		if (const UFunction* Function = FunctionSpawner->GetFunction())
 		{
 			OutDesc.FunctionPath = Function->GetPathName();
 			OutDesc.SpawnerKey = OutDesc.FunctionPath;
@@ -117,12 +119,21 @@ namespace
 			return;
 		}
 
-		OutDesc.VariableName = VarSpawner->GetVarName();
-		OutDesc.NodeType = VarSpawner->IsPropertySetter() ? TEXT("variable_set") : TEXT("variable_get");
+		OutDesc.NodeType = VarSpawner->NodeClass && VarSpawner->NodeClass->IsChildOf<UK2Node_VariableSet>()
+			? TEXT("variable_set")
+			: TEXT("variable_get");
 
-		if (UStruct* OwnerStruct = VarSpawner->GetVarOuter())
+		if (const FProperty* VarProperty = VarSpawner->GetVarProperty())
 		{
-			OutDesc.VariableOwnerClassPath = OwnerStruct->GetPathName();
+			OutDesc.VariableName = VarProperty->GetFName();
+		}
+
+		if (const FFieldVariant OwnerVariant = VarSpawner->GetVarOuter())
+		{
+			if (const UStruct* OwnerStruct = Cast<UStruct>(OwnerVariant.ToUObject()))
+			{
+				OutDesc.VariableOwnerClassPath = OwnerStruct->GetPathName();
+			}
 		}
 
 		if (!OutDesc.VariableOwnerClassPath.IsEmpty())
@@ -130,15 +141,18 @@ namespace
 			OutDesc.SpawnerKey = FString::Printf(TEXT("%s:%s"), *OutDesc.VariableOwnerClassPath, *OutDesc.VariableName.ToString());
 		}
 
-		if (FProperty* VarProperty = VarSpawner->GetVarProperty())
+		if (const FProperty* VarProperty = VarSpawner->GetVarProperty())
 		{
 			FEdGraphPinType PinType;
-			if (UEdGraphSchema_K2::ConvertPropertyToPinType(VarProperty, PinType))
+			if (const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>())
 			{
-				OutDesc.VariablePinCategory = PinType.PinCategory.ToString();
-				OutDesc.VariablePinSubCategory = PinType.PinSubCategory.ToString();
-				OutDesc.VariablePinSubObjectPath = PinType.PinSubCategoryObject.IsValid() ? PinType.PinSubCategoryObject->GetPathName() : FString();
-				OutDesc.VariablePinContainerType = ContainerTypeToString(PinType);
+				if (Schema->ConvertPropertyToPinType(VarProperty, PinType))
+				{
+					OutDesc.VariablePinCategory = PinType.PinCategory.ToString();
+					OutDesc.VariablePinSubCategory = PinType.PinSubCategory.ToString();
+					OutDesc.VariablePinSubObjectPath = PinType.PinSubCategoryObject.IsValid() ? PinType.PinSubCategoryObject->GetPathName() : FString();
+					OutDesc.VariablePinContainerType = ContainerTypeToString(PinType);
+				}
 			}
 		}
 	}

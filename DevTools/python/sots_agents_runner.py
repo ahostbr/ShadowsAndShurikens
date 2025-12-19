@@ -98,7 +98,16 @@ def setup_logging(repo_root: Path, name: str = "sots_agents_runner", *, mcp_mode
         fh.setFormatter(fmt)
         logger.addHandler(fh)
     except Exception:
-        # if we can’t write logs, stderr is still fine
+        # if we can't write logs, stderr is still fine
+        pass
+
+    try:
+        py_log_dir = repo_root / "DevTools" / "python" / "logs"
+        py_log_dir.mkdir(parents=True, exist_ok=True)
+        fh_py = logging.FileHandler(py_log_dir / f"{name}.log", encoding="utf-8")
+        fh_py.setFormatter(fmt)
+        logger.addHandler(fh_py)
+    except Exception:
         pass
 
     if not mcp_mode:
@@ -445,6 +454,90 @@ class SOTSAgentsOrchestrator:
             "header": header or "",
             "output": out,
             "errors": errors,
+        }
+
+
+# -----------------------------
+# Library entrypoint for MCP tool calls
+# -----------------------------
+
+def sots_agents_run_task(payload: Dict[str, Any]) -> Dict[str, Any]:
+    payload = payload or {}
+    repo_root = resolve_repo_root(payload.get("repo"))
+    logger = setup_logging(repo_root, name="sots_agents_runner", mcp_mode=True)
+
+    api_key = os.getenv("OPENAI_API_KEY") or ""
+    if not api_key:
+        return {
+            "ok": False,
+            "output_text": "",
+            "error": "OPENAI_API_KEY is missing",
+            "meta": {"repo_root": str(repo_root)},
+        }
+
+    prompt = str(payload.get("prompt", "")).strip()
+    if not prompt:
+        return {"ok": False, "output_text": "", "error": "prompt is empty", "meta": {"repo_root": str(repo_root)}}
+
+    system = str(payload.get("system") or "")
+    model_override = str(payload.get("model") or "")
+    reasoning_effort = str(payload.get("reasoning_effort") or "high")
+    mode = str(payload.get("mode") or "plan")
+    lane = payload.get("lane")
+    session_id = str(payload.get("session_id") or "sots_mcp_inline")
+    session_db = payload.get("session_db") or "sots_agents_sessions.db"
+    laws_file_raw = payload.get("laws_file")
+    laws_file = Path(laws_file_raw).expanduser() if laws_file_raw else None
+    session_db_path = Path(session_db)
+    if not session_db_path.is_absolute():
+        session_db_path = repo_root / session_db_path
+
+    cfg = RunConfig(
+        repo_root=repo_root,
+        mode=mode,
+        session_id=session_id,
+        session_db_path=session_db_path,
+        laws_file=laws_file if laws_file and laws_file.exists() else None,
+        enable_subprocess=False,
+        allow_apply=False,
+    )
+
+    try:
+        orch = SOTSAgentsOrchestrator(cfg, logger=logger)
+        if model_override:
+            for ag in orch.agents.values():
+                ag.model = model_override
+        prompt_final = prompt if not system else f"{system.strip()}\n\n{prompt}"
+        res = orch.run_one(prompt_final, mode_override=mode, lane_override=lane)
+        error_text = None
+        if not res.get("ok") and res.get("errors"):
+            error_text = "; ".join(res.get("errors"))
+        meta = {
+            "mode": res.get("mode") or mode,
+            "lane": res.get("lane") or lane,
+            "session_id": session_id,
+            "model": model_override,
+            "reasoning_effort": reasoning_effort,
+        }
+        return {
+            "ok": bool(res.get("ok")),
+            "output_text": res.get("output", ""),
+            "error": error_text,
+            "meta": meta,
+        }
+    except Exception as exc:
+        logger.exception("sots_agents_run_task failed")
+        return {
+            "ok": False,
+            "output_text": "",
+            "error": str(exc),
+            "meta": {
+                "mode": mode,
+                "lane": lane,
+                "session_id": session_id,
+                "model": model_override,
+                "reasoning_effort": reasoning_effort,
+            },
         }
 
 

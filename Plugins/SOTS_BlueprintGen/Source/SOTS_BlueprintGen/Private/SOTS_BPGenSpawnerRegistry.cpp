@@ -23,7 +23,7 @@ namespace
 
 		if (UBlueprintFunctionNodeSpawner* FuncSpawner = Cast<UBlueprintFunctionNodeSpawner>(Spawner))
 		{
-			if (UFunction* Function = FuncSpawner->GetFunction())
+			if (const UFunction* Function = FuncSpawner->GetFunction())
 			{
 				return Function->GetPathName();
 			}
@@ -32,14 +32,20 @@ namespace
 		if (UBlueprintVariableNodeSpawner* VarSpawner = Cast<UBlueprintVariableNodeSpawner>(Spawner))
 		{
 			FString OwnerPath;
-			if (UStruct* OwnerStruct = VarSpawner->GetVarOuter())
+			if (const FFieldVariant OwnerVariant = VarSpawner->GetVarOuter())
 			{
-				OwnerPath = OwnerStruct->GetPathName();
+				if (const UStruct* OwnerStruct = Cast<UStruct>(OwnerVariant.ToUObject()))
+				{
+					OwnerPath = OwnerStruct->GetPathName();
+				}
 			}
 
-			if (!OwnerPath.IsEmpty())
+			const FProperty* VarProperty = VarSpawner->GetVarProperty();
+			const FString VarNameStr = VarProperty ? VarProperty->GetName() : FString();
+
+			if (!OwnerPath.IsEmpty() && !VarNameStr.IsEmpty())
 			{
-				return FString::Printf(TEXT("%s:%s"), *OwnerPath, *VarSpawner->GetVarName().ToString());
+				return FString::Printf(TEXT("%s:%s"), *OwnerPath, *VarNameStr);
 			}
 		}
 

@@ -16,7 +16,7 @@ namespace
         return USOTS_InventoryBridgeSubsystem::Get(WorldContextObject);
     }
 
-    UObject* ResolveUIRouter(const UObject* WorldContextObject)
+    UObject* FacadeResolveUIRouter(const UObject* WorldContextObject)
     {
         if (!WorldContextObject)
         {
@@ -41,7 +41,7 @@ namespace
         return nullptr;
     }
 
-    void CallRouterNoParams(UObject* Router, const FName FuncName)
+    void FacadeCallRouterNoParams(UObject* Router, const FName FuncName)
     {
         if (!Router)
         {
@@ -55,7 +55,7 @@ namespace
     }
 
     template <typename ParamsType>
-    void CallRouterWithParams(UObject* Router, const FName FuncName, ParamsType& Params)
+    void FacadeCallRouterWithParams(UObject* Router, const FName FuncName, ParamsType& Params)
     {
         if (!Router)
         {
@@ -282,39 +282,39 @@ bool USOTS_InventoryFacadeLibrary::ToggleInventoryUI_WithReport(const UObject* W
 
 void USOTS_InventoryFacadeLibrary::RequestOpenInventoryUI(const UObject* WorldContextObject)
 {
-    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        CallRouterNoParams(Router, TEXT("RequestInvSP_OpenInventory"));
+        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_OpenInventory"));
     }
 }
 
 void USOTS_InventoryFacadeLibrary::RequestCloseInventoryUI(const UObject* WorldContextObject)
 {
-    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        CallRouterNoParams(Router, TEXT("RequestInvSP_CloseInventory"));
+        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_CloseInventory"));
     }
 }
 
 void USOTS_InventoryFacadeLibrary::RequestToggleInventoryUI(const UObject* WorldContextObject)
 {
-    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        CallRouterNoParams(Router, TEXT("RequestInvSP_ToggleInventory"));
+        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_ToggleInventory"));
     }
 }
 
 void USOTS_InventoryFacadeLibrary::RequestRefreshInventoryUI(const UObject* WorldContextObject)
 {
-    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        CallRouterNoParams(Router, TEXT("RequestInvSP_RefreshInventory"));
+        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_RefreshInventory"));
     }
 }
 
 void USOTS_InventoryFacadeLibrary::RequestSetShortcutMenuVisible(const UObject* WorldContextObject, bool bVisible)
 {
-    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
         struct FSetShortcutMenuVisibleParams
         {
@@ -323,7 +323,7 @@ void USOTS_InventoryFacadeLibrary::RequestSetShortcutMenuVisible(const UObject* 
 
         FSetShortcutMenuVisibleParams Params;
         Params.bVisible = bVisible;
-        CallRouterWithParams(Router, TEXT("RequestInvSP_SetShortcutMenuVisible"), Params);
+        FacadeCallRouterWithParams(Router, TEXT("RequestInvSP_SetShortcutMenuVisible"), Params);
     }
 }
 

@@ -2,7 +2,7 @@
 
 #include "Engine/Blueprint.h"
 #include "EdGraph/EdGraph.h"
-#include "EdGraph/EdGraphSchema_K2.h"
+#include "EdGraphSchema_K2.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "WidgetBlueprint.h"
 
@@ -115,7 +115,7 @@ bool USOTS_BPGenGraphResolver::ResolveFunctionGraph(UBlueprint* Blueprint, const
 		return false;
 	}
 
-	FBlueprintEditorUtils::AddFunctionGraph(Blueprint, NewGraph, /*bIsUserCreated=*/true, nullptr);
+	FBlueprintEditorUtils::AddFunctionGraph<UFunction>(Blueprint, NewGraph, /*bIsUserCreated=*/true, nullptr);
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 	OutGraph = NewGraph;
 	return true;

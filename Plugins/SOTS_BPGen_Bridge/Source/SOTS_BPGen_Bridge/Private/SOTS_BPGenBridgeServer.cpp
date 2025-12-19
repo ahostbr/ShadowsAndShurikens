@@ -10,6 +10,7 @@
 #include "Sockets.h"
 #include "SocketSubsystem.h"
 #include "IPAddress.h"
+#include "Interfaces/IPv4/IPv4Address.h"
 #include "ScopedTransaction.h"
 #include "Async/Async.h"
 #include "HAL/PlatformMisc.h"
@@ -494,6 +495,9 @@ static bool TryParseGraphTarget(const TSharedPtr<FJsonObject>& Params, FSOTS_BPG
 	return true;
 }
 
+static void AddChangeSummaryAlias(const TSharedPtr<FJsonObject>& ResultJson);
+static void AddSpecMigrationAliases(const TSharedPtr<FJsonObject>& ResultJson);
+
 static void BuildRecipeResult(const FSOTS_BPGenGraphSpec& GraphSpec, const FSOTS_BPGenApplyResult& ApplyResult, FSOTS_BPGenBridgeDispatchResult& OutResult)
 {
 	TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
@@ -558,6 +562,7 @@ static void AddSpecMigrationAliases(const TSharedPtr<FJsonObject>& ResultJson)
 
 FSOTS_BPGenBridgeServer::FSOTS_BPGenBridgeServer()
 	: bRunning(false)
+	, bStopping(false)
 {
 }
 
@@ -569,6 +574,7 @@ FSOTS_BPGenBridgeServer::~FSOTS_BPGenBridgeServer()
 bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, int32 InMaxRequestBytes)
 {
 	Stop();
+	bStopping.Store(false);
 
 	BindAddress = InBindAddress;
 	Port = InPort;
@@ -624,6 +630,8 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	if (!SocketSubsystem)
 	{
+		LastStartErrorCode = TEXT("ERR_NO_SOCKET_SUBSYSTEM");
+		LastStartError = TEXT("Socket subsystem unavailable.");
 		return false;
 	}
 
@@ -631,12 +639,16 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	ListenSocket = MakeShareable(RawSocket);
 	if (!ListenSocket.IsValid())
 	{
+		LastStartErrorCode = TEXT("ERR_CREATE_SOCKET_FAILED");
+		LastStartError = TEXT("Failed to create listen socket.");
 		return false;
 	}
 
 	FIPv4Address ParsedAddress;
 	if (!FIPv4Address::Parse(BindAddress, ParsedAddress))
 	{
+		LastStartErrorCode = TEXT("ERR_PARSE_BIND_ADDRESS");
+		LastStartError = FString::Printf(TEXT("Failed to parse bind address: %s"), *BindAddress);
 		Stop();
 		return false;
 	}
@@ -647,6 +659,10 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 
 	if (!ListenSocket->Bind(*ListenAddr) || !ListenSocket->Listen(16))
 	{
+		const ESocketErrors LastErr = SocketSubsystem->GetLastErrorCode();
+		LastStartErrorCode = LexToString(static_cast<int32>(LastErr));
+		LastStartError = FString::Printf(TEXT("Bind/Listen failed for %s:%d (err=%s)"), *BindAddress, Port, *LastStartErrorCode);
+		UE_LOG(LogSOTS_BPGenBridge, Error, TEXT("%s"), *LastStartError);
 		Stop();
 		return false;
 	}
@@ -654,10 +670,13 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	bRunning = true;
 	ServerStartSeconds = FPlatformTime::Seconds();
 	ServerStartUtc = FDateTime::UtcNow();
-	TSharedPtr<FSOTS_BPGenBridgeServer> Self = AsShared();
-	AcceptTask = Async(EAsyncExecution::Thread, [Self]()
+	TWeakPtr<FSOTS_BPGenBridgeServer> WeakSelf = AsWeak();
+	AcceptTask = Async(EAsyncExecution::Thread, [WeakSelf]()
 	{
-		Self->AcceptLoop();
+		if (TSharedPtr<FSOTS_BPGenBridgeServer> Pinned = WeakSelf.Pin())
+		{
+			Pinned->AcceptLoop();
+		}
 	});
 
 	return true;
@@ -665,22 +684,34 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 
 void FSOTS_BPGenBridgeServer::Stop()
 {
+	if (bStopping.Exchange(true))
+	{
+		return;
+	}
+
 	bRunning = false;
+
+	// Move the task so we don't touch shared state while waiting.
+	TFuture<void> LocalAcceptTask = MoveTemp(AcceptTask);
+	AcceptTask = TFuture<void>();
 
 	if (ListenSocket.IsValid())
 	{
 		ListenSocket->Close();
-		ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
-		if (SocketSubsystem)
-		{
-			SocketSubsystem->DestroySocket(ListenSocket.Get());
-		}
-		ListenSocket.Reset();
 	}
 
-	if (AcceptTask.IsValid())
+	if (LocalAcceptTask.IsValid())
 	{
-		AcceptTask.Wait();
+		LocalAcceptTask.Wait();
+	}
+
+	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	TSharedPtr<FSocket> LocalSocket = MoveTemp(ListenSocket);
+	ListenSocket.Reset();
+	if (LocalSocket.IsValid() && SocketSubsystem)
+	{
+		SocketSubsystem->DestroySocket(LocalSocket.Get());
+		LocalSocket.Reset();
 	}
 }
 
@@ -1316,9 +1347,12 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		OutResult.bOk = true;
 		OutResult.Result = ResultObj;
 
-		Async(EAsyncExecution::Thread, [Self = AsShared()]()
+		Async(EAsyncExecution::Thread, [WeakSelf = AsWeak()]
 		{
-			Self->Stop();
+			if (TSharedPtr<FSOTS_BPGenBridgeServer> Self = WeakSelf.Pin())
+			{
+				Self->Stop();
+			}
 		});
 		return;
 	}
@@ -1407,13 +1441,18 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		bool bAtomic = true;
 		bool bStopOnError = true;
 		TArray<TSharedPtr<FJsonValue>> CommandValues;
+		const TArray<TSharedPtr<FJsonValue>>* CommandValuesPtr = nullptr;
 
 		if (Params.IsValid())
 		{
 			Params->TryGetStringField(TEXT("batch_id"), BatchId);
 			Params->TryGetBoolField(TEXT("atomic"), bAtomic);
 			Params->TryGetBoolField(TEXT("stop_on_error"), bStopOnError);
-			Params->TryGetArrayField(TEXT("commands"), CommandValues);
+			const FStringView CommandFieldName(TEXT("commands"));
+			if (Params->TryGetArrayField(CommandFieldName, CommandValuesPtr) && CommandValuesPtr)
+			{
+				CommandValues = *CommandValuesPtr;
+			}
 		}
 
 		if (CommandValues.Num() == 0)
@@ -3092,9 +3131,12 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		ResultObj->SetStringField(TEXT("status"), TEXT("stopping"));
 		OutResult.Result = ResultObj;
 
-		Async(EAsyncExecution::Thread, [Self = AsShared()]
+		Async(EAsyncExecution::Thread, [WeakSelf = AsWeak()]
 		{
-			Self->Stop();
+			if (TSharedPtr<FSOTS_BPGenBridgeServer> Self = WeakSelf.Pin())
+			{
+				Self->Stop();
+			}
 		});
 		return;
 	}

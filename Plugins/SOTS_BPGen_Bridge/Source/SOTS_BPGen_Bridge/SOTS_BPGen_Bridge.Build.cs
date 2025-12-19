@@ -4,7 +4,7 @@ public class SOTS_BPGen_Bridge : ModuleRules
 {
     public SOTS_BPGen_Bridge(ReadOnlyTargetRules Target) : base(Target)
     {
-        Type = ModuleType.Editor;
+        Type = ModuleRules.ModuleType.CPlusPlus;
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 

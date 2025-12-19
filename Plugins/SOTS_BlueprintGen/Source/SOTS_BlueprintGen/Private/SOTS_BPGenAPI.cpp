@@ -168,9 +168,10 @@ FSOTS_BPGenAPIEnvelope ExecuteSingle(const UObject* WorldContextObject, const FS
             AddError(Env, TEXT("Failed to parse graph_spec"));
             return Env;
         }
-        if (TSharedPtr<FJsonObject>* OptionsObj = RootObj->Values.Find(TEXT("options")) ? RootObj->TryGetObjectField(TEXT("options")) : nullptr)
+        const TSharedPtr<FJsonObject>* OptionsObjPtr = nullptr;
+        if (RootObj->TryGetObjectField(TEXT("options"), OptionsObjPtr) && OptionsObjPtr && OptionsObjPtr->IsValid())
         {
-            FJsonObjectConverter::JsonObjectToUStruct(*OptionsObj, &Options, 0, 0);
+            FJsonObjectConverter::JsonObjectToUStruct(OptionsObjPtr->ToSharedRef(), &Options, 0, 0);
         }
         const FSOTS_BPGenCanonicalizeResult Result = USOTS_BPGenBuilder::CanonicalizeGraphSpec(Spec, Options);
         ToResultJson(Result);
@@ -378,10 +379,11 @@ bool USOTS_BPGenAPI::ExecuteBatch(const UObject* WorldContextObject, const FStri
         Obj->TryGetStringField(TEXT("request_id"), RequestId);
 
         FString ParamsJson;
-        if (const TSharedPtr<FJsonObject>* ParamsObj = Obj->Values.Find(TEXT("params")) ? Obj->TryGetObjectField(TEXT("params")) : nullptr)
+        const TSharedPtr<FJsonObject>* ParamsObjPtr = nullptr;
+        if (Obj->TryGetObjectField(TEXT("params"), ParamsObjPtr) && ParamsObjPtr && ParamsObjPtr->IsValid())
         {
             TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ParamsJson);
-            FJsonSerializer::Serialize((*ParamsObj).ToSharedRef(), Writer);
+            FJsonSerializer::Serialize(ParamsObjPtr->ToSharedRef(), Writer);
         }
         else
         {

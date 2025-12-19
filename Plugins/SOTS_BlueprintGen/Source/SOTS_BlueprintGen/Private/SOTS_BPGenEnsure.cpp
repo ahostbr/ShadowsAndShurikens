@@ -6,12 +6,16 @@
 #include "SOTS_BlueprintGen.h"
 
 #include "UObject/Class.h"
+#include "UObject/SavePackage.h"
+#include "UObject/UnrealType.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
-#include "Blueprint/WidgetBlueprint.h"
 #include "Blueprint/WidgetTree.h"
+#include "WidgetBlueprint.h"
+#include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
 #include "Components/PanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/ContentWidget.h"
@@ -19,6 +23,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "ScopedTransaction.h"
+
+class UWidgetBlueprint;
 
 namespace
 {
@@ -237,7 +243,7 @@ namespace
 			return false;
 		}
 
-		const void* OwnerObject = Root;
+		UObject* OwnerObject = Root;
 		void* ValuePtr = Property->ContainerPtrToValuePtr<void>(ContainerPtr);
 		if (!ValuePtr)
 		{
@@ -245,7 +251,7 @@ namespace
 			return false;
 		}
 
-		const TCHAR* ImportResult = Property->ImportText(*PropertyValue, ValuePtr, 0, Cast<UObject>(OwnerObject));
+		const TCHAR* ImportResult = Property->ImportText_Direct(*PropertyValue, ValuePtr, OwnerObject, PPF_None);
 		if (!ImportResult)
 		{
 			OutError = FString::Printf(TEXT("Import failed for property '%s'."), *PropertyPath);
@@ -342,8 +348,17 @@ FSOTS_BPGenEnsureResult USOTS_BPGenEnsure::EnsureFunction(const UObject* WorldCo
 				FlagsToApply |= FUNC_Const;
 			}
 
-			EntryNode->ExtraFlags &= ~FlagMask;
-			EntryNode->ExtraFlags |= FlagsToApply;
+			const int32 MaskedFlagBits = static_cast<int32>(FlagMask);
+			if (FIntProperty* ExtraFlagsProperty = FindFProperty<FIntProperty>(UK2Node_FunctionEntry::StaticClass(), TEXT("ExtraFlags")))
+			{
+				const int32 CurrentFlags = ExtraFlagsProperty->GetPropertyValue_InContainer(EntryNode);
+				const int32 NewFlags = (CurrentFlags & ~MaskedFlagBits) | static_cast<int32>(FlagsToApply);
+				ExtraFlagsProperty->SetPropertyValue_InContainer(EntryNode, NewFlags);
+			}
+			else
+			{
+				Result.Warnings.Add(TEXT("FunctionEntry.ExtraFlags property missing; pure/const flags unchanged."));
+			}
 		}
 	}
 
@@ -407,7 +422,7 @@ FSOTS_BPGenWidgetEnsureResult USOTS_BPGenEnsure::EnsureWidgetComponent(const UOb
 
 	if (!WidgetBlueprint->WidgetTree)
 	{
-		WidgetBlueprint->WidgetTree = NewObject<UWidgetTree>(WidgetBlueprint);
+		WidgetBlueprint->WidgetTree = NewObject<UWidgetTree>(WidgetBlueprint, UWidgetTree::StaticClass(), NAME_None, RF_Transactional);
 	}
 
 	UWidgetTree* WidgetTree = WidgetBlueprint->WidgetTree;
@@ -768,13 +783,13 @@ FSOTS_BPGenBindingEnsureResult USOTS_BPGenEnsure::EnsureWidgetBinding(const UObj
 		}
 
 		TArray<FDelegateEditorBinding>& Bindings = WidgetBlueprint->Bindings;
-		const FName ObjectFName(*Request.WidgetName);
+		const FString ObjectNameStr = Request.WidgetName;
 		const FName PropertyFName(*Request.PropertyName);
 		const FName FunctionFName(*Request.FunctionName);
 
 		int32 ExistingIndex = Bindings.IndexOfByPredicate([&](const FDelegateEditorBinding& Binding)
 		{
-			return Binding.ObjectName == ObjectFName && Binding.PropertyName == PropertyFName;
+			return Binding.ObjectName == ObjectNameStr && Binding.PropertyName == PropertyFName;
 		});
 
 		if (ExistingIndex != INDEX_NONE)
@@ -799,7 +814,7 @@ FSOTS_BPGenBindingEnsureResult USOTS_BPGenEnsure::EnsureWidgetBinding(const UObj
 			}
 
 			FDelegateEditorBinding& NewBinding = Bindings.AddDefaulted_GetRef();
-			NewBinding.ObjectName = ObjectFName;
+			NewBinding.ObjectName = ObjectNameStr;
 			NewBinding.PropertyName = PropertyFName;
 			NewBinding.FunctionName = FunctionFName;
 			Result.bBindingCreated = true;
@@ -931,21 +946,16 @@ FSOTS_BPGenEnsureResult USOTS_BPGenEnsure::EnsureVariable(const UObject* WorldCo
 	}
 	else
 	{
-		if (!FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, VarFName, PinType))
-		{
-			Result.ErrorCode = ErrorTypeInvalid;
-			Result.ErrorMessage = FString::Printf(TEXT("Failed to update variable '%s' type."), *VarName);
-			return Result;
-		}
+		FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, VarFName, PinType);
 
 		if (!DefaultValue.IsEmpty())
 		{
-			FBlueprintEditorUtils::SetBlueprintVariableMetaData(Blueprint, VarFName, nullptr, FBlueprintMetadata::MD_DefaultValue, *DefaultValue);
+			FBlueprintEditorUtils::SetBlueprintVariableMetaData(Blueprint, VarFName, nullptr, TEXT("DefaultValue"), *DefaultValue);
 		}
 	}
 
-	FBlueprintEditorUtils::SetBlueprintVariableMetaData(Blueprint, VarFName, nullptr, FBlueprintMetadata::MD_ExposeOnSpawn, bExposeOnSpawn ? TEXT("true") : TEXT("false"));
-	FBlueprintEditorUtils::SetBlueprintVariableMetaData(Blueprint, VarFName, nullptr, FBlueprintMetadata::MD_EditInline, bInstanceEditable ? TEXT("true") : TEXT("false"));
+	FBlueprintEditorUtils::SetBlueprintVariableMetaData(Blueprint, VarFName, nullptr, TEXT("ExposeOnSpawn"), bExposeOnSpawn ? TEXT("true") : TEXT("false"));
+	FBlueprintEditorUtils::SetBlueprintVariableMetaData(Blueprint, VarFName, nullptr, TEXT("EditInline"), bInstanceEditable ? TEXT("true") : TEXT("false"));
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 	FKismetEditorUtilities::CompileBlueprint(Blueprint);

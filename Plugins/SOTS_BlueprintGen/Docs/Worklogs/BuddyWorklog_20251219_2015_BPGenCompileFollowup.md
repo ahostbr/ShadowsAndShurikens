@@ -1,0 +1,11 @@
+# Buddy Worklog — BPGen compile follow-up
+- goal: address new BPGen compile errors from 13:22 log (WidgetBlueprint include, discovery API changes, missing spawn helper, NodeCommentColor removal).
+- what changed:
+  - added UMG/UMGEditor deps to Build.cs to satisfy WidgetBlueprint use in ensure code.
+  - updated discovery helpers for UE5.7 API (PrimeDefaultUiSpec, schema class assignment, var spawner accessors, pin type conversion, K2 variable node includes).
+  - removed deprecated NodeCommentColor usage in debug annotations.
+  - implemented missing SpawnFunctionEntryNode/SpawnFunctionResultNode helpers via graph node creator.
+- files changed: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/SOTS_BlueprintGen.Build.cs; Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenDiscovery.cpp; Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenDebug.cpp; Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenBuilder.cpp.
+- notes/risks/unknowns: not built yet; further UE5.7 API gaps may appear on next UBT (e.g., widget ensure path, additional schema/helpers). No binaries/Intermediate cleanup this pass.
+- verification status: not built or run.
+- follow-ups/next steps: rerun UBT; capture any remaining errors; if UMG modules pull in new dependencies, update .uplugin as needed; clean BPGen Binaries/Intermediate if regenerated.

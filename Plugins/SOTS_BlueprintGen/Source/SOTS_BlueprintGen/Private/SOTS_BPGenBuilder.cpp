@@ -24,14 +24,19 @@
 #include "Interfaces/IPluginManager.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_DynamicCast.h"
+#include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
+#include "K2Node_Knot.h"
+#include "K2Node_Select.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/StructureEditorUtils.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "HAL/IConsoleManager.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "UObject/SavePackage.h"
@@ -49,9 +54,87 @@ static void ApplyGraphLinks(UBlueprint* Blueprint, UEdGraph* Graph, const FSOTS_
 static FString GetBPGenNodeId(const UEdGraphNode* Node);
 static void SetBPGenNodeId(UEdGraphNode* Node, const FString& NodeId);
 static FString NormalizeTargetType(const FString& InType);
+static void EnsureBlueprintNodeModulesLoaded();
+static bool ResolveGraphForApply(const FSOTS_BPGenGraphTarget& Target, UBlueprint*& OutBlueprint, UEdGraph*& OutGraph, FSOTS_BPGenApplyResult& Result);
+static void EnsureBlueprintVariableFromNodeSpec(UBlueprint* Blueprint, const FSOTS_BPGenGraphNode& NodeSpec);
+static UK2Node_FunctionEntry* SpawnFunctionEntryNode(UEdGraph* Graph, const FVector2D& Position);
+static UK2Node_FunctionResult* SpawnFunctionResultNode(UEdGraph* Graph, const FVector2D& Position);
+static void AddNodeToMap(TMap<FString, UEdGraphNode*>& NodeMap, const FString& Key, UEdGraphNode* Node);
+static void ApplyExtraPinDefaults(UEdGraphNode* Node, const FSOTS_BPGenGraphNode& NodeSpec);
+static UEdGraphNode* SpawnKnotNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec);
+static UEdGraphNode* SpawnSelectNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec);
+static UEdGraphNode* SpawnDynamicCastNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec);
+static bool SaveBlueprint(UBlueprint* Blueprint);
+static FSOTS_BPGenPin BuildPinDefFromNodeSpec(const FSOTS_BPGenGraphNode& NodeSpec);
+static bool FillPinTypeFromBPGen(const FSOTS_BPGenPin& PinDef, FEdGraphPinType& OutPinType);
+static void TryAssignDefaultObject(UEdGraphPin* Pin, const FString& DefaultValue);
+static ESOTS_BPGenContainerType ParseContainerType(const FString& InValue);
+static const TCHAR* GetPinDirectionText(EEdGraphPinDirection Direction);
+static FString ResolvePinCategoryString(const FName& Category);
+static void AddErrorCode(FSOTS_BPGenApplyResult& Result, const FString& Code);
+static bool ValidateLinkPins(const FSOTS_BPGenGraphLink& LinkSpec, UEdGraphPin* FromPin, UEdGraphPin* ToPin, FSOTS_BPGenApplyResult& Result);
+static UEdGraph* FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName);
+static UScriptStruct* LoadStructFromPath(const FString& TypePath);
+static FString GetNormalizedPackageName(const FString& InAssetPath);
+static FName GetSafeObjectName(const FName& ProvidedName, const FString& PackageName);
 
 static const int32 GSpecCurrentVersion = 1;
 static const FString GSpecCurrentSchema(TEXT("SOTS_BPGen_GraphSpec"));
+
+static TAutoConsoleVariable<int32> CVarSOTS_BPGenAllowMakeLinkFallback(
+	TEXT("sots.bpgen.allow_make_link_fallback"),
+	1,
+	TEXT("Enable legacy MakeLinkTo fallback when schema-based connection fails."),
+	ECVF_Default);
+
+static void EnsureBlueprintNodeModulesLoaded()
+{
+	// Ensure editor-only Blueprint graph modules are loaded before spawning nodes by class.
+	FModuleManager::LoadModuleChecked<FBlueprintGraphModule>(TEXT("BlueprintGraph"));
+}
+
+static void AddNodeToMap(TMap<FString, UEdGraphNode*>& NodeMap, const FString& Key, UEdGraphNode* Node)
+{
+	if (!Node || Key.IsEmpty())
+	{
+		return;
+	}
+
+	if (!NodeMap.Contains(Key))
+	{
+		NodeMap.Add(Key, Node);
+	}
+}
+
+static UK2Node_FunctionEntry* SpawnFunctionEntryNode(UEdGraph* Graph, const FVector2D& Position)
+{
+	if (!Graph)
+	{
+		return nullptr;
+	}
+
+	FGraphNodeCreator<UK2Node_FunctionEntry> Creator(*Graph);
+	UK2Node_FunctionEntry* Node = Creator.CreateNode(false);
+	Node->NodePosX = static_cast<int32>(Position.X);
+	Node->NodePosY = static_cast<int32>(Position.Y);
+	Creator.Finalize();
+	return Node;
+}
+
+static UK2Node_FunctionResult* SpawnFunctionResultNode(UEdGraph* Graph, const FVector2D& Position)
+{
+	if (!Graph)
+	{
+		return nullptr;
+	}
+
+	FGraphNodeCreator<UK2Node_FunctionResult> Creator(*Graph);
+	UK2Node_FunctionResult* Node = Creator.CreateNode(false);
+	Node->NodePosX = static_cast<int32>(Position.X);
+	Node->NodePosY = static_cast<int32>(Position.Y);
+	Creator.Finalize();
+	return Node;
+}
 
 enum class EBPGenRepairMode : uint8
 {
@@ -214,6 +297,125 @@ static FString MakeDeterministicNodeId(const FSOTS_BPGenGraphNode& NodeSpec, int
 
 	const FString Safe = SanitizeIdSegment(Base);
 	return FString::Printf(TEXT("auto_%s_%d"), *Safe, Index);
+}
+
+static ESOTS_BPGenContainerType ParseContainerType(const FString& InValue)
+{
+	const FString Lower = InValue.ToLower();
+	if (Lower == TEXT("array"))
+	{
+		return ESOTS_BPGenContainerType::Array;
+	}
+	if (Lower == TEXT("set"))
+	{
+		return ESOTS_BPGenContainerType::Set;
+	}
+	if (Lower == TEXT("map"))
+	{
+		return ESOTS_BPGenContainerType::Map;
+	}
+	return ESOTS_BPGenContainerType::None;
+}
+
+static FSOTS_BPGenPin BuildPinDefFromNodeSpec(const FSOTS_BPGenGraphNode& NodeSpec)
+{
+	FSOTS_BPGenPin Pin;
+	Pin.Name = NodeSpec.VariableName;
+
+	for (const TPair<FName, FString>& Pair : NodeSpec.ExtraData)
+	{
+		const FString Key = Pair.Key.ToString();
+		if (Key.Equals(TEXT("PinCategory"), ESearchCase::IgnoreCase))
+		{
+			Pin.Category = FName(*Pair.Value);
+		}
+		else if (Key.Equals(TEXT("PinSubCategory"), ESearchCase::IgnoreCase))
+		{
+			Pin.SubCategory = FName(*Pair.Value);
+		}
+		else if (Key.Equals(TEXT("SubObjectPath"), ESearchCase::IgnoreCase))
+		{
+			Pin.SubObjectPath = Pair.Value;
+		}
+		else if (Key.Equals(TEXT("ContainerType"), ESearchCase::IgnoreCase))
+		{
+			Pin.ContainerType = ParseContainerType(Pair.Value);
+		}
+		else if (Key.Equals(TEXT("DefaultValue"), ESearchCase::IgnoreCase))
+		{
+			Pin.DefaultValue = Pair.Value;
+		}
+	}
+
+	return Pin;
+}
+
+static void TryAssignDefaultObject(UEdGraphPin* Pin, const FString& DefaultValue)
+{
+	if (!Pin || DefaultValue.IsEmpty())
+	{
+		return;
+	}
+
+	const bool bIsObjectPin = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Class;
+	if (!bIsObjectPin)
+	{
+		return;
+	}
+
+	if (UObject* LoadedObj = StaticLoadObject(UObject::StaticClass(), nullptr, *DefaultValue))
+	{
+		Pin->DefaultObject = LoadedObj;
+	}
+}
+
+static bool FillPinTypeFromBPGen(const FSOTS_BPGenPin& PinDef, FEdGraphPinType& OutPinType)
+{
+	OutPinType = FEdGraphPinType();
+
+	if (PinDef.Category.IsNone())
+	{
+		return false;
+	}
+
+	OutPinType.PinCategory = PinDef.Category;
+	OutPinType.PinSubCategory = PinDef.SubCategory;
+
+	switch (PinDef.ContainerType)
+	{
+	case ESOTS_BPGenContainerType::Array:
+		OutPinType.ContainerType = EPinContainerType::Array;
+		break;
+	case ESOTS_BPGenContainerType::Set:
+		OutPinType.ContainerType = EPinContainerType::Set;
+		break;
+	case ESOTS_BPGenContainerType::Map:
+		OutPinType.ContainerType = EPinContainerType::Map;
+		break;
+	default:
+		OutPinType.ContainerType = EPinContainerType::None;
+		break;
+	}
+
+	if (!PinDef.SubObjectPath.IsEmpty())
+	{
+		if (UObject* Loaded = StaticLoadObject(UObject::StaticClass(), nullptr, *PinDef.SubObjectPath))
+		{
+			OutPinType.PinSubCategoryObject = Loaded;
+		}
+	}
+
+	return true;
+}
+
+static const TCHAR* GetPinDirectionText(EEdGraphPinDirection Direction)
+{
+	return Direction == EGPD_Input ? TEXT("Input") : TEXT("Output");
+}
+
+static FString ResolvePinCategoryString(const FName& Category)
+{
+	return Category.IsNone() ? FString() : Category.ToString();
 }
 
 static bool LoadJsonArrayFile(const FString& FilePath, TArray<TSharedPtr<FJsonValue>>& OutValues, FString& OutError)
@@ -1159,53 +1361,69 @@ FSOTS_BPGenCanonicalizeResult USOTS_BPGenBuilder::CanonicalizeGraphSpec(const FS
 	CanonicalizeGraphSpecInternal(Result.CanonicalSpec, Options, Result.DiffNotes, Result.MigrationNotes, Result.bSpecMigrated);
 	return Result;
 }
-		if (bVariableExists)
-		{
-			UE_LOG(LogSOTS_BlueprintGen, Display,
-				TEXT("EnsureBlueprintVariableFromNodeSpec: Variable '%s' already exists on blueprint '%s'."),
-				*NodeSpec.VariableName.ToString(), *Blueprint->GetPathName());
-			return;
-		}
 
-		const FSOTS_BPGenPin PinDef = BuildPinDefFromNodeSpec(NodeSpec);
-		if (PinDef.Category.IsNone())
-		{
-			UE_LOG(LogSOTS_BlueprintGen, Warning,
-				TEXT("EnsureBlueprintVariableFromNodeSpec: Node '%s' does not specify a PinCategory."),
-				*NodeSpec.Id);
-			return;
-		}
-
-		FEdGraphPinType PinType;
-		if (!FillPinTypeFromBPGen(PinDef, PinType))
-		{
-			UE_LOG(LogSOTS_BlueprintGen, Warning,
-				TEXT("EnsureBlueprintVariableFromNodeSpec: Failed to build pin type for variable '%s'."),
-				*NodeSpec.VariableName.ToString());
-			return;
-		}
-
-		Blueprint->Modify();
-		UE_LOG(LogSOTS_BlueprintGen, Verbose,
-			TEXT("EnsureBlueprintVariableFromNodeSpec: Creating variable '%s' (Category=%s, Default='%s')."),
-			*NodeSpec.VariableName.ToString(),
-			*PinDef.Category.ToString(),
-			*PinDef.DefaultValue);
-
-		if (!FBlueprintEditorUtils::AddMemberVariable(Blueprint, NodeSpec.VariableName, PinType, PinDef.DefaultValue))
-		{
-			UE_LOG(LogSOTS_BlueprintGen, Warning,
-				TEXT("EnsureBlueprintVariableFromNodeSpec: Could not add variable '%s' to blueprint '%s'."),
-				*NodeSpec.VariableName.ToString(), *Blueprint->GetPathName());
-		}
-		else
-		{
-			UE_LOG(LogSOTS_BlueprintGen, Display,
-				TEXT("EnsureBlueprintVariableFromNodeSpec: Created variable '%s' (Category=%s, Default='%s') on blueprint '%s'."),
-				*NodeSpec.VariableName.ToString(), *ResolvePinCategoryString(PinDef.Category), *PinDef.DefaultValue,
-				*Blueprint->GetPathName());
-		}
+static void EnsureBlueprintVariableFromNodeSpec(UBlueprint* Blueprint, const FSOTS_BPGenGraphNode& NodeSpec)
+{
+	if (!Blueprint)
+	{
+		return;
 	}
+
+	if (NodeSpec.VariableName.IsNone())
+	{
+		return;
+	}
+
+	// Bail out if the variable already exists.
+	const int32 ExistingIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NodeSpec.VariableName);
+	const bool bVariableExists = ExistingIndex != INDEX_NONE;
+	if (bVariableExists)
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Display,
+			TEXT("EnsureBlueprintVariableFromNodeSpec: Variable '%s' already exists on blueprint '%s'."),
+			*NodeSpec.VariableName.ToString(), *Blueprint->GetPathName());
+		return;
+	}
+
+	const FSOTS_BPGenPin PinDef = BuildPinDefFromNodeSpec(NodeSpec);
+	if (PinDef.Category.IsNone())
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Warning,
+			TEXT("EnsureBlueprintVariableFromNodeSpec: Node '%s' does not specify a PinCategory."),
+			*NodeSpec.Id);
+		return;
+	}
+
+	FEdGraphPinType PinType;
+	if (!FillPinTypeFromBPGen(PinDef, PinType))
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Warning,
+			TEXT("EnsureBlueprintVariableFromNodeSpec: Failed to build pin type for variable '%s'."),
+			*NodeSpec.VariableName.ToString());
+		return;
+	}
+
+	Blueprint->Modify();
+	UE_LOG(LogSOTS_BlueprintGen, Verbose,
+		TEXT("EnsureBlueprintVariableFromNodeSpec: Creating variable '%s' (Category=%s, Default='%s')."),
+		*NodeSpec.VariableName.ToString(),
+		*PinDef.Category.ToString(),
+		*PinDef.DefaultValue);
+
+	if (!FBlueprintEditorUtils::AddMemberVariable(Blueprint, NodeSpec.VariableName, PinType, PinDef.DefaultValue))
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Warning,
+			TEXT("EnsureBlueprintVariableFromNodeSpec: Could not add variable '%s' to blueprint '%s'."),
+			*NodeSpec.VariableName.ToString(), *Blueprint->GetPathName());
+	}
+	else
+	{
+		UE_LOG(LogSOTS_BlueprintGen, Display,
+			TEXT("EnsureBlueprintVariableFromNodeSpec: Created variable '%s' (Category=%s, Default='%s') on blueprint '%s'."),
+			*NodeSpec.VariableName.ToString(), *ResolvePinCategoryString(PinDef.Category), *PinDef.DefaultValue,
+			*Blueprint->GetPathName());
+	}
+}
 
 	static bool SaveBlueprint(UBlueprint* Blueprint)
 	{
@@ -1284,23 +1502,31 @@ FSOTS_BPGenCanonicalizeResult USOTS_BPGenBuilder::CanonicalizeGraphSpec(const FS
 						continue;
 					}
 
-					if (VarSpawner->IsPropertySetter() != bWantSetter)
+					const bool bIsSetter = VarSpawner->GetClass()->IsChildOf(UK2Node_VariableSet::StaticClass());
+					if (bIsSetter != bWantSetter)
 					{
 						continue;
 					}
 
-					UStruct* OwnerStruct = VarSpawner->GetVarOuter();
+					const FProperty* VarProperty = VarSpawner->GetVarProperty();
+					UStruct* OwnerStruct = VarProperty ? VarProperty->GetOwnerStruct() : nullptr;
 					if (!OwnerStruct)
 					{
 						continue;
 					}
 
-					const FString Key = FString::Printf(TEXT("%s:%s"), *OwnerStruct->GetPathName(), *VarSpawner->GetVarName().ToString());
+					const FString VarName = VarProperty ? VarProperty->GetName() : FString();
+					if (VarName.IsEmpty())
+					{
+						continue;
+					}
+
+					const FString Key = FString::Printf(TEXT("%s:%s"), *OwnerStruct->GetPathName(), *VarName);
 					if (Key.Equals(NodeSpec.SpawnerKey, ESearchCase::CaseSensitive))
 					{
 						Resolved.SpawnerKey = NodeSpec.SpawnerKey;
 						Resolved.Spawner = VarSpawner;
-						Resolved.DebugName = VarSpawner->GetVarName().ToString();
+						Resolved.DebugName = VarName;
 						Resolved.DebugCategory = TEXT("VariableSpawner");
 						return true;
 					}
@@ -1413,7 +1639,7 @@ FSOTS_BPGenCanonicalizeResult USOTS_BPGenBuilder::CanonicalizeGraphSpec(const FS
 			{
 				UE_LOG(LogSOTS_BlueprintGen, Display, TEXT("  Pin '%s' Dir=%s Cat=%s Container=%s Default='%s'"),
 					*Pin->PinName.ToString(),
-					*GetPinDirectionText(Pin->Direction),
+					GetPinDirectionText(Pin->Direction),
 					*Pin->PinType.PinCategory.ToString(),
 					*UEnum::GetValueAsString(Pin->PinType.ContainerType),
 					*Pin->DefaultValue);
@@ -1936,7 +2162,7 @@ static UEdGraphPin* FindConversionOutputPin(UEdGraphNode* Node, const FAutoFixCo
 				*Link.FromNodeId,
 				*Link.FromPinName.ToString(),
 				*Link.FromNodeId,
-				*GetPinDirectionText(FromPin->Direction));
+				GetPinDirectionText(FromPin->Direction));
 			UE_LOG(LogSOTS_BlueprintGen, Warning, TEXT("%s"), *Message);
 			Result.Warnings.Add(Message);
 			bIsValid = false;
@@ -1949,7 +2175,7 @@ static UEdGraphPin* FindConversionOutputPin(UEdGraphNode* Node, const FAutoFixCo
 				*Link.ToNodeId,
 				*Link.ToPinName.ToString(),
 				*Link.ToNodeId,
-				*GetPinDirectionText(ToPin->Direction));
+				GetPinDirectionText(ToPin->Direction));
 			UE_LOG(LogSOTS_BlueprintGen, Warning, TEXT("%s"), *Message);
 			Result.Warnings.Add(Message);
 			bIsValid = false;
@@ -2640,8 +2866,7 @@ static int32 AddPinsFromSpec(UEdGraphNode* Node, EEdGraphPinDirection Direction,
 			Graph->NotifyGraphChanged();
 		}
 		return AddedCount;
-	}
-}
+		}
 
 static FString GetBPGenNodeId(const UEdGraphNode* Node)
 {
@@ -2697,6 +2922,24 @@ static UEdGraphNode* FindNodeByStableId(UEdGraph* Graph, const FString& NodeId)
 	return nullptr;
 }
 
+static UEdGraph* FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName)
+{
+	if (!Blueprint || FunctionName.IsNone())
+	{
+		return nullptr;
+	}
+
+	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+	{
+		if (Graph && Graph->GetFName() == FunctionName)
+		{
+			return Graph;
+		}
+	}
+
+	return nullptr;
+}
+
 static bool LoadBlueprintAndGraphForEdit(const FString& BlueprintPath, FName FunctionName, UBlueprint*& OutBlueprint, UEdGraph*& OutGraph, TArray<FString>& OutErrors)
 {
 	OutBlueprint = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr, *BlueprintPath));
@@ -2734,7 +2977,15 @@ static UEdGraphNode* FindNodeByBPGenNodeId(UEdGraph* Graph, const FString& NodeI
 	return nullptr;
 }
 
-template <typename TNode>
+static UScriptStruct* LoadStructFromPath(const FString& TypePath)
+{
+	if (TypePath.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	return LoadObject<UScriptStruct>(nullptr, *TypePath);
+}
 
 static UEdGraphNode* SpawnSelectNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec)
 {
@@ -2844,6 +3095,42 @@ static UEdGraphNode* SpawnSelectNode(UEdGraph* Graph, const FSOTS_BPGenGraphNode
 	ApplyExtraPinDefaults(Node, NodeSpec);
 
 	return Node;
+}
+
+static FString GetNormalizedPackageName(const FString& InAssetPath)
+{
+	if (InAssetPath.IsEmpty())
+	{
+		return InAssetPath;
+	}
+
+	if (FPackageName::IsValidObjectPath(InAssetPath))
+	{
+		return FPackageName::ObjectPathToPackageName(InAssetPath);
+	}
+
+	if (FPackageName::IsValidLongPackageName(InAssetPath))
+	{
+		return InAssetPath;
+	}
+
+	FString LongName;
+	if (FPackageName::TryConvertFilenameToLongPackageName(InAssetPath, LongName))
+	{
+		return LongName;
+	}
+
+	return InAssetPath;
+}
+
+static FName GetSafeObjectName(const FName& ProvidedName, const FString& PackageName)
+{
+	if (!ProvidedName.IsNone())
+	{
+		return ProvidedName;
+	}
+
+	return FName(*FPackageName::GetLongPackageAssetName(PackageName));
 }
 
 FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateStructAssetFromDef(

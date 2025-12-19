@@ -12,6 +12,7 @@
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
 
+
 namespace
 {
 	static FString GetBPGenNodeId(const UEdGraphNode* Node)
@@ -30,6 +31,11 @@ namespace
 		return !NodeId.IsEmpty() ? NodeId : Node->NodeGuid.ToString(EGuidFormats::DigitsWithHyphens);
 	}
 
+	static int32 GetPinDirectionOrder(ESOTS_BPGenPinDirection Direction)
+	{
+		return Direction == ESOTS_BPGenPinDirection::Input ? 0 : 1;
+	}
+
 	static FString ContainerTypeToString(EPinContainerType ContainerType)
 	{
 		switch (ContainerType)
@@ -45,6 +51,79 @@ namespace
 		}
 	}
 
+	static void SortPinsStable(TArray<FSOTS_BPGenDiscoveredPinDescriptor>& Pins)
+	{
+		Pins.Sort([](const FSOTS_BPGenDiscoveredPinDescriptor& A, const FSOTS_BPGenDiscoveredPinDescriptor& B)
+		{
+			const int32 DirA = GetPinDirectionOrder(A.Direction);
+			const int32 DirB = GetPinDirectionOrder(B.Direction);
+			if (DirA != DirB)
+			{
+				return DirA < DirB;
+			}
+
+			return A.PinName.LexicalLess(B.PinName);
+		});
+	}
+
+	static void SortLinksStable(TArray<FSOTS_BPGenNodeLink>& Links)
+	{
+		Links.Sort([](const FSOTS_BPGenNodeLink& A, const FSOTS_BPGenNodeLink& B)
+		{
+			int32 Cmp = A.FromNodeId.Compare(B.FromNodeId);
+			if (Cmp != 0)
+			{
+				return Cmp < 0;
+			}
+
+			Cmp = A.FromPinName.Compare(B.FromPinName);
+			if (Cmp != 0)
+			{
+				return Cmp < 0;
+			}
+
+			Cmp = A.ToNodeId.Compare(B.ToNodeId);
+			if (Cmp != 0)
+			{
+				return Cmp < 0;
+			}
+
+			return A.ToPinName.Compare(B.ToPinName) < 0;
+		});
+	}
+
+	static void SortNodeSummariesStable(TArray<FSOTS_BPGenNodeSummary>& Nodes)
+	{
+		Nodes.Sort([](const FSOTS_BPGenNodeSummary& A, const FSOTS_BPGenNodeSummary& B)
+		{
+			const bool bAHasId = !A.NodeId.IsEmpty();
+			const bool bBHasId = !B.NodeId.IsEmpty();
+			if (bAHasId != bBHasId)
+			{
+				return bAHasId; // ids first
+			}
+
+			int32 Cmp = A.NodeId.Compare(B.NodeId);
+			if (Cmp != 0)
+			{
+				return Cmp < 0;
+			}
+
+			Cmp = A.NodeClass.Compare(B.NodeClass);
+			if (Cmp != 0)
+			{
+				return Cmp < 0;
+			}
+
+			if (A.NodePosY != B.NodePosY)
+			{
+				return A.NodePosY < B.NodePosY;
+			}
+
+			return A.NodePosX < B.NodePosX;
+		});
+	}
+
 	static FSOTS_BPGenDiscoveredPinDescriptor MakePinDescriptor(const UEdGraphPin* Pin)
 	{
 		FSOTS_BPGenDiscoveredPinDescriptor Descriptor;
@@ -53,89 +132,14 @@ namespace
 			return Descriptor;
 		}
 
-		static int32 GetPinDirectionOrder(ESOTS_BPGenPinDirection Direction)
-		{
-			return Direction == ESOTS_BPGenPinDirection::Input ? 0 : 1;
-		}
-
-		static void SortPinsStable(TArray<FSOTS_BPGenDiscoveredPinDescriptor>& Pins)
-		{
-			Pins.Sort([](const FSOTS_BPGenDiscoveredPinDescriptor& A, const FSOTS_BPGenDiscoveredPinDescriptor& B)
-			{
-				const int32 DirA = GetPinDirectionOrder(A.Direction);
-				const int32 DirB = GetPinDirectionOrder(B.Direction);
-				if (DirA != DirB)
-				{
-					return DirA < DirB;
-				}
-
-				return A.PinName.LexicalLess(B.PinName);
-			});
-		}
-
-		static void SortLinksStable(TArray<FSOTS_BPGenNodeLink>& Links)
-		{
-			Links.Sort([](const FSOTS_BPGenNodeLink& A, const FSOTS_BPGenNodeLink& B)
-			{
-				int32 Cmp = A.FromNodeId.Compare(B.FromNodeId);
-				if (Cmp != 0)
-				{
-					return Cmp < 0;
-				}
-
-				Cmp = A.FromPinName.Compare(B.FromPinName);
-				if (Cmp != 0)
-				{
-					return Cmp < 0;
-				}
-
-				Cmp = A.ToNodeId.Compare(B.ToNodeId);
-				if (Cmp != 0)
-				{
-					return Cmp < 0;
-				}
-
-				return A.ToPinName.Compare(B.ToPinName) < 0;
-			});
-		}
-
-		static void SortNodeSummariesStable(TArray<FSOTS_BPGenNodeSummary>& Nodes)
-		{
-			Nodes.Sort([](const FSOTS_BPGenNodeSummary& A, const FSOTS_BPGenNodeSummary& B)
-			{
-				const bool bAHasId = !A.NodeId.IsEmpty();
-				const bool bBHasId = !B.NodeId.IsEmpty();
-				if (bAHasId != bBHasId)
-				{
-					return bAHasId; // ids first
-				}
-
-				int32 Cmp = A.NodeId.Compare(B.NodeId);
-				if (Cmp != 0)
-				{
-					return Cmp < 0;
-				}
-
-				Cmp = A.NodeClass.Compare(B.NodeClass);
-				if (Cmp != 0)
-				{
-					return Cmp < 0;
-				}
-
-				if (A.NodePosY != B.NodePosY)
-				{
-					return A.NodePosY < B.NodePosY;
-				}
-
-				return A.NodePosX < B.NodePosX;
-			});
-		}
-
 		Descriptor.PinName = Pin->PinName;
 		Descriptor.Direction = (Pin->Direction == EGPD_Output) ? ESOTS_BPGenPinDirection::Output : ESOTS_BPGenPinDirection::Input;
 		Descriptor.PinCategory = Pin->PinType.PinCategory;
 		Descriptor.PinSubCategory = Pin->PinType.PinSubCategory;
-		Descriptor.SubObjectPath = Pin->PinType.PinSubCategoryObject ? Pin->PinType.PinSubCategoryObject->GetPathName() : FString();
+		if (UObject* SubObject = Pin->PinType.PinSubCategoryObject.Get())
+		{
+			Descriptor.SubObjectPath = SubObject->GetPathName();
+		}
 		Descriptor.ContainerType = ContainerTypeToString(Pin->PinType.ContainerType);
 		Descriptor.DefaultValue = Pin->DefaultValue;
 		Descriptor.bIsHidden = Pin->bHidden;

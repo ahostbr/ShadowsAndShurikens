@@ -1,0 +1,11 @@
+# Buddy Worklog — BPGen ensure fixes (UE5.7)
+- goal: resolve ensure.cpp compile failures (SavePackage args, ImportText, UWidgetBlueprint/K2 nodes, metadata keys) from latest UBT log.
+- what changed:
+  - added SavePackage, property, widget, and K2 node headers; restored full UWidgetBlueprint definition.
+  - switched property import to ImportText_Direct for UE5.7 signature.
+  - created widget trees with explicit class/flags; removed reliance on undefined forward decl.
+  - changed ChangeMemberVariableType usage (void return) and swapped metadata keys to string literals compatible with UE5.7.
+- files changed: Plugins/SOTS_BlueprintGen/Source/SOTS_BlueprintGen/Private/SOTS_BPGenEnsure.cpp.
+- notes/risks/unknowns: not built yet; if UWidgetBlueprint header path differs, may need alternate include; metadata key names assumed compatible.
+- verification status: not built or run.
+- follow-ups/next steps: rerun UBT; if further UMG type issues persist, adjust include path; validate ensure flows after successful build.

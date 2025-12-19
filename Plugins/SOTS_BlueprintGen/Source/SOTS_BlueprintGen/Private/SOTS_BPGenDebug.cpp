@@ -3,7 +3,6 @@
 #include "BlueprintEditor.h"
 #include "Editor.h"
 #include "Math/Color.h"
-#include "BlueprintEditorUtils.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -11,7 +10,6 @@
 
 #if WITH_EDITOR
 #include "Subsystems/AssetEditorSubsystem.h"
-#include "Toolkits/AssetEditorManager.h"
 #endif
 
 namespace
@@ -71,7 +69,6 @@ namespace
 	{
 		return Message.StartsWith(TEXT("[BPGEN]"), ESearchCase::IgnoreCase);
 	}
-#endif // WITH_EDITOR
 }
 
 bool USOTS_BPGenDebug::AnnotateNodes(const UObject* WorldContextObject, const FString& BlueprintAssetPath, FName FunctionName, const TArray<FString>& NodeIds, const FString& AnnotationText)
@@ -106,7 +103,6 @@ bool USOTS_BPGenDebug::AnnotateNodes(const UObject* WorldContextObject, const FS
 		Node->bCommentBubbleVisible = true;
 		Node->bCommentBubblePinned = true;
 		Node->NodeComment = ExistingId; // preserve NodeId storage
-		Node->NodeCommentColor = FLinearColor(0.9f, 0.8f, 0.2f);
 		bChanged = true;
 	}
 
@@ -150,7 +146,6 @@ bool USOTS_BPGenDebug::ClearAnnotations(const UObject* WorldContextObject, const
 			Node->bHasCompilerMessage = false;
 			Node->bCommentBubbleVisible = false;
 			Node->bCommentBubblePinned = false;
-			Node->NodeCommentColor = FLinearColor::White;
 			bChanged = true;
 		}
 	}

@@ -6,7 +6,7 @@
 class UBlueprint;
 class UEdGraph;
 
-struct FSOTS_BPGenResolvedSpawner
+struct SOTS_BLUEPRINTGEN_API FSOTS_BPGenResolvedSpawner
 {
 	FString SpawnerKey;
 	TWeakObjectPtr<UBlueprintNodeSpawner> Spawner;
@@ -17,7 +17,7 @@ struct FSOTS_BPGenResolvedSpawner
 /**
  * Spawner registry for BPGen SPINE_B+. Supports function-path, variable, and node-class spawner keys.
  */
-class FSOTS_BPGenSpawnerRegistry
+class SOTS_BLUEPRINTGEN_API FSOTS_BPGenSpawnerRegistry
 {
 public:
 	/** Resolve or create a spawner for the given key. Currently supports function path keys. */

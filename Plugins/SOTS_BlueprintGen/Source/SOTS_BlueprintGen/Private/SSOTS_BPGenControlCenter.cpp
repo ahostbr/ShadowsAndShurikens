@@ -77,7 +77,6 @@ void SSOTS_BPGenControlCenter::Construct(const FArguments& InArgs)
 			.IsReadOnly(true)
 			.AlwaysShowScrollbars(true)
 			.AutoWrapText(true)
-			.MinDesiredHeight(80.0f)
 		]
 
 		+ SVerticalBox::Slot()
@@ -162,7 +161,6 @@ void SSOTS_BPGenControlCenter::Construct(const FArguments& InArgs)
 			.IsReadOnly(true)
 			.AlwaysShowScrollbars(true)
 			.AutoWrapText(true)
-			.MinDesiredHeight(80.0f)
 		]
 
 		+ SVerticalBox::Slot()
@@ -261,9 +259,10 @@ void SSOTS_BPGenControlCenter::RefreshStatus()
 				Lines.Add(FString::Printf(TEXT("Last start error: %s (%s)"), *LastError, *LastErrorCode));
 			}
 
-			TSharedPtr<FJsonObject> FeaturesObj;
-			if (Info->TryGetObjectField(TEXT("features"), FeaturesObj) && FeaturesObj.IsValid())
+			const TSharedPtr<FJsonObject>* FeaturesPtr = nullptr;
+			if (Info->TryGetObjectField(TEXT("features"), FeaturesPtr) && FeaturesPtr && FeaturesPtr->IsValid())
 			{
+				const TSharedPtr<FJsonObject> FeaturesObj = *FeaturesPtr;
 				TArray<FString> Enabled;
 				for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : FeaturesObj->Values)
 				{
@@ -301,23 +300,58 @@ FReply SSOTS_BPGenControlCenter::OnStartBridge()
 		CachedServer = FSOTS_BPGen_BridgeModule::GetServer();
 	}
 
-	if (CachedServer.IsValid())
+	if (!CachedServer.IsValid())
 	{
-		CachedServer.Pin()->Start();
-		AppendLogLine(TEXT("Bridge start requested."));
-		RefreshStatus();
+		AppendLogLine(TEXT("Bridge server unavailable; could not start."));
+		SetStatusLines({ TEXT("Bridge server unavailable.") });
+		return FReply::Handled();
 	}
+
+	const TSharedPtr<FSOTS_BPGenBridgeServer> Server = CachedServer.Pin();
+	const bool bStarted = Server->Start();
+
+	TSharedPtr<FJsonObject> Info;
+	Server->GetServerInfoForUI(Info);
+	FString ErrorSuffix;
+	if (Info.IsValid())
+	{
+		const FString LastError = Info->GetStringField(TEXT("last_start_error"));
+		const FString LastErrorCode = Info->GetStringField(TEXT("last_start_error_code"));
+		const bool bRunning = Info->GetBoolField(TEXT("running"));
+		const FString BindAddr = Info->GetStringField(TEXT("bind_address"));
+		const int32 BindPort = static_cast<int32>(Info->GetNumberField(TEXT("port")));
+		if (!LastError.IsEmpty() || !LastErrorCode.IsEmpty())
+		{
+			ErrorSuffix = FString::Printf(TEXT(" | last_error=%s (%s)"), *LastError, *LastErrorCode);
+		}
+		AppendLogLine(FString::Printf(TEXT("Bridge start %s: running=%s bind=%s:%d%s"), bStarted ? TEXT("requested") : TEXT("failed"), bRunning ? TEXT("true") : TEXT("false"), *BindAddr, BindPort, *ErrorSuffix));
+	}
+	else
+	{
+		AppendLogLine(bStarted ? TEXT("Bridge start requested.") : TEXT("Bridge start failed (no status info)."));
+	}
+
+	RefreshStatus();
 	return FReply::Handled();
 }
 
 FReply SSOTS_BPGenControlCenter::OnStopBridge()
 {
-	if (CachedServer.IsValid())
+	if (!CachedServer.IsValid())
 	{
-		CachedServer.Pin()->Stop();
-		AppendLogLine(TEXT("Bridge stop requested."));
-		RefreshStatus();
+		CachedServer = FSOTS_BPGen_BridgeModule::GetServer();
 	}
+
+	if (!CachedServer.IsValid())
+	{
+		AppendLogLine(TEXT("Bridge server unavailable; could not stop."));
+		SetStatusLines({ TEXT("Bridge server unavailable.") });
+		return FReply::Handled();
+	}
+
+	CachedServer.Pin()->Stop();
+	AppendLogLine(TEXT("Bridge stop requested."));
+	RefreshStatus();
 	return FReply::Handled();
 }
 

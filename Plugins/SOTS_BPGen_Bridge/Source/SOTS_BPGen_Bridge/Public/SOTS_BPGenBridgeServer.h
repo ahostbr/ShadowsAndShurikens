@@ -55,6 +55,7 @@ private:
 	TSharedPtr<FSocket> ListenSocket;
 	TFuture<void> AcceptTask;
 	TAtomic<bool> bRunning;
+	TAtomic<bool> bStopping;
 	FString BindAddress;
 	int32 Port = 55557;
 	int32 MaxRequestBytes = 1024 * 1024;
@@ -102,6 +103,6 @@ private:
 
 	TArray<FRecentRequestSummary> RecentRequests;
 	int32 MaxRecentRequests = 50;
-	FCriticalSection RecentRequestsMutex;
-	FCriticalSection BatchMutex;
+	mutable FCriticalSection RecentRequestsMutex;
+	mutable FCriticalSection BatchMutex;
 };
