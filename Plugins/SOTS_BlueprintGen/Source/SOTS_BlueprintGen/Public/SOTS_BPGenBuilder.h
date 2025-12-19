@@ -23,6 +23,18 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
     static FSOTS_BPGenApplyResult ApplyGraphSpecToFunction(const UObject* WorldContextObject, const FSOTS_BPGenFunctionDef& FunctionDef, const FSOTS_BPGenGraphSpec& GraphSpec);
 
+    UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
+    static FSOTS_BPGenApplyResult ApplyGraphSpecToTarget(const UObject* WorldContextObject, const FSOTS_BPGenGraphSpec& GraphSpec);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
+    static FSOTS_BPGenGraphEditResult DeleteNodeById(const UObject* WorldContextObject, const FSOTS_BPGenDeleteNodeRequest& Request);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
+    static FSOTS_BPGenGraphEditResult DeleteLink(const UObject* WorldContextObject, const FSOTS_BPGenDeleteLinkRequest& Request);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
+    static FSOTS_BPGenGraphEditResult ReplaceNodePreserveId(const UObject* WorldContextObject, const FSOTS_BPGenReplaceNodeRequest& Request);
+
     /**
      * Debug/test helper: builds Test_AllNodesGraph on BP_PrintHello using BPGen specs.
      */

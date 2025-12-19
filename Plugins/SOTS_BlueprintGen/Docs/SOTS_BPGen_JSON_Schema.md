@@ -40,12 +40,20 @@ Reference for authoring BPGen JSON consumed by `SOTS_BPGenBuildCommandlet` and `
 
 ### FSOTS_BPGenGraphNode
 - `Id` (string, required): Unique per-graph identifier used by links.
-- `NodeType` (string, required): K2 node class name (e.g. `K2Node_FunctionEntry`, `K2Node_CallFunction`, `K2Node_VariableGet`).
-- `FunctionPath` (string, optional, required for call-function/array-function nodes): Full function path (e.g. `/Script/Engine.KismetSystemLibrary:PrintString`).
+- `SpawnerKey` (string, recommended): Stable node descriptor key from discovery. **Provide this for all non-synthetic nodes** and always pair it with `FunctionPath` for function calls. This is the forward path.
+- `PreferSpawnerKey` (bool, optional, default `true`): When `false`, skip the spawner path even if `SpawnerKey` is present (use only for temporary troubleshooting).
+- `FunctionPath` (string, strongly recommended for function-call nodes): Full function path (e.g. `/Script/Engine.KismetSystemLibrary:PrintString`). Include it whenever a spawner describes a function or event.
+- `NodeType` (string, legacy): K2 node class name. Only use for the minimal synthetic set (`K2Node_FunctionEntry`, `K2Node_FunctionResult`, `K2Node_Knot`, `K2Node_Select`, `K2Node_DynamicCast`). All other NodeType usage is deprecated and will be removed after a short sunset; migrate specs to `SpawnerKey` + `FunctionPath` now.
 - `StructPath` (string, optional, required for make/break struct nodes): Full struct path (e.g. `/Script/Engine.Vector`).
 - `VariableName` (string, optional, required for variable get/set, some events, select options): Variable or event name.
+- `NodeId` (string, optional): Stable identifier to allow create-or-update flows. This is the only supported identity field; do not add parallel IDs. Current storage is via NodeComment; a future migration will move it to a dedicated metadata slot without changing the field name.
+- `create_or_update` (bool, optional, default `true`): When `false`, force creation even if `NodeId` matches an existing node.
+- `allow_create` (bool, optional, default `true`): When `false` and `NodeId` is missing, the node will be skipped.
+- `allow_update` (bool, optional, default `true`): When `false`, existing nodes with this `NodeId` are left untouched.
 - `NodePosition` (vector2, optional, default `0,0`): Graph editor position `{ "X": 0, "Y": 0 }`.
 - `ExtraData` (object<string,string>, optional): Free-form key/values for node-specific defaults (pin literal values, select options, container hints, etc.).
+
+Sunset notice: `NodeType` support beyond the synthetic set (entry/result/knot/select/dynamic-cast) is deprecated and will be removed after a short sunset once specs migrate. Provide `SpawnerKey` + `FunctionPath` for all real nodes now.
 
 ### FSOTS_BPGenGraphLink
 - `FromNodeId` (string, required): Source node id.
@@ -106,8 +114,9 @@ These examples can also be fed to a future in-editor BPGen Runner using the same
       { "Id": "Entry", "NodeType": "K2Node_FunctionEntry", "NodePosition": { "X": -400, "Y": 0 } },
       {
         "Id": "PrintString",
-        "NodeType": "K2Node_CallFunction",
+        "SpawnerKey": "/Script/Engine.KismetSystemLibrary:PrintString",
         "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString",
+        "NodeType": "K2Node_CallFunction",
         "NodePosition": { "X": 0, "Y": 0 },
         "ExtraData": { "InString": "Hello from BPGen", "bPrintToScreen": "true" }
       },
@@ -143,8 +152,9 @@ External GraphSpec JSON:
     { "Id": "Entry", "NodeType": "K2Node_FunctionEntry", "NodePosition": { "X": -300, "Y": 0 } },
     {
       "Id": "PrintString",
-      "NodeType": "K2Node_CallFunction",
+      "SpawnerKey": "/Script/Engine.KismetSystemLibrary:PrintString",
       "FunctionPath": "/Script/Engine.KismetSystemLibrary:PrintString",
+      "NodeType": "K2Node_CallFunction",
       "NodePosition": { "X": 50, "Y": 0 },
       "ExtraData": { "InString": "External spec hello" }
     },

@@ -157,6 +157,30 @@ struct FSOTS_BPGenGraphNode
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
 	FName NodeType;
 
+	/** JSON: "SpawnerKey" (optional). Stable spawner identifier; if set and bPreferSpawnerKey is true, spawn via spawner registry. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString SpawnerKey;
+
+	/** JSON: "PreferSpawnerKey" (optional, defaults true). When false, skip spawner path even if SpawnerKey is provided. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bPreferSpawnerKey = true;
+
+	/** JSON: "NodeId" (optional). Stable identifier to support create-or-update flows. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString NodeId;
+
+	/** JSON: "create_or_update" (optional, defaults true). When false, always create new even if NodeId matches. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bCreateOrUpdate = true;
+
+	/** JSON: "allow_create" (optional, defaults true). If false and NodeId missing, node will be skipped. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bAllowCreate = true;
+
+	/** JSON: "allow_update" (optional, defaults true). If false, existing nodes with NodeId will be left untouched. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bAllowUpdate = true;
+
 	/**
 	 * Optional function path for call-function nodes
 	 * (e.g. "/Script/Engine.KismetMathLibrary:Clamp").
@@ -216,6 +240,220 @@ struct FSOTS_BPGenGraphLink
 	/** JSON: "ToPinName" (required). Pin name on the target node. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
 	FName ToPinName;
+
+	/** JSON: "break_existing_from" (optional). When true, break existing links on the source pin before connecting. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bBreakExistingFrom = false;
+
+	/** JSON: "break_existing_to" (optional). When true, break existing links on the target pin before connecting. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bBreakExistingTo = false;
+
+	/** JSON: "use_schema" (optional, defaults true). When true, attempt schema TryCreateConnection before fallback MakeLinkTo. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bUseSchema = true;
+
+	/** JSON: "allow_heuristic_pin_match" (optional, defaults false). When true, allow case-insensitive + alias pin matching. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bAllowHeuristicPinMatch = false;
+};
+
+/**
+ * Auto-fix step recorded during graph apply (SPINE_J).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenAutoFixStep
+{
+	GENERATED_BODY()
+
+	/** JSON: "step_index" (output). Ordered step index. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	int32 StepIndex = 0;
+
+	/** JSON: "code" (output). Stable fix code (e.g., FIX_PIN_ALIAS). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	FString Code;
+
+	/** JSON: "description" (output). Human-readable summary. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	FString Description;
+
+	/** JSON: "affected_node_ids" (output). Node ids touched by the fix. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	TArray<FString> AffectedNodeIds;
+
+	/** JSON: "affected_pins" (output). Pin identifiers involved in the fix. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	TArray<FString> AffectedPins;
+
+	/** JSON: "before" (output, optional). Before snapshot snippet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	FString Before;
+
+	/** JSON: "after" (output, optional). After snapshot snippet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|AutoFix")
+	FString After;
+};
+
+/**
+ * Delete-node request targeting a specific graph.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenDeleteNodeRequest
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString BlueprintAssetPath;
+
+	/** JSON: "function_name" (required). Function or graph name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FName FunctionName;
+
+	/** JSON: "node_id" (required). Stable node id (NodeComment/NodeGuid). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString NodeId;
+
+	/** JSON: "compile" (optional, default true). Compile after mutation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bCompile = true;
+};
+
+/**
+ * Delete-link request between two pins.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenDeleteLinkRequest
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString BlueprintAssetPath;
+
+	/** JSON: "function_name" (required). Function or graph name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FName FunctionName;
+
+	/** JSON: "from_node_id" (required). Source node id. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString FromNodeId;
+
+	/** JSON: "from_pin" (required). Source pin name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FName FromPinName;
+
+	/** JSON: "to_node_id" (required). Target node id. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString ToNodeId;
+
+	/** JSON: "to_pin" (required). Target pin name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FName ToPinName;
+
+	/** JSON: "compile" (optional, default true). Compile after mutation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bCompile = true;
+};
+
+/**
+ * Replace-node request that preserves NodeId while swapping implementation.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenReplaceNodeRequest
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString BlueprintAssetPath;
+
+	/** JSON: "function_name" (required). Function or graph name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FName FunctionName;
+
+	/** JSON: "existing_node_id" (required). NodeId to replace. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString ExistingNodeId;
+
+	/** JSON: "new_node" (required). New node spec (SpawnerKey/NodeType/etc). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FSOTS_BPGenGraphNode NewNode;
+
+	/** JSON: "pin_remap" (optional). Map of old pin names to new pin names. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	TMap<FName, FName> PinRemap;
+
+	/** JSON: "compile" (optional, default true). Compile after mutation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bCompile = true;
+};
+
+/**
+ * Generic graph edit result used by delete/replace helpers.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenGraphEditResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success" (output). True if operation succeeded. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path" (output). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString BlueprintPath;
+
+	/** JSON: "function_name" (output). Function graph context. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FName FunctionName;
+
+	/** JSON: "message" (output). Informational message. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString Message;
+
+	/** JSON: "errors" (output). Fatal errors encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Errors;
+
+	/** JSON: "warnings" (output). Non-fatal warnings encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Warnings;
+
+	/** JSON: "affected_node_ids" (output). Node ids touched by the edit. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> AffectedNodeIds;
+};
+
+/**
+ * Target descriptor for a graph application.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenGraphTarget
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required for target-only requests). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString BlueprintAssetPath;
+
+	/** JSON: "target_type" (optional; defaults to Function). Examples: Function, EventGraph, ConstructionScript, Macro. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString TargetType;
+
+	/** JSON: "name" (optional; required for most target types). FunctionName/MacroName/etc. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString Name;
+
+	/** JSON: "sub_name" (optional). Additional context (state machine/state names, etc.). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString SubName;
+
+	/** JSON: "create_if_missing" (optional, defaults true). When false, missing targets produce an error. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bCreateIfMissing = true;
 };
 
 /**
@@ -226,6 +464,10 @@ struct FSOTS_BPGenGraphSpec
 {
 	GENERATED_BODY()
 
+	/** JSON: "target" (optional). Graph target descriptor; defaults to Function when omitted. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FSOTS_BPGenGraphTarget Target;
+
 	/** JSON: "Nodes" (optional, array). Each entry is an FSOTS_BPGenGraphNode; empty array means no additional nodes. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
 	TArray<FSOTS_BPGenGraphNode> Nodes;
@@ -233,6 +475,189 @@ struct FSOTS_BPGenGraphSpec
 	/** JSON: "Links" (optional, array). Each entry is an FSOTS_BPGenGraphLink connecting node pins. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
 	TArray<FSOTS_BPGenGraphLink> Links;
+
+	/** JSON: "auto_fix" (optional, defaults false). Enable auto-fix heuristics on link failures. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bAutoFix = false;
+
+	/** JSON: "auto_fix_max_steps" (optional, defaults 5). Max auto-fix steps per apply. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	int32 AutoFixMaxSteps = 5;
+
+	/** JSON: "auto_fix_insert_conversions" (optional, defaults false). Allow conversion node insertion. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	bool bAutoFixInsertConversions = false;
+};
+
+/**
+ * Discovered pin descriptor used by node discovery (SPINE_A).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenDiscoveredPinDescriptor
+{
+	GENERATED_BODY()
+
+	/** JSON: "pin_name" (output). Pin name returned by discovery. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FName PinName;
+
+	/** JSON: "direction" (output). Input or Output. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	ESOTS_BPGenPinDirection Direction = ESOTS_BPGenPinDirection::Input;
+
+	/** JSON: "pin_category" (output). Pin category (e.g., bool, float, struct). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FName PinCategory;
+
+	/** JSON: "pin_subcategory" (output). Optional subcategory such as byte, int64, SoftObject. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FName PinSubCategory;
+
+	/** JSON: "sub_object_path" (output). Optional object/struct path associated with the pin. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString SubObjectPath;
+
+	/** JSON: "container_type" (output). None|Array|Set|Map as a string. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString ContainerType;
+
+	/** JSON: "default_value" (output). Default value literal when available. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString DefaultValue;
+
+	/** JSON: "b_is_hidden" (output). True if the pin is marked hidden. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	bool bIsHidden = false;
+
+	/** JSON: "b_is_advanced" (output). True if the pin is advanced. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	bool bIsAdvanced = false;
+
+	/** JSON: "tooltip" (output). Pin tooltip text if available. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString Tooltip;
+};
+
+/**
+ * Discovered node spawner descriptor (stable spawner_key + optional pin descriptors).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeSpawnerDescriptor
+{
+	GENERATED_BODY()
+
+	/** JSON: "spawner_key" (output). Stable key used to spawn the node. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString SpawnerKey;
+
+	/** JSON: "display_name" (output). Palette/display name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString DisplayName;
+
+	/** JSON: "category" (output). Palette category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString Category;
+
+	/** JSON: "keywords" (output). Keywords associated with the node. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	TArray<FString> Keywords;
+
+	/** JSON: "tooltip" (output). Tooltip text. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString Tooltip;
+
+	/** JSON: "node_class_name" (output). K2 node class name (e.g., K2Node_CallFunction). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString NodeClassName;
+
+	/** JSON: "node_class_path" (output). Full path to the node class. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString NodeClassPath;
+
+	/** JSON: "node_type" (output). Normalized node type string (function_call, variable_get, cast, generic, synthetic). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString NodeType;
+
+	/** JSON: "function_path" (output). UFunction path if applicable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString FunctionPath;
+
+	/** JSON: "struct_path" (output). UScriptStruct path if applicable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString StructPath;
+
+	/** JSON: "variable_name" (output). Variable name for var get/set nodes. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FName VariableName;
+
+	/** JSON: "variable_owner_class_path" (output). Class path owning the variable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString VariableOwnerClassPath;
+
+	/** JSON: "variable_pin_category" (output). Pin category derived from the property. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString VariablePinCategory;
+
+	/** JSON: "variable_pin_subcategory" (output). Pin subcategory derived from the property. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString VariablePinSubCategory;
+
+	/** JSON: "variable_pin_subobject_path" (output). Pin subobject path derived from the property. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString VariablePinSubObjectPath;
+
+	/** JSON: "variable_pin_container_type" (output). Container type for the property (None|Array|Set|Map). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString VariablePinContainerType;
+
+	/** JSON: "target_class_path" (output). Target class path for cast nodes, etc. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString TargetClassPath;
+
+	/** JSON: "pins" (output). Optional pin descriptors when requested. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	TArray<FSOTS_BPGenDiscoveredPinDescriptor> Pins;
+
+	/** JSON: "b_is_synthetic" (output). True if descriptor represents a synthetic helper (e.g., reroute). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	bool bIsSynthetic = false;
+};
+
+/**
+ * Result for node discovery queries.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeDiscoveryResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success" (output). True if discovery completed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_asset_path" (output). Context blueprint path, if provided. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString BlueprintAssetPath;
+
+	/** JSON: "search_text" (output). Search term applied. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	FString SearchText;
+
+	/** JSON: "max_results" (output). Max results considered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	int32 MaxResults = 0;
+
+	/** JSON: "descriptors" (output). Discovered node descriptors. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	TArray<FSOTS_BPGenNodeSpawnerDescriptor> Descriptors;
+
+	/** JSON: "errors" (output). Errors encountered during discovery. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	TArray<FString> Errors;
+
+	/** JSON: "warnings" (output). Non-fatal warnings encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Discovery")
+	TArray<FString> Warnings;
 };
 
 /**
@@ -280,7 +705,568 @@ struct FSOTS_BPGenApplyResult
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	FString ErrorMessage;
 
+	/** JSON: "ErrorCode" (output only). Structured error code when available. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString ErrorCode;
+
+	/** JSON: "error_codes" (output only, array). Non-fatal error codes during apply. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> ErrorCodes;
+
 	/** JSON: "Warnings" (output only, array). Non-fatal warnings encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Warnings;
+
+	/** JSON: "auto_fix_steps" (output only, array). Auto-fix steps applied (if enabled). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FSOTS_BPGenAutoFixStep> AutoFixSteps;
+
+	/** JSON: "CreatedNodeIds" (output only, array). NodeIds created during this apply. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> CreatedNodeIds;
+
+	/** JSON: "UpdatedNodeIds" (output only, array). NodeIds updated during this apply. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> UpdatedNodeIds;
+
+	/** JSON: "SkippedNodeIds" (output only, array). NodeIds skipped due to allow flags or missing references. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> SkippedNodeIds;
+};
+
+/**
+ * Function signature used by ensure primitives.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenFunctionSignature
+{
+	GENERATED_BODY()
+
+	/** JSON: "Inputs" (optional). Function input params. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	TArray<FSOTS_BPGenPin> Inputs;
+
+	/** JSON: "Outputs" (optional). Function outputs / return values. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	TArray<FSOTS_BPGenPin> Outputs;
+
+	/** JSON: "bPure" (optional). Whether function is pure. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	bool bPure = false;
+
+	/** JSON: "bConst" (optional). Whether function is const. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	bool bConst = false;
+};
+
+/** Result for ensure primitives. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenEnsureResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	FString BlueprintPath;
+
+	/** JSON: "name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	FString Name;
+
+	/** JSON: "ErrorMessage". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	FString ErrorMessage;
+
+	/** JSON: "ErrorCode". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	FString ErrorCode;
+
+	/** JSON: "Warnings". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	TArray<FString> Warnings;
+};
+
+/** Widget ensure request. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenWidgetSpec
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required). Widget blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString BlueprintAssetPath;
+
+	/** JSON: "widget_class_path" (required). Widget class path (e.g., /Script/UMG.TextBlock). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetClassPath;
+
+	/** JSON: "widget_name" (required). Name for the widget in the tree. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetName;
+
+	/** JSON: "parent_name" (optional). Parent widget name; empty/root means set as RootWidget. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ParentName;
+
+	/** JSON: "insert_index" (optional). Insert index when attaching to a panel; -1 appends. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	int32 InsertIndex = -1;
+
+	/** JSON: "is_variable" (optional, defaults true). Whether to mark the widget as a variable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bIsVariable = true;
+
+	/** JSON: "create_if_missing" (optional, defaults true). When false, missing widgets error. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bCreateIfMissing = true;
+
+	/** JSON: "update_if_exists" (optional, defaults true). When false, existing widgets are left untouched. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bUpdateIfExists = true;
+
+	/** JSON: "reparent_if_mismatch" (optional, defaults true). Allow moving widget when parent differs. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bReparentIfMismatch = true;
+
+	/** JSON: "properties" (optional). Widget property map (PropertyPath -> value). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TMap<FString, FString> Properties;
+
+	/** JSON: "slot_properties" (optional). Slot property map (PropertyPath -> value) applied to Slot.*. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TMap<FString, FString> SlotProperties;
+};
+
+/** Widget ensure result. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenWidgetEnsureResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString BlueprintPath;
+
+	/** JSON: "widget_name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetName;
+
+	/** JSON: "parent_name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ParentName;
+
+	/** JSON: "slot_type" (output). Resolved slot type when attached to a panel. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString SlotType;
+
+	/** JSON: "b_created" (output). True if widget was created. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bCreated = false;
+
+	/** JSON: "b_reparented" (output). True if widget parent changed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bReparented = false;
+
+	/** JSON: "applied_properties" (output). Property paths applied successfully. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TArray<FString> AppliedProperties;
+
+	/** JSON: "warnings" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TArray<FString> Warnings;
+
+	/** JSON: "error_message" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ErrorMessage;
+
+	/** JSON: "error_code" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ErrorCode;
+};
+
+/** Widget property update request. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenWidgetPropertyRequest
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString BlueprintAssetPath;
+
+	/** JSON: "widget_name" (required). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetName;
+
+	/** JSON: "properties" (required). PropertyPath -> value map. Use Slot.* for slot properties. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TMap<FString, FString> Properties;
+
+	/** JSON: "fail_if_missing" (optional). When true, missing widget errors out. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bFailIfMissing = true;
+};
+
+/** Widget property update result. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenWidgetPropertyResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString BlueprintPath;
+
+	/** JSON: "widget_name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetName;
+
+	/** JSON: "applied_properties". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TArray<FString> AppliedProperties;
+
+	/** JSON: "warnings". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TArray<FString> Warnings;
+
+	/** JSON: "error_message". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ErrorMessage;
+
+	/** JSON: "error_code". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ErrorCode;
+};
+
+/** Binding ensure request for widget property bindings. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenBindingRequest
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (required). Widget blueprint path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString BlueprintAssetPath;
+
+	/** JSON: "widget_name" (required). Widget to bind against. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetName;
+
+	/** JSON: "property_name" (required). Property to bind (e.g., Text). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString PropertyName;
+
+	/** JSON: "function_name" (required). Binding function name to create/associate. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString FunctionName;
+
+	/** JSON: "signature" (optional). Binding function signature (usually a return pin only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FSOTS_BPGenFunctionSignature Signature;
+
+	/** JSON: "graph_spec" (optional). Graph spec to apply to the binding function. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FSOTS_BPGenGraphSpec GraphSpec;
+
+	/** JSON: "apply_graph" (optional, defaults false). When true, apply graph_spec after ensure. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bApplyGraph = false;
+
+	/** JSON: "create_binding" (optional, defaults true). Allow creating binding entry. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bCreateBinding = true;
+
+	/** JSON: "update_binding" (optional, defaults true). Allow updating existing binding entry. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bUpdateBinding = true;
+
+	/** JSON: "create_function" (optional, defaults true). Allow creating the binding function. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bCreateFunction = true;
+
+	/** JSON: "update_function" (optional, defaults true). Allow updating existing function signature. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bUpdateFunction = true;
+};
+
+/** Binding ensure result. */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenBindingEnsureResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString BlueprintPath;
+
+	/** JSON: "widget_name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString WidgetName;
+
+	/** JSON: "property_name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString PropertyName;
+
+	/** JSON: "function_name". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString FunctionName;
+
+	/** JSON: "b_binding_created". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bBindingCreated = false;
+
+	/** JSON: "b_binding_updated". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bBindingUpdated = false;
+
+	/** JSON: "b_function_created". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bFunctionCreated = false;
+
+	/** JSON: "b_function_updated". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	bool bFunctionUpdated = false;
+
+	/** JSON: "warnings". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	TArray<FString> Warnings;
+
+	/** JSON: "error_message". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ErrorMessage;
+
+	/** JSON: "error_code". */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FString ErrorCode;
+};
+
+/**
+ * Summary information for an existing graph node (used by inspector APIs).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeSummary
+{
+	GENERATED_BODY()
+
+	/** JSON: "node_id" (output). BPGen NodeId stored on the node (may be empty). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString NodeId;
+
+	/** JSON: "node_guid" (output). Underlying node guid as string (always populated). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString NodeGuid;
+
+	/** JSON: "node_class" (output). Node class short name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString NodeClass;
+
+	/** JSON: "node_class_path" (output). Full node class path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString NodeClassPath;
+
+	/** JSON: "title" (output). Display title of the node. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString Title;
+
+	/** JSON: "raw_name" (output). UObject name of the node. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString RawName;
+
+	/** JSON: "pos_x" (output). Node position X. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	int32 NodePosX = 0;
+
+	/** JSON: "pos_y" (output). Node position Y. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	int32 NodePosY = 0;
+
+	/** JSON: "pins" (output). Optional pin descriptors when requested. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FSOTS_BPGenDiscoveredPinDescriptor> Pins;
+};
+
+/**
+ * Pin default value captured during node describe.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenPinDefault
+{
+	GENERATED_BODY()
+
+	/** JSON: "pin_name" (output). Pin name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FName PinName;
+
+	/** JSON: "default_value" (output). Default value literal. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString DefaultValue;
+};
+
+/**
+ * Link description captured during node describe.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeLink
+{
+	GENERATED_BODY()
+
+	/** JSON: "from_node_id" (output). Source node id (NodeId or NodeGuid fallback). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString FromNodeId;
+
+	/** JSON: "from_pin" (output). Source pin name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FName FromPinName;
+
+	/** JSON: "to_node_id" (output). Target node id (NodeId or NodeGuid fallback). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString ToNodeId;
+
+	/** JSON: "to_pin" (output). Target pin name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FName ToPinName;
+};
+
+/**
+ * Detailed node description (pins, defaults, links).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeDescription
+{
+	GENERATED_BODY()
+
+	/** JSON: "summary" (output). Basic node summary. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FSOTS_BPGenNodeSummary Summary;
+
+	/** JSON: "links" (output). Links originating from this node's pins. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FSOTS_BPGenNodeLink> Links;
+
+	/** JSON: "pin_defaults" (output). Default values for input pins. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FSOTS_BPGenPinDefault> PinDefaults;
+};
+
+/**
+ * Result for ListFunctionGraphNodes.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeListResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success" (output). True if list succeeded. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path" (output). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString BlueprintPath;
+
+	/** JSON: "function_name" (output). Function graph inspected. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FName FunctionName;
+
+	/** JSON: "nodes" (output). Node summaries. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FSOTS_BPGenNodeSummary> Nodes;
+
+	/** JSON: "errors" (output). Fatal errors encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FString> Errors;
+
+	/** JSON: "warnings" (output). Non-fatal warnings encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FString> Warnings;
+};
+
+/**
+ * Result for DescribeNodeById.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenNodeDescribeResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success" (output). True if describe succeeded. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path" (output). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString BlueprintPath;
+
+	/** JSON: "function_name" (output). Function graph inspected. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FName FunctionName;
+
+	/** JSON: "node_id" (output). NodeId requested. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FString NodeId;
+
+	/** JSON: "description" (output). Full node description. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	FSOTS_BPGenNodeDescription Description;
+
+	/** JSON: "errors" (output). Fatal errors encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FString> Errors;
+
+	/** JSON: "warnings" (output). Non-fatal warnings encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Inspect")
+	TArray<FString> Warnings;
+};
+
+/**
+ * Maintenance result for compile/save/refresh helpers.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenMaintenanceResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "b_success" (output). True if operation succeeded. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	bool bSuccess = false;
+
+	/** JSON: "blueprint_path" (output). Blueprint asset path. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString BlueprintPath;
+
+	/** JSON: "function_name" (output). Optional function graph context. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FName FunctionName;
+
+	/** JSON: "message" (output). Informational message. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString Message;
+
+	/** JSON: "nodes" (output). Optional node summaries when provided by maintenance helpers. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FSOTS_BPGenNodeSummary> Nodes;
+
+	/** JSON: "errors" (output). Fatal errors encountered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> Errors;
+
+	/** JSON: "warnings" (output). Non-fatal warnings encountered. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	TArray<FString> Warnings;
 };
