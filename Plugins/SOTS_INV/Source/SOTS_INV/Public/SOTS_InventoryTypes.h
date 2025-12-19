@@ -2,7 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Internationalization/Text.h"
 #include "SOTS_InventoryTypes.generated.h"
+
+class AActor;
 
 UENUM(BlueprintType)
 enum class ESOTS_InventoryOpResult : uint8
@@ -49,3 +52,66 @@ struct FSOTS_InventoryOpReport
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnInventoryOpCompleted, const FSOTS_InventoryOpReport&, Report);
+
+USTRUCT(BlueprintType)
+struct FSOTS_InvPickupRequest
+{
+    GENERATED_BODY()
+
+    FSOTS_InvPickupRequest()
+        : Quantity(1)
+        , bConsumeWorldActorOnSuccess(true)
+        , bNotifyUIOnSuccess(true)
+    {}
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    TWeakObjectPtr<AActor> PickupActor;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    FGameplayTag ItemTag;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    int32 Quantity;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    FGameplayTagContainer ContextTags;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    bool bConsumeWorldActorOnSuccess;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    bool bNotifyUIOnSuccess;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_InvPickupResult
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    bool bSuccess = false;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    bool bShouldNotifyUI = false;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    bool bIsFirstTimePickup = false;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    FText FailReason;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    FGameplayTag FailTag;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    int32 QuantityApplied = 0;
+
+    UPROPERTY(BlueprintReadWrite, Category="SOTS|Inventory|Pickup")
+    FName ItemId = NAME_None;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnPickupRequested, const FSOTS_InvPickupRequest&, Request);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSOTS_OnPickupCompleted, const FSOTS_InvPickupRequest&, Request, const FSOTS_InvPickupResult&, Result);

@@ -69,7 +69,9 @@ private:
     bool IsChannelAllowedForWindow(const FGameplayTag& ChannelTag) const;
     void BindToAnimInstance();
     void UnbindFromAnimInstance();
+    UFUNCTION()
     void HandleMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+    UFUNCTION()
     void HandleMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
     AActor* ResolveOwnerActor() const;
     APawn* ResolveOwningPawn() const;
@@ -86,7 +88,4 @@ private:
 
     UPROPERTY()
     TWeakObjectPtr<UAnimInstance> BoundAnimInstance;
-
-    FDelegateHandle MontageEndedHandle;
-    FDelegateHandle MontageBlendingOutHandle;
 };

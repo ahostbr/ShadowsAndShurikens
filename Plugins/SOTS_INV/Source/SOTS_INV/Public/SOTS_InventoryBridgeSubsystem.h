@@ -78,6 +78,18 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="SOTS|Inventory")
 	FSOTS_OnInventoryOpCompleted OnInventoryOpCompleted;
 
+	UFUNCTION(BlueprintCallable, Category="SOTS|Inventory|Pickup")
+	bool RequestPickup(const FSOTS_InvPickupRequest& Request, FSOTS_InvPickupResult& OutResult);
+
+	UFUNCTION(BlueprintCallable, Category="SOTS|Inventory|Pickup")
+	bool RequestPickupSimple(AActor* Instigator, AActor* PickupActor, FGameplayTag ItemTag, int32 Quantity, bool& bSuccess);
+
+	UPROPERTY(BlueprintAssignable, Category="SOTS|Inventory|Pickup")
+	FSOTS_OnPickupRequested OnPickupRequested;
+
+	UPROPERTY(BlueprintAssignable, Category="SOTS|Inventory|Pickup")
+	FSOTS_OnPickupCompleted OnPickupCompleted;
+
 	UFUNCTION(BlueprintCallable, Category="SOTS|Inventory|Provider")
 	bool TryResolveInventoryProviderNow(AActor* OwnerOverride = nullptr);
 
@@ -157,6 +169,8 @@ protected:
 	UObject* ResolveInventoryProvider(const AActor* Owner) const;
 	bool EnsureProviderResolved(const AActor* Owner) const;
 	UObject* GetResolvedProvider(const AActor* Owner) const;
+	UObject* ResolveProviderForPickup(const UObject* WorldContextObject, AActor* Instigator) const;
+	void RequestPickupUINotifications(const FSOTS_InvPickupRequest& Request, const FSOTS_InvPickupResult& Result) const;
 	FSOTS_InventoryOpReport MakeBaseReport(AActor* Owner, const FGameplayTag& ItemTag, int32 RequestedQty) const;
 	void LogOpFailureIfNeeded(const FSOTS_InventoryOpReport& Report) const;
 	FSOTS_InventoryOpReport Op_HasItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count) const;

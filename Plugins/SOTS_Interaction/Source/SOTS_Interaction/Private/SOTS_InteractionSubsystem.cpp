@@ -25,6 +25,11 @@ namespace
         const TArray<FGameplayTag>& Tags = Container.GetGameplayTagArray();
         return Tags.Num() > 0 ? Tags[0] : FGameplayTag();
     }
+
+    const FGameplayTag TAG_InteractionVerb_Pickup = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.Pickup"), false);
+    const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.Execute"), false);
+    const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.DragStart"), false);
+    const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.DragStop"), false);
 }
 
 USOTS_InteractionSubsystem::USOTS_InteractionSubsystem()
@@ -65,6 +70,66 @@ USOTS_InteractionSubsystem::USOTS_InteractionSubsystem()
     TraceConfig.TraceChannel = ECC_Visibility;
     TraceConfig.TraceShape = ESOTS_InteractionTraceShape::Sphere;
     TraceConfig.TargetSocketName = NAME_None;
+}
+
+bool USOTS_InteractionSubsystem::IsCrossPluginVerb(const FGameplayTag& OptionTag) const
+{
+    return OptionTag.IsValid() && (
+        OptionTag.MatchesTagExact(TAG_InteractionVerb_Pickup) ||
+        OptionTag.MatchesTagExact(TAG_InteractionVerb_Execute) ||
+        OptionTag.MatchesTagExact(TAG_InteractionVerb_DragStart) ||
+        OptionTag.MatchesTagExact(TAG_InteractionVerb_DragStop));
+}
+
+FSOTS_InteractionActionRequest USOTS_InteractionSubsystem::BuildActionRequestPayload(const FSOTS_InteractionContext& Context, const FGameplayTag& OptionTag, int32 OptionIndex, bool bHadLOS) const
+{
+    FSOTS_InteractionActionRequest Request;
+    Request.VerbTag = OptionTag;
+    Request.OptionIndex = OptionIndex;
+    Request.TargetActor = Context.TargetActor;
+    Request.Distance = Context.Distance;
+    Request.bHadLineOfSight = bHadLOS;
+
+    if (Context.PlayerPawn.IsValid())
+    {
+        Request.InstigatorActor = Context.PlayerPawn;
+    }
+    else if (Context.PlayerController.IsValid())
+    {
+        Request.InstigatorActor = Context.PlayerController;
+    }
+
+    if (Context.InteractionTypeTag.IsValid())
+    {
+        Request.ContextTags.AddTag(Context.InteractionTypeTag);
+    }
+
+    // If this is a pickup verb, attempt to populate item metadata.
+    if (OptionTag.IsValid() && OptionTag.MatchesTagExact(TAG_InteractionVerb_Pickup))
+    {
+        // 1) If the option index corresponds to an option that carries metadata (not present today), prefer that. (Placeholder)
+        // 2) Else try reading from the target's interactable component.
+
+        // Attempt to read from the target's interactable component.
+        if (AActor* Target = Context.TargetActor.Get())
+        {
+            if (const USOTS_InteractableComponent* IC = Target->FindComponentByClass<USOTS_InteractableComponent>())
+            {
+                if (IC->PickupItemTag.IsValid())
+                {
+                    Request.ItemTag = IC->PickupItemTag;
+                }
+
+                if (IC->PickupQuantity > 0)
+                {
+                    Request.Quantity = IC->PickupQuantity;
+                }
+            }
+        }
+        // If still invalid, leave ItemTag invalid and Quantity default (1).
+    }
+
+    return Request;
 }
 
 bool USOTS_InteractionSubsystem::BuildViewContext(APlayerController* PC, FVector& OutViewLoc, FRotator& OutViewRot) const
@@ -420,12 +485,24 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInt
 
     TArray<FSOTS_InteractionOption> Options;
     GatherOptions(Context, Options);
+    int32 MatchedOptionIndex = INDEX_NONE;
+    bool bHadLOS = true;
+
     if (Options.Num() > 0)
     {
-        const FSOTS_InteractionOption* FoundOpt = Options.FindByPredicate([&OptionTag](const FSOTS_InteractionOption& Opt)
+        const FSOTS_InteractionOption* FoundOpt = nullptr;
+
+        for (int32 Index = 0; Index < Options.Num(); ++Index)
         {
-            return Opt.OptionTag == OptionTag || (!Opt.OptionTag.IsValid() && !OptionTag.IsValid());
-        });
+            const FSOTS_InteractionOption& Opt = Options[Index];
+            const bool bTagMatches = Opt.OptionTag == OptionTag || (!Opt.OptionTag.IsValid() && !OptionTag.IsValid());
+            if (bTagMatches)
+            {
+                FoundOpt = &Opt;
+                MatchedOptionIndex = Index;
+                break;
+            }
+        }
 
         if (!FoundOpt)
         {
@@ -465,7 +542,22 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInt
                 Report.DebugReason = TEXT("LOS blocked (option override)");
                 return Report;
             }
+            bHadLOS = true;
         }
+        else
+        {
+            bHadLOS = true;
+        }
+    }
+
+    if (IsCrossPluginVerb(OptionTag))
+    {
+        const FSOTS_InteractionActionRequest Request = BuildActionRequestPayload(Context, OptionTag, MatchedOptionIndex, bHadLOS);
+        OnInteractionActionRequested.Broadcast(Request);
+
+        Report.Result = ESOTS_InteractionExecuteResult::Success;
+        Report.DebugReason = TEXT("RoutedToActionRequest");
+        return Report;
     }
 
     if (!Implementer)
@@ -806,7 +898,6 @@ void USOTS_InteractionSubsystem::FindBestCandidate(APlayerController* PC, const 
             OutBest = Ctx;
             OutBest.Score = Score;
             OutBestData = CandidateData;
-            BestData = CandidateData;
             bOutHasBest = true;
             OutNoCandidateReason = ESOTS_InteractionNoCandidateReason::None;
         }

@@ -229,7 +229,7 @@ void USOTS_InputBufferComponent::BindToAnimInstance()
         return;
     }
 
-    if (BoundAnimInstance.IsValid() && BoundAnimInstance.Get() == AnimInstance && MontageEndedHandle.IsValid() && MontageBlendingOutHandle.IsValid())
+    if (BoundAnimInstance.IsValid() && BoundAnimInstance.Get() == AnimInstance)
     {
         return;
     }
@@ -237,27 +237,18 @@ void USOTS_InputBufferComponent::BindToAnimInstance()
     UnbindFromAnimInstance();
 
     BoundAnimInstance = AnimInstance;
-    MontageEndedHandle = AnimInstance->OnMontageEnded.AddUObject(this, &USOTS_InputBufferComponent::HandleMontageEnded);
-    MontageBlendingOutHandle = AnimInstance->OnMontageBlendingOut.AddUObject(this, &USOTS_InputBufferComponent::HandleMontageBlendingOut);
+    AnimInstance->OnMontageEnded.AddDynamic(this, &USOTS_InputBufferComponent::HandleMontageEnded);
+    AnimInstance->OnMontageBlendingOut.AddDynamic(this, &USOTS_InputBufferComponent::HandleMontageBlendingOut);
 }
 
 void USOTS_InputBufferComponent::UnbindFromAnimInstance()
 {
     if (UAnimInstance* AnimInstance = BoundAnimInstance.Get())
     {
-        if (MontageEndedHandle.IsValid())
-        {
-            AnimInstance->OnMontageEnded.Remove(MontageEndedHandle);
-        }
-
-        if (MontageBlendingOutHandle.IsValid())
-        {
-            AnimInstance->OnMontageBlendingOut.Remove(MontageBlendingOutHandle);
-        }
+        AnimInstance->OnMontageEnded.RemoveDynamic(this, &USOTS_InputBufferComponent::HandleMontageEnded);
+        AnimInstance->OnMontageBlendingOut.RemoveDynamic(this, &USOTS_InputBufferComponent::HandleMontageBlendingOut);
     }
 
-    MontageEndedHandle.Reset();
-    MontageBlendingOutHandle.Reset();
     BoundAnimInstance.Reset();
 }
 

@@ -2,13 +2,57 @@
 
 #include "Interfaces/SOTS_InventoryProviderInterface.h"
 #include "Interfaces/SOTS_InventoryProvider.h"
+#include "SOTS_InventoryFacadeLibrary.h"
 #include "SOTS_ProfileSubsystem.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "TimerManager.h"
+#include "UObject/SoftObjectPath.h"
 
 class UInvSPInventoryProviderComponent;
+
+namespace
+{
+    UObject* ResolveUIRouter(const UObject* WorldContextObject)
+    {
+        if (!WorldContextObject)
+        {
+            return nullptr;
+        }
+
+        const UWorld* World = WorldContextObject->GetWorld();
+        if (!World)
+        {
+            return nullptr;
+        }
+
+        if (UGameInstance* GameInstance = World->GetGameInstance())
+        {
+            static const FSoftClassPath RouterPath(TEXT("/Script/SOTS_UI.SOTS_UIRouterSubsystem"));
+            if (UClass* RouterClass = RouterPath.ResolveClass())
+            {
+                return GameInstance->GetSubsystemBase(RouterClass);
+            }
+        }
+
+        return nullptr;
+    }
+
+    template <typename ParamsType>
+    void CallRouterWithParams(UObject* Router, const FName FuncName, ParamsType& Params)
+    {
+        if (!Router)
+        {
+            return;
+        }
+
+        if (UFunction* Func = Router->FindFunction(FuncName))
+        {
+            Router->ProcessEvent(Func, &Params);
+        }
+    }
+}
 
 void USOTS_InventoryBridgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -131,6 +175,63 @@ UObject* USOTS_InventoryBridgeSubsystem::GetResolvedProvider(const AActor* Owner
     return nullptr;
 }
 
+UObject* USOTS_InventoryBridgeSubsystem::ResolveProviderForPickup(const UObject* WorldContextObject, AActor* Instigator) const
+{
+    if (UObject* FromInstigator = USOTS_InventoryFacadeLibrary::ResolveInventoryProviderFromControllerFirst(Instigator))
+    {
+        return FromInstigator;
+    }
+
+    if (const AActor* ContextActor = Cast<AActor>(WorldContextObject))
+    {
+        if (ContextActor != Instigator)
+        {
+            if (UObject* FromContextActor = USOTS_InventoryFacadeLibrary::ResolveInventoryProviderFromControllerFirst(const_cast<AActor*>(ContextActor)))
+            {
+                return FromContextActor;
+            }
+        }
+    }
+
+    return GetResolvedProvider_ForUI(Instigator);
+}
+
+void USOTS_InventoryBridgeSubsystem::RequestPickupUINotifications(const FSOTS_InvPickupRequest& Request, const FSOTS_InvPickupResult& Result) const
+{
+    if (!Result.bSuccess || !Result.bShouldNotifyUI || !Request.bNotifyUIOnSuccess)
+    {
+        return;
+    }
+
+    if (UObject* Router = ResolveUIRouter(this))
+    {
+        const int32 QuantityToReport = Result.QuantityApplied > 0 ? Result.QuantityApplied : Request.Quantity;
+
+        struct FNotifyPickupItemParams
+        {
+            FGameplayTag ItemTag;
+            int32 Quantity = 0;
+        };
+
+        FNotifyPickupItemParams PickupParams;
+        PickupParams.ItemTag = Request.ItemTag;
+        PickupParams.Quantity = QuantityToReport;
+        CallRouterWithParams(Router, TEXT("RequestInvSP_NotifyPickupItem"), PickupParams);
+
+        if (Result.bIsFirstTimePickup)
+        {
+            struct FNotifyFirstParams
+            {
+                FGameplayTag ItemTag;
+            };
+
+            FNotifyFirstParams FirstParams;
+            FirstParams.ItemTag = Request.ItemTag;
+            CallRouterWithParams(Router, TEXT("RequestInvSP_NotifyFirstTimePickup"), FirstParams);
+        }
+    }
+}
+
 UObject* USOTS_InventoryBridgeSubsystem::ResolveInventoryProvider(const AActor* Owner) const
 {
     if (!Owner)
@@ -190,6 +291,101 @@ void USOTS_InventoryBridgeSubsystem::LogOpFailureIfNeeded(const FSOTS_InventoryO
         Report.ActualQty,
         *Report.DebugReason);
 #endif
+}
+
+bool USOTS_InventoryBridgeSubsystem::RequestPickup(const FSOTS_InvPickupRequest& Request, FSOTS_InvPickupResult& OutResult)
+{
+    OutResult = FSOTS_InvPickupResult();
+    OutResult.ItemId = Request.ItemTag.GetTagName();
+    OutResult.bShouldNotifyUI = Request.bNotifyUIOnSuccess;
+
+    if (!Request.ItemTag.IsValid() || Request.Quantity <= 0)
+    {
+        OutResult.FailReason = FText::FromString(TEXT("Invalid pickup request (tag or quantity)"));
+        return false;
+    }
+
+    AActor* InstigatorActor = Request.InstigatorActor.Get();
+    AActor* PickupActor = Request.PickupActor.Get();
+
+    UObject* Provider = ResolveProviderForPickup(this, InstigatorActor);
+    if (!Provider)
+    {
+        OutResult.FailReason = FText::FromString(TEXT("Inventory provider missing"));
+        return false;
+    }
+
+    OnPickupRequested.Broadcast(Request);
+
+    bool bHandled = false;
+
+    if (Provider->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+    {
+        FText FailReason;
+        const bool bCanPickup = ISOTS_InventoryProviderInterface::Execute_CanPickup(Provider, InstigatorActor, PickupActor, Request.ItemTag, Request.Quantity, FailReason);
+        if (!bCanPickup)
+        {
+            OutResult.FailReason = FailReason;
+            OnPickupCompleted.Broadcast(Request, OutResult);
+            return true;
+        }
+
+        OutResult.bSuccess = ISOTS_InventoryProviderInterface::Execute_ExecutePickup(Provider, InstigatorActor, PickupActor, Request.ItemTag, Request.Quantity);
+        OutResult.QuantityApplied = OutResult.bSuccess ? Request.Quantity : 0;
+        if (!OutResult.bSuccess && FailReason.IsEmpty())
+        {
+            OutResult.FailReason = FText::FromString(TEXT("ExecutePickup rejected"));
+        }
+        bHandled = true;
+    }
+    else if (ISOTS_InventoryProvider* ProviderInterface = Cast<ISOTS_InventoryProvider>(Provider))
+    {
+        if (!ProviderInterface->IsInventoryReady())
+        {
+            OutResult.FailReason = FText::FromString(TEXT("Provider not ready"));
+            OnPickupCompleted.Broadcast(Request, OutResult);
+            return true;
+        }
+
+        OutResult.bSuccess = ProviderInterface->AddItemByTag(Request.ItemTag, Request.Quantity);
+        OutResult.QuantityApplied = OutResult.bSuccess ? Request.Quantity : 0;
+        if (!OutResult.bSuccess)
+        {
+            OutResult.FailReason = FText::FromString(TEXT("AddItemByTag rejected"));
+        }
+        bHandled = true;
+    }
+
+    if (!bHandled)
+    {
+        OutResult.FailReason = FText::FromString(TEXT("Resolved provider lacks pickup support"));
+        OnPickupCompleted.Broadcast(Request, OutResult);
+        return false;
+    }
+
+    // Consumption of the pickup actor is deferred to calling systems to avoid side effects in SPINE_2.
+
+    OnPickupCompleted.Broadcast(Request, OutResult);
+
+    if (OutResult.bSuccess)
+    {
+        RequestPickupUINotifications(Request, OutResult);
+    }
+    return true;
+}
+
+bool USOTS_InventoryBridgeSubsystem::RequestPickupSimple(AActor* Instigator, AActor* PickupActor, FGameplayTag ItemTag, int32 Quantity, bool& bSuccess)
+{
+    FSOTS_InvPickupRequest Request;
+    Request.InstigatorActor = Instigator;
+    Request.PickupActor = PickupActor;
+    Request.ItemTag = ItemTag;
+    Request.Quantity = Quantity;
+
+    FSOTS_InvPickupResult Result;
+    const bool bHandled = RequestPickup(Request, Result);
+    bSuccess = Result.bSuccess;
+    return bHandled;
 }
 
 FSOTS_InventoryOpReport USOTS_InventoryBridgeSubsystem::Op_HasItemByTag(AActor* Owner, FGameplayTag ItemTag, int32 Count) const

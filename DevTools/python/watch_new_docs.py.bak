@@ -1,0 +1,553 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+"""
+watch_new_docs.py (v1.1.1)
+
+Interactive watcher for documentation logs:
+- Watches:
+    - <ProjectRoot>/Docs/**
+    - <ProjectRoot>/Plugins/*/Docs/**
+- Tracks an ACK baseline in:
+    DevTools/python/_state/watch_new_docs_state.json
+- Interactive mode (DEFAULT):
+    - Polls every 10s by default
+    - ONLY clears + redraws the full listing when the detected NEW/MODIFIED set changes
+    - Press Z to zip (with confirmation)
+    - After zipping: baseline is ACK'd automatically, then asks to watch again or exit
+
+Windows-focused: uses msvcrt for non-blocking keypress.
+"""
+
+import argparse
+import json
+import os
+import sys
+import time
+import zipfile
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Tuple
+
+SCRIPT_VERSION = "1.1.1"
+
+DEFAULT_EXTS = [".md", ".txt", ".log"]
+DEFAULT_POLL_SECONDS = 10.0
+
+STATE_DIR_REL = Path("DevTools/python/_state")
+REPORT_DIR_REL = Path("DevTools/python/_reports/new_docs_watch")
+
+
+@dataclass(frozen=True)
+class DocFile:
+    rel: str
+    abs: Path
+    mtime: float
+
+
+def _utc_now_iso() -> str:
+    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _local_now_stamp() -> str:
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def _load_json(path: Path) -> Optional[dict]:
+    try:
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[watch_new_docs] WARN: failed to read json: {path} ({e})", file=sys.stderr)
+        return None
+
+
+def _save_json(path: Path, obj: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(obj, indent=2, sort_keys=True), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _default_project_root() -> Path:
+    here = Path(__file__).resolve()
+    if len(here.parents) >= 3:
+        return here.parents[2]
+    return Path.cwd().resolve()
+
+
+def _relpath_posix(root: Path, p: Path) -> str:
+    try:
+        return p.relative_to(root).as_posix()
+    except Exception:
+        return str(p).replace("\\", "/")
+
+
+def _format_local_time(ts: float) -> str:
+    try:
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return str(ts)
+
+
+def _state_path(project_root: Path) -> Path:
+    return project_root / STATE_DIR_REL / "watch_new_docs_state.json"
+
+
+def _report_dir(project_root: Path) -> Path:
+    return project_root / REPORT_DIR_REL
+
+
+def _ensure_dirs(project_root: Path) -> None:
+    (project_root / STATE_DIR_REL).mkdir(parents=True, exist_ok=True)
+    _report_dir(project_root).mkdir(parents=True, exist_ok=True)
+
+
+def _iter_doc_files(project_root: Path, exts: List[str]) -> Iterable[DocFile]:
+    docs_root = project_root / "Docs"
+    plugins_root = project_root / "Plugins"
+
+    exts_lc = {e.lower() for e in exts}
+
+    if docs_root.exists():
+        for p in docs_root.rglob("*"):
+            if not p.is_file():
+                continue
+            if p.suffix.lower() not in exts_lc:
+                continue
+            try:
+                st = p.stat()
+                yield DocFile(rel=_relpath_posix(project_root, p), abs=p, mtime=float(st.st_mtime))
+            except OSError:
+                continue
+
+    if plugins_root.exists():
+        for plugin_dir in plugins_root.iterdir():
+            if not plugin_dir.is_dir():
+                continue
+            doc_dir = plugin_dir / "Docs"
+            if not doc_dir.exists():
+                continue
+            for p in doc_dir.rglob("*"):
+                if not p.is_file():
+                    continue
+                if p.suffix.lower() not in exts_lc:
+                    continue
+                try:
+                    st = p.stat()
+                    yield DocFile(rel=_relpath_posix(project_root, p), abs=p, mtime=float(st.st_mtime))
+                except OSError:
+                    continue
+
+
+def _fresh_state_snapshot(project_root: Path, exts: List[str]) -> Dict[str, float]:
+    snap: Dict[str, float] = {}
+    for df in _iter_doc_files(project_root, exts):
+        snap[df.rel] = df.mtime
+    return snap
+
+
+def _init_state_if_missing(project_root: Path, exts: List[str], verbose: bool) -> dict:
+    sp = _state_path(project_root)
+    st = _load_json(sp)
+    if st is not None:
+        return st
+
+    baseline_files = _fresh_state_snapshot(project_root, exts)
+    baseline_ts = time.time()
+
+    st = {
+        "version": 1,
+        "tool": "watch_new_docs",
+        "script_version": SCRIPT_VERSION,
+        "created_utc": _utc_now_iso(),
+        "baseline_ts": baseline_ts,
+        "baseline_files": baseline_files,
+        "last_scan_utc": None,
+    }
+    _save_json(sp, st)
+    if verbose:
+        print(f"[watch_new_docs] Created baseline at {sp}")
+        print(f"[watch_new_docs] Baseline files: {len(baseline_files)}")
+    return st
+
+
+def _ack_now(project_root: Path, exts: List[str]) -> dict:
+    _ensure_dirs(project_root)
+    baseline_files = _fresh_state_snapshot(project_root, exts)
+    baseline_ts = time.time()
+
+    st = _load_json(_state_path(project_root)) or {}
+    st.update({
+        "version": 1,
+        "tool": "watch_new_docs",
+        "script_version": SCRIPT_VERSION,
+        "baseline_ts": baseline_ts,
+        "baseline_files": baseline_files,
+        "last_scan_utc": _utc_now_iso(),
+    })
+    if "created_utc" not in st:
+        st["created_utc"] = _utc_now_iso()
+    _save_json(_state_path(project_root), st)
+    return st
+
+
+def _diff_since_baseline(project_root: Path, exts: List[str], st: dict) -> Tuple[List[DocFile], List[DocFile], Dict[str, float]]:
+    baseline_files: Dict[str, float] = dict(st.get("baseline_files") or {})
+    current_map = _fresh_state_snapshot(project_root, exts)
+
+    new_files: List[DocFile] = []
+    modified_files: List[DocFile] = []
+
+    for rel, mtime in current_map.items():
+        abs_p = project_root / Path(rel)
+        if rel not in baseline_files:
+            new_files.append(DocFile(rel=rel, abs=abs_p, mtime=mtime))
+        else:
+            old_mtime = float(baseline_files.get(rel, 0.0))
+            if mtime > old_mtime + 1e-6:
+                modified_files.append(DocFile(rel=rel, abs=abs_p, mtime=mtime))
+
+    new_files.sort(key=lambda x: x.rel.lower())
+    modified_files.sort(key=lambda x: x.rel.lower())
+    return new_files, modified_files, current_map
+
+
+def _clear_console() -> None:
+    try:
+        os.system("cls" if os.name == "nt" else "clear")
+    except Exception:
+        pass
+
+
+def _print_listing(project_root: Path, st: dict, new_files: List[DocFile], modified_files: List[DocFile], include_modified: bool, max_items: int) -> None:
+    baseline_ts = float(st.get("baseline_ts") or 0.0)
+    baseline_local = _format_local_time(baseline_ts)
+    now_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    print(f"SOTS watch_new_docs v{SCRIPT_VERSION}")
+    print(f"Root: {project_root.as_posix()}")
+    print(f"Now:  {now_local}")
+    print(f"ACK baseline: {baseline_local}")
+    print("")
+    print(f"New docs:      {len(new_files)}")
+    print(f"Modified docs: {len(modified_files)}")
+    print("")
+
+    def _print_section(title: str, items: List[DocFile]) -> None:
+        print(title)
+        if not items:
+            print("  (none)")
+            print("")
+            return
+        show = items[:max_items] if max_items > 0 else items
+        for df in show:
+            print(f"  - {df.rel}  (mtime: {_format_local_time(df.mtime)})")
+        if max_items > 0 and len(items) > max_items:
+            print(f"  ... ({len(items) - max_items} more)")
+        print("")
+
+    _print_section("== NEW ==", new_files)
+    if include_modified:
+        _print_section("== MODIFIED ==", modified_files)
+
+    print("Controls:")
+    print("  [Z] zip new docs (and modified if enabled)")
+    print("  [A] ack baseline (clears the lists)")
+    print("  [Q] quit")
+    print("")
+
+
+def _write_report_and_listfiles(
+    project_root: Path,
+    st: dict,
+    new_files: List[DocFile],
+    modified_files: List[DocFile],
+    include_modified: bool,
+) -> Tuple[Path, Path]:
+    _ensure_dirs(project_root)
+    stamp = _local_now_stamp()
+
+    report_path = _report_dir(project_root) / f"new_docs_report_{stamp}.md"
+    list_path = _report_dir(project_root) / f"new_docs_to_zip_{stamp}.txt"
+
+    to_zip: List[DocFile] = list(new_files)
+    if include_modified:
+        to_zip.extend(modified_files)
+    to_zip.sort(key=lambda x: x.rel.lower())
+
+    list_path.write_text("\n".join(df.rel for df in to_zip) + ("\n" if to_zip else ""), encoding="utf-8")
+
+    baseline_ts = float(st.get("baseline_ts") or 0.0)
+    baseline_local = _format_local_time(baseline_ts)
+
+    def _md_list(items: List[DocFile]) -> str:
+        if not items:
+            return "_(none)_\n"
+        return "\n".join([f"- `{df.rel}`  (mtime: {_format_local_time(df.mtime)})" for df in items]) + "\n"
+
+    report_md = []
+    report_md.append(f"# SOTS New Docs Watch Report ({stamp})")
+    report_md.append("")
+    report_md.append(f"- Script: `watch_new_docs.py` v{SCRIPT_VERSION}")
+    report_md.append(f"- Project root: `{project_root.as_posix()}`")
+    report_md.append(f"- Baseline (ACK) local time: `{baseline_local}`")
+    report_md.append("")
+    report_md.append("## New docs since baseline")
+    report_md.append(_md_list(new_files))
+    report_md.append("## Modified docs since baseline")
+    report_md.append(_md_list(modified_files))
+    report_md.append("## Files to zip for upload")
+    report_md.append(f"- List file: `{list_path.as_posix()}`")
+    report_md.append(f"- Count: `{len(to_zip)}`")
+    report_md.append("")
+    report_path.write_text("\n".join(report_md), encoding="utf-8")
+
+    return report_path, list_path
+
+
+def _zip_files(project_root: Path, rel_paths: List[str], out_zip: Path) -> Tuple[int, List[str]]:
+    out_zip.parent.mkdir(parents=True, exist_ok=True)
+    missing: List[str] = []
+    written = 0
+
+    with zipfile.ZipFile(out_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for rel in rel_paths:
+            rel = rel.strip()
+            if not rel:
+                continue
+            abs_p = project_root / Path(rel)
+            if not abs_p.exists() or not abs_p.is_file():
+                missing.append(rel)
+                continue
+            zf.write(abs_p, arcname=rel)
+            written += 1
+
+    return written, missing
+
+
+def _try_get_keypress() -> Optional[str]:
+    if os.name != "nt":
+        return None
+    try:
+        import msvcrt  # type: ignore
+        if msvcrt.kbhit():
+            ch = msvcrt.getch()
+            try:
+                return ch.decode("utf-8", errors="ignore")
+            except Exception:
+                return None
+    except Exception:
+        return None
+    return None
+
+
+def _signature(new_files: List[DocFile], modified_files: List[DocFile], include_modified: bool) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    new_sig = tuple(df.rel for df in new_files)
+    mod_sig = tuple(df.rel for df in modified_files) if include_modified else tuple()
+    return (new_sig, mod_sig)
+
+
+def cmd_interactive(args: argparse.Namespace) -> int:
+    project_root = Path(args.root).resolve()
+    exts = [e if e.startswith(".") else f".{e}" for e in args.ext]
+    include_modified = bool(args.include_modified)
+    poll = float(args.poll_seconds)
+    max_items = int(args.max_items)
+
+    st = _init_state_if_missing(project_root, exts, verbose=True)
+
+    last_sig: Optional[Tuple[Tuple[str, ...], Tuple[str, ...]]] = None
+
+    def _force_redraw(new_files: List[DocFile], modified_files: List[DocFile]) -> None:
+        nonlocal last_sig
+        _clear_console()
+        _print_listing(project_root, st, new_files, modified_files, include_modified, max_items)
+        last_sig = _signature(new_files, modified_files, include_modified)
+
+    def _run_watch_loop() -> str:
+        nonlocal last_sig
+        while True:
+            new_files, modified_files, _ = _diff_since_baseline(project_root, exts, st)
+            sig = _signature(new_files, modified_files, include_modified)
+
+            # ONLY clear+reprint when the set changes (or first draw)
+            if last_sig != sig:
+                _force_redraw(new_files, modified_files)
+
+            # Wait for poll interval, allow keypress during wait
+            start = time.time()
+            while True:
+                key = _try_get_keypress()
+                if key:
+                    k = key.lower()
+
+                    if k == "q":
+                        return "exit"
+
+                    if k == "a":
+                        _clear_console()
+                        print("[watch_new_docs] ACK baseline requested...")
+                        new_state = _ack_now(project_root, exts)
+                        st.clear()
+                        st.update(new_state)
+                        # force redraw on next iteration
+                        last_sig = None
+                        print("[watch_new_docs] Baseline ACK'd. Press any key to resume watching.")
+                        while _try_get_keypress() is None:
+                            time.sleep(0.05)
+                        break
+
+                    if k == "z":
+                        to_zip: List[DocFile] = list(new_files)
+                        if include_modified:
+                            to_zip.extend(modified_files)
+                        to_zip.sort(key=lambda x: x.rel.lower())
+
+                        if not to_zip:
+                            _clear_console()
+                            print("[watch_new_docs] No new/modified docs to zip.")
+                            print("Press any key to return to watching...")
+                            while _try_get_keypress() is None:
+                                time.sleep(0.05)
+                            # force redraw so the UI is clean
+                            last_sig = None
+                            break
+
+                        _clear_console()
+                        print(f"[watch_new_docs] Ready to zip {len(to_zip)} file(s).")
+                        ans = input("Type YES to confirm zip: ").strip().lower()
+                        if ans != "yes":
+                            print("[watch_new_docs] Zip cancelled. Press Enter to return to watching.")
+                            input()
+                            last_sig = None
+                            break
+
+                        stamp = _local_now_stamp()
+                        out_zip = _report_dir(project_root) / f"SOTS_new_docs_{stamp}.zip"
+
+                        _write_report_and_listfiles(project_root, st, new_files, modified_files, include_modified)
+                        written, missing = _zip_files(project_root, [df.rel for df in to_zip], out_zip)
+
+                        print("")
+                        print(f"[watch_new_docs] ZIP created: {out_zip.as_posix()}")
+                        print(f"[watch_new_docs] Files written: {written}")
+                        if missing:
+                            print(f"[watch_new_docs] Missing ({len(missing)}):")
+                            for m in missing[:50]:
+                                print(f"  - {m}")
+                            if len(missing) > 50:
+                                print(f"  ... ({len(missing)-50} more)")
+
+                        print("")
+                        print("[watch_new_docs] Auto-ACK baseline now (so next watch only shows new stuff).")
+                        new_state = _ack_now(project_root, exts)
+                        st.clear()
+                        st.update(new_state)
+                        last_sig = None
+                        print("Done.")
+                        return "zipped"
+
+                if (time.time() - start) >= poll:
+                    break
+                time.sleep(0.1)
+
+    while True:
+        result = _run_watch_loop()
+        if result == "exit":
+            _clear_console()
+            print("[watch_new_docs] Exiting.")
+            return 0
+
+        print("")
+        choice = input("Zip complete. Watch again? (Y/N): ").strip().lower()
+        if choice in ("y", "yes"):
+            continue
+        _clear_console()
+        print("[watch_new_docs] Exiting.")
+        return 0
+
+
+def cmd_scan(args: argparse.Namespace) -> int:
+    project_root = Path(args.root).resolve()
+    exts = [e if e.startswith(".") else f".{e}" for e in args.ext]
+    include_modified = bool(args.include_modified)
+
+    st = _init_state_if_missing(project_root, exts, verbose=args.verbose)
+    new_files, modified_files, _ = _diff_since_baseline(project_root, exts, st)
+
+    _clear_console()
+    _print_listing(project_root, st, new_files, modified_files, include_modified, max_items=int(args.max_items))
+    report_path, list_path = _write_report_and_listfiles(project_root, st, new_files, modified_files, include_modified)
+    st["last_scan_utc"] = _utc_now_iso()
+    _save_json(_state_path(project_root), st)
+
+    print(f"[watch_new_docs] Report: {report_path.as_posix()}")
+    print(f"[watch_new_docs] Zip list: {list_path.as_posix()}")
+    return 0
+
+
+def cmd_ack(args: argparse.Namespace) -> int:
+    project_root = Path(args.root).resolve()
+    exts = [e if e.startswith(".") else f".{e}" for e in args.ext]
+    st = _ack_now(project_root, exts)
+    print("[watch_new_docs] ACK complete.")
+    print(f"[watch_new_docs] New baseline captured: {len(st.get('baseline_files') or {})} doc files.")
+    print(f"[watch_new_docs] State: {_state_path(project_root).as_posix()}")
+    return 0
+
+
+def cmd_reset(args: argparse.Namespace) -> int:
+    project_root = Path(args.root).resolve()
+    sp = _state_path(project_root)
+    if sp.exists():
+        sp.unlink()
+        print(f"[watch_new_docs] Reset: deleted state file: {sp.as_posix()}")
+    else:
+        print(f"[watch_new_docs] Reset: state file not found: {sp.as_posix()}")
+    return 0
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="watch_new_docs.py",
+        description="Watch SOTS Docs/ and Plugins/*/Docs/ for new/updated docs; interactive zip on demand.",
+    )
+    p.add_argument("--root", default=str(_default_project_root()), help="Project root (default: inferred from script location).")
+    p.add_argument("--ext", nargs="*", default=DEFAULT_EXTS, help="Extensions to include (default: .md .txt .log).")
+    p.add_argument("--include-modified", action="store_true", default=True, help="Include modified docs (default: ON).")
+    p.add_argument("--max-items", type=int, default=200, help="Max items to print per section. 0 = unlimited.")
+    p.add_argument("--poll-seconds", type=float, default=DEFAULT_POLL_SECONDS, help="Interactive poll interval in seconds (default: 10).")
+    p.add_argument("--verbose", action="store_true", help="Extra console output on init/scan.")
+
+    sub = p.add_subparsers(dest="cmd", required=False)
+    sub.add_parser("interactive", help="Interactive watch loop (default).")
+    sub.add_parser("scan", help="Scan once and print report/list files.")
+    sub.add_parser("ack", help="Acknowledge current docs as baseline.")
+    sub.add_parser("reset", help="Delete state file (fresh start).")
+
+    return p
+
+
+def main(argv: List[str]) -> int:
+    p = build_arg_parser()
+    args = p.parse_args(argv)
+    cmd = args.cmd or "interactive"
+
+    if cmd == "interactive":
+        return cmd_interactive(args)
+    if cmd == "scan":
+        return cmd_scan(args)
+    if cmd == "ack":
+        return cmd_ack(args)
+    if cmd == "reset":
+        return cmd_reset(args)
+
+    print(f"[watch_new_docs] ERROR: unknown command: {cmd}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

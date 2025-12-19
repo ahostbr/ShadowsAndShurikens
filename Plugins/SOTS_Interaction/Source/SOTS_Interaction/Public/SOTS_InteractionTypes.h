@@ -221,6 +221,43 @@ struct FSOTS_InteractionExecuteReport
     FString DebugReason;
 };
 
+/**
+ * Canonical cross-plugin interaction action request payload.
+ * Emitted before any interactable execution when a verb is handled externally.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_InteractionActionRequest
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    TWeakObjectPtr<AActor> InstigatorActor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    TWeakObjectPtr<AActor> TargetActor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    FGameplayTag VerbTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    int32 OptionIndex = INDEX_NONE;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    FGameplayTag ItemTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    int32 Quantity = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    FGameplayTagContainer ContextTags;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    bool bHadLineOfSight = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    float Distance = 0.f;
+};
+
 UENUM(BlueprintType)
 enum class ESOTS_InteractionTraceShape : uint8
 {

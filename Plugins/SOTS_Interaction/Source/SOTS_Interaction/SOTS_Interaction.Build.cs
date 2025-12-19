@@ -12,7 +12,8 @@ public class SOTS_Interaction : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "GameplayTags"
+                "GameplayTags",
+                "SOTS_Input"
             }
         );
 
@@ -20,7 +21,8 @@ public class SOTS_Interaction : ModuleRules
             new string[]
             {
                 "SOTS_TagManager",
-                "OmniTrace"
+                "OmniTrace",
+                "EnhancedInput"
             }
         );
     }

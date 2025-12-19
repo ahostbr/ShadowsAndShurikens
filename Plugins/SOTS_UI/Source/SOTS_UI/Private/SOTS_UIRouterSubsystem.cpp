@@ -17,6 +17,9 @@
 #include "SOTS_WidgetRegistryDataAsset.h"
 #include "SOTS_UISettings.h"
 #include "SOTS_InputAPI.h"
+#include "SOTS_InteractionSubsystem.h"
+#include "SOTS_InteractableComponent.h"
+#include "SOTS_InventoryFacadeLibrary.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UIRouter, Log, All);
 
@@ -30,6 +33,11 @@ namespace
 	};
 
 		static const FGameplayTag UINavLayerTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Input.Layer.UI.Nav")), false);
+		static const FGameplayTag TAG_InteractionVerb_Pickup = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Pickup")), false);
+		static const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Execute")), false);
+		static const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStart")), false);
+		static const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStop")), false);
+		static const FGameplayTag TAG_Context_Interaction = FGameplayTag::RequestGameplayTag(FName(TEXT("Context.Interaction")), false);
 }
 
 USOTS_UIRouterSubsystem* USOTS_UIRouterSubsystem::Get(const UObject* WorldContextObject)
@@ -92,6 +100,7 @@ void USOTS_UIRouterSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	EnsureAdapters();
+	EnsureInteractionActionBinding();
 
 	static bool bLoggedBaseZOrders = false;
 	if (!bLoggedBaseZOrders)
@@ -115,6 +124,21 @@ void USOTS_UIRouterSubsystem::Deinitialize()
 	LoadedRegistry = nullptr;
 	bGamePausedForUI = false;
 	UpdateUINavLayerState(false);
+
+	if (bInteractionActionBindingInitialized)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GameInstance = World->GetGameInstance())
+			{
+				if (USOTS_InteractionSubsystem* InteractionSubsystem = GameInstance->GetSubsystem<USOTS_InteractionSubsystem>())
+				{
+					InteractionSubsystem->OnInteractionActionRequested.RemoveDynamic(this, &USOTS_UIRouterSubsystem::HandleInteractionActionRequested);
+				}
+			}
+		}
+		bInteractionActionBindingInitialized = false;
+	}
 
 	Super::Deinitialize();
 }
@@ -976,6 +1000,8 @@ void USOTS_UIRouterSubsystem::EnsureAdapters()
 	EnsureInvSPAdapter();
 
 	EnsureInteractionAdapter();
+
+	EnsureInteractionActionBinding();
 }
 
 void USOTS_UIRouterSubsystem::EnsureInteractionAdapter()
@@ -984,6 +1010,87 @@ void USOTS_UIRouterSubsystem::EnsureInteractionAdapter()
 	{
 		InteractionAdapter = NewObject<USOTS_InteractionEssentialsAdapter>(GetGameInstance(), InteractionAdapterClass);
 	}
+}
+
+void USOTS_UIRouterSubsystem::EnsureInteractionActionBinding()
+{
+	if (bInteractionActionBindingInitialized)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			if (USOTS_InteractionSubsystem* InteractionSubsystem = GameInstance->GetSubsystem<USOTS_InteractionSubsystem>())
+			{
+				InteractionSubsystem->OnInteractionActionRequested.AddDynamic(this, &USOTS_UIRouterSubsystem::HandleInteractionActionRequested);
+				bInteractionActionBindingInitialized = true;
+			}
+		}
+	}
+}
+
+void USOTS_UIRouterSubsystem::HandleInteractionActionRequested(const FSOTS_InteractionActionRequest& Request)
+{
+	if (!Request.VerbTag.IsValid())
+	{
+		return;
+	}
+
+	if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Pickup))
+	{
+		FSOTS_InvPickupRequest InvRequest;
+		InvRequest.InstigatorActor = Request.InstigatorActor;
+		InvRequest.PickupActor = Request.TargetActor;
+		InvRequest.ItemTag = Request.ItemTag;
+		InvRequest.Quantity = Request.Quantity > 0 ? Request.Quantity : 1;
+		InvRequest.ContextTags = Request.ContextTags;
+		if (TAG_Context_Interaction.IsValid())
+		{
+			InvRequest.ContextTags.AddTag(TAG_Context_Interaction);
+		}
+
+		if (!InvRequest.ItemTag.IsValid())
+		{
+			// Best-effort fallback: try reading pickup metadata from the target's interactable component.
+			if (AActor* TargetActor = Request.TargetActor.Get())
+			{
+				if (const USOTS_InteractableComponent* IC = TargetActor->FindComponentByClass<USOTS_InteractableComponent>())
+				{
+					if (IC->PickupItemTag.IsValid())
+					{
+						InvRequest.ItemTag = IC->PickupItemTag;
+					}
+
+					if (IC->PickupQuantity > 0 && InvRequest.Quantity <= 0)
+					{
+						InvRequest.Quantity = IC->PickupQuantity;
+					}
+				}
+			}
+
+			if (!InvRequest.ItemTag.IsValid())
+			{
+				UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("UIRouter: Pickup action missing ItemTag after fallback; skipping route."));
+				return;
+			}
+		}
+
+		FSOTS_InvPickupResult InvResult;
+		USOTS_InventoryFacadeLibrary::RequestPickup_FromRequest(this, InvRequest, InvResult);
+		return;
+	}
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Execute) ||
+		Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStart) ||
+		Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStop))
+	{
+		UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("UIRouter: Interaction action %s deferred (stub)."), *Request.VerbTag.ToString());
+	}
+#endif
 }
 
 bool USOTS_UIRouterSubsystem::DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload)

@@ -54,6 +54,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
     FGameplayTagContainer MetaTags;
 
+    /** Optional: pickup metadata to aid cross-plugin routing. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Pickup")
+    FGameplayTag PickupItemTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Pickup", meta=(ClampMin="1"))
+    int32 PickupQuantity = 1;
+
     /** Optional options defined on the component. Component options take priority over interface options. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Interaction")
     TArray<FSOTS_InteractionOption> Options;

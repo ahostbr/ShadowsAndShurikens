@@ -7,6 +7,7 @@
 #include "SOTS_UIPayloadTypes.h"
 #include "SOTS_UIModalResultTypes.h"
 #include "SOTS_InteractionViewTypes.h"
+#include "SOTS_InteractionTypes.h"
 #include "SOTS_UIRouterSubsystem.generated.h"
 
 class USOTS_WidgetRegistryDataAsset;
@@ -227,6 +228,10 @@ private:
 	APlayerController* GetPlayerController() const;
 	void EnsureAdapters();
 	void EnsureInteractionAdapter();
+	void EnsureInteractionActionBinding();
+
+	UFUNCTION()
+	void HandleInteractionActionRequested(const FSOTS_InteractionActionRequest& Request);
 	bool ExecuteSystemAction(FGameplayTag ActionTag);
 	FGameplayTag GetDefaultConfirmDialogTag() const;
 	FGameplayTag ResolveFirstValidTag(const TArray<FName>& Names) const;
@@ -251,6 +256,8 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<USOTS_InteractionEssentialsAdapter> InteractionAdapter;
+
+	bool bInteractionActionBindingInitialized = false;
 
 	UPROPERTY()
 	TMap<ESOTS_UILayer, FSOTS_LayerStack> ActiveLayerStacks;

@@ -40,6 +40,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
     const FSOTS_InteractionPromptSpec&, Prompt
 );
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+    FSOTS_OnDriverActionRequest,
+    const FSOTS_InteractionActionRequest&, Request
+);
+
 UCLASS(ClassGroup=(SOTS), meta=(BlueprintSpawnableComponent))
 class USOTS_InteractionDriverComponent : public UActorComponent
 {
@@ -75,6 +80,10 @@ public:
     /** Fired when prompt data changes (focus/options/selection). */
     UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction|Driver")
     FSOTS_OnInteractionPromptChanged OnInteractionPromptChanged;
+
+    /** Optional forwarder for subsystem action requests. */
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction|Driver")
+    FSOTS_OnDriverActionRequest OnActionRequestForwarded;
 
     /** Call from input binding (Interact). */
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction|Driver")
@@ -160,6 +169,9 @@ private:
 
     UFUNCTION()
     void HandleSubsystemCandidateChanged(APlayerController* PlayerController, const FSOTS_InteractionContext& NewCandidate);
+
+    UFUNCTION()
+    void HandleSubsystemActionRequest(const FSOTS_InteractionActionRequest& Request);
 
     UFUNCTION()
     void HandleRouterIntentEvent(const FSOTS_InputIntentEvent& Event);

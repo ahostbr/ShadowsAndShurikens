@@ -96,6 +96,7 @@ void USOTS_InteractionDriverComponent::BindSubsystemEvents()
     {
         Subsystem->OnUIIntentPayload.AddDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemUIIntentPayload);
         Subsystem->OnCandidateChanged.AddDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemCandidateChanged);
+        Subsystem->OnInteractionActionRequested.AddDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemActionRequest);
     }
 }
 
@@ -105,6 +106,7 @@ void USOTS_InteractionDriverComponent::UnbindSubsystemEvents()
     {
         Subsystem->OnUIIntentPayload.RemoveDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemUIIntentPayload);
         Subsystem->OnCandidateChanged.RemoveDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemCandidateChanged);
+        Subsystem->OnInteractionActionRequested.RemoveDynamic(this, &USOTS_InteractionDriverComponent::HandleSubsystemActionRequest);
     }
 }
 
@@ -185,6 +187,25 @@ void USOTS_InteractionDriverComponent::HandleSubsystemCandidateChanged(APlayerCo
 
     BroadcastOptionChangeIfNeeded(PreviousData.Options, CachedData.Options);
     RefreshPromptSpec();
+}
+
+void USOTS_InteractionDriverComponent::HandleSubsystemActionRequest(const FSOTS_InteractionActionRequest& Request)
+{
+    if (!CachedPC.IsValid())
+    {
+        return;
+    }
+
+    const AActor* CachedActor = CachedPC.IsValid() ? CachedPC.Get() : nullptr;
+    const bool bMatchesController = CachedActor && Request.InstigatorActor.Get() == CachedActor;
+    const bool bMatchesPawn = CachedPC.IsValid() && CachedPC->GetPawn() && Request.InstigatorActor.Get() == CachedPC->GetPawn();
+
+    if (!bMatchesController && !bMatchesPawn)
+    {
+        return;
+    }
+
+    OnActionRequestForwarded.Broadcast(Request);
 }
 
 void USOTS_InteractionDriverComponent::RefreshCachedData()

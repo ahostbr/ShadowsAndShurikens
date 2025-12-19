@@ -3,6 +3,9 @@
 #include "SOTS_InventoryBridgeSubsystem.h"
 #include "Interfaces/SOTS_InventoryProvider.h"
 #include "Interfaces/SOTS_InventoryProviderInterface.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/PlayerController.h"
+#include "UObject/SoftObjectPath.h"
 
 class AActor;
 
@@ -11,6 +14,58 @@ namespace
     USOTS_InventoryBridgeSubsystem* GetBridge(const UObject* WorldContextObject)
     {
         return USOTS_InventoryBridgeSubsystem::Get(WorldContextObject);
+    }
+
+    UObject* ResolveUIRouter(const UObject* WorldContextObject)
+    {
+        if (!WorldContextObject)
+        {
+            return nullptr;
+        }
+
+        const UWorld* World = WorldContextObject->GetWorld();
+        if (!World)
+        {
+            return nullptr;
+        }
+
+        if (UGameInstance* GameInstance = World->GetGameInstance())
+        {
+            static const FSoftClassPath RouterPath(TEXT("/Script/SOTS_UI.SOTS_UIRouterSubsystem"));
+            if (UClass* RouterClass = RouterPath.ResolveClass())
+            {
+                return GameInstance->GetSubsystemBase(RouterClass);
+            }
+        }
+
+        return nullptr;
+    }
+
+    void CallRouterNoParams(UObject* Router, const FName FuncName)
+    {
+        if (!Router)
+        {
+            return;
+        }
+
+        if (UFunction* Func = Router->FindFunction(FuncName))
+        {
+            Router->ProcessEvent(Func, nullptr);
+        }
+    }
+
+    template <typename ParamsType>
+    void CallRouterWithParams(UObject* Router, const FName FuncName, ParamsType& Params)
+    {
+        if (!Router)
+        {
+            return;
+        }
+
+        if (UFunction* Func = Router->FindFunction(FuncName))
+        {
+            Router->ProcessEvent(Func, &Params);
+        }
     }
 
     enum class ESOTS_UIHelperAction
@@ -36,6 +91,36 @@ namespace
             *Report.DebugReason);
     }
 #endif
+
+    UObject* ResolveProviderFromActor(AActor* Actor)
+    {
+        if (!Actor)
+        {
+            return nullptr;
+        }
+
+        if (Actor->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+        {
+            return Actor;
+        }
+
+        TInlineComponentArray<UActorComponent*> Components;
+        Actor->GetComponents(Components);
+        for (UActorComponent* Component : Components)
+        {
+            if (Component && Component->GetClass()->ImplementsInterface(USOTS_InventoryProviderInterface::StaticClass()))
+            {
+                return Component;
+            }
+        }
+
+        return nullptr;
+    }
+
+    UObject* ResolveProvider(const UObject* WorldContextObject, AActor* Instigator)
+    {
+        return USOTS_InventoryFacadeLibrary::GetInventoryProviderFromWorldContext(WorldContextObject, Instigator);
+    }
 }
 
 bool USOTS_InventoryFacadeLibrary::TryConsumeItemForAbility(const UObject* WorldContextObject,
@@ -193,4 +278,153 @@ bool USOTS_InventoryFacadeLibrary::ToggleInventoryUI_WithReport(const UObject* W
 #endif
     }
     return OutReport.Result == ESOTS_InventoryOpResult::Success;
+}
+
+void USOTS_InventoryFacadeLibrary::RequestOpenInventoryUI(const UObject* WorldContextObject)
+{
+    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    {
+        CallRouterNoParams(Router, TEXT("RequestInvSP_OpenInventory"));
+    }
+}
+
+void USOTS_InventoryFacadeLibrary::RequestCloseInventoryUI(const UObject* WorldContextObject)
+{
+    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    {
+        CallRouterNoParams(Router, TEXT("RequestInvSP_CloseInventory"));
+    }
+}
+
+void USOTS_InventoryFacadeLibrary::RequestToggleInventoryUI(const UObject* WorldContextObject)
+{
+    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    {
+        CallRouterNoParams(Router, TEXT("RequestInvSP_ToggleInventory"));
+    }
+}
+
+void USOTS_InventoryFacadeLibrary::RequestRefreshInventoryUI(const UObject* WorldContextObject)
+{
+    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    {
+        CallRouterNoParams(Router, TEXT("RequestInvSP_RefreshInventory"));
+    }
+}
+
+void USOTS_InventoryFacadeLibrary::RequestSetShortcutMenuVisible(const UObject* WorldContextObject, bool bVisible)
+{
+    if (UObject* Router = ResolveUIRouter(WorldContextObject))
+    {
+        struct FSetShortcutMenuVisibleParams
+        {
+            bool bVisible = false;
+        };
+
+        FSetShortcutMenuVisibleParams Params;
+        Params.bVisible = bVisible;
+        CallRouterWithParams(Router, TEXT("RequestInvSP_SetShortcutMenuVisible"), Params);
+    }
+}
+
+FName USOTS_InventoryFacadeLibrary::ItemIdFromTag(FGameplayTag ItemTag)
+{
+    return ItemTag.GetTagName();
+}
+
+UObject* USOTS_InventoryFacadeLibrary::GetInventoryProviderFromWorldContext(const UObject* WorldContextObject, AActor* Instigator)
+{
+    if (UObject* FromInstigator = ResolveInventoryProviderFromControllerFirst(Instigator))
+    {
+        return FromInstigator;
+    }
+
+    if (const AActor* ContextActor = Cast<AActor>(WorldContextObject))
+    {
+        if (ContextActor != Instigator)
+        {
+            if (UObject* FromContextActor = ResolveInventoryProviderFromControllerFirst(const_cast<AActor*>(ContextActor)))
+            {
+                return FromContextActor;
+            }
+        }
+    }
+
+    if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
+    {
+        return Bridge->GetResolvedProvider_ForUI(Instigator);
+    }
+
+    return nullptr;
+}
+
+UObject* USOTS_InventoryFacadeLibrary::ResolveInventoryProviderFromControllerFirst(AActor* Instigator)
+{
+    if (!Instigator)
+    {
+        return nullptr;
+    }
+
+    if (AController* Controller = Instigator->GetInstigatorController())
+    {
+        if (UObject* FromController = ResolveProviderFromActor(Controller))
+        {
+            return FromController;
+        }
+
+        if (APawn* Pawn = Controller->GetPawn())
+        {
+            if (UObject* FromPawn = ResolveProviderFromActor(Pawn))
+            {
+                return FromPawn;
+            }
+        }
+    }
+
+    return ResolveProviderFromActor(Instigator);
+}
+
+bool USOTS_InventoryFacadeLibrary::RequestPickup_FromRequest(const UObject* WorldContextObject,
+                                                             const FSOTS_InvPickupRequest& Request,
+                                                             FSOTS_InvPickupResult& OutResult)
+{
+    OutResult = FSOTS_InvPickupResult();
+    OutResult.ItemId = Request.ItemTag.GetTagName();
+
+    if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
+    {
+        return Bridge->RequestPickup(Request, OutResult);
+    }
+
+    OutResult.FailReason = FText::FromString(TEXT("Inventory bridge missing"));
+    return false;
+}
+
+bool USOTS_InventoryFacadeLibrary::RequestPickupSimple(const UObject* WorldContextObject,
+                                                       AActor* Instigator,
+                                                       AActor* PickupActor,
+                                                       FGameplayTag ItemTag,
+                                                       int32 Quantity,
+                                                       bool& bSuccess)
+{
+    FSOTS_InvPickupRequest Request;
+    Request.InstigatorActor = Instigator;
+    Request.PickupActor = PickupActor;
+    Request.ItemTag = ItemTag;
+    Request.Quantity = Quantity;
+
+    FSOTS_InvPickupResult Result;
+    const bool bHandled = RequestPickup_FromRequest(WorldContextObject, Request, Result);
+    bSuccess = Result.bSuccess;
+    return bHandled;
+}
+
+bool USOTS_InventoryFacadeLibrary::RequestPickup(const UObject* WorldContextObject,
+                                                 AActor* Instigator,
+                                                 AActor* PickupActor,
+                                                 FGameplayTag ItemTag,
+                                                 int32 Quantity,
+                                                 bool& bSuccess)
+{
+    return RequestPickupSimple(WorldContextObject, Instigator, PickupActor, ItemTag, Quantity, bSuccess);
 }

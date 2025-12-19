@@ -25,7 +25,8 @@ public class SOTS_UI : ModuleRules
 				"SOTS_TagManager",
 				"DeveloperSettings",
 				"InputCore",
-				"SOTS_Input"
+				"SOTS_Input",
+				"SOTS_Interaction"
 			}
 		);
 
@@ -33,6 +34,7 @@ public class SOTS_UI : ModuleRules
 			new string[]
 			{
 				// TODO: add ProHUDV2 (or equivalent) when HUD module exists
+				"SOTS_INV"
 			}
 		);
 	}

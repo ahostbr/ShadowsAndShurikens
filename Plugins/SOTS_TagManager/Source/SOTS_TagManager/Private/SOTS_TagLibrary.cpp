@@ -154,7 +154,7 @@ FGameplayTagContainer USOTS_TagLibrary::GetActorTags(const UObject* WorldContext
     return Tags;
 }
 
-void USOTS_TagLibrary::GetActorTags(const UObject* WorldContextObject, AActor* Target, FGameplayTagContainer& OutTags)
+void USOTS_TagLibrary::GetActorTags_WorldContext(const UObject* WorldContextObject, AActor* Target, FGameplayTagContainer& OutTags)
 {
     OutTags.Reset();
 

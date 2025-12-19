@@ -26,6 +26,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
 );
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnInteractionExecuted, const FSOTS_InteractionExecuteReport&, Report);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnInteractionActionRequested, const FSOTS_InteractionActionRequest&, Request);
 
 USTRUCT()
 struct FSOTS_InteractionCandidateState
@@ -174,6 +175,10 @@ public:
     UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction")
     FSOTS_OnInteractionExecuted OnInteractionExecuted;
 
+    /** Cross-plugin action seam: fired when a canonical verb is routed externally. */
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Interaction")
+    FSOTS_OnInteractionActionRequested OnInteractionActionRequested;
+
     // --- Public API (call from PlayerController / Pawn BP) ---
     UFUNCTION(BlueprintCallable, Category="SOTS|Interaction")
     void UpdateCandidateNow(APlayerController* PlayerController);
@@ -277,4 +282,7 @@ private:
 
     UPROPERTY()
     double LastWarnLegacyIntentTime;
+
+    bool IsCrossPluginVerb(const FGameplayTag& OptionTag) const;
+    FSOTS_InteractionActionRequest BuildActionRequestPayload(const FSOTS_InteractionContext& Context, const FGameplayTag& OptionTag, int32 OptionIndex, bool bHadLOS) const;
 };
