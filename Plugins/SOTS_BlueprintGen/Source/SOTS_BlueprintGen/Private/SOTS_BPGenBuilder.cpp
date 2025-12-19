@@ -14,14 +14,26 @@
 #include "BlueprintActionDatabase.h"
 #include "BlueprintNodeBinder.h"
 #include "BlueprintVariableNodeSpawner.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Engine/UserDefinedEnum.h"
+#include "Interfaces/IPluginManager.h"
+#include "K2Node_CallFunction.h"
+#include "K2Node_DynamicCast.h"
+#include "K2Node_Variable.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/StructureEditorUtils.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "UObject/SavePackage.h"
 #include "UserDefinedStructure/UserDefinedStructEditorData.h"
 
@@ -34,6 +46,779 @@ static UEdGraphPin* FindPinByName(UEdGraphNode* Node, FName PinName);
 static UEdGraphPin* FindPinHeuristic(UEdGraphNode* Node, FName PinName);
 static UEdGraphNode* SpawnNodeFromSpawnerKey(UBlueprint* Blueprint, UEdGraph* Graph, const FSOTS_BPGenGraphNode& NodeSpec, FSOTS_BPGenApplyResult& Result);
 static void ApplyGraphLinks(UBlueprint* Blueprint, UEdGraph* Graph, const FSOTS_BPGenGraphSpec& GraphSpec, const TMap<FString, UEdGraphNode*>& NodeMap, const TSet<FString>& SkippedSpecIds, FSOTS_BPGenApplyResult& Result);
+static FString GetBPGenNodeId(const UEdGraphNode* Node);
+static void SetBPGenNodeId(UEdGraphNode* Node, const FString& NodeId);
+static FString NormalizeTargetType(const FString& InType);
+
+static const int32 GSpecCurrentVersion = 1;
+static const FString GSpecCurrentSchema(TEXT("SOTS_BPGen_GraphSpec"));
+
+enum class EBPGenRepairMode : uint8
+{
+	None,
+	Soft,
+	Aggressive
+};
+
+struct FBPGenPinAliasEntry
+{
+	FString NodeClass;
+	FString FunctionPath;
+	TMap<FString, TArray<FString>> PinAliases;
+};
+
+struct FBPGenMigrationMaps
+{
+	bool bLoaded = false;
+	FString LoadError;
+	TArray<FBPGenPinAliasEntry> PinAliases;
+	TMap<FString, FString> NodeClassAliases;
+	TMap<FString, FString> FunctionPathAliases;
+};
+
+static FString NormalizeKey(const FString& InValue)
+{
+	FString Out = InValue;
+	Out.TrimStartAndEndInline();
+	Out = Out.ToLower();
+	return Out;
+}
+
+static FString ExtractClassNameFromPath(const FString& InPath)
+{
+	FString Base = InPath;
+	int32 PipeIndex = INDEX_NONE;
+	if (Base.FindChar(TEXT('|'), PipeIndex))
+	{
+		Base = Base.Left(PipeIndex);
+	}
+
+	int32 DotIndex = INDEX_NONE;
+	if (Base.FindLastChar(TEXT('.'), DotIndex))
+	{
+		Base = Base.Mid(DotIndex + 1);
+	}
+
+	int32 SlashIndex = INDEX_NONE;
+	if (Base.FindLastChar(TEXT('/'), SlashIndex))
+	{
+		Base = Base.Mid(SlashIndex + 1);
+	}
+
+	return Base;
+}
+
+static FString ResolveNodeClassForSpec(const FSOTS_BPGenGraphNode& NodeSpec)
+{
+	if (!NodeSpec.NodeType.IsNone())
+	{
+		const FString NodeTypeString = NodeSpec.NodeType.ToString();
+		if (NodeTypeString.StartsWith(TEXT("K2Node_")))
+		{
+			return NodeTypeString;
+		}
+
+		const FString Lower = NodeTypeString.ToLower();
+		if (Lower == TEXT("function_call"))
+		{
+			return TEXT("K2Node_CallFunction");
+		}
+		if (Lower == TEXT("variable_get"))
+		{
+			return TEXT("K2Node_VariableGet");
+		}
+		if (Lower == TEXT("variable_set"))
+		{
+			return TEXT("K2Node_VariableSet");
+		}
+		if (Lower == TEXT("cast"))
+		{
+			return TEXT("K2Node_DynamicCast");
+		}
+		if (Lower == TEXT("knot"))
+		{
+			return TEXT("K2Node_Knot");
+		}
+		if (Lower == TEXT("select"))
+		{
+			return TEXT("K2Node_Select");
+		}
+
+		if (NodeTypeString.Contains(TEXT("/")) || NodeTypeString.Contains(TEXT(".")) || NodeTypeString.Contains(TEXT("|")))
+		{
+			return ExtractClassNameFromPath(NodeTypeString);
+		}
+
+		return NodeTypeString;
+	}
+
+	if (!NodeSpec.SpawnerKey.IsEmpty())
+	{
+		if (NodeSpec.SpawnerKey.StartsWith(TEXT("/Script/")) && NodeSpec.SpawnerKey.Contains(TEXT(":")))
+		{
+			return TEXT("K2Node_CallFunction");
+		}
+
+		const FString ClassName = ExtractClassNameFromPath(NodeSpec.SpawnerKey);
+		if (!ClassName.IsEmpty())
+		{
+			return ClassName;
+		}
+	}
+
+	return FString();
+}
+
+static FString ResolveFunctionPathForSpec(const FSOTS_BPGenGraphNode& NodeSpec)
+{
+	if (!NodeSpec.FunctionPath.IsEmpty())
+	{
+		return NodeSpec.FunctionPath;
+	}
+
+	if (!NodeSpec.SpawnerKey.IsEmpty() && NodeSpec.SpawnerKey.StartsWith(TEXT("/Script/")) && NodeSpec.SpawnerKey.Contains(TEXT(":")))
+	{
+		return NodeSpec.SpawnerKey;
+	}
+
+	return FString();
+}
+
+static FString SanitizeIdSegment(const FString& InValue)
+{
+	FString Out;
+	Out.Reserve(InValue.Len());
+	for (const TCHAR Ch : InValue)
+	{
+		if (FChar::IsAlnum(Ch))
+		{
+			Out.AppendChar(Ch);
+		}
+		else
+		{
+			Out.AppendChar(TEXT('_'));
+		}
+	}
+
+	Out.TrimStartAndEndInline();
+	return Out.IsEmpty() ? TEXT("node") : Out;
+}
+
+static FString MakeDeterministicNodeId(const FSOTS_BPGenGraphNode& NodeSpec, int32 Index)
+{
+	FString Base = !NodeSpec.SpawnerKey.IsEmpty() ? NodeSpec.SpawnerKey : NodeSpec.NodeType.ToString();
+	if (Base.IsEmpty())
+	{
+		Base = TEXT("node");
+	}
+
+	const FString Safe = SanitizeIdSegment(Base);
+	return FString::Printf(TEXT("auto_%s_%d"), *Safe, Index);
+}
+
+static bool LoadJsonArrayFile(const FString& FilePath, TArray<TSharedPtr<FJsonValue>>& OutValues, FString& OutError)
+{
+	OutValues.Reset();
+	OutError.Reset();
+
+	FString Raw;
+	if (!FFileHelper::LoadFileToString(Raw, *FilePath))
+	{
+		OutError = FString::Printf(TEXT("Failed to read migration map '%s'."), *FilePath);
+		return false;
+	}
+
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Raw);
+	TSharedPtr<FJsonValue> RootValue;
+	if (!FJsonSerializer::Deserialize(Reader, RootValue) || !RootValue.IsValid())
+	{
+		OutError = FString::Printf(TEXT("Failed to parse JSON in '%s'."), *FilePath);
+		return false;
+	}
+
+	if (RootValue->Type != EJson::Array)
+	{
+		OutError = FString::Printf(TEXT("Expected JSON array in '%s'."), *FilePath);
+		return false;
+	}
+
+	OutValues = RootValue->AsArray();
+	return true;
+}
+
+static void LoadMigrationMaps(FBPGenMigrationMaps& Maps)
+{
+	Maps.bLoaded = true;
+	Maps.LoadError.Reset();
+	Maps.PinAliases.Reset();
+	Maps.NodeClassAliases.Reset();
+	Maps.FunctionPathAliases.Reset();
+
+	FString PluginDir;
+	if (TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("SOTS_BlueprintGen")))
+	{
+		PluginDir = Plugin->GetBaseDir();
+	}
+	else
+	{
+		PluginDir = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("SOTS_BlueprintGen"));
+	}
+
+	const FString MigrationDir = FPaths::Combine(PluginDir, TEXT("Content"), TEXT("BPGenMigrations"));
+	const FString PinAliasesPath = FPaths::Combine(MigrationDir, TEXT("pin_aliases.json"));
+	const FString NodeClassAliasesPath = FPaths::Combine(MigrationDir, TEXT("node_class_aliases.json"));
+	const FString FunctionPathAliasesPath = FPaths::Combine(MigrationDir, TEXT("function_path_aliases.json"));
+
+	auto RecordError = [&](const FString& Error)
+	{
+		if (!Error.IsEmpty())
+		{
+			if (!Maps.LoadError.IsEmpty())
+			{
+				Maps.LoadError += TEXT(" ");
+			}
+			Maps.LoadError += Error;
+		}
+	};
+
+	if (FPaths::FileExists(PinAliasesPath))
+	{
+		TArray<TSharedPtr<FJsonValue>> Values;
+		FString Error;
+		if (LoadJsonArrayFile(PinAliasesPath, Values, Error))
+		{
+			for (const TSharedPtr<FJsonValue>& Value : Values)
+			{
+				const TSharedPtr<FJsonObject>* ObjPtr = nullptr;
+				if (!Value.IsValid() || !Value->TryGetObject(ObjPtr) || !ObjPtr || !ObjPtr->IsValid())
+				{
+					continue;
+				}
+
+				FBPGenPinAliasEntry Entry;
+				(*ObjPtr)->TryGetStringField(TEXT("node_class"), Entry.NodeClass);
+				(*ObjPtr)->TryGetStringField(TEXT("function_path"), Entry.FunctionPath);
+				Entry.NodeClass = NormalizeKey(Entry.NodeClass);
+				Entry.FunctionPath = NormalizeKey(Entry.FunctionPath);
+
+				const TSharedPtr<FJsonObject>* AliasObj = nullptr;
+				if ((*ObjPtr)->TryGetObjectField(TEXT("pin_aliases"), AliasObj) && AliasObj && AliasObj->IsValid())
+				{
+					for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : (*AliasObj)->Values)
+					{
+						TArray<FString> Aliases;
+						const TArray<TSharedPtr<FJsonValue>>* AliasArray = nullptr;
+						if (Pair.Value.IsValid() && Pair.Value->TryGetArray(AliasArray) && AliasArray)
+						{
+							for (const TSharedPtr<FJsonValue>& AliasValue : *AliasArray)
+							{
+								FString AliasStr;
+								if (AliasValue.IsValid() && AliasValue->TryGetString(AliasStr))
+								{
+									Aliases.Add(AliasStr);
+								}
+							}
+						}
+						Entry.PinAliases.Add(Pair.Key, Aliases);
+					}
+				}
+
+				if (!Entry.NodeClass.IsEmpty() || !Entry.FunctionPath.IsEmpty())
+				{
+					Maps.PinAliases.Add(MoveTemp(Entry));
+				}
+			}
+		}
+		else
+		{
+			RecordError(Error);
+		}
+	}
+
+	auto LoadAliasMap = [&](const FString& FilePath, TMap<FString, FString>& OutMap)
+	{
+		if (!FPaths::FileExists(FilePath))
+		{
+			return;
+		}
+
+		TArray<TSharedPtr<FJsonValue>> Values;
+		FString Error;
+		if (!LoadJsonArrayFile(FilePath, Values, Error))
+		{
+			RecordError(Error);
+			return;
+		}
+
+		for (const TSharedPtr<FJsonValue>& Value : Values)
+		{
+			const TSharedPtr<FJsonObject>* ObjPtr = nullptr;
+			if (!Value.IsValid() || !Value->TryGetObject(ObjPtr) || !ObjPtr || !ObjPtr->IsValid())
+			{
+				continue;
+			}
+
+			FString OldValue;
+			FString NewValue;
+			(*ObjPtr)->TryGetStringField(TEXT("old"), OldValue);
+			(*ObjPtr)->TryGetStringField(TEXT("new"), NewValue);
+
+			const FString OldKey = NormalizeKey(OldValue);
+			if (!OldKey.IsEmpty() && !NewValue.IsEmpty())
+			{
+				OutMap.Add(OldKey, NewValue);
+			}
+		}
+	};
+
+	LoadAliasMap(NodeClassAliasesPath, Maps.NodeClassAliases);
+	LoadAliasMap(FunctionPathAliasesPath, Maps.FunctionPathAliases);
+}
+
+static const FBPGenMigrationMaps& GetMigrationMaps()
+{
+	static FBPGenMigrationMaps Maps;
+	if (!Maps.bLoaded)
+	{
+		LoadMigrationMaps(Maps);
+	}
+	return Maps;
+}
+
+static bool TryResolvePinAlias(const FSOTS_BPGenGraphNode& NodeSpec, FName& InOutPinName, const FBPGenMigrationMaps& Maps, FString& OutCanonical)
+{
+	const FString NodeClassKey = NormalizeKey(ResolveNodeClassForSpec(NodeSpec));
+	const FString FunctionPathKey = NormalizeKey(ResolveFunctionPathForSpec(NodeSpec));
+	if (NodeClassKey.IsEmpty() || FunctionPathKey.IsEmpty())
+	{
+		return false;
+	}
+
+	const FString Requested = InOutPinName.ToString();
+	for (const FBPGenPinAliasEntry& Entry : Maps.PinAliases)
+	{
+		if (!Entry.NodeClass.IsEmpty() && Entry.NodeClass != NodeClassKey)
+		{
+			continue;
+		}
+		if (!Entry.FunctionPath.IsEmpty() && Entry.FunctionPath != FunctionPathKey)
+		{
+			continue;
+		}
+
+		for (const TPair<FString, TArray<FString>>& Pair : Entry.PinAliases)
+		{
+			const FString Canonical = Pair.Key;
+			if (Canonical.IsEmpty())
+			{
+				continue;
+			}
+
+			if (Canonical.Equals(Requested, ESearchCase::IgnoreCase))
+			{
+				return false;
+			}
+
+			for (const FString& Alias : Pair.Value)
+			{
+				if (Alias.Equals(Requested, ESearchCase::IgnoreCase))
+				{
+					InOutPinName = FName(*Canonical);
+					OutCanonical = Canonical;
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+static void ApplySpecMigrations(FSOTS_BPGenGraphSpec& Spec, TArray<FString>& OutMigrationNotes, bool& bSpecMigrated)
+{
+	const FBPGenMigrationMaps& Maps = GetMigrationMaps();
+	if (!Maps.LoadError.IsEmpty())
+	{
+		OutMigrationNotes.Add(Maps.LoadError);
+	}
+
+	for (FSOTS_BPGenGraphNode& NodeSpec : Spec.Nodes)
+	{
+		if (!NodeSpec.NodeType.IsNone())
+		{
+			const FString NodeTypeString = NodeSpec.NodeType.ToString();
+			const FString NodeKey = NormalizeKey(NodeTypeString);
+			const FString* NewClass = Maps.NodeClassAliases.Find(NodeKey);
+			if (!NewClass)
+			{
+				const FString Extracted = ExtractClassNameFromPath(NodeTypeString);
+				const FString ExtractedKey = NormalizeKey(Extracted);
+				NewClass = Maps.NodeClassAliases.Find(ExtractedKey);
+			}
+
+			if (NewClass && !NewClass->IsEmpty() && !NodeTypeString.Equals(*NewClass, ESearchCase::IgnoreCase))
+			{
+				NodeSpec.NodeType = FName(**NewClass);
+				bSpecMigrated = true;
+				OutMigrationNotes.Add(FString::Printf(TEXT("Node class migrated: %s -> %s."), *NodeTypeString, **NewClass));
+			}
+		}
+
+		const FString OldFunctionPath = ResolveFunctionPathForSpec(NodeSpec);
+		const FString OldKey = NormalizeKey(OldFunctionPath);
+		if (!OldKey.IsEmpty())
+		{
+			if (const FString* NewPath = Maps.FunctionPathAliases.Find(OldKey))
+			{
+				const FString NewValue = *NewPath;
+				if (!NodeSpec.FunctionPath.IsEmpty() && !NodeSpec.FunctionPath.Equals(NewValue, ESearchCase::IgnoreCase))
+				{
+					OutMigrationNotes.Add(FString::Printf(TEXT("Function path migrated: %s -> %s."), *NodeSpec.FunctionPath, *NewValue));
+					NodeSpec.FunctionPath = NewValue;
+					bSpecMigrated = true;
+				}
+
+				if (!NodeSpec.SpawnerKey.IsEmpty() && NodeSpec.SpawnerKey.Equals(OldFunctionPath, ESearchCase::IgnoreCase))
+				{
+					NodeSpec.SpawnerKey = NewValue;
+					bSpecMigrated = true;
+				}
+
+				if (NodeSpec.FunctionPath.IsEmpty() && NodeSpec.SpawnerKey.Equals(NewValue, ESearchCase::IgnoreCase))
+				{
+					NodeSpec.FunctionPath = NewValue;
+				}
+			}
+		}
+	}
+
+	TMap<FString, const FSOTS_BPGenGraphNode*> NodeById;
+	NodeById.Reserve(Spec.Nodes.Num());
+	for (const FSOTS_BPGenGraphNode& NodeSpec : Spec.Nodes)
+	{
+		NodeById.Add(NodeSpec.Id, &NodeSpec);
+	}
+
+	for (FSOTS_BPGenGraphLink& Link : Spec.Links)
+	{
+		if (const FSOTS_BPGenGraphNode* FromSpec = NodeById.FindRef(Link.FromNodeId))
+		{
+			const FName Before = Link.FromPinName;
+			FString Canonical;
+			if (TryResolvePinAlias(*FromSpec, Link.FromPinName, Maps, Canonical))
+			{
+				bSpecMigrated = true;
+				OutMigrationNotes.Add(FString::Printf(TEXT("Pin alias migrated on %s: %s -> %s."), *Link.FromNodeId, *Before.ToString(), *Link.FromPinName.ToString()));
+			}
+		}
+
+		if (const FSOTS_BPGenGraphNode* ToSpec = NodeById.FindRef(Link.ToNodeId))
+		{
+			const FName Before = Link.ToPinName;
+			FString Canonical;
+			if (TryResolvePinAlias(*ToSpec, Link.ToPinName, Maps, Canonical))
+			{
+				bSpecMigrated = true;
+				OutMigrationNotes.Add(FString::Printf(TEXT("Pin alias migrated on %s: %s -> %s."), *Link.ToNodeId, *Before.ToString(), *Link.ToPinName.ToString()));
+			}
+		}
+	}
+}
+
+static void SortNodesDeterministic(TArray<FSOTS_BPGenGraphNode>& Nodes)
+{
+	Nodes.Sort([](const FSOTS_BPGenGraphNode& A, const FSOTS_BPGenGraphNode& B)
+	{
+		const bool bAHasId = !A.NodeId.IsEmpty();
+		const bool bBHasId = !B.NodeId.IsEmpty();
+		if (bAHasId != bBHasId)
+		{
+			return bAHasId;
+		}
+
+		int32 Cmp = A.NodeId.Compare(B.NodeId);
+		if (Cmp != 0)
+		{
+			return Cmp < 0;
+		}
+
+		const FString ClassA = ResolveNodeClassForSpec(A);
+		const FString ClassB = ResolveNodeClassForSpec(B);
+		Cmp = ClassA.Compare(ClassB);
+		if (Cmp != 0)
+		{
+			return Cmp < 0;
+		}
+
+		if (A.NodePosition.Y != B.NodePosition.Y)
+		{
+			return A.NodePosition.Y < B.NodePosition.Y;
+		}
+
+		return A.NodePosition.X < B.NodePosition.X;
+	});
+}
+
+static void SortLinksDeterministic(TArray<FSOTS_BPGenGraphLink>& Links)
+{
+	Links.Sort([](const FSOTS_BPGenGraphLink& A, const FSOTS_BPGenGraphLink& B)
+	{
+		int32 Cmp = A.FromNodeId.Compare(B.FromNodeId);
+		if (Cmp != 0)
+		{
+			return Cmp < 0;
+		}
+
+		Cmp = A.FromPinName.Compare(B.FromPinName);
+		if (Cmp != 0)
+		{
+			return Cmp < 0;
+		}
+
+		Cmp = A.ToNodeId.Compare(B.ToNodeId);
+		if (Cmp != 0)
+		{
+			return Cmp < 0;
+		}
+
+		return A.ToPinName.Compare(B.ToPinName) < 0;
+	});
+}
+
+static void CanonicalizeGraphSpecInternal(FSOTS_BPGenGraphSpec& Spec, const FSOTS_BPGenSpecCanonicalizeOptions& Options, TArray<FString>& OutDiffNotes, TArray<FString>& OutMigrationNotes, bool& bSpecMigrated)
+{
+	OutDiffNotes.Reset();
+	OutMigrationNotes.Reset();
+	bSpecMigrated = false;
+
+	if (Spec.SpecVersion <= 0)
+	{
+		OutMigrationNotes.Add(FString::Printf(TEXT("Spec version defaulted to %d."), GSpecCurrentVersion));
+		Spec.SpecVersion = GSpecCurrentVersion;
+		bSpecMigrated = true;
+	}
+	else if (Spec.SpecVersion < GSpecCurrentVersion)
+	{
+		OutMigrationNotes.Add(FString::Printf(TEXT("Spec version upgraded: %d -> %d."), Spec.SpecVersion, GSpecCurrentVersion));
+		Spec.SpecVersion = GSpecCurrentVersion;
+		bSpecMigrated = true;
+	}
+	else if (Spec.SpecVersion > GSpecCurrentVersion)
+	{
+		OutDiffNotes.Add(FString::Printf(TEXT("Spec version %d is newer than supported %d; leaving as-is."), Spec.SpecVersion, GSpecCurrentVersion));
+	}
+
+	if (!Spec.SpecSchema.Equals(GSpecCurrentSchema, ESearchCase::IgnoreCase))
+	{
+		const FString Previous = Spec.SpecSchema;
+		Spec.SpecSchema = GSpecCurrentSchema;
+		OutMigrationNotes.Add(FString::Printf(TEXT("Spec schema normalized: %s -> %s."), *Previous, *Spec.SpecSchema));
+		bSpecMigrated = true;
+	}
+
+	if (Options.bNormalizeTargetType)
+	{
+		const FString Before = Spec.Target.TargetType;
+		const FString Normalized = NormalizeTargetType(Spec.Target.TargetType.IsEmpty() ? TEXT("Function") : Spec.Target.TargetType);
+		if (!Normalized.Equals(Before, ESearchCase::CaseSensitive))
+		{
+			Spec.Target.TargetType = Normalized;
+			OutDiffNotes.Add(FString::Printf(TEXT("Normalized target_type: %s -> %s."), *Before, *Normalized));
+		}
+	}
+
+	if (Options.bApplyMigrations)
+	{
+		ApplySpecMigrations(Spec, OutMigrationNotes, bSpecMigrated);
+	}
+
+	if (Options.bAssignMissingNodeIds)
+	{
+		TSet<FString> UsedNodeIds;
+		for (const FSOTS_BPGenGraphNode& NodeSpec : Spec.Nodes)
+		{
+			if (!NodeSpec.NodeId.IsEmpty())
+			{
+				UsedNodeIds.Add(NodeSpec.NodeId);
+			}
+		}
+
+		for (int32 Index = 0; Index < Spec.Nodes.Num(); ++Index)
+		{
+			FSOTS_BPGenGraphNode& NodeSpec = Spec.Nodes[Index];
+			if (!NodeSpec.NodeId.IsEmpty() || !NodeSpec.bAllowCreate)
+			{
+				continue;
+			}
+
+			const FString Candidate = MakeDeterministicNodeId(NodeSpec, Index);
+			FString Unique = Candidate;
+			int32 Suffix = 1;
+			while (UsedNodeIds.Contains(Unique))
+			{
+				Unique = FString::Printf(TEXT("%s_%d"), *Candidate, Suffix++);
+			}
+
+			NodeSpec.NodeId = Unique;
+			UsedNodeIds.Add(Unique);
+			OutDiffNotes.Add(FString::Printf(TEXT("Assigned node_id '%s' to node '%s'."), *Unique, *NodeSpec.Id));
+		}
+	}
+
+	if (Options.bSortDeterministic)
+	{
+		SortNodesDeterministic(Spec.Nodes);
+		SortLinksDeterministic(Spec.Links);
+	}
+}
+
+static FSOTS_BPGenGraphSpec CanonicalizeGraphSpecForApply(const FSOTS_BPGenGraphSpec& GraphSpec, FSOTS_BPGenApplyResult& Result)
+{
+	FSOTS_BPGenGraphSpec Canonical = GraphSpec;
+	FSOTS_BPGenSpecCanonicalizeOptions Options;
+	Options.bAssignMissingNodeIds = true;
+	Options.bSortDeterministic = true;
+	Options.bNormalizeTargetType = true;
+	Options.bApplyMigrations = true;
+
+	TArray<FString> DiffNotes;
+	TArray<FString> MigrationNotes;
+	bool bSpecMigrated = false;
+	CanonicalizeGraphSpecInternal(Canonical, Options, DiffNotes, MigrationNotes, bSpecMigrated);
+
+	Result.bSpecMigrated = bSpecMigrated;
+	Result.MigrationNotes = MigrationNotes;
+	return Canonical;
+}
+
+static EBPGenRepairMode ParseRepairMode(const FString& InMode)
+{
+	FString Mode = InMode;
+	Mode.TrimStartAndEndInline();
+	Mode = Mode.ToLower();
+	if (Mode == TEXT("soft"))
+	{
+		return EBPGenRepairMode::Soft;
+	}
+	if (Mode == TEXT("aggressive"))
+	{
+		return EBPGenRepairMode::Aggressive;
+	}
+	return EBPGenRepairMode::None;
+}
+
+static FString GetSpawnerKeyForNode(const UEdGraphNode* Node)
+{
+	if (!Node)
+	{
+		return FString();
+	}
+
+	if (const UK2Node_CallFunction* CallNode = Cast<UK2Node_CallFunction>(Node))
+	{
+		if (UFunction* Function = CallNode->GetTargetFunction())
+		{
+			return Function->GetPathName();
+		}
+	}
+
+	if (const UK2Node_Variable* VarNode = Cast<UK2Node_Variable>(Node))
+	{
+		const FName VarName = VarNode->GetVarName();
+		if (const UClass* OwnerClass = VarNode->GetVariableSourceClass())
+		{
+			if (VarName != NAME_None)
+			{
+				return FString::Printf(TEXT("%s:%s"), *OwnerClass->GetPathName(), *VarName.ToString());
+			}
+		}
+	}
+
+	if (const UK2Node_DynamicCast* CastNode = Cast<UK2Node_DynamicCast>(Node))
+	{
+		if (UClass* TargetType = CastNode->TargetType)
+		{
+			return FString::Printf(TEXT("K2Node_DynamicCast|%s"), *TargetType->GetPathName());
+		}
+	}
+
+	return Node->GetClass() ? Node->GetClass()->GetPathName() : FString();
+}
+
+static bool IsApproxPositionMatch(const FSOTS_BPGenGraphNode& NodeSpec, const UEdGraphNode* Node, int32 Tolerance)
+{
+	if (!Node)
+	{
+		return false;
+	}
+
+	return FMath::Abs(Node->NodePosX - NodeSpec.NodePosition.X) <= Tolerance
+		&& FMath::Abs(Node->NodePosY - NodeSpec.NodePosition.Y) <= Tolerance;
+}
+
+static UEdGraphNode* FindRepairCandidate(
+	const FSOTS_BPGenGraphNode& NodeSpec,
+	const TArray<UEdGraphNode*>& Nodes,
+	const TSet<UEdGraphNode*>& ClaimedNodes,
+	EBPGenRepairMode Mode,
+	FString& OutDescription)
+{
+	if (Mode == EBPGenRepairMode::None)
+	{
+		return nullptr;
+	}
+
+	const FString DesiredClass = ResolveNodeClassForSpec(NodeSpec);
+	FString DesiredSpawnerKey = NodeSpec.SpawnerKey;
+	if (DesiredSpawnerKey.IsEmpty() && Mode == EBPGenRepairMode::Aggressive)
+	{
+		DesiredSpawnerKey = ResolveFunctionPathForSpec(NodeSpec);
+	}
+
+	if (Mode == EBPGenRepairMode::Soft && DesiredSpawnerKey.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	const int32 Tolerance = (Mode == EBPGenRepairMode::Aggressive) ? 96 : 32;
+
+	for (UEdGraphNode* Node : Nodes)
+	{
+		if (!Node || ClaimedNodes.Contains(Node))
+		{
+			continue;
+		}
+
+		if (!GetBPGenNodeId(Node).IsEmpty())
+		{
+			continue;
+		}
+
+		if (!DesiredClass.IsEmpty() && !Node->GetClass()->GetName().Equals(DesiredClass, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+
+		if (!DesiredSpawnerKey.IsEmpty())
+		{
+			const FString CandidateSpawnerKey = GetSpawnerKeyForNode(Node);
+			if (!CandidateSpawnerKey.Equals(DesiredSpawnerKey, ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+		}
+
+		if (!IsApproxPositionMatch(NodeSpec, Node, Tolerance))
+		{
+			continue;
+		}
+
+		OutDescription = FString::Printf(TEXT("Repair matched node '%s' using %s mode."), *Node->GetName(), Mode == EBPGenRepairMode::Aggressive ? TEXT("aggressive") : TEXT("soft"));
+		return Node;
+	}
+
+	return nullptr;
+}
 
 static FSOTS_BPGenApplyResult ApplyGraphSpecInternal(const UObject* WorldContextObject, const FSOTS_BPGenGraphTarget& Target, const FSOTS_BPGenGraphSpec& GraphSpec)
 {
@@ -68,6 +853,8 @@ static FSOTS_BPGenApplyResult ApplyGraphSpecInternal(const UObject* WorldContext
 	UK2Node_FunctionEntry* EntryNode = nullptr;
 	TArray<UK2Node_FunctionResult*> ResultNodes;
 	TMap<FString, UEdGraphNode*> ExistingNodeIdMap;
+	const EBPGenRepairMode RepairMode = ParseRepairMode(GraphSpec.RepairMode);
+	TSet<UEdGraphNode*> ClaimedRepairNodes;
 
 	for (UEdGraphNode* Node : TargetGraph->Nodes)
 	{
@@ -177,6 +964,26 @@ static FSOTS_BPGenApplyResult ApplyGraphSpecInternal(const UObject* WorldContext
 		UEdGraphNode* NewNode = nullptr;
 		const bool bHasNodeId = !NodeSpec.NodeId.IsEmpty();
 		UEdGraphNode* ExistingNode = bHasNodeId ? ExistingNodeIdMap.FindRef(NodeSpec.NodeId) : nullptr;
+		if (!ExistingNode && bHasNodeId && RepairMode != EBPGenRepairMode::None && NodeSpec.bCreateOrUpdate && NodeSpec.bAllowUpdate)
+		{
+			FString RepairDescription;
+			ExistingNode = FindRepairCandidate(NodeSpec, TargetGraph->Nodes, ClaimedRepairNodes, RepairMode, RepairDescription);
+			if (ExistingNode)
+			{
+				SetBPGenNodeId(ExistingNode, NodeSpec.NodeId);
+				ExistingNodeIdMap.Add(NodeSpec.NodeId, ExistingNode);
+				ClaimedRepairNodes.Add(ExistingNode);
+
+				FSOTS_BPGenRepairStep Step;
+				Step.StepIndex = Result.RepairSteps.Num();
+				Step.Code = TEXT("REPAIR_NODE_ID");
+				Step.Description = RepairDescription;
+				Step.AffectedNodeIds.Add(NodeSpec.NodeId);
+				Step.Before = TEXT("node_id missing");
+				Step.After = NodeSpec.NodeId;
+				Result.RepairSteps.Add(Step);
+			}
+		}
 		const bool bAllowCreate = NodeSpec.bAllowCreate;
 		const bool bAllowUpdate = NodeSpec.bAllowUpdate;
 		const bool bCreateOrUpdate = NodeSpec.bCreateOrUpdate;
@@ -315,24 +1122,42 @@ static FSOTS_BPGenApplyResult ApplyGraphSpecToFunction_Legacy(
 	const FSOTS_BPGenFunctionDef& FunctionDef,
 	const FSOTS_BPGenGraphSpec& GraphSpec)
 {
-	FSOTS_BPGenGraphTarget Target = GraphSpec.Target;
+	FSOTS_BPGenApplyResult CanonicalResult;
+	FSOTS_BPGenGraphSpec CanonicalSpec = CanonicalizeGraphSpecForApply(GraphSpec, CanonicalResult);
+	FSOTS_BPGenGraphTarget Target = CanonicalSpec.Target;
 	Target.BlueprintAssetPath = Target.BlueprintAssetPath.IsEmpty() ? FunctionDef.TargetBlueprintPath : Target.BlueprintAssetPath;
 	Target.TargetType = Target.TargetType.IsEmpty() ? TEXT("Function") : Target.TargetType;
 	Target.Name = Target.Name.IsEmpty() ? FunctionDef.FunctionName.ToString() : Target.Name;
 	Target.bCreateIfMissing = Target.bCreateIfMissing;
 
-	return ApplyGraphSpecInternal(WorldContextObject, Target, GraphSpec);
+	FSOTS_BPGenApplyResult ApplyResult = ApplyGraphSpecInternal(WorldContextObject, Target, CanonicalSpec);
+	ApplyResult.bSpecMigrated = CanonicalResult.bSpecMigrated;
+	ApplyResult.MigrationNotes = CanonicalResult.MigrationNotes;
+	return ApplyResult;
 }
 
 FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToTarget(const UObject* WorldContextObject, const FSOTS_BPGenGraphSpec& GraphSpec)
 {
-	FSOTS_BPGenGraphTarget Target = GraphSpec.Target;
+	FSOTS_BPGenApplyResult CanonicalResult;
+	FSOTS_BPGenGraphSpec CanonicalSpec = CanonicalizeGraphSpecForApply(GraphSpec, CanonicalResult);
+	FSOTS_BPGenGraphTarget Target = CanonicalSpec.Target;
 	if (Target.TargetType.IsEmpty())
 	{
 		Target.TargetType = TEXT("Function");
 	}
 
-	return ApplyGraphSpecInternal(WorldContextObject, Target, GraphSpec);
+	FSOTS_BPGenApplyResult ApplyResult = ApplyGraphSpecInternal(WorldContextObject, Target, CanonicalSpec);
+	ApplyResult.bSpecMigrated = CanonicalResult.bSpecMigrated;
+	ApplyResult.MigrationNotes = CanonicalResult.MigrationNotes;
+	return ApplyResult;
+}
+
+FSOTS_BPGenCanonicalizeResult USOTS_BPGenBuilder::CanonicalizeGraphSpec(const FSOTS_BPGenGraphSpec& GraphSpec, const FSOTS_BPGenSpecCanonicalizeOptions& Options)
+{
+	FSOTS_BPGenCanonicalizeResult Result;
+	Result.CanonicalSpec = GraphSpec;
+	CanonicalizeGraphSpecInternal(Result.CanonicalSpec, Options, Result.DiffNotes, Result.MigrationNotes, Result.bSpecMigrated);
+	return Result;
 }
 		if (bVariableExists)
 		{
@@ -2452,6 +3277,11 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 		return Result;
 	}
 
+	FSOTS_BPGenGraphSpec CanonicalSpec = CanonicalizeGraphSpecForApply(GraphSpec, Result);
+	const FSOTS_BPGenGraphSpec& GraphSpecToUse = CanonicalSpec;
+	const EBPGenRepairMode RepairMode = ParseRepairMode(GraphSpecToUse.RepairMode);
+	TSet<UEdGraphNode*> ClaimedRepairNodes;
+
 	// Ensure editor-only node modules are loaded so LoadObject lookups succeed when spawning nodes by class path.
 	EnsureBlueprintNodeModulesLoaded();
 
@@ -2513,7 +3343,7 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 	}
 
 	// First, map any spec nodes that reference the existing entry/result nodes.
-	for (const FSOTS_BPGenGraphNode& NodeSpec : GraphSpec.Nodes)
+	for (const FSOTS_BPGenGraphNode& NodeSpec : GraphSpecToUse.Nodes)
 	{
 		if (NodeSpec.NodeType == FName(TEXT("K2Node_FunctionEntry")))
 		{
@@ -2564,7 +3394,7 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 	}
 
 	// Spawn new nodes for all remaining specs.
-	for (const FSOTS_BPGenGraphNode& NodeSpec : GraphSpec.Nodes)
+	for (const FSOTS_BPGenGraphNode& NodeSpec : GraphSpecToUse.Nodes)
 	{
 		if (NodeMap.Contains(NodeSpec.Id))
 		{
@@ -2574,6 +3404,26 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 		UEdGraphNode* NewNode = nullptr;
 		const bool bHasNodeId = !NodeSpec.NodeId.IsEmpty();
 		UEdGraphNode* ExistingNode = bHasNodeId ? ExistingNodeIdMap.FindRef(NodeSpec.NodeId) : nullptr;
+		if (!ExistingNode && bHasNodeId && RepairMode != EBPGenRepairMode::None && NodeSpec.bCreateOrUpdate && NodeSpec.bAllowUpdate)
+		{
+			FString RepairDescription;
+			ExistingNode = FindRepairCandidate(NodeSpec, FunctionGraph->Nodes, ClaimedRepairNodes, RepairMode, RepairDescription);
+			if (ExistingNode)
+			{
+				SetBPGenNodeId(ExistingNode, NodeSpec.NodeId);
+				ExistingNodeIdMap.Add(NodeSpec.NodeId, ExistingNode);
+				ClaimedRepairNodes.Add(ExistingNode);
+
+				FSOTS_BPGenRepairStep Step;
+				Step.StepIndex = Result.RepairSteps.Num();
+				Step.Code = TEXT("REPAIR_NODE_ID");
+				Step.Description = RepairDescription;
+				Step.AffectedNodeIds.Add(NodeSpec.NodeId);
+				Step.Before = TEXT("node_id missing");
+				Step.After = NodeSpec.NodeId;
+				Result.RepairSteps.Add(Step);
+			}
+		}
 		const bool bAllowCreate = NodeSpec.bAllowCreate;
 		const bool bAllowUpdate = NodeSpec.bAllowUpdate;
 		const bool bCreateOrUpdate = NodeSpec.bCreateOrUpdate;
@@ -2685,7 +3535,7 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 	}
 
 	// Connect pins according to Links.
-	ApplyGraphLinks(Blueprint, FunctionGraph, GraphSpec, NodeMap, SkippedSpecIds, Result);
+	ApplyGraphLinks(Blueprint, FunctionGraph, GraphSpecToUse, NodeMap, SkippedSpecIds, Result);
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 	FKismetEditorUtilities::CompileBlueprint(Blueprint);

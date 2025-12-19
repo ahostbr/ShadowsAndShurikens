@@ -26,6 +26,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogSOTS_BPGenBridge, Log, All);
 namespace
 {
 static const FString GProtocolVersion = TEXT("1.0");
+static const int32 GSpecVersion = 1;
+static const FString GSpecSchema = TEXT("SOTS_BPGen_GraphSpec");
 
 static TSharedPtr<FJsonObject> BuildFeatureFlags(bool bSupportsDryRun, bool bHasAuthToken, bool bHasRateLimit)
 {
@@ -45,6 +47,8 @@ static TSharedPtr<FJsonObject> BuildFeatureFlags(bool bSupportsDryRun, bool bHas
 	Features->SetBoolField(TEXT("limits"), true);
 	Features->SetBoolField(TEXT("recent_requests"), true);
 	Features->SetBoolField(TEXT("server_info"), true);
+	Features->SetBoolField(TEXT("spec_schema"), true);
+	Features->SetBoolField(TEXT("canonicalize_spec"), true);
 	Features->SetBoolField(TEXT("health"), true);
 	Features->SetBoolField(TEXT("safety"), true);
 	Features->SetBoolField(TEXT("audit"), true);
@@ -499,7 +503,7 @@ static void BuildRecipeResult(const FSOTS_BPGenGraphSpec& GraphSpec, const FSOTS
 	FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenGraphSpec::StaticStruct(), &GraphSpec, GraphSpecJson.ToSharedRef(), 0, 0);
 	FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &ApplyResult, ApplyJson.ToSharedRef(), 0, 0);
 	AddChangeSummaryAlias(ApplyJson);
-
+	AddSpecMigrationAliases(ApplyJson);
 	ResultJson->SetObjectField(TEXT("expanded_graph_spec"), GraphSpecJson);
 	ResultJson->SetObjectField(TEXT("apply_result"), ApplyJson);
 
@@ -522,6 +526,32 @@ static void AddChangeSummaryAlias(const TSharedPtr<FJsonObject>& ResultJson)
 	if (!ResultJson->HasTypedField<EJson::Object>(TEXT("change_summary")) && ResultJson->HasTypedField<EJson::Object>(TEXT("ChangeSummary")))
 	{
 		ResultJson->SetObjectField(TEXT("change_summary"), ResultJson->GetObjectField(TEXT("ChangeSummary")));
+	}
+}
+
+static void AddSpecMigrationAliases(const TSharedPtr<FJsonObject>& ResultJson)
+{
+	if (!ResultJson.IsValid())
+	{
+		return;
+	}
+
+	bool bSpecMigrated = false;
+	if (!ResultJson->HasField(TEXT("spec_migrated")) && ResultJson->TryGetBoolField(TEXT("bSpecMigrated"), bSpecMigrated))
+	{
+		ResultJson->SetBoolField(TEXT("spec_migrated"), bSpecMigrated);
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* MigrationNotes = nullptr;
+	if (!ResultJson->HasField(TEXT("migration_notes")) && ResultJson->TryGetArrayField(TEXT("MigrationNotes"), MigrationNotes) && MigrationNotes)
+	{
+		ResultJson->SetArrayField(TEXT("migration_notes"), *MigrationNotes);
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* RepairSteps = nullptr;
+	if (!ResultJson->HasField(TEXT("repair_steps")) && ResultJson->TryGetArrayField(TEXT("RepairSteps"), RepairSteps) && RepairSteps)
+	{
+		ResultJson->SetArrayField(TEXT("repair_steps"), *RepairSteps);
 	}
 }
 }
@@ -1134,6 +1164,75 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		return;
 	}
 
+	if (Action.Equals(TEXT("get_spec_schema"), ESearchCase::IgnoreCase))
+	{
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("spec_schema"), GSpecSchema);
+		ResultObj->SetNumberField(TEXT("spec_version"), GSpecVersion);
+
+		TArray<TSharedPtr<FJsonValue>> Supported;
+		Supported.Add(MakeShared<FJsonValueNumber>(GSpecVersion));
+		ResultObj->SetArrayField(TEXT("supported_versions"), Supported);
+
+		TArray<TSharedPtr<FJsonValue>> Notes;
+		Notes.Add(MakeShared<FJsonValueString>(TEXT("GraphSpec schema is forward-compatible; use migrations for drift.")));
+		ResultObj->SetArrayField(TEXT("notes"), Notes);
+
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("canonicalize_spec"), ESearchCase::IgnoreCase))
+	{
+		if (!Params.IsValid() || !Params->HasTypedField<EJson::Object>(TEXT("graph_spec")))
+		{
+			OutResult.bOk = false;
+			OutResult.ErrorCode = TEXT("ERR_INVALID_PARAMS");
+			OutResult.Errors.Add(TEXT("canonicalize_spec requires params.graph_spec."));
+			return;
+		}
+
+		FSOTS_BPGenGraphSpec GraphSpec;
+		const TSharedPtr<FJsonObject> GraphObj = Params->GetObjectField(TEXT("graph_spec"));
+		FJsonObjectConverter::JsonObjectToUStruct(GraphObj.ToSharedRef(), FSOTS_BPGenGraphSpec::StaticStruct(), &GraphSpec, 0, 0);
+
+		FSOTS_BPGenSpecCanonicalizeOptions Options;
+		if (Params->HasTypedField<EJson::Object>(TEXT("options")))
+		{
+			const TSharedPtr<FJsonObject> OptionsObj = Params->GetObjectField(TEXT("options"));
+			FJsonObjectConverter::JsonObjectToUStruct(OptionsObj.ToSharedRef(), FSOTS_BPGenSpecCanonicalizeOptions::StaticStruct(), &Options, 0, 0);
+		}
+
+		const FSOTS_BPGenCanonicalizeResult CanonResult = USOTS_BPGenBuilder::CanonicalizeGraphSpec(GraphSpec, Options);
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		TSharedPtr<FJsonObject> CanonicalSpecJson = MakeShared<FJsonObject>();
+		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenGraphSpec::StaticStruct(), &CanonResult.CanonicalSpec, CanonicalSpecJson.ToSharedRef(), 0, 0);
+		CanonicalSpecJson->SetNumberField(TEXT("spec_version"), CanonResult.CanonicalSpec.SpecVersion);
+		CanonicalSpecJson->SetStringField(TEXT("spec_schema"), CanonResult.CanonicalSpec.SpecSchema);
+		ResultObj->SetObjectField(TEXT("canonical_spec"), CanonicalSpecJson);
+
+		TArray<TSharedPtr<FJsonValue>> DiffNotes;
+		for (const FString& Note : CanonResult.DiffNotes)
+		{
+			DiffNotes.Add(MakeShared<FJsonValueString>(Note));
+		}
+		ResultObj->SetArrayField(TEXT("diff_notes"), DiffNotes);
+
+		TArray<TSharedPtr<FJsonValue>> MigrationNotes;
+		for (const FString& Note : CanonResult.MigrationNotes)
+		{
+			MigrationNotes.Add(MakeShared<FJsonValueString>(Note));
+		}
+		ResultObj->SetArrayField(TEXT("migration_notes"), MigrationNotes);
+		ResultObj->SetBoolField(TEXT("spec_migrated"), CanonResult.bSpecMigrated);
+
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
 	if (Action.Equals(TEXT("health"), ESearchCase::IgnoreCase))
 	{
 		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
@@ -1668,6 +1767,12 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 				const TSharedPtr<FJsonObject> GraphObj = Params->GetObjectField(TEXT("graph_spec"));
 				FJsonObjectConverter::JsonObjectToUStruct(GraphObj.ToSharedRef(), FSOTS_BPGenGraphSpec::StaticStruct(), &GraphSpec, 0, 0);
 			}
+
+			FString RepairMode;
+			if (Params->TryGetStringField(TEXT("repair_mode"), RepairMode) && !RepairMode.IsEmpty())
+			{
+				GraphSpec.RepairMode = RepairMode;
+			}
 		}
 
 		if (MaxAutoFixSteps > 0 && GraphSpec.AutoFixMaxSteps > MaxAutoFixSteps)
@@ -1682,6 +1787,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &DryRunResult, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			ResultJson->SetNumberField(TEXT("planned_links"), GraphSpec.Links.Num());
 			OutResult.bOk = true;
@@ -1695,6 +1801,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &ApplyResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = ApplyResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(ApplyResult.Warnings);
@@ -1715,6 +1822,15 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			FJsonObjectConverter::JsonObjectToUStruct(GraphObj.ToSharedRef(), FSOTS_BPGenGraphSpec::StaticStruct(), &GraphSpec, 0, 0);
 		}
 
+		if (Params.IsValid())
+		{
+			FString RepairMode;
+			if (Params->TryGetStringField(TEXT("repair_mode"), RepairMode) && !RepairMode.IsEmpty())
+			{
+				GraphSpec.RepairMode = RepairMode;
+			}
+		}
+
 		if (MaxAutoFixSteps > 0 && GraphSpec.AutoFixMaxSteps > MaxAutoFixSteps)
 		{
 			OutResult.Warnings.Add(FString::Printf(TEXT("auto_fix_max_steps clamped to %d (requested %d)."), MaxAutoFixSteps, GraphSpec.AutoFixMaxSteps));
@@ -1728,6 +1844,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &DryRunResult, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			ResultJson->SetNumberField(TEXT("planned_links"), GraphSpec.Links.Num());
 			OutResult.bOk = true;
@@ -1741,6 +1858,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &ApplyResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = ApplyResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(ApplyResult.Warnings);
@@ -2210,6 +2328,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &DryEnsure, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = true;
 			OutResult.Result = ResultJson;
@@ -2221,6 +2340,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &EnsureResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = EnsureResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(EnsureResult.Warnings);
@@ -2277,6 +2397,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &DryEnsure, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = true;
 			OutResult.Result = ResultJson;
@@ -2288,6 +2409,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &EnsureResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = EnsureResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(EnsureResult.Warnings);
@@ -2326,6 +2448,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetEnsureResult::StaticStruct(), &DryEnsure, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = DryEnsure.bSuccess;
 			OutResult.Result = ResultJson;
@@ -2341,6 +2464,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetEnsureResult::StaticStruct(), &EnsureResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = EnsureResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(EnsureResult.Warnings);
@@ -2384,6 +2508,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetPropertyResult::StaticStruct(), &DryResult, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = DryResult.bSuccess;
 			OutResult.Result = ResultJson;
@@ -2399,6 +2524,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetPropertyResult::StaticStruct(), &PropResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = PropResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(PropResult.Warnings);
@@ -2439,6 +2565,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenBindingEnsureResult::StaticStruct(), &DryBinding, ResultJson.ToSharedRef(), 0, 0);
 			AddChangeSummaryAlias(ResultJson);
+			AddSpecMigrationAliases(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = DryBinding.bSuccess;
 			OutResult.Result = ResultJson;
@@ -2454,6 +2581,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenBindingEnsureResult::StaticStruct(), &BindingResult, ResultJson.ToSharedRef(), 0, 0);
 		AddChangeSummaryAlias(ResultJson);
+		AddSpecMigrationAliases(ResultJson);
 		OutResult.bOk = BindingResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(BindingResult.Warnings);

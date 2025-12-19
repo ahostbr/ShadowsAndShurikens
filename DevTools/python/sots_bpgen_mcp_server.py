@@ -68,6 +68,17 @@ def build_server() -> FastMCP:
         )
 
     @mcp.tool()
+    def bpgen_get_spec_schema() -> Dict[str, Any]:
+        return _call("get_spec_schema", {})
+
+    @mcp.tool()
+    def bpgen_canonicalize_spec(graph_spec: Dict[str, Any], options: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        params = {"graph_spec": graph_spec}
+        if options:
+            params["options"] = options
+        return _call("canonicalize_spec", params)
+
+    @mcp.tool()
     def bpgen_list(blueprint_asset_path: str, function_name: str, include_pins: bool = False) -> Dict[str, Any]:
         return _call(
             "list_nodes",

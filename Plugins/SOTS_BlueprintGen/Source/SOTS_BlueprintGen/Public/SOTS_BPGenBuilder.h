@@ -27,6 +27,9 @@ public:
     static FSOTS_BPGenApplyResult ApplyGraphSpecToTarget(const UObject* WorldContextObject, const FSOTS_BPGenGraphSpec& GraphSpec);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
+    static FSOTS_BPGenCanonicalizeResult CanonicalizeGraphSpec(const FSOTS_BPGenGraphSpec& GraphSpec, const FSOTS_BPGenSpecCanonicalizeOptions& Options);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
     static FSOTS_BPGenGraphEditResult DeleteNodeById(const UObject* WorldContextObject, const FSOTS_BPGenDeleteNodeRequest& Request);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")

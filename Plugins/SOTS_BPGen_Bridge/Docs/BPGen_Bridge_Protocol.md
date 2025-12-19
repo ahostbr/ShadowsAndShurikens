@@ -12,7 +12,7 @@ Local-only TCP NDJSON bridge for BPGen.
 ```json
 {
   "tool": "bpgen",
-  "action": "ping" | "discover_nodes" | "apply_graph_spec" | "apply_graph_spec_to_target" | "ensure_function" | "ensure_variable" | "ensure_widget" | "set_widget_properties" | "ensure_binding" | "list_nodes" | "describe_node" | "compile_blueprint" | "save_blueprint" | "refresh_nodes" | "batch" | "begin_session" | "end_session" | "session_batch" | "prime_cache" | "clear_cache" | "set_limits" | "get_recent_requests" | "server_info" | "health" | "set_safe_mode" | "emergency_stop" | "shutdown",
+  "action": "ping" | "discover_nodes" | "apply_graph_spec" | "apply_graph_spec_to_target" | "canonicalize_spec" | "get_spec_schema" | "ensure_function" | "ensure_variable" | "ensure_widget" | "set_widget_properties" | "ensure_binding" | "list_nodes" | "describe_node" | "compile_blueprint" | "save_blueprint" | "refresh_nodes" | "batch" | "begin_session" | "end_session" | "session_batch" | "prime_cache" | "clear_cache" | "set_limits" | "get_recent_requests" | "server_info" | "health" | "set_safe_mode" | "emergency_stop" | "shutdown",
   "request_id": "any string",
   "params": { "...": "action-specific" }
 }
@@ -30,7 +30,7 @@ Local-only TCP NDJSON bridge for BPGen.
   "server.plugin": "SOTS_BPGen_Bridge",
   "server.version": "0.1",
   "server.protocol_version": "1.0",
-  "server.features": { "targets": true, "ensure_function": true, "ensure_variable": true, "umg": true, "describe_node_links": true, "error_codes": true, "graph_edits": true, "auto_fix": true, "recipes": true, "batch": true, "sessions": true, "cache_controls": true, "limits": true, "recent_requests": true, "server_info": true, "health": true, "safety": true, "audit": true, "dry_run": true, "auth_token": false, "rate_limit": true },
+  "server.features": { "targets": true, "ensure_function": true, "ensure_variable": true, "umg": true, "describe_node_links": true, "error_codes": true, "graph_edits": true, "auto_fix": true, "recipes": true, "batch": true, "sessions": true, "cache_controls": true, "limits": true, "recent_requests": true, "server_info": true, "spec_schema": true, "canonicalize_spec": true, "health": true, "safety": true, "audit": true, "dry_run": true, "auth_token": false, "rate_limit": true },
   "server.port": 55557,
   "server.request_ms": 142.4,
   "server.dispatch_ms": 120.2,
@@ -55,8 +55,10 @@ Local-only TCP NDJSON bridge for BPGen.
 ## Supported actions
 - `ping`: returns `pong:true`, UTC `time`, `version`.
 - `discover_nodes`: params `blueprint_asset_path` (optional), `search_text`, `max_results` (int), `include_pins` (bool). Returns `FSOTS_BPGenNodeDiscoveryResult`.
-- `apply_graph_spec`: params include either `blueprint_asset_path`, `function_name`, `graph_spec` or nested `function_def` and `graph_spec` objects matching BPGen JSON. GraphSpec supports optional `auto_fix`, `auto_fix_max_steps`, `auto_fix_insert_conversions`. Routes to `USOTS_BPGenBuilder::ApplyGraphSpecToFunction`.
+- `apply_graph_spec`: params include either `blueprint_asset_path`, `function_name`, `graph_spec` or nested `function_def` and `graph_spec` objects matching BPGen JSON. GraphSpec supports optional `auto_fix`, `auto_fix_max_steps`, `auto_fix_insert_conversions`, `repair_mode`. Routes to `USOTS_BPGenBuilder::ApplyGraphSpecToFunction`.
 - `apply_graph_spec_to_target`: params `graph_spec` (with optional `target` block). Routes to `USOTS_BPGenBuilder::ApplyGraphSpecToTarget` for non-function graphs.
+- `get_spec_schema`: returns current `spec_schema`, `spec_version`, `supported_versions`, and notes.
+- `canonicalize_spec`: params `graph_spec`, optional `options` (FSOTS_BPGenSpecCanonicalizeOptions). Returns `canonical_spec`, `diff_notes`, `spec_migrated`, `migration_notes`.
 - `ensure_function`: params `blueprint_asset_path`, `function_name`, optional `signature` (FSOTS_BPGenFunctionSignature JSON), `create_if_missing` (bool, default true), `update_if_exists` (bool, default true). Returns `FSOTS_BPGenEnsureResult`.
 - `ensure_variable`: params `blueprint_asset_path`, `variable_name`, `pin_type` (FSOTS_BPGenPin JSON), optional `default_value` (string), `instance_editable` (bool, default true), `expose_on_spawn` (bool, default false), `create_if_missing` (bool), `update_if_exists` (bool). Returns `FSOTS_BPGenEnsureResult`.
 - `ensure_widget`: params follow `FSOTS_BPGenWidgetSpec` (blueprint_asset_path, widget_class_path, widget_name, parent_name, insert_index, is_variable, create_if_missing, update_if_exists, reparent_if_mismatch, properties map, slot_properties map). Returns `FSOTS_BPGenWidgetEnsureResult`.
@@ -99,3 +101,4 @@ Local-only TCP NDJSON bridge for BPGen.
 - Safe mode blocks dangerous ops regardless of `dangerous_ok`.
 - Audit logs are written under `Plugins/SOTS_BPGen_Bridge/Saved/BPGenAudit/YYYYMMDD/` with request/response and change summaries.
 - Apply/ensure/UMG responses include `ChangeSummary` and a lowercase alias `change_summary` when present.
+- Apply responses may include `spec_migrated`, `migration_notes`, and `repair_steps` when canonicalization/repair runs.

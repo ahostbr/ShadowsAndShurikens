@@ -296,6 +296,39 @@ struct FSOTS_BPGenAutoFixStep
 };
 
 /**
+ * Repair step recorded during graph apply (SPINE_M).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenRepairStep
+{
+	GENERATED_BODY()
+
+	/** JSON: "step_index" (output). Ordered step index. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Repair")
+	int32 StepIndex = 0;
+
+	/** JSON: "code" (output). Stable repair code (e.g., REPAIR_NODE_ID). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Repair")
+	FString Code;
+
+	/** JSON: "description" (output). Human-readable summary. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Repair")
+	FString Description;
+
+	/** JSON: "affected_node_ids" (output). Node ids touched by the repair. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Repair")
+	TArray<FString> AffectedNodeIds;
+
+	/** JSON: "before" (output, optional). Before snapshot snippet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Repair")
+	FString Before;
+
+	/** JSON: "after" (output, optional). After snapshot snippet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Repair")
+	FString After;
+};
+
+/**
  * Delete-node request targeting a specific graph.
  */
 USTRUCT(BlueprintType)
@@ -464,6 +497,18 @@ struct FSOTS_BPGenGraphSpec
 {
 	GENERATED_BODY()
 
+	/** JSON: "spec_version" (optional, defaults to 1). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	int32 SpecVersion = 1;
+
+	/** JSON: "spec_schema" (optional, defaults to "SOTS_BPGen_GraphSpec"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString SpecSchema = TEXT("SOTS_BPGen_GraphSpec");
+
+	/** JSON: "repair_mode" (optional, defaults to "none"). Valid: none|soft|aggressive. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
+	FString RepairMode;
+
 	/** JSON: "target" (optional). Graph target descriptor; defaults to Function when omitted. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
 	FSOTS_BPGenGraphTarget Target;
@@ -487,6 +532,56 @@ struct FSOTS_BPGenGraphSpec
 	/** JSON: "auto_fix_insert_conversions" (optional, defaults false). Allow conversion node insertion. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Graph")
 	bool bAutoFixInsertConversions = false;
+};
+
+/**
+ * Canonicalization options for GraphSpec (SPINE_M).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenSpecCanonicalizeOptions
+{
+	GENERATED_BODY()
+
+	/** JSON: "assign_missing_node_ids" (optional, defaults true). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	bool bAssignMissingNodeIds = true;
+
+	/** JSON: "sort_deterministic" (optional, defaults true). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	bool bSortDeterministic = true;
+
+	/** JSON: "normalize_target_type" (optional, defaults true). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	bool bNormalizeTargetType = true;
+
+	/** JSON: "apply_migrations" (optional, defaults true). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	bool bApplyMigrations = true;
+};
+
+/**
+ * Canonicalization output for GraphSpec (SPINE_M).
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenCanonicalizeResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "canonical_spec" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	FSOTS_BPGenGraphSpec CanonicalSpec;
+
+	/** JSON: "diff_notes" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	TArray<FString> DiffNotes;
+
+	/** JSON: "spec_migrated" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	bool bSpecMigrated = false;
+
+	/** JSON: "migration_notes" (output). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Spec")
+	TArray<FString> MigrationNotes;
 };
 
 /**
@@ -785,6 +880,18 @@ struct FSOTS_BPGenApplyResult
 	/** JSON: "auto_fix_steps" (output only, array). Auto-fix steps applied (if enabled). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	TArray<FSOTS_BPGenAutoFixStep> AutoFixSteps;
+
+	/** JSON: "repair_steps" (output only, array). Repair steps applied (if enabled). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FSOTS_BPGenRepairStep> RepairSteps;
+
+	/** JSON: "spec_migrated" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	bool bSpecMigrated = false;
+
+	/** JSON: "migration_notes" (output only, array). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> MigrationNotes;
 
 	/** JSON: "CreatedNodeIds" (output only, array). NodeIds created during this apply. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
