@@ -689,6 +689,45 @@ bool FSOTS_BPGenBridgeServer::IsRunning() const
 	return bRunning;
 }
 
+void FSOTS_BPGenBridgeServer::GetServerInfoForUI(TSharedPtr<FJsonObject>& OutInfo) const
+{
+	TSharedPtr<FJsonObject> Info = MakeShared<FJsonObject>();
+	Info->SetBoolField(TEXT("running"), bRunning);
+	Info->SetStringField(TEXT("bind_address"), BindAddress);
+	Info->SetNumberField(TEXT("port"), Port);
+	Info->SetBoolField(TEXT("safe_mode"), bSafeMode);
+	Info->SetBoolField(TEXT("allow_non_loopback_bind"), bAllowNonLoopbackBind);
+	Info->SetNumberField(TEXT("max_request_bytes"), MaxRequestBytes);
+	Info->SetNumberField(TEXT("max_requests_per_second"), MaxRequestsPerSecond);
+	Info->SetNumberField(TEXT("max_requests_per_minute"), MaxRequestsPerMinute);
+	Info->SetNumberField(TEXT("uptime_seconds"), bRunning ? (FPlatformTime::Seconds() - ServerStartSeconds) : 0.0);
+	Info->SetStringField(TEXT("started_utc"), ServerStartUtc.GetTicks() > 0 ? ServerStartUtc.ToIso8601() : FString());
+	Info->SetStringField(TEXT("last_start_error"), LastStartError);
+	Info->SetStringField(TEXT("last_start_error_code"), LastStartErrorCode);
+	Info->SetNumberField(TEXT("total_requests"), TotalRequests);
+
+	TSharedPtr<FJsonObject> Features = BuildFeatureFlags(true, !AuthToken.IsEmpty(), (MaxRequestsPerSecond > 0 || MaxRequestsPerMinute > 0));
+	Info->SetObjectField(TEXT("features"), Features);
+
+	OutInfo = Info;
+}
+
+void FSOTS_BPGenBridgeServer::GetRecentRequestsForUI(TArray<TSharedPtr<FJsonObject>>& OutRequests) const
+{
+	FScopeLock Lock(&RecentRequestsMutex);
+	for (const FRecentRequestSummary& Entry : RecentRequests)
+	{
+		TSharedPtr<FJsonObject> Obj = MakeShared<FJsonObject>();
+		Obj->SetStringField(TEXT("request_id"), Entry.RequestId);
+		Obj->SetStringField(TEXT("action"), Entry.Action);
+		Obj->SetBoolField(TEXT("ok"), Entry.bOk);
+		Obj->SetStringField(TEXT("error_code"), Entry.ErrorCode);
+		Obj->SetNumberField(TEXT("request_ms"), Entry.RequestMs);
+		Obj->SetStringField(TEXT("timestamp"), Entry.Timestamp);
+		OutRequests.Add(Obj);
+	}
+}
+
 void FSOTS_BPGenBridgeServer::AcceptLoop()
 {
 	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);

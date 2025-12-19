@@ -29,6 +29,12 @@ public:
 	void Stop();
 	bool IsRunning() const;
 
+	/** Retrieve recent requests for UI display (lightweight). */
+	void GetRecentRequestsForUI(TArray<TSharedPtr<FJsonObject>>& OutRequests) const;
+
+	/** Retrieve server status snapshot for UI surfaces. */
+	void GetServerInfoForUI(TSharedPtr<FJsonObject>& OutInfo) const;
+
 private:
 	void AcceptLoop();
 	void HandleConnection(FSocket* ClientSocket);
