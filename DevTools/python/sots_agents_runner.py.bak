@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
-import logging
 import os
+import queue
 import re
 import sys
 import time
@@ -13,18 +13,15 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from agents import Agent, Runner, SQLiteSession, function_tool
 
-# MCP is optional. Keep imports guarded so the script still runs without MCP installed.
+# MCP is optional. Keep imports guarded so the script still runs without MCP config.
 try:
-    import anyio
-    from mcp.server import InitializationOptions, NotificationOptions, Server as McpServer
-    from mcp.server.stdio import stdio_server
-    from mcp.types import TextContent, Tool
+    from agents.mcp import create_static_tool_filter
+    from agents.mcp.server import MCPServerStreamableHttp, MCPServerSse, MCPServerStdio
 except Exception:  # pragma: no cover
-    anyio = None
-    McpServer = None
-    stdio_server = None
-    TextContent = None
-    Tool = None
+    create_static_tool_filter = None
+    MCPServerStreamableHttp = None
+    MCPServerSse = None
+    MCPServerStdio = None
 
 
 # -----------------------------
@@ -60,57 +57,24 @@ class RunConfig:
     session_id: str
     session_db_path: Path
     laws_file: Optional[Path] = None
+    mcp_config_path: Optional[Path] = None
     enable_subprocess: bool = False  # Off by default (matches "manual DevTools first" culture)
 
-    # MCP-server safety toggles
-    allow_apply: bool = False  # MCP tool calls cannot do APPLY unless explicitly allowed at server start
-    server_name: str = "sots-agents-runner"
-    server_version: str = "0.1.0"
+
+@dataclasses.dataclass
+class McpServerConfig:
+    name: str
+    transport: str  # stdio|sse|streamable_http
+    url: Optional[str] = None
+    command: Optional[str] = None
+    args: Optional[List[str]] = None
+    headers: Dict[str, str] = dataclasses.field(default_factory=dict)
+    allowed_tools_plan: Optional[List[str]] = None
+    allowed_tools_apply: Optional[List[str]] = None
 
 
 # -----------------------------
-# Logging (MCP-safe)
-# -----------------------------
-
-def setup_logging(repo_root: Path, name: str = "sots_agents_runner", *, mcp_mode: bool) -> logging.Logger:
-    """
-    In MCP stdio mode, DO NOT print to stdout (breaks protocol). We log to:
-      - repo_root/DevTools/logs/<name>.log  (if possible)
-      - stderr (safe for MCP)
-    """
-    logger = logging.getLogger(name)
-    if logger.handlers:
-        return logger
-
-    logger.setLevel(logging.INFO)
-    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-
-    # stderr handler (safe even in MCP stdio)
-    sh = logging.StreamHandler(stream=sys.stderr)
-    sh.setFormatter(fmt)
-    logger.addHandler(sh)
-
-    # file handler
-    try:
-        log_dir = repo_root / "DevTools" / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        fh = logging.FileHandler(log_dir / f"{name}.log", encoding="utf-8")
-        fh.setFormatter(fmt)
-        logger.addHandler(fh)
-    except Exception:
-        # if we can’t write logs, stderr is still fine
-        pass
-
-    if not mcp_mode:
-        logger.info("Logging initialized (non-MCP mode).")
-    else:
-        logger.info("Logging initialized (MCP stdio mode).")
-
-    return logger
-
-
-# -----------------------------
-# Local file tools (agent-callable)
+# Local file tools
 # -----------------------------
 
 def _safe_rel(repo_root: Path, p: Path) -> str:
@@ -226,11 +190,13 @@ def sys_run_subprocess(repo_root: str, argv: List[str], timeout_sec: int = 120) 
     if not argv:
         raise ValueError("argv empty")
 
+    # Block dangerous commands
     joined = " ".join(argv)
     for bad in DEFAULT_BLOCKED_SUBPROCESS:
         if bad.lower() in joined.lower():
             raise ValueError(f"Blocked subprocess (build-related): {bad}")
 
+    # Soft allowlist: require python-like prefix
     if argv[0].lower() not in DEFAULT_ALLOWED_SUBPROCESS_PREFIXES:
         raise ValueError("Blocked subprocess: only python/py allowed by default")
 
@@ -249,6 +215,75 @@ def sys_run_subprocess(repo_root: str, argv: List[str], timeout_sec: int = 120) 
 
 
 # -----------------------------
+# MCP helpers
+# -----------------------------
+
+def load_mcp_servers(cfg_path: Path, mode: str) -> List[Any]:
+    """
+    Returns a list of MCP server instances (context managers).
+    Mode decides tool allowlist (plan vs apply).
+    """
+    if cfg_path is None or not cfg_path.exists():
+        return []
+
+    if create_static_tool_filter is None:
+        raise RuntimeError("MCP imports unavailable. Ensure openai-agents is installed with MCP support.")
+
+    raw = json.loads(cfg_path.read_text(encoding="utf-8"))
+    servers: List[McpServerConfig] = []
+    for s in raw.get("servers", []):
+        servers.append(McpServerConfig(**s))
+
+    out: List[Any] = []
+    for s in servers:
+        allowed = None
+        if mode == "plan":
+            allowed = s.allowed_tools_plan
+        elif mode == "apply":
+            allowed = s.allowed_tools_apply
+
+        tool_filter = create_static_tool_filter(allowed_tool_names=allowed) if allowed else None
+
+        if s.transport == "streamable_http":
+            if MCPServerStreamableHttp is None:
+                raise RuntimeError("MCPServerStreamableHttp unavailable")
+            out.append(
+                MCPServerStreamableHttp(
+                    name=s.name,
+                    params={"url": s.url, "headers": s.headers or {}},
+                    cache_tools_list=True,
+                    tool_filter=tool_filter,
+                    client_session_timeout_seconds=20,
+                )
+            )
+        elif s.transport == "sse":
+            if MCPServerSse is None:
+                raise RuntimeError("MCPServerSse unavailable")
+            out.append(
+                MCPServerSse(
+                    name=s.name,
+                    params={"url": s.url, "headers": s.headers or {}},
+                    cache_tools_list=True,
+                    tool_filter=tool_filter,
+                )
+            )
+        elif s.transport == "stdio":
+            if MCPServerStdio is None:
+                raise RuntimeError("MCPServerStdio unavailable")
+            out.append(
+                MCPServerStdio(
+                    name=s.name,
+                    params={"command": s.command, "args": s.args or []},
+                    cache_tools_list=True,
+                    tool_filter=tool_filter,
+                )
+            )
+        else:
+            raise ValueError(f"Unknown MCP transport: {s.transport}")
+    return out
+
+
+# -----------------------------
 # Prompt routing
 # -----------------------------
 
@@ -261,10 +296,11 @@ def lane_from_header(header: Optional[str]) -> Optional[str]:
         return None
     if header in {"SOTS_DEVTOOLS"}:
         return "devtools"
-    if header in {"SOTS_BPGEN_PLAN", "SOTS_BPGEN", "SOTS_VIBEUE_PLAN"}:
+    if header in {"SOTS_BPGEN_PLAN", "SOTS_VIBEUE_PLAN"}:
         return "editor"
-    if header.startswith("SOTS_BUDDY") or (header.startswith("SOTS_") and "BUDDY" in header):
+    if header.startswith("SOTS_BUDDY") or header.startswith("SOTS_") and "BUDDY" in header:
         return "code"
+    # Also treat SOTS_BUDDY_PASS blocks as code lane
     if "SOTS_BUDDY_PASS" in header:
         return "code"
     return None
@@ -272,9 +308,12 @@ def lane_from_header(header: Optional[str]) -> Optional[str]:
 def infer_mode(mode_arg: str, prompt: str) -> str:
     if mode_arg in {"plan", "apply", "verify"}:
         return mode_arg
+    # auto mode:
+    # If prompt explicitly says APPLY/VERIFY in its header block, use it.
     m = re.search(r"^\s*pass:\s*(PLAN|APPLY|VERIFY)\b", prompt, re.IGNORECASE | re.MULTILINE)
     if m:
         return m.group(1).lower()
+    # Default safest
     return "plan"
 
 
@@ -317,22 +356,25 @@ Do NOT execute DevTools scripts unless explicitly asked AND subprocess is enable
 
 EDITOR_SYSTEM = BASE_SYSTEM + """
 You are Editor-ops mode (BPGen/VibeUE style).
-Prefer: tool-driven discovery/introspection before edits.
-If you cannot mutate directly (no editor tools), produce a precise PLAN pack of actions.
+If MCP tools are available, you may call them; otherwise produce a precise PLAN pack of actions.
+Prefer tool-driven discovery/introspection before edits.
 """
 
-
-def build_agents(tools_read: List[Any], tools_apply: List[Any]) -> Dict[str, Agent]:
+def build_agents(mcp_servers: List[Any], tools_read: List[Any], tools_apply: List[Any]) -> Dict[str, Agent]:
+    # Triage agent (no tools)
     triage = Agent(
         name="SOTS_Triage",
         instructions=TRIAGE_SYSTEM,
+        # Keep it cheap and deterministic-ish
         model=os.getenv("SOTS_MODEL_TRIAGE", "gpt-5.2-mini"),
     )
 
+    # Lane agents
     code = Agent(
         name="SOTS_CodeBuddy",
         instructions=CODE_SYSTEM,
-        tools=tools_read,  # swapped at runtime
+        tools=tools_read,  # swapped at runtime by mode
+        mcp_servers=mcp_servers or None,
         model=os.getenv("SOTS_MODEL_CODE", "gpt-5.2-codex"),
     )
 
@@ -340,6 +382,7 @@ def build_agents(tools_read: List[Any], tools_apply: List[Any]) -> Dict[str, Age
         name="SOTS_DevTools",
         instructions=DEVTOOLS_SYSTEM,
         tools=tools_read,
+        mcp_servers=mcp_servers or None,
         model=os.getenv("SOTS_MODEL_DEVTOOLS", "gpt-5.2"),
     )
 
@@ -347,6 +390,7 @@ def build_agents(tools_read: List[Any], tools_apply: List[Any]) -> Dict[str, Age
         name="SOTS_EditorOps",
         instructions=EDITOR_SYSTEM,
         tools=tools_read,
+        mcp_servers=mcp_servers or None,
         model=os.getenv("SOTS_MODEL_EDITOR", "gpt-5.2-codex"),
     )
 
@@ -354,102 +398,7 @@ def build_agents(tools_read: List[Any], tools_apply: List[Any]) -> Dict[str, Age
 
 
 # -----------------------------
-# Orchestrator (shared by CLI + MCP server)
-# -----------------------------
-
-class SOTSAgentsOrchestrator:
-    def __init__(self, cfg: RunConfig, *, logger: logging.Logger) -> None:
-        self.cfg = cfg
-        self.logger = logger
-
-        self.tools_read = [fs_list_glob, fs_read_text, fs_regex_search]
-        self.tools_apply = self.tools_read + [fs_write_text, fs_delete_dir]
-        if cfg.enable_subprocess:
-            self.tools_apply.append(sys_run_subprocess)
-
-        self.agents = build_agents(tools_read=self.tools_read, tools_apply=self.tools_apply)
-        self.session = SQLiteSession(cfg.session_id, str(cfg.session_db_path))
-
-        self._laws_snip_cache: Optional[str] = None
-
-        self.logger.info(f"Orchestrator ready: repo_root={cfg.repo_root} mode={cfg.mode} session_id={cfg.session_id}")
-
-    def _get_laws_snip(self) -> Optional[str]:
-        if not self.cfg.laws_file:
-            return None
-        p = self.cfg.laws_file
-        if not p.exists():
-            return None
-        if self._laws_snip_cache is not None:
-            return self._laws_snip_cache
-        try:
-            self._laws_snip_cache = p.read_text(encoding="utf-8", errors="replace")[:40_000]
-            return self._laws_snip_cache
-        except Exception:
-            return None
-
-    def run_one(self, prompt: str, *, mode_override: Optional[str] = None, lane_override: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Returns a structured dict:
-          { ok, lane, mode, output, header, errors[] }
-        """
-        errors: List[str] = []
-
-        header = detect_header(prompt)
-        lane = lane_override or lane_from_header(header)
-
-        mode = infer_mode(self.cfg.mode, prompt)
-        if mode_override:
-            mode = infer_mode(mode_override, prompt)
-
-        if mode == "apply" and not self.cfg.allow_apply:
-            return {
-                "ok": False,
-                "lane": lane or "unknown",
-                "mode": mode,
-                "header": header or "",
-                "output": "",
-                "errors": ["APPLY is disabled for this MCP server. Restart server with --allow-apply to enable."],
-            }
-
-        # Choose lane by triage if needed
-        if lane is None:
-            triage_json = Runner.run_sync(self.agents["triage"], prompt, session=self.session).final_output
-            try:
-                j = json.loads(triage_json)
-                lane = j.get("lane") or "code"
-                if self.cfg.mode == "auto" and not mode_override:
-                    mode = j.get("suggested_mode") or mode
-            except Exception:
-                lane = "code"
-
-        lane_agent = self.agents.get(lane, self.agents["code"])
-
-        # Apply toolset
-        lane_agent.tools = self.tools_apply if mode == "apply" else self.tools_read
-
-        laws_snip = self._get_laws_snip()
-        prompt2 = prompt
-        if laws_snip:
-            prompt2 = "Reference laws (clipped):\n" + laws_snip + "\n\n---\n\nUser prompt:\n" + prompt
-
-        self.logger.info(f"RUN: lane={lane} mode={mode} header={header or ''}")
-
-        result = Runner.run_sync(lane_agent, prompt2, session=self.session)
-        out = result.final_output
-
-        return {
-            "ok": True,
-            "lane": lane,
-            "mode": mode,
-            "header": header or "",
-            "output": out,
-            "errors": errors,
-        }
-
-
-# -----------------------------
-# CLI helpers
+# IO sources
 # -----------------------------
 
 def read_prompt_from_args(args: argparse.Namespace) -> str:
@@ -457,6 +406,7 @@ def read_prompt_from_args(args: argparse.Namespace) -> str:
         return args.text
     if args.file:
         return Path(args.file).read_text(encoding="utf-8", errors="replace")
+    # stdin fallback
     if not sys.stdin.isatty():
         return sys.stdin.read()
     raise SystemExit("No input provided. Use --text, --file, or pipe stdin.")
@@ -477,155 +427,109 @@ def iter_watch_prompts(folder: Path, poll_sec: float = 0.75) -> Iterable[Tuple[P
 
 
 # -----------------------------
-# MCP stdio server (this is what VS Code starts)
+# Main runner
 # -----------------------------
-
-async def serve_mcp_stdio(cfg: RunConfig) -> None:
-    if anyio is None or McpServer is None or stdio_server is None:
-        raise RuntimeError("MCP dependencies not available. Install `mcp` and `anyio` in this python environment.")
-
-    logger = setup_logging(cfg.repo_root, name="sots_agents_mcp", mcp_mode=True)
-    orch = SOTSAgentsOrchestrator(cfg, logger=logger)
-
-    server = McpServer(cfg.server_name)
-
-    @server.list_tools()
-    async def list_tools() -> list[Tool]:
-        return [
-            Tool(
-                name="ping",
-                description="Health check for the SOTS Agents MCP server.",
-                inputSchema={"type": "object", "properties": {}, "required": []},
-            ),
-            Tool(
-                name="run_prompt",
-                description="Run a SOTS prompt through the safeguarded orchestrator (PLAN by default; APPLY only if enabled at server start).",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "prompt": {"type": "string"},
-                        "mode": {"type": "string", "description": "auto|plan|apply|verify (apply may be blocked)"},
-                        "lane": {"type": "string", "description": "optional override: code|devtools|editor"},
-                    },
-                    "required": ["prompt"],
-                },
-            ),
-        ]
-
-    @server.call_tool()
-    async def call_tool(name: str, arguments: dict | None) -> list[TextContent]:
-        arguments = arguments or {}
-        if name == "ping":
-            return [TextContent(type="text", text="pong")]
-
-        if name == "run_prompt":
-            prompt = str(arguments.get("prompt", "")).strip()
-            if not prompt:
-                return [TextContent(type="text", text=json.dumps({"ok": False, "errors": ["prompt is empty"]}))]
-
-            mode = arguments.get("mode")
-            lane = arguments.get("lane")
-
-            def _run() -> Dict[str, Any]:
-                return orch.run_one(prompt, mode_override=mode, lane_override=lane)
-
-            # Run in thread so we don't block the MCP event loop
-            res = await anyio.to_thread.run_sync(_run)
-            return [TextContent(type="text", text=json.dumps(res, ensure_ascii=False))]
-
-        raise ValueError(f"Unknown tool: {name}")
-
-    async with stdio_server() as (read, write):
-        init_opts = InitializationOptions(
-            server_name=cfg.server_name,
-            server_version=cfg.server_version,
-            capabilities=server.get_capabilities(
-                notification_options=NotificationOptions(),
-                experimental_capabilities={},
-            ),
-        )
-        logger.info(f"Starting MCP stdio server: {cfg.server_name} v{cfg.server_version}")
-        await server.run(read, write, initialization_options=init_opts)
-
-
-# -----------------------------
-# Main
-# -----------------------------
-
-def resolve_repo_root(repo_arg: Optional[str]) -> Path:
-    if repo_arg:
-        return Path(repo_arg)
-    # Prefer env var if running under MCP host
-    env = os.getenv("SOTS_PROJECT_ROOT") or os.getenv("SOTS_PROJECT_ROOT".upper()) or os.getenv("SOTS_PROJECT_ROOT".lower())
-    if env:
-        return Path(env)
-    env2 = os.getenv("SOTS_PROJECT_ROOT") or os.getenv("SOTS_PROJECT_ROOT".upper())
-    if env2:
-        return Path(env2)
-    # Fall back to cwd
-    return Path.cwd()
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--repo", default=None, help="Repo root, e.g. E:\\SAS\\ShadowsAndShurikens (optional in MCP mode if env is set)")
+    ap.add_argument("--repo", required=True, help="Repo root, e.g. E:\\SAS\\ShadowsAndShurikens")
     ap.add_argument("--mode", default="auto", choices=["auto", "plan", "apply", "verify"])
     ap.add_argument("--session-id", default="sots_default")
     ap.add_argument("--session-db", default="sots_agents_sessions.db")
     ap.add_argument("--laws-file", default=None, help="Optional: path to SOTS_Suite_ExtendedMemory_LAWs.txt")
+    ap.add_argument("--mcp-config", default=None, help="Optional: MCP servers json config")
     ap.add_argument("--enable-subprocess", action="store_true", help="Allow running python DevTools scripts (still blocked for builds)")
-    ap.add_argument("--allow-apply", action="store_true", help="Allow APPLY mode via MCP tool calls (off by default)")
-
-    # CLI input modes
     ap.add_argument("--text", default=None)
     ap.add_argument("--file", default=None)
     ap.add_argument("--watch", default=None, help="Watch a folder for new prompt files (*.txt/*.md)")
-
-    # MCP mode
-    ap.add_argument("--mcp-stdio", action="store_true", help="Run as an MCP stdio server (VS Code starts this).")
-
     args = ap.parse_args()
 
-    repo_root = resolve_repo_root(args.repo)
-    repo_root = repo_root.resolve()
-
-    # Setup logger (non-mcp)
-    logger = setup_logging(repo_root, name="sots_agents_runner", mcp_mode=bool(args.mcp_stdio))
-
     cfg = RunConfig(
-        repo_root=repo_root,
+        repo_root=Path(args.repo),
         mode=args.mode,
         session_id=args.session_id,
         session_db_path=Path(args.session_db),
         laws_file=Path(args.laws_file) if args.laws_file else None,
+        mcp_config_path=Path(args.mcp_config) if args.mcp_config else None,
         enable_subprocess=bool(args.enable_subprocess),
-        allow_apply=bool(args.allow_apply),
     )
 
-    # MCP server path
-    if args.mcp_stdio:
-        if anyio is None:
-            raise SystemExit("Missing MCP deps. Install: pip install mcp anyio")
-        anyio.run(serve_mcp_stdio, cfg)
-        return
+    # Build tool sets
+    tools_read = [fs_list_glob, fs_read_text, fs_regex_search]
+    tools_apply = tools_read + [fs_write_text, fs_delete_dir]
+    if cfg.enable_subprocess:
+        tools_apply.append(sys_run_subprocess)
 
-    # Normal CLI runner path
-    orch = SOTSAgentsOrchestrator(cfg, logger=logger)
+    # MCP servers (optional). We attach them to agents; they will be used as tools automatically.
+    # NOTE: Servers are async context managers; we open them around each run.
+    # For simplicity: load once here; open later in run loop.
+    mcp_servers = load_mcp_servers(cfg.mcp_config_path, mode="plan" if cfg.mode != "apply" else "apply") if cfg.mcp_config_path else []
+
+    agents = build_agents(mcp_servers=mcp_servers, tools_read=tools_read, tools_apply=tools_apply)
+
+    # Session memory
+    session = SQLiteSession(cfg.session_id, str(cfg.session_db_path))
+
+    def run_one(prompt: str) -> str:
+        header = detect_header(prompt)
+        lane = lane_from_header(header)
+
+        mode = infer_mode(cfg.mode, prompt)
+
+        # Swap toolsets based on mode
+        lane_agent = None
+        if lane is None:
+            # Ask triage agent
+            triage_json = Runner.run_sync(agents["triage"], prompt, session=session).final_output
+            try:
+                j = json.loads(triage_json)
+                lane = j.get("lane") or "code"
+                if cfg.mode == "auto":
+                    mode = j.get("suggested_mode") or mode
+            except Exception:
+                lane = "code"
+
+        lane_agent = agents.get(lane, agents["code"])
+
+        # Apply tools for this mode
+        if mode == "apply":
+            lane_agent.tools = tools_apply
+        else:
+            lane_agent.tools = tools_read
+
+        # If laws file provided, prepend a clipped snippet (keeps token use sane)
+        if cfg.laws_file and cfg.laws_file.exists():
+            try:
+                laws_snip = cfg.laws_file.read_text(encoding="utf-8", errors="replace")[:40_000]
+                prompt2 = (
+                    "Reference laws (clipped):\n"
+                    + laws_snip
+                    + "\n\n---\n\nUser prompt:\n"
+                    + prompt
+                )
+            except Exception:
+                prompt2 = prompt
+        else:
+            prompt2 = prompt
+
+        result = Runner.run_sync(lane_agent, prompt2, session=session)
+        return result.final_output
 
     # Watch mode
     if args.watch:
         folder = Path(args.watch)
         folder.mkdir(parents=True, exist_ok=True)
         for p, txt in iter_watch_prompts(folder):
-            res = orch.run_one(txt)
+            out = run_one(txt)
             out_path = p.with_suffix(p.suffix + ".out.txt")
-            out_path.write_text(res.get("output", ""), encoding="utf-8")
-            logger.info(f"[OK] {p.name} -> {out_path.name}")
+            out_path.write_text(out, encoding="utf-8")
+            print(f"[OK] {p.name} -> {out_path.name}")
         return
 
     # Single-shot
     prompt = read_prompt_from_args(args)
-    res = orch.run_one(prompt)
-    print(res.get("output", ""))
+    out = run_one(prompt)
+    print(out)
 
 
 if __name__ == "__main__":

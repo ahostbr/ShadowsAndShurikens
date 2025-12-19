@@ -23,6 +23,9 @@ public:
 	/** Resolve or create a spawner for the given key. Currently supports function path keys. */
 	static bool ResolveForContext(UBlueprint* Blueprint, UEdGraph* Graph, const FString& SpawnerKey, FSOTS_BPGenResolvedSpawner& OutResolved, FString& OutError);
 
+	/** Prime the spawner cache from the action database (best effort). */
+	static int32 PrimeCache(UBlueprint* Blueprint, int32 MaxItems, FString& OutError);
+
 	/** Clear cached spawners. */
 	static void Clear();
 };

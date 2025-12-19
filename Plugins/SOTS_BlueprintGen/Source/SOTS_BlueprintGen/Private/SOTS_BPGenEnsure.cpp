@@ -261,6 +261,9 @@ FSOTS_BPGenEnsureResult USOTS_BPGenEnsure::EnsureFunction(const UObject* WorldCo
 	FSOTS_BPGenEnsureResult Result;
 	Result.BlueprintPath = BlueprintAssetPath;
 	Result.Name = FunctionName;
+	Result.ChangeSummary.BlueprintAssetPath = BlueprintAssetPath;
+	Result.ChangeSummary.TargetType = TEXT("Function");
+	Result.ChangeSummary.TargetName = FunctionName;
 
 	if (BlueprintAssetPath.IsEmpty() || FunctionName.IsEmpty())
 	{
@@ -351,6 +354,15 @@ FSOTS_BPGenEnsureResult USOTS_BPGenEnsure::EnsureFunction(const UObject* WorldCo
 		Result.Warnings.Add(SaveError);
 	}
 
+	if (!bExists)
+	{
+		Result.ChangeSummary.CreatedFunctions.Add(FunctionName);
+	}
+	else if (bUpdateIfExists)
+	{
+		Result.ChangeSummary.UpdatedFunctions.Add(FunctionName);
+	}
+
 	Result.bSuccess = true;
 	return Result;
 }
@@ -361,6 +373,9 @@ FSOTS_BPGenWidgetEnsureResult USOTS_BPGenEnsure::EnsureWidgetComponent(const UOb
 	Result.BlueprintPath = Request.BlueprintAssetPath;
 	Result.WidgetName = Request.WidgetName;
 	Result.ParentName = Request.ParentName;
+	Result.ChangeSummary.BlueprintAssetPath = Request.BlueprintAssetPath;
+	Result.ChangeSummary.TargetType = TEXT("Widget");
+	Result.ChangeSummary.TargetName = Request.WidgetName;
 
 	if (Request.BlueprintAssetPath.IsEmpty() || Request.WidgetName.IsEmpty() || Request.WidgetClassPath.IsEmpty())
 	{
@@ -565,6 +580,16 @@ FSOTS_BPGenWidgetEnsureResult USOTS_BPGenEnsure::EnsureWidgetComponent(const UOb
 		Result.Warnings.Add(SaveError);
 	}
 
+	if (Result.bCreated)
+	{
+		Result.ChangeSummary.CreatedWidgets.Add(Request.WidgetName);
+	}
+	else if (Result.bReparented || Result.AppliedProperties.Num() > 0)
+	{
+		Result.ChangeSummary.UpdatedWidgets.Add(Request.WidgetName);
+	}
+	Result.ChangeSummary.PropertySets = Result.AppliedProperties;
+
 	Result.bSuccess = true;
 	return Result;
 }
@@ -574,6 +599,9 @@ FSOTS_BPGenWidgetPropertyResult USOTS_BPGenEnsure::SetWidgetProperties(const UOb
 	FSOTS_BPGenWidgetPropertyResult Result;
 	Result.BlueprintPath = Request.BlueprintAssetPath;
 	Result.WidgetName = Request.WidgetName;
+	Result.ChangeSummary.BlueprintAssetPath = Request.BlueprintAssetPath;
+	Result.ChangeSummary.TargetType = TEXT("WidgetProperty");
+	Result.ChangeSummary.TargetName = Request.WidgetName;
 
 	if (Request.BlueprintAssetPath.IsEmpty() || Request.WidgetName.IsEmpty())
 	{
@@ -642,6 +670,12 @@ FSOTS_BPGenWidgetPropertyResult USOTS_BPGenEnsure::SetWidgetProperties(const UOb
 		Result.Warnings.Add(SaveError);
 	}
 
+	if (Result.AppliedProperties.Num() > 0)
+	{
+		Result.ChangeSummary.UpdatedWidgets.Add(Request.WidgetName);
+		Result.ChangeSummary.PropertySets = Result.AppliedProperties;
+	}
+
 	Result.bSuccess = true;
 	return Result;
 }
@@ -653,6 +687,9 @@ FSOTS_BPGenBindingEnsureResult USOTS_BPGenEnsure::EnsureWidgetBinding(const UObj
 	Result.WidgetName = Request.WidgetName;
 	Result.PropertyName = Request.PropertyName;
 	Result.FunctionName = Request.FunctionName;
+	Result.ChangeSummary.BlueprintAssetPath = Request.BlueprintAssetPath;
+	Result.ChangeSummary.TargetType = TEXT("WidgetBinding");
+	Result.ChangeSummary.TargetName = Request.FunctionName;
 
 	if (Request.BlueprintAssetPath.IsEmpty() || Request.WidgetName.IsEmpty() || Request.PropertyName.IsEmpty() || Request.FunctionName.IsEmpty())
 	{
@@ -660,6 +697,9 @@ FSOTS_BPGenBindingEnsureResult USOTS_BPGenEnsure::EnsureWidgetBinding(const UObj
 		Result.ErrorMessage = TEXT("BlueprintAssetPath, widget_name, property_name, and function_name are required.");
 		return Result;
 	}
+
+	FSOTS_BPGenApplyResult ApplyResult;
+	bool bAppliedGraph = false;
 
 	// Ensure the binding function exists first (owns its own lock/transaction).
 	if (Request.bCreateFunction || Request.bUpdateFunction)
@@ -786,7 +826,8 @@ FSOTS_BPGenBindingEnsureResult USOTS_BPGenEnsure::EnsureWidgetBinding(const UObj
 		GraphSpec.Target.TargetType = GraphSpec.Target.TargetType.IsEmpty() ? TEXT("WidgetBinding") : GraphSpec.Target.TargetType;
 		GraphSpec.Target.bCreateIfMissing = true;
 
-		const FSOTS_BPGenApplyResult ApplyResult = USOTS_BPGenBuilder::ApplyGraphSpecToTarget(WorldContextObject, GraphSpec);
+		ApplyResult = USOTS_BPGenBuilder::ApplyGraphSpecToTarget(WorldContextObject, GraphSpec);
+		bAppliedGraph = true;
 		Result.Warnings.Append(ApplyResult.Warnings);
 		if (!ApplyResult.bSuccess)
 		{
@@ -794,6 +835,24 @@ FSOTS_BPGenBindingEnsureResult USOTS_BPGenEnsure::EnsureWidgetBinding(const UObj
 			Result.ErrorMessage = ApplyResult.ErrorMessage;
 			return Result;
 		}
+	}
+
+	if (Result.bBindingCreated)
+	{
+		Result.ChangeSummary.BindingsCreated.Add(Request.WidgetName + TEXT(".") + Request.PropertyName);
+	}
+	if (Result.bFunctionCreated)
+	{
+		Result.ChangeSummary.CreatedFunctions.Add(Request.FunctionName);
+	}
+	if (Result.bFunctionUpdated)
+	{
+		Result.ChangeSummary.UpdatedFunctions.Add(Request.FunctionName);
+	}
+	if (bAppliedGraph)
+	{
+		Result.ChangeSummary.CreatedNodeIds = ApplyResult.CreatedNodeIds;
+		Result.ChangeSummary.UpdatedNodeIds = ApplyResult.UpdatedNodeIds;
 	}
 
 	Result.bSuccess = true;
@@ -805,6 +864,9 @@ FSOTS_BPGenEnsureResult USOTS_BPGenEnsure::EnsureVariable(const UObject* WorldCo
 	FSOTS_BPGenEnsureResult Result;
 	Result.BlueprintPath = BlueprintAssetPath;
 	Result.Name = VarName;
+	Result.ChangeSummary.BlueprintAssetPath = BlueprintAssetPath;
+	Result.ChangeSummary.TargetType = TEXT("Variable");
+	Result.ChangeSummary.TargetName = VarName;
 
 	if (BlueprintAssetPath.IsEmpty() || VarName.IsEmpty())
 	{
@@ -894,5 +956,13 @@ FSOTS_BPGenEnsureResult USOTS_BPGenEnsure::EnsureVariable(const UObject* WorldCo
 	}
 
 	Result.bSuccess = true;
+	if (!bExists)
+	{
+		Result.ChangeSummary.CreatedVariables.Add(VarName);
+	}
+	else
+	{
+		Result.ChangeSummary.UpdatedVariables.Add(VarName);
+	}
 	return Result;
 }

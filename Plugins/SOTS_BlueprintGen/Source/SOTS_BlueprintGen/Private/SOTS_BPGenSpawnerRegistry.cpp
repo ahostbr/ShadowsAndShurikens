@@ -147,6 +147,48 @@ bool FSOTS_BPGenSpawnerRegistry::ResolveForContext(UBlueprint* Blueprint, UEdGra
 	return false;
 }
 
+int32 FSOTS_BPGenSpawnerRegistry::PrimeCache(UBlueprint* Blueprint, int32 MaxItems, FString& OutError)
+{
+	OutError.Reset();
+	int32 AddedCount = 0;
+
+	FBlueprintActionDatabase& ActionDB = FBlueprintActionDatabase::Get();
+	const FBlueprintActionDatabase::FActionRegistry& Registry = ActionDB.GetAllActions();
+
+	for (const TPair<FObjectKey, FBlueprintActionDatabase::FActionList>& Entry : Registry)
+	{
+		for (UBlueprintNodeSpawner* Spawner : Entry.Value)
+		{
+			if (!Spawner)
+			{
+				continue;
+			}
+
+			if (MaxItems > 0 && AddedCount >= MaxItems)
+			{
+				return AddedCount;
+			}
+
+			const FString Key = BuildSpawnerKey(Spawner);
+			if (Key.IsEmpty() || GSOTS_BPGenSpawnerCache.Contains(Key))
+			{
+				continue;
+			}
+
+			FSOTS_BPGenResolvedSpawner Cached;
+			Cached.SpawnerKey = Key;
+			Cached.Spawner = Spawner;
+			Cached.DebugName = Spawner->NodeClass ? Spawner->NodeClass->GetName() : Key;
+			Cached.DebugCategory = Blueprint ? TEXT("PrimeCacheBlueprint") : TEXT("PrimeCache");
+
+			GSOTS_BPGenSpawnerCache.Add(Key, Cached);
+			AddedCount++;
+		}
+	}
+
+	return AddedCount;
+}
+
 void FSOTS_BPGenSpawnerRegistry::Clear()
 {
 	GSOTS_BPGenSpawnerCache.Empty();

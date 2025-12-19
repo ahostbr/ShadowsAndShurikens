@@ -7,6 +7,8 @@ Included topics
 - topics/blueprint-workflow.md — step-by-step tool usage.
 - topics/recovery-and-verification.md — error handling and verification checklist.
 - topics/autofix-and-conversions.md - auto-fix flags, steps, and conversion guidance.
+- topics/batch-and-sessions.md - batch/session usage, atomic semantics, and orchestration tips.
+- topics/safety-and-audit.md - auth tokens, dangerous_ok, safe mode, and audit logs.
 - topics/replay-and-regression.md - replay runner usage, golden replays, and diff interpretation.
 
 Examples

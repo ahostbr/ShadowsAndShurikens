@@ -300,6 +300,12 @@ static FSOTS_BPGenApplyResult ApplyGraphSpecInternal(const UObject* WorldContext
 		Result.Warnings.Add(TEXT("ApplyGraphSpec: Failed to save Blueprint after applying graph."));
 	}
 
+	Result.ChangeSummary.BlueprintAssetPath = Target.BlueprintAssetPath;
+	Result.ChangeSummary.TargetType = Target.TargetType;
+	Result.ChangeSummary.TargetName = Target.Name;
+	Result.ChangeSummary.CreatedNodeIds = Result.CreatedNodeIds;
+	Result.ChangeSummary.UpdatedNodeIds = Result.UpdatedNodeIds;
+
 	Result.bSuccess = true;
 	return Result;
 }
@@ -2691,6 +2697,12 @@ FSOTS_BPGenApplyResult USOTS_BPGenBuilder::ApplyGraphSpecToFunction(
 	{
 		Result.Warnings.Add(TEXT("ApplyGraphSpecToFunction: Failed to save Blueprint after applying graph."));
 	}
+
+	Result.ChangeSummary.BlueprintAssetPath = FunctionDef.TargetBlueprintPath;
+	Result.ChangeSummary.TargetType = TEXT("Function");
+	Result.ChangeSummary.TargetName = FunctionDef.FunctionName.ToString();
+	Result.ChangeSummary.CreatedNodeIds = Result.CreatedNodeIds;
+	Result.ChangeSummary.UpdatedNodeIds = Result.UpdatedNodeIds;
 
 	Result.bSuccess = true;
 	return Result;

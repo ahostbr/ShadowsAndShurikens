@@ -12,7 +12,7 @@ Local-only TCP NDJSON bridge for BPGen.
 ```json
 {
   "tool": "bpgen",
-  "action": "ping" | "discover_nodes" | "apply_graph_spec" | "apply_graph_spec_to_target" | "ensure_function" | "ensure_variable" | "ensure_widget" | "set_widget_properties" | "ensure_binding" | "list_nodes" | "describe_node" | "compile_blueprint" | "save_blueprint" | "refresh_nodes" | "shutdown",
+  "action": "ping" | "discover_nodes" | "apply_graph_spec" | "apply_graph_spec_to_target" | "ensure_function" | "ensure_variable" | "ensure_widget" | "set_widget_properties" | "ensure_binding" | "list_nodes" | "describe_node" | "compile_blueprint" | "save_blueprint" | "refresh_nodes" | "batch" | "begin_session" | "end_session" | "session_batch" | "prime_cache" | "clear_cache" | "set_limits" | "get_recent_requests" | "server_info" | "health" | "set_safe_mode" | "emergency_stop" | "shutdown",
   "request_id": "any string",
   "params": { "...": "action-specific" }
 }
@@ -30,8 +30,11 @@ Local-only TCP NDJSON bridge for BPGen.
   "server.plugin": "SOTS_BPGen_Bridge",
   "server.version": "0.1",
   "server.protocol_version": "1.0",
-  "server.features": { "targets": true, "ensure_function": true, "ensure_variable": true, "umg": true, "describe_node_links": true, "error_codes": true, "graph_edits": true, "auto_fix": true, "recipes": true, "dry_run": true, "auth_token": false, "rate_limit": true },
+  "server.features": { "targets": true, "ensure_function": true, "ensure_variable": true, "umg": true, "describe_node_links": true, "error_codes": true, "graph_edits": true, "auto_fix": true, "recipes": true, "batch": true, "sessions": true, "cache_controls": true, "limits": true, "recent_requests": true, "server_info": true, "health": true, "safety": true, "audit": true, "dry_run": true, "auth_token": false, "rate_limit": true },
   "server.port": 55557,
+  "server.request_ms": 142.4,
+  "server.dispatch_ms": 120.2,
+  "server.serialize_ms": 1.8,
   "error_code": "ERR_PROTOCOL_MISMATCH" // optional (also ERR_UNAUTHORIZED, ERR_RATE_LIMIT, ERR_REQUEST_TOO_LARGE)
 }
 ```
@@ -41,7 +44,13 @@ Local-only TCP NDJSON bridge for BPGen.
 - Responses always include `server.protocol_version` and `server.features` to advertise supported surfaces.
 - If the bridge is configured with an auth token, every request must include `params.auth_token` or the response will return `ERR_UNAUTHORIZED`.
 - Requests that exceed the configured size cap return `ERR_REQUEST_TOO_LARGE`. Rate limiting (if enabled) returns `ERR_RATE_LIMIT`.
-- Bridge config keys (DefaultEngine.ini `[SOTS_BPGen_Bridge]` or environment): `AuthToken` / `SOTS_BPGEN_AUTH_TOKEN`, `MaxRequestsPerSecond` / `SOTS_BPGEN_MAX_RPS`.
+- Bridge config keys (DefaultEngine.ini `[SOTS_BPGen_Bridge]` or environment):
+  - `AuthToken` / `SOTS_BPGEN_AUTH_TOKEN`
+  - `MaxRequestsPerSecond` / `SOTS_BPGEN_MAX_RPS`
+  - `MaxRequestsPerMinute` / `SOTS_BPGEN_MAX_RPM`
+  - `AllowedActions`, `DeniedActions`
+  - `bAllowNonLoopbackBind` / `SOTS_BPGEN_ALLOW_NON_LOOPBACK`
+  - `bSafeMode` / `SOTS_BPGEN_SAFE_MODE`
 
 ## Supported actions
 - `ping`: returns `pong:true`, UTC `time`, `version`.
@@ -58,6 +67,18 @@ Local-only TCP NDJSON bridge for BPGen.
 - `compile_blueprint`: params `blueprint_asset_path`. Returns `FSOTS_BPGenMaintenanceResult`.
 - `save_blueprint`: params `blueprint_asset_path`. Returns `FSOTS_BPGenMaintenanceResult`.
 - `refresh_nodes`: params `blueprint_asset_path`, `function_name`, `include_pins` (bool). Returns `FSOTS_BPGenMaintenanceResult`.
+- `batch`: params `batch_id` (optional), `atomic` (bool, default true), `stop_on_error` (bool, default true), `commands` array of `{action, params}`. Returns per-step results and summary.
+- `begin_session`: params optional `blueprint_asset_path`. Returns `session_id`, `idle_seconds`, `started_utc`.
+- `end_session`: params `session_id`. Returns `{session_id, status}`.
+- `session_batch`: same as `batch` plus `session_id`.
+- `prime_cache`: params `blueprint_asset_path` (optional), `scope` ("global" or "blueprint"), `include_nodes` (bool, default true), `include_pins` (bool, default false), `max_items` (int). Returns primed counts.
+- `clear_cache`: clears spawner cache.
+- `set_limits`: params `max_request_bytes`, `max_requests_per_second`, `max_requests_per_minute`, `max_discovery_results`, `max_pin_harvest_nodes`, `max_autofix_steps`.
+- `get_recent_requests`: returns a ring buffer of `{request_id, action, ok, error_code, request_ms, timestamp}`.
+- `server_info`: returns bind info, feature flags, safe mode, allow/deny lists, and limits.
+- `health`: returns counters (rate windows + totals) and safe mode.
+- `set_safe_mode`: params `enabled` (bool). Enables/disables safe mode.
+- `emergency_stop`: stops the bridge, sets safe mode, returns `{stopped:true, safe_mode:true}`.
 - `delete_node` | `delete_node_by_id`: params `FSOTS_BPGenDeleteNodeRequest` (blueprint_asset_path, function_name, node_id, compile). Returns `FSOTS_BPGenGraphEditResult`.
 - `delete_link`: params `FSOTS_BPGenDeleteLinkRequest` (blueprint_asset_path, function_name, from_node_id, from_pin, to_node_id, to_pin, compile). Returns `FSOTS_BPGenGraphEditResult`.
 - `replace_node`: params `FSOTS_BPGenReplaceNodeRequest` (blueprint_asset_path, function_name, existing_node_id, new_node spec, pin_remap map, compile). Returns `FSOTS_BPGenGraphEditResult`.
@@ -73,3 +94,8 @@ Local-only TCP NDJSON bridge for BPGen.
 - If `server.features.auth_token` is true, pass `params.auth_token` on every request (DevTools can inject via `SOTS_BPGEN_AUTH_TOKEN`).
 - One connection at a time; sequential handling.
 - Protocol intentionally small to match MCP-style tooling.
+- Timing fields: `server.request_ms` covers total request handling, `server.dispatch_ms` covers game-thread execution, `server.serialize_ms` covers JSON serialization.
+- Dangerous operations require `params.dangerous_ok=true` (delete/replace, atomic batch, save_blueprint).
+- Safe mode blocks dangerous ops regardless of `dangerous_ok`.
+- Audit logs are written under `Plugins/SOTS_BPGen_Bridge/Saved/BPGenAudit/YYYYMMDD/` with request/response and change summaries.
+- Apply/ensure/UMG responses include `ChangeSummary` and a lowercase alias `change_summary` when present.

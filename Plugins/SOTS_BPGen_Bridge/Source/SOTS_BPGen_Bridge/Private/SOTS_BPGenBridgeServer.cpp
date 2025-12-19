@@ -4,16 +4,24 @@
 #include "SOTS_BPGenDiscovery.h"
 #include "SOTS_BPGenEnsure.h"
 #include "SOTS_BPGenInspector.h"
+#include "SOTS_BPGenSpawnerRegistry.h"
 #include "JsonObjectConverter.h"
 #include "Engine/Blueprint.h"
 #include "Sockets.h"
 #include "SocketSubsystem.h"
 #include "IPAddress.h"
+#include "ScopedTransaction.h"
 #include "Async/Async.h"
 #include "HAL/PlatformMisc.h"
 #include "HAL/PlatformProcess.h"
 #include "HAL/PlatformTime.h"
+#include "HAL/FileManager.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSOTS_BPGenBridge, Log, All);
 
 namespace
 {
@@ -31,6 +39,15 @@ static TSharedPtr<FJsonObject> BuildFeatureFlags(bool bSupportsDryRun, bool bHas
 	Features->SetBoolField(TEXT("graph_edits"), true);
 	Features->SetBoolField(TEXT("auto_fix"), true);
 	Features->SetBoolField(TEXT("recipes"), true);
+	Features->SetBoolField(TEXT("batch"), true);
+	Features->SetBoolField(TEXT("sessions"), true);
+	Features->SetBoolField(TEXT("cache_controls"), true);
+	Features->SetBoolField(TEXT("limits"), true);
+	Features->SetBoolField(TEXT("recent_requests"), true);
+	Features->SetBoolField(TEXT("server_info"), true);
+	Features->SetBoolField(TEXT("health"), true);
+	Features->SetBoolField(TEXT("safety"), true);
+	Features->SetBoolField(TEXT("audit"), true);
 	Features->SetBoolField(TEXT("dry_run"), bSupportsDryRun);
 	Features->SetBoolField(TEXT("auth_token"), bHasAuthToken);
 	Features->SetBoolField(TEXT("rate_limit"), bHasRateLimit);
@@ -71,6 +88,132 @@ static int32 GetBridgeMaxRequestsPerSecond()
 	return Value;
 }
 
+static bool GetBridgeBoolConfig(const TCHAR* Key, bool DefaultValue, const TCHAR* EnvKey = nullptr)
+{
+	bool bValue = DefaultValue;
+	if (GConfig)
+	{
+		GConfig->GetBool(TEXT("SOTS_BPGen_Bridge"), Key, bValue, GEngineIni);
+	}
+
+	if (EnvKey)
+	{
+		const FString EnvValue = FPlatformMisc::GetEnvironmentVariable(EnvKey);
+		if (!EnvValue.IsEmpty())
+		{
+			bValue = EnvValue.Equals(TEXT("1")) || EnvValue.Equals(TEXT("true"), ESearchCase::IgnoreCase);
+		}
+	}
+
+	return bValue;
+}
+
+static int32 GetBridgeMaxRequestsPerMinute()
+{
+	int32 Value = 0;
+	if (GConfig)
+	{
+		GConfig->GetInt(TEXT("SOTS_BPGen_Bridge"), TEXT("MaxRequestsPerMinute"), Value, GEngineIni);
+	}
+
+	const FString EnvValue = FPlatformMisc::GetEnvironmentVariable(TEXT("SOTS_BPGEN_MAX_RPM"));
+	if (!EnvValue.IsEmpty())
+	{
+		Value = FCString::Atoi(*EnvValue);
+	}
+
+	return Value;
+}
+
+static double GetBridgeSessionIdleSeconds()
+{
+	int32 Minutes = 10;
+	if (GConfig)
+	{
+		GConfig->GetInt(TEXT("SOTS_BPGen_Bridge"), TEXT("SessionIdleMinutes"), Minutes, GEngineIni);
+	}
+
+	const FString EnvValue = FPlatformMisc::GetEnvironmentVariable(TEXT("SOTS_BPGEN_SESSION_IDLE_MIN"));
+	if (!EnvValue.IsEmpty())
+	{
+		Minutes = FCString::Atoi(*EnvValue);
+	}
+
+	if (Minutes < 1)
+	{
+		Minutes = 1;
+	}
+
+	return static_cast<double>(Minutes) * 60.0;
+}
+
+static FString NormalizeActionName(const FString& Action)
+{
+	return Action.ToLower();
+}
+
+static void NormalizeActionSet(TSet<FString>& OutSet, const TArray<FString>& Input)
+{
+	OutSet.Empty();
+	for (const FString& Entry : Input)
+	{
+		const FString Normalized = NormalizeActionName(Entry);
+		if (!Normalized.IsEmpty())
+		{
+			OutSet.Add(Normalized);
+		}
+	}
+}
+
+static bool IsLoopbackAddress(const FString& Address)
+{
+	FString Trimmed = Address;
+	Trimmed.TrimStartAndEndInline();
+	if (Trimmed.IsEmpty())
+	{
+		return false;
+	}
+
+	const FString Lower = Trimmed.ToLower();
+	if (Lower == TEXT("localhost") || Lower == TEXT("::1") || Lower == TEXT("0:0:0:0:0:0:0:1"))
+	{
+		return true;
+	}
+
+	FIPv4Address Parsed;
+	if (FIPv4Address::Parse(Trimmed, Parsed))
+	{
+		return Parsed.A == 127;
+	}
+
+	return false;
+}
+
+static int32 GetBridgeLimit(const TCHAR* Key, int32 DefaultValue, const TCHAR* EnvKey = nullptr)
+{
+	int32 Value = DefaultValue;
+	if (GConfig)
+	{
+		GConfig->GetInt(TEXT("SOTS_BPGen_Bridge"), Key, Value, GEngineIni);
+	}
+
+	if (EnvKey)
+	{
+		const FString EnvValue = FPlatformMisc::GetEnvironmentVariable(EnvKey);
+		if (!EnvValue.IsEmpty())
+		{
+			Value = FCString::Atoi(*EnvValue);
+		}
+	}
+
+	if (Value < 0)
+	{
+		Value = 0;
+	}
+
+	return Value;
+}
+
 static int32 ExtractMajorVersion(const FString& VersionString)
 {
 	TArray<FString> Parts;
@@ -81,6 +224,17 @@ static int32 ExtractMajorVersion(const FString& VersionString)
 	}
 
 	return FCString::Atoi(*Parts[0]);
+}
+
+static bool IsDangerousActionName(const FString& Action)
+{
+	return Action.Equals(TEXT("delete_node"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("delete_node_by_id"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("delete_link"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("replace_node"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("save_blueprint"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("batch"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("session_batch"), ESearchCase::IgnoreCase);
 }
 
 static void CollectDryRunNodeIds(const FSOTS_BPGenGraphSpec& GraphSpec, TArray<FString>& OutNodeIds)
@@ -136,6 +290,149 @@ static bool HasLinkMatch(const TArray<FSOTS_BPGenNodeLink>& Links, const FString
 	}
 
 	return false;
+}
+
+static TSharedPtr<FJsonObject> SanitizeRequestForAudit(const TSharedPtr<FJsonObject>& RequestObject)
+{
+	if (!RequestObject.IsValid())
+	{
+		return nullptr;
+	}
+
+	TSharedPtr<FJsonObject> Sanitized = MakeShared<FJsonObject>();
+	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : RequestObject->Values)
+	{
+		if (Pair.Key.Equals(TEXT("params"), ESearchCase::IgnoreCase))
+		{
+			TSharedPtr<FJsonObject> ParamsObj = Pair.Value.IsValid() ? Pair.Value->AsObject() : nullptr;
+			TSharedPtr<FJsonObject> CleanParams = MakeShared<FJsonObject>();
+			if (ParamsObj.IsValid())
+			{
+				for (const TPair<FString, TSharedPtr<FJsonValue>>& ParamPair : ParamsObj->Values)
+				{
+					if (ParamPair.Key.Equals(TEXT("auth_token"), ESearchCase::IgnoreCase))
+					{
+						continue;
+					}
+					CleanParams->SetField(ParamPair.Key, ParamPair.Value);
+				}
+			}
+			Sanitized->SetObjectField(TEXT("params"), CleanParams);
+		}
+		else
+		{
+			Sanitized->SetField(Pair.Key, Pair.Value);
+		}
+	}
+
+	return Sanitized;
+}
+
+static void AppendAssetsFromChangeSummary(const TSharedPtr<FJsonObject>& ChangeSummary, TArray<TSharedPtr<FJsonValue>>& OutAssets)
+{
+	if (!ChangeSummary.IsValid())
+	{
+		return;
+	}
+
+	FString BlueprintPath;
+	if (ChangeSummary->TryGetStringField(TEXT("blueprint_asset_path"), BlueprintPath) && !BlueprintPath.IsEmpty())
+	{
+		OutAssets.Add(MakeShared<FJsonValueString>(BlueprintPath));
+		return;
+	}
+
+	if (ChangeSummary->TryGetStringField(TEXT("BlueprintAssetPath"), BlueprintPath) && !BlueprintPath.IsEmpty())
+	{
+		OutAssets.Add(MakeShared<FJsonValueString>(BlueprintPath));
+	}
+}
+
+static void WriteAuditLog(
+	const TSharedPtr<FJsonObject>& RequestObject,
+	const TSharedPtr<FJsonObject>& ResponseObject,
+	const FString& Action,
+	const FString& RequestId,
+	const FDateTime& StartedUtc,
+	const FDateTime& CompletedUtc,
+	double RequestMs)
+{
+	if (!ResponseObject.IsValid())
+	{
+		return;
+	}
+
+	TSharedPtr<IPlugin> BridgePlugin = IPluginManager::Get().FindPlugin(TEXT("SOTS_BPGen_Bridge"));
+	if (!BridgePlugin.IsValid())
+	{
+		return;
+	}
+
+	const FString DateFolder = StartedUtc.ToString(TEXT("%Y%m%d"));
+	const FString BaseDir = FPaths::Combine(BridgePlugin->GetBaseDir(), TEXT("Saved"), TEXT("BPGenAudit"), DateFolder);
+	IFileManager::Get().MakeDirectory(*BaseDir, true);
+
+	const FString SafeRequestId = FPaths::MakeValidFileName(RequestId.IsEmpty() ? TEXT("request") : RequestId);
+	const FString SafeAction = FPaths::MakeValidFileName(Action.IsEmpty() ? TEXT("unknown") : Action);
+	FString FileName = FString::Printf(TEXT("%s_%s.json"), *SafeRequestId, *SafeAction);
+	FString FullPath = FPaths::Combine(BaseDir, FileName);
+	if (IFileManager::Get().FileExists(*FullPath))
+	{
+		const FString Suffix = StartedUtc.ToString(TEXT("%H%M%S"));
+		FileName = FString::Printf(TEXT("%s_%s_%s.json"), *SafeRequestId, *SafeAction, *Suffix);
+		FullPath = FPaths::Combine(BaseDir, FileName);
+	}
+
+	TSharedPtr<FJsonObject> AuditObj = MakeShared<FJsonObject>();
+	AuditObj->SetStringField(TEXT("request_id"), RequestId);
+	AuditObj->SetStringField(TEXT("action"), Action);
+	AuditObj->SetStringField(TEXT("received_utc"), StartedUtc.ToIso8601());
+	AuditObj->SetStringField(TEXT("completed_utc"), CompletedUtc.ToIso8601());
+	AuditObj->SetNumberField(TEXT("duration_ms"), RequestMs);
+
+	if (RequestObject.IsValid())
+	{
+		AuditObj->SetObjectField(TEXT("request"), RequestObject);
+	}
+	AuditObj->SetObjectField(TEXT("response"), ResponseObject);
+
+	TSharedPtr<FJsonObject> ResultObj;
+	if (ResponseObject->HasTypedField<EJson::Object>(TEXT("result")))
+	{
+		ResultObj = ResponseObject->GetObjectField(TEXT("result"));
+	}
+
+	TSharedPtr<FJsonObject> ChangeSummaryObj;
+	if (ResultObj.IsValid())
+	{
+		if (ResultObj->HasTypedField<EJson::Object>(TEXT("change_summary")))
+		{
+			ChangeSummaryObj = ResultObj->GetObjectField(TEXT("change_summary"));
+		}
+		else if (ResultObj->HasTypedField<EJson::Object>(TEXT("ChangeSummary")))
+		{
+			ChangeSummaryObj = ResultObj->GetObjectField(TEXT("ChangeSummary"));
+		}
+	}
+
+	if (ChangeSummaryObj.IsValid())
+	{
+		AuditObj->SetObjectField(TEXT("change_summary"), ChangeSummaryObj);
+	}
+
+	TArray<TSharedPtr<FJsonValue>> AssetsTouched;
+	if (ChangeSummaryObj.IsValid())
+	{
+		AppendAssetsFromChangeSummary(ChangeSummaryObj, AssetsTouched);
+	}
+	AuditObj->SetArrayField(TEXT("assets_touched"), AssetsTouched);
+
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(AuditObj.ToSharedRef(), Writer);
+	OutputString.AppendChar('\n');
+
+	FFileHelper::SaveStringToFile(OutputString, *FullPath);
 }
 
 static bool TryParseGraphTarget(const TSharedPtr<FJsonObject>& Params, FSOTS_BPGenGraphTarget& OutTarget, FString& OutError)
@@ -201,6 +498,7 @@ static void BuildRecipeResult(const FSOTS_BPGenGraphSpec& GraphSpec, const FSOTS
 
 	FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenGraphSpec::StaticStruct(), &GraphSpec, GraphSpecJson.ToSharedRef(), 0, 0);
 	FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &ApplyResult, ApplyJson.ToSharedRef(), 0, 0);
+	AddChangeSummaryAlias(ApplyJson);
 
 	ResultJson->SetObjectField(TEXT("expanded_graph_spec"), GraphSpecJson);
 	ResultJson->SetObjectField(TEXT("apply_result"), ApplyJson);
@@ -211,6 +509,19 @@ static void BuildRecipeResult(const FSOTS_BPGenGraphSpec& GraphSpec, const FSOTS
 	if (!ApplyResult.bSuccess && !ApplyResult.ErrorMessage.IsEmpty())
 	{
 		OutResult.Errors.Add(ApplyResult.ErrorMessage);
+	}
+}
+
+static void AddChangeSummaryAlias(const TSharedPtr<FJsonObject>& ResultJson)
+{
+	if (!ResultJson.IsValid())
+	{
+		return;
+	}
+
+	if (!ResultJson->HasTypedField<EJson::Object>(TEXT("change_summary")) && ResultJson->HasTypedField<EJson::Object>(TEXT("ChangeSummary")))
+	{
+		ResultJson->SetObjectField(TEXT("change_summary"), ResultJson->GetObjectField(TEXT("ChangeSummary")));
 	}
 }
 }
@@ -233,13 +544,52 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	Port = InPort;
 	MaxRequestBytes = InMaxRequestBytes;
 	AuthToken = GetBridgeAuthToken();
+	bAllowNonLoopbackBind = GetBridgeBoolConfig(TEXT("bAllowNonLoopbackBind"), false, TEXT("SOTS_BPGEN_ALLOW_NON_LOOPBACK"));
+	bSafeMode = GetBridgeBoolConfig(TEXT("bSafeMode"), false, TEXT("SOTS_BPGEN_SAFE_MODE"));
 	MaxRequestsPerSecond = GetBridgeMaxRequestsPerSecond();
 	if (MaxRequestsPerSecond < 0)
 	{
 		MaxRequestsPerSecond = 0;
 	}
+	MaxRequestsPerMinute = GetBridgeMaxRequestsPerMinute();
+	if (MaxRequestsPerMinute < 0)
+	{
+		MaxRequestsPerMinute = 0;
+	}
 	RateWindowStartSeconds = 0.0;
 	RequestsInWindow = 0;
+	MinuteWindowStartSeconds = 0.0;
+	RequestsInMinute = 0;
+	TotalRequests = 0;
+	MaxDiscoveryResults = GetBridgeLimit(TEXT("MaxDiscoveryResults"), 200, TEXT("SOTS_BPGEN_MAX_DISCOVERY"));
+	MaxPinHarvestNodes = GetBridgeLimit(TEXT("MaxPinHarvestNodes"), 200, TEXT("SOTS_BPGEN_MAX_PIN_HARVEST"));
+	MaxAutoFixSteps = GetBridgeLimit(TEXT("MaxAutoFixSteps"), 5, TEXT("SOTS_BPGEN_MAX_AUTOFIX"));
+	MaxRecentRequests = GetBridgeLimit(TEXT("MaxRecentRequests"), 50, TEXT("SOTS_BPGEN_MAX_RECENT"));
+	SessionIdleSeconds = GetBridgeSessionIdleSeconds();
+	LastStartError.Reset();
+	LastStartErrorCode.Reset();
+	RecentRequests.Reset();
+	Sessions.Reset();
+	AllowedActions.Reset();
+	DeniedActions.Reset();
+
+	if (GConfig)
+	{
+		TArray<FString> AllowedList;
+		TArray<FString> DeniedList;
+		GConfig->GetArray(TEXT("SOTS_BPGen_Bridge"), TEXT("AllowedActions"), AllowedList, GEngineIni);
+		GConfig->GetArray(TEXT("SOTS_BPGen_Bridge"), TEXT("DeniedActions"), DeniedList, GEngineIni);
+		NormalizeActionSet(AllowedActions, AllowedList);
+		NormalizeActionSet(DeniedActions, DeniedList);
+	}
+
+	if (!bAllowNonLoopbackBind && !IsLoopbackAddress(BindAddress))
+	{
+		LastStartErrorCode = TEXT("ERR_NON_LOOPBACK_BIND_DISALLOWED");
+		LastStartError = FString::Printf(TEXT("Non-loopback bind disallowed (address: %s)."), *BindAddress);
+		UE_LOG(LogSOTS_BPGenBridge, Error, TEXT("%s"), *LastStartError);
+		return false;
+	}
 
 	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
 	if (!SocketSubsystem)
@@ -272,6 +622,8 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	}
 
 	bRunning = true;
+	ServerStartSeconds = FPlatformTime::Seconds();
+	ServerStartUtc = FDateTime::UtcNow();
 	TSharedPtr<FSOTS_BPGenBridgeServer> Self = AsShared();
 	AcceptTask = Async(EAsyncExecution::Thread, [Self]()
 	{
@@ -385,11 +737,26 @@ FString FSOTS_BPGenBridgeServer::BytesToString(const TArray<uint8>& Bytes) const
 
 void FSOTS_BPGenBridgeServer::HandleConnection(FSocket* ClientSocket)
 {
+	const double RequestStartSeconds = FPlatformTime::Seconds();
+	const FDateTime RequestStartUtc = FDateTime::UtcNow();
 	TSharedPtr<FSocket> Client = MakeShareable(ClientSocket);
 	if (!Client.IsValid())
 	{
 		return;
 	}
+
+	auto WriteAudit = [&](const TSharedPtr<FJsonObject>& RequestObj, const FString& ResponseString, const FString& ActionName, const FString& RequestIdValue, double RequestMs)
+	{
+		TSharedPtr<FJsonObject> ResponseObject;
+		TSharedRef<TJsonReader<>> ResponseReader = TJsonReaderFactory<>::Create(ResponseString);
+		if (!FJsonSerializer::Deserialize(ResponseReader, ResponseObject) || !ResponseObject.IsValid())
+		{
+			return;
+		}
+
+		const TSharedPtr<FJsonObject> SanitizedRequest = SanitizeRequestForAudit(RequestObj);
+		WriteAuditLog(SanitizedRequest, ResponseObject, ActionName, RequestIdValue, RequestStartUtc, FDateTime::UtcNow(), RequestMs);
+	};
 
 	TArray<uint8> RequestBytes;
 	bool bTooLarge = false;
@@ -405,8 +772,10 @@ void FSOTS_BPGenBridgeServer::HandleConnection(FSocket* ClientSocket)
 		ErrorResult.bOk = false;
 		ErrorResult.ErrorCode = TEXT("ERR_REQUEST_TOO_LARGE");
 		ErrorResult.Errors.Add(FString::Printf(TEXT("Request exceeded max_bytes limit (%d)."), MaxRequestBytes));
+		ErrorResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
 		const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
 		SendResponseAndClose(Client.Get(), Response);
+		WriteAudit(nullptr, Response, TEXT("unknown"), TEXT(""), ErrorResult.RequestMs);
 		return;
 	}
 
@@ -419,8 +788,10 @@ void FSOTS_BPGenBridgeServer::HandleConnection(FSocket* ClientSocket)
 		FSOTS_BPGenBridgeDispatchResult ErrorResult;
 		ErrorResult.bOk = false;
 		ErrorResult.Errors.Add(TEXT("Failed to parse JSON request."));
+		ErrorResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
 		const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
 		SendResponseAndClose(Client.Get(), Response);
+		WriteAudit(nullptr, Response, TEXT("unknown"), TEXT(""), ErrorResult.RequestMs);
 		return;
 	}
 
@@ -437,52 +808,93 @@ void FSOTS_BPGenBridgeServer::HandleConnection(FSocket* ClientSocket)
 		Params = MakeShared<FJsonObject>();
 	}
 
+	PruneExpiredSessions();
+
 	FSOTS_BPGenBridgeDispatchResult DispatchResult;
 	if (!CheckRateLimit(DispatchResult))
 	{
+		DispatchResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
 		const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
 		SendResponseAndClose(Client.Get(), Response);
+		WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
 		return;
 	}
 
 	if (!CheckAuthToken(Params, DispatchResult))
 	{
+		DispatchResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
 		const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
 		SendResponseAndClose(Client.Get(), Response);
+		WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
 		return;
 	}
 
+	const double DispatchStartSeconds = FPlatformTime::Seconds();
 	if (!DispatchOnGameThread(Action, RequestId, Params, DispatchResult))
 	{
 		DispatchResult.bOk = false;
 		DispatchResult.Errors.Add(TEXT("Request timed out while executing on game thread."));
 	}
+	const double DispatchEndSeconds = FPlatformTime::Seconds();
+	DispatchResult.DispatchMs = (DispatchEndSeconds - DispatchStartSeconds) * 1000.0;
+	DispatchResult.RequestMs = (DispatchEndSeconds - RequestStartSeconds) * 1000.0;
 
 	const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
 	SendResponseAndClose(Client.Get(), Response);
+	WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
+
+	AddRecentRequestSummary(RequestId, Action, DispatchResult);
+	const int32 ErrorCodeCount = DispatchResult.ErrorCode.IsEmpty() ? 0 : 1;
+	UE_LOG(LogSOTS_BPGenBridge, Log, TEXT("BPGen request id=%s action=%s ok=%s error_code=%s error_codes=%d errors=%d warnings=%d ms=%.2f"),
+		*RequestId,
+		*Action,
+		DispatchResult.bOk ? TEXT("true") : TEXT("false"),
+		DispatchResult.ErrorCode.IsEmpty() ? TEXT("none") : *DispatchResult.ErrorCode,
+		ErrorCodeCount,
+		DispatchResult.Errors.Num(),
+		DispatchResult.Warnings.Num(),
+		DispatchResult.RequestMs);
 }
 
 bool FSOTS_BPGenBridgeServer::CheckRateLimit(FSOTS_BPGenBridgeDispatchResult& OutResult)
 {
-	if (MaxRequestsPerSecond <= 0)
-	{
-		return true;
-	}
+	++TotalRequests;
 
 	const double NowSeconds = FPlatformTime::Seconds();
-	if (RateWindowStartSeconds <= 0.0 || (NowSeconds - RateWindowStartSeconds) >= 1.0)
+	if (MaxRequestsPerSecond > 0)
 	{
-		RateWindowStartSeconds = NowSeconds;
-		RequestsInWindow = 0;
+		if (RateWindowStartSeconds <= 0.0 || (NowSeconds - RateWindowStartSeconds) >= 1.0)
+		{
+			RateWindowStartSeconds = NowSeconds;
+			RequestsInWindow = 0;
+		}
+
+		++RequestsInWindow;
+		if (RequestsInWindow > MaxRequestsPerSecond)
+		{
+			OutResult.bOk = false;
+			OutResult.ErrorCode = TEXT("ERR_RATE_LIMIT");
+			OutResult.Errors.Add(FString::Printf(TEXT("Rate limit exceeded (%d requests/second)."), MaxRequestsPerSecond));
+			return false;
+		}
 	}
 
-	++RequestsInWindow;
-	if (RequestsInWindow > MaxRequestsPerSecond)
+	if (MaxRequestsPerMinute > 0)
 	{
-		OutResult.bOk = false;
-		OutResult.ErrorCode = TEXT("ERR_RATE_LIMIT");
-		OutResult.Errors.Add(FString::Printf(TEXT("Rate limit exceeded (%d requests/second)."), MaxRequestsPerSecond));
-		return false;
+		if (MinuteWindowStartSeconds <= 0.0 || (NowSeconds - MinuteWindowStartSeconds) >= 60.0)
+		{
+			MinuteWindowStartSeconds = NowSeconds;
+			RequestsInMinute = 0;
+		}
+
+		++RequestsInMinute;
+		if (RequestsInMinute > MaxRequestsPerMinute)
+		{
+			OutResult.bOk = false;
+			OutResult.ErrorCode = TEXT("ERR_RATE_LIMIT");
+			OutResult.Errors.Add(FString::Printf(TEXT("Rate limit exceeded (%d requests/minute)."), MaxRequestsPerMinute));
+			return false;
+		}
 	}
 
 	return true;
@@ -507,7 +919,120 @@ bool FSOTS_BPGenBridgeServer::CheckAuthToken(const TSharedPtr<FJsonObject>& Para
 	return true;
 }
 
-bool FSOTS_BPGenBridgeServer::DispatchOnGameThread(const FString& Action, const FString& RequestId, const TSharedPtr<FJsonObject>& Params, FSOTS_BPGenBridgeDispatchResult& OutResult) const
+bool FSOTS_BPGenBridgeServer::CheckActionAllowed(const FString& Action, FSOTS_BPGenBridgeDispatchResult& OutResult) const
+{
+	const FString Normalized = NormalizeActionName(Action);
+	if (DeniedActions.Contains(Normalized))
+	{
+		OutResult.bOk = false;
+		OutResult.ErrorCode = TEXT("ERR_ACTION_DENIED");
+		OutResult.Errors.Add(TEXT("Action is denied by DeniedActions configuration."));
+		return false;
+	}
+
+	if (AllowedActions.Num() > 0 && !AllowedActions.Contains(Normalized))
+	{
+		OutResult.bOk = false;
+		OutResult.ErrorCode = TEXT("ERR_ACTION_NOT_ALLOWED");
+		OutResult.Errors.Add(TEXT("Action is not present in AllowedActions configuration."));
+		return false;
+	}
+
+	return true;
+}
+
+bool FSOTS_BPGenBridgeServer::CheckDangerousGate(const FString& Action, const TSharedPtr<FJsonObject>& Params, FSOTS_BPGenBridgeDispatchResult& OutResult) const
+{
+	if (!IsDangerousActionName(Action))
+	{
+		return true;
+	}
+
+	bool bIsDangerous = true;
+	if (Action.Equals(TEXT("batch"), ESearchCase::IgnoreCase) || Action.Equals(TEXT("session_batch"), ESearchCase::IgnoreCase))
+	{
+		bool bAtomic = true;
+		if (Params.IsValid())
+		{
+			Params->TryGetBoolField(TEXT("atomic"), bAtomic);
+		}
+		bIsDangerous = bAtomic;
+	}
+
+	if (!bIsDangerous)
+	{
+		return true;
+	}
+
+	if (bSafeMode)
+	{
+		OutResult.bOk = false;
+		OutResult.ErrorCode = TEXT("ERR_SAFE_MODE_ACTIVE");
+		OutResult.Errors.Add(TEXT("Safe mode is enabled; dangerous operations are blocked."));
+		return false;
+	}
+
+	bool bDangerousOk = false;
+	if (Params.IsValid())
+	{
+		Params->TryGetBoolField(TEXT("dangerous_ok"), bDangerousOk);
+	}
+
+	if (!bDangerousOk)
+	{
+		OutResult.bOk = false;
+		OutResult.ErrorCode = TEXT("ERR_DANGEROUS_OP_REQUIRES_OPT_IN");
+		OutResult.Errors.Add(TEXT("Set params.dangerous_ok=true to proceed with dangerous operations."));
+		return false;
+	}
+
+	return true;
+}
+
+void FSOTS_BPGenBridgeServer::AddRecentRequestSummary(const FString& RequestId, const FString& Action, const FSOTS_BPGenBridgeDispatchResult& DispatchResult)
+{
+	FScopeLock Lock(&RecentRequestsMutex);
+
+	FRecentRequestSummary Summary;
+	Summary.RequestId = RequestId;
+	Summary.Action = Action;
+	Summary.bOk = DispatchResult.bOk;
+	Summary.ErrorCode = DispatchResult.ErrorCode;
+	Summary.RequestMs = DispatchResult.RequestMs;
+	Summary.Timestamp = FDateTime::UtcNow().ToIso8601();
+
+	RecentRequests.Add(Summary);
+	if (RecentRequests.Num() > MaxRecentRequests && MaxRecentRequests > 0)
+	{
+		const int32 Overflow = RecentRequests.Num() - MaxRecentRequests;
+		RecentRequests.RemoveAt(0, Overflow);
+	}
+}
+
+void FSOTS_BPGenBridgeServer::PruneExpiredSessions()
+{
+	if (Sessions.Num() == 0)
+	{
+		return;
+	}
+
+	const double NowSeconds = FPlatformTime::Seconds();
+	TArray<FString> ExpiredKeys;
+	for (const TPair<FString, FSessionState>& Pair : Sessions)
+	{
+		if (NowSeconds - Pair.Value.LastAccessSeconds > SessionIdleSeconds)
+		{
+			ExpiredKeys.Add(Pair.Key);
+		}
+	}
+
+	for (const FString& Key : ExpiredKeys)
+	{
+		Sessions.Remove(Key);
+	}
+}
+
+bool FSOTS_BPGenBridgeServer::DispatchOnGameThread(const FString& Action, const FString& RequestId, const TSharedPtr<FJsonObject>& Params, FSOTS_BPGenBridgeDispatchResult& OutResult)
 {
 	FEvent* DoneEvent = FPlatformProcess::GetSynchEventFromPool(true);
 
@@ -522,7 +1047,7 @@ bool FSOTS_BPGenBridgeServer::DispatchOnGameThread(const FString& Action, const 
 	return bTriggered;
 }
 
-void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSharedPtr<FJsonObject>& Params, FSOTS_BPGenBridgeDispatchResult& OutResult) const
+void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSharedPtr<FJsonObject>& Params, FSOTS_BPGenBridgeDispatchResult& OutResult)
 {
 	OutResult = FSOTS_BPGenBridgeDispatchResult();
 
@@ -557,10 +1082,565 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		}
 	}
 
+	if (!CheckActionAllowed(Action, OutResult))
+	{
+		return;
+	}
+
+	if (!CheckDangerousGate(Action, Params, OutResult))
+	{
+		return;
+	}
+
 	bool bDryRun = false;
 	if (Params.IsValid())
 	{
 		Params->TryGetBoolField(TEXT("dry_run"), bDryRun);
+	}
+
+	if (Action.Equals(TEXT("server_info"), ESearchCase::IgnoreCase))
+	{
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("bind_address"), BindAddress);
+		ResultObj->SetNumberField(TEXT("port"), Port);
+		ResultObj->SetStringField(TEXT("protocol_version"), GProtocolVersion);
+		ResultObj->SetBoolField(TEXT("running"), bRunning);
+		ResultObj->SetBoolField(TEXT("safe_mode"), bSafeMode);
+		ResultObj->SetBoolField(TEXT("allow_non_loopback_bind"), bAllowNonLoopbackBind);
+		ResultObj->SetNumberField(TEXT("max_request_bytes"), MaxRequestBytes);
+		ResultObj->SetNumberField(TEXT("max_requests_per_second"), MaxRequestsPerSecond);
+		ResultObj->SetNumberField(TEXT("max_requests_per_minute"), MaxRequestsPerMinute);
+		ResultObj->SetNumberField(TEXT("uptime_seconds"), bRunning ? (FPlatformTime::Seconds() - ServerStartSeconds) : 0.0);
+		ResultObj->SetStringField(TEXT("started_utc"), ServerStartUtc.GetTicks() > 0 ? ServerStartUtc.ToIso8601() : FString());
+		ResultObj->SetStringField(TEXT("last_start_error"), LastStartError);
+		ResultObj->SetStringField(TEXT("last_start_error_code"), LastStartErrorCode);
+
+		TArray<TSharedPtr<FJsonValue>> AllowedValues;
+		for (const FString& Entry : AllowedActions)
+		{
+			AllowedValues.Add(MakeShared<FJsonValueString>(Entry));
+		}
+		TArray<TSharedPtr<FJsonValue>> DeniedValues;
+		for (const FString& Entry : DeniedActions)
+		{
+			DeniedValues.Add(MakeShared<FJsonValueString>(Entry));
+		}
+		ResultObj->SetArrayField(TEXT("allowed_actions"), AllowedValues);
+		ResultObj->SetArrayField(TEXT("denied_actions"), DeniedValues);
+		ResultObj->SetObjectField(TEXT("features"), BuildFeatureFlags(true, !AuthToken.IsEmpty(), (MaxRequestsPerSecond > 0 || MaxRequestsPerMinute > 0)));
+
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("health"), ESearchCase::IgnoreCase))
+	{
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetBoolField(TEXT("running"), bRunning);
+		ResultObj->SetBoolField(TEXT("safe_mode"), bSafeMode);
+		ResultObj->SetNumberField(TEXT("requests_in_second_window"), RequestsInWindow);
+		ResultObj->SetNumberField(TEXT("requests_in_minute_window"), RequestsInMinute);
+		ResultObj->SetNumberField(TEXT("total_requests"), TotalRequests);
+		ResultObj->SetNumberField(TEXT("max_requests_per_second"), MaxRequestsPerSecond);
+		ResultObj->SetNumberField(TEXT("max_requests_per_minute"), MaxRequestsPerMinute);
+		ResultObj->SetNumberField(TEXT("max_request_bytes"), MaxRequestBytes);
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("set_safe_mode"), ESearchCase::IgnoreCase))
+	{
+		bool bEnable = false;
+		if (!Params.IsValid() || !Params->TryGetBoolField(TEXT("enabled"), bEnable))
+		{
+			OutResult.bOk = false;
+			OutResult.ErrorCode = TEXT("ERR_INVALID_PARAMS");
+			OutResult.Errors.Add(TEXT("set_safe_mode requires params.enabled."));
+			return;
+		}
+
+		bSafeMode = bEnable;
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetBoolField(TEXT("safe_mode"), bSafeMode);
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("emergency_stop"), ESearchCase::IgnoreCase))
+	{
+		bSafeMode = true;
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetBoolField(TEXT("stopped"), true);
+		ResultObj->SetBoolField(TEXT("safe_mode"), true);
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+
+		Async(EAsyncExecution::Thread, [Self = AsShared()]()
+		{
+			Self->Stop();
+		});
+		return;
+	}
+
+	if (Action.Equals(TEXT("begin_session"), ESearchCase::IgnoreCase))
+	{
+		FSOTS_BPGenBridgeServer::FSessionState Session;
+		Session.SessionId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+		Session.LastAccessSeconds = FPlatformTime::Seconds();
+		if (Params.IsValid())
+		{
+			Params->TryGetStringField(TEXT("blueprint_asset_path"), Session.LastBlueprintPath);
+		}
+		Sessions.Add(Session.SessionId, Session);
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("session_id"), Session.SessionId);
+		ResultObj->SetNumberField(TEXT("idle_seconds"), SessionIdleSeconds);
+		ResultObj->SetStringField(TEXT("started_utc"), FDateTime::UtcNow().ToIso8601());
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("end_session"), ESearchCase::IgnoreCase))
+	{
+		FString SessionId;
+		if (Params.IsValid())
+		{
+			Params->TryGetStringField(TEXT("session_id"), SessionId);
+		}
+
+		if (SessionId.IsEmpty())
+		{
+			OutResult.bOk = false;
+			OutResult.Errors.Add(TEXT("Missing session_id for end_session."));
+			return;
+		}
+
+		if (Sessions.Remove(SessionId) == 0)
+		{
+			OutResult.bOk = false;
+			OutResult.Errors.Add(TEXT("Session not found."));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("session_id"), SessionId);
+		ResultObj->SetStringField(TEXT("status"), TEXT("ended"));
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("batch"), ESearchCase::IgnoreCase) || Action.Equals(TEXT("session_batch"), ESearchCase::IgnoreCase))
+	{
+		const bool bSessionBatch = Action.Equals(TEXT("session_batch"), ESearchCase::IgnoreCase);
+		FString SessionId;
+		if (bSessionBatch && Params.IsValid())
+		{
+			Params->TryGetStringField(TEXT("session_id"), SessionId);
+		}
+
+		FSessionState* Session = nullptr;
+		if (bSessionBatch)
+		{
+			if (SessionId.IsEmpty())
+			{
+				OutResult.bOk = false;
+				OutResult.Errors.Add(TEXT("Missing session_id for session_batch."));
+				return;
+			}
+
+			Session = Sessions.Find(SessionId);
+			if (!Session)
+			{
+				OutResult.bOk = false;
+				OutResult.Errors.Add(TEXT("Session not found."));
+				return;
+			}
+
+			Session->LastAccessSeconds = FPlatformTime::Seconds();
+		}
+
+		FString BatchId;
+		bool bAtomic = true;
+		bool bStopOnError = true;
+		TArray<TSharedPtr<FJsonValue>> CommandValues;
+
+		if (Params.IsValid())
+		{
+			Params->TryGetStringField(TEXT("batch_id"), BatchId);
+			Params->TryGetBoolField(TEXT("atomic"), bAtomic);
+			Params->TryGetBoolField(TEXT("stop_on_error"), bStopOnError);
+			Params->TryGetArrayField(TEXT("commands"), CommandValues);
+		}
+
+		if (CommandValues.Num() == 0)
+		{
+			OutResult.bOk = false;
+			OutResult.Errors.Add(TEXT("Batch requires a non-empty commands array."));
+			return;
+		}
+
+		if (BatchId.IsEmpty())
+		{
+			BatchId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+		}
+
+		FScopeLock BatchLock(&BatchMutex);
+		TUniquePtr<FScopedTransaction> Transaction;
+		if (bAtomic)
+		{
+			Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("SOTS_BPGenBridge", "BPGenBatch", "SOTS BPGen: Batch"));
+		}
+
+		const double BatchStartSeconds = FPlatformTime::Seconds();
+		TArray<TSharedPtr<FJsonValue>> StepValues;
+		TMap<FString, int32> ErrorCodeCounts;
+		int32 OkSteps = 0;
+		int32 FailedSteps = 0;
+
+		for (int32 Index = 0; Index < CommandValues.Num(); ++Index)
+		{
+			const TSharedPtr<FJsonObject> CommandObj = CommandValues[Index].IsValid() ? CommandValues[Index]->AsObject() : nullptr;
+			FSOTS_BPGenBridgeDispatchResult StepResult;
+			FString StepAction;
+			TSharedPtr<FJsonObject> StepParams = MakeShared<FJsonObject>();
+
+			if (CommandObj.IsValid())
+			{
+				CommandObj->TryGetStringField(TEXT("action"), StepAction);
+				if (CommandObj->HasTypedField<EJson::Object>(TEXT("params")))
+				{
+					StepParams = CommandObj->GetObjectField(TEXT("params"));
+				}
+			}
+
+			if (StepAction.IsEmpty())
+			{
+				StepResult.bOk = false;
+				StepResult.Errors.Add(TEXT("Batch command missing action."));
+			}
+			else if (StepAction.Equals(TEXT("batch"), ESearchCase::IgnoreCase) || StepAction.Equals(TEXT("session_batch"), ESearchCase::IgnoreCase))
+			{
+				StepResult.bOk = false;
+				StepResult.Errors.Add(TEXT("Nested batch commands are not supported."));
+			}
+			else
+			{
+				const double StepStartSeconds = FPlatformTime::Seconds();
+				RouteBpgenAction(StepAction, StepParams, StepResult);
+				const double StepEndSeconds = FPlatformTime::Seconds();
+				StepResult.DispatchMs = (StepEndSeconds - StepStartSeconds) * 1000.0;
+			}
+
+			UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen batch id=%s step=%d action=%s ok=%s ms=%.2f"),
+				*BatchId,
+				Index,
+				*StepAction,
+				StepResult.bOk ? TEXT("true") : TEXT("false"),
+				StepResult.DispatchMs);
+
+			if (Session)
+			{
+				FString BlueprintPath;
+				if (StepParams.IsValid() && StepParams->TryGetStringField(TEXT("blueprint_asset_path"), BlueprintPath))
+				{
+					Session->LastBlueprintPath = BlueprintPath;
+				}
+			}
+
+			TSharedPtr<FJsonObject> StepObj = MakeShared<FJsonObject>();
+			StepObj->SetNumberField(TEXT("index"), Index);
+			StepObj->SetStringField(TEXT("action"), StepAction);
+			StepObj->SetBoolField(TEXT("ok"), StepResult.bOk);
+			StepObj->SetNumberField(TEXT("ms"), StepResult.DispatchMs);
+
+			if (!StepResult.ErrorCode.IsEmpty())
+			{
+				StepObj->SetStringField(TEXT("error_code"), StepResult.ErrorCode);
+				ErrorCodeCounts.FindOrAdd(StepResult.ErrorCode)++;
+			}
+
+			TArray<TSharedPtr<FJsonValue>> StepErrors;
+			for (const FString& Error : StepResult.Errors)
+			{
+				StepErrors.Add(MakeShared<FJsonValueString>(Error));
+			}
+			StepObj->SetArrayField(TEXT("errors"), StepErrors);
+
+			TArray<TSharedPtr<FJsonValue>> StepWarnings;
+			for (const FString& Warning : StepResult.Warnings)
+			{
+				StepWarnings.Add(MakeShared<FJsonValueString>(Warning));
+			}
+			StepObj->SetArrayField(TEXT("warnings"), StepWarnings);
+
+			if (StepResult.Result.IsValid())
+			{
+				StepObj->SetObjectField(TEXT("result"), StepResult.Result);
+			}
+			else
+			{
+				StepObj->SetObjectField(TEXT("result"), MakeShared<FJsonObject>());
+			}
+
+			StepValues.Add(MakeShared<FJsonValueObject>(StepObj));
+
+			if (StepResult.bOk)
+			{
+				OkSteps++;
+			}
+			else
+			{
+				FailedSteps++;
+				if (bStopOnError)
+				{
+					break;
+				}
+			}
+		}
+
+		const double BatchEndSeconds = FPlatformTime::Seconds();
+		TSharedPtr<FJsonObject> SummaryObj = MakeShared<FJsonObject>();
+		SummaryObj->SetNumberField(TEXT("ok_steps"), OkSteps);
+		SummaryObj->SetNumberField(TEXT("failed_steps"), FailedSteps);
+		TSharedPtr<FJsonObject> ErrorCodesObj = MakeShared<FJsonObject>();
+		for (const TPair<FString, int32>& Pair : ErrorCodeCounts)
+		{
+			ErrorCodesObj->SetNumberField(Pair.Key, Pair.Value);
+		}
+		SummaryObj->SetObjectField(TEXT("error_codes"), ErrorCodesObj);
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("batch_id"), BatchId);
+		ResultObj->SetBoolField(TEXT("atomic"), bAtomic);
+		ResultObj->SetArrayField(TEXT("steps"), StepValues);
+		ResultObj->SetNumberField(TEXT("ms_total"), (BatchEndSeconds - BatchStartSeconds) * 1000.0);
+		ResultObj->SetObjectField(TEXT("summary"), SummaryObj);
+
+		if (Session)
+		{
+			ResultObj->SetStringField(TEXT("session_id"), Session->SessionId);
+		}
+
+		OutResult.bOk = FailedSteps == 0;
+		OutResult.Result = ResultObj;
+		if (FailedSteps > 0 && bStopOnError)
+		{
+			OutResult.Errors.Add(TEXT("Batch stopped after a failed step."));
+		}
+		if (bAtomic && FailedSteps > 0)
+		{
+			OutResult.Warnings.Add(TEXT("Atomic batch failed; changes may have partially applied."));
+		}
+
+		UE_LOG(LogSOTS_BPGenBridge, Log, TEXT("BPGen batch id=%s ok_steps=%d failed_steps=%d ms=%.2f"),
+			*BatchId, OkSteps, FailedSteps, (BatchEndSeconds - BatchStartSeconds) * 1000.0);
+		return;
+	}
+
+	if (Action.Equals(TEXT("prime_cache"), ESearchCase::IgnoreCase))
+	{
+		FString BlueprintPath;
+		FString Scope = TEXT("global");
+		bool bIncludeNodes = true;
+		bool bIncludePins = false;
+		int32 MaxItems = 5000;
+		FString SessionId;
+
+		if (Params.IsValid())
+		{
+			Params->TryGetStringField(TEXT("blueprint_asset_path"), BlueprintPath);
+			Params->TryGetStringField(TEXT("scope"), Scope);
+			Params->TryGetBoolField(TEXT("include_nodes"), bIncludeNodes);
+			Params->TryGetBoolField(TEXT("include_pins"), bIncludePins);
+			Params->TryGetNumberField(TEXT("max_items"), MaxItems);
+			Params->TryGetStringField(TEXT("session_id"), SessionId);
+		}
+
+		Scope.TrimStartAndEndInline();
+		const FString ScopeLower = Scope.ToLower();
+		if (ScopeLower == TEXT("blueprint"))
+		{
+			if (BlueprintPath.IsEmpty())
+			{
+				OutResult.bOk = false;
+				OutResult.Errors.Add(TEXT("prime_cache scope 'blueprint' requires blueprint_asset_path."));
+				return;
+			}
+		}
+		else
+		{
+			Scope = TEXT("global");
+		}
+
+		if (MaxItems < 0)
+		{
+			MaxItems = 0;
+		}
+
+		UBlueprint* Blueprint = nullptr;
+		const bool bBlueprintScope = ScopeLower == TEXT("blueprint");
+		if (!BlueprintPath.IsEmpty() && bBlueprintScope)
+		{
+			Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintPath);
+			if (!Blueprint)
+			{
+				OutResult.bOk = false;
+				OutResult.Errors.Add(FString::Printf(TEXT("Failed to load Blueprint '%s'."), *BlueprintPath));
+				return;
+			}
+		}
+
+		FString PrimeError;
+		const int32 Primed = FSOTS_BPGenSpawnerRegistry::PrimeCache(Blueprint, MaxItems, PrimeError);
+
+		int32 DiscoveredNodes = 0;
+		const FString DiscoveryBlueprintPath = bBlueprintScope ? BlueprintPath : FString();
+		if (bIncludeNodes)
+		{
+			if (bIncludePins && MaxPinHarvestNodes == 0)
+			{
+				bIncludePins = false;
+				OutResult.Warnings.Add(TEXT("prime_cache include_pins disabled (max_pin_harvest_nodes=0)."));
+			}
+
+			int32 EffectiveMaxItems = MaxItems;
+			if (MaxDiscoveryResults > 0 && EffectiveMaxItems > MaxDiscoveryResults)
+			{
+				OutResult.Warnings.Add(FString::Printf(TEXT("prime_cache max_items clamped to %d (requested %d)."), MaxDiscoveryResults, EffectiveMaxItems));
+				EffectiveMaxItems = MaxDiscoveryResults;
+			}
+			if (bIncludePins && MaxPinHarvestNodes > 0 && EffectiveMaxItems > MaxPinHarvestNodes)
+			{
+				OutResult.Warnings.Add(FString::Printf(TEXT("prime_cache pin harvest clamped to %d nodes (requested %d)."), MaxPinHarvestNodes, EffectiveMaxItems));
+				EffectiveMaxItems = MaxPinHarvestNodes;
+			}
+
+			const FSOTS_BPGenNodeDiscoveryResult Discovery = USOTS_BPGenDiscovery::DiscoverNodesWithDescriptors(nullptr, DiscoveryBlueprintPath, FString(), EffectiveMaxItems, bIncludePins);
+			DiscoveredNodes = Discovery.Descriptors.Num();
+			OutResult.Warnings.Append(Discovery.Warnings);
+			if (!Discovery.bSuccess)
+			{
+				OutResult.Errors.Append(Discovery.Errors);
+			}
+		}
+
+		if (!PrimeError.IsEmpty())
+		{
+			OutResult.Warnings.Add(PrimeError);
+		}
+
+		if (!SessionId.IsEmpty())
+		{
+			if (FSessionState* Session = Sessions.Find(SessionId))
+			{
+				Session->bCachePrimed = true;
+				Session->LastAccessSeconds = FPlatformTime::Seconds();
+				if (!BlueprintPath.IsEmpty())
+				{
+					Session->LastBlueprintPath = BlueprintPath;
+				}
+			}
+		}
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("scope"), Scope);
+		ResultObj->SetStringField(TEXT("blueprint_asset_path"), BlueprintPath);
+		ResultObj->SetNumberField(TEXT("primed_spawners"), Primed);
+		ResultObj->SetNumberField(TEXT("discovered_nodes"), DiscoveredNodes);
+		ResultObj->SetBoolField(TEXT("include_nodes"), bIncludeNodes);
+		ResultObj->SetBoolField(TEXT("include_pins"), bIncludePins);
+		ResultObj->SetNumberField(TEXT("max_items"), MaxItems);
+		OutResult.bOk = OutResult.Errors.Num() == 0;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("clear_cache"), ESearchCase::IgnoreCase))
+	{
+		FSOTS_BPGenSpawnerRegistry::Clear();
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetStringField(TEXT("status"), TEXT("cleared"));
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("set_limits"), ESearchCase::IgnoreCase))
+	{
+		if (Params.IsValid())
+		{
+			int32 Value = 0;
+			if (Params->TryGetNumberField(TEXT("max_request_bytes"), Value))
+			{
+				MaxRequestBytes = FMath::Max(0, Value);
+			}
+			if (Params->TryGetNumberField(TEXT("max_requests_per_second"), Value))
+			{
+				MaxRequestsPerSecond = FMath::Max(0, Value);
+				RateWindowStartSeconds = 0.0;
+				RequestsInWindow = 0;
+			}
+			if (Params->TryGetNumberField(TEXT("max_requests_per_minute"), Value))
+			{
+				MaxRequestsPerMinute = FMath::Max(0, Value);
+				MinuteWindowStartSeconds = 0.0;
+				RequestsInMinute = 0;
+			}
+			if (Params->TryGetNumberField(TEXT("max_discovery_results"), Value))
+			{
+				MaxDiscoveryResults = FMath::Max(0, Value);
+			}
+			if (Params->TryGetNumberField(TEXT("max_pin_harvest_nodes"), Value))
+			{
+				MaxPinHarvestNodes = FMath::Max(0, Value);
+			}
+			if (Params->TryGetNumberField(TEXT("max_autofix_steps"), Value))
+			{
+				MaxAutoFixSteps = FMath::Max(0, Value);
+			}
+		}
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetNumberField(TEXT("max_request_bytes"), MaxRequestBytes);
+		ResultObj->SetNumberField(TEXT("max_requests_per_second"), MaxRequestsPerSecond);
+		ResultObj->SetNumberField(TEXT("max_requests_per_minute"), MaxRequestsPerMinute);
+		ResultObj->SetNumberField(TEXT("max_discovery_results"), MaxDiscoveryResults);
+		ResultObj->SetNumberField(TEXT("max_pin_harvest_nodes"), MaxPinHarvestNodes);
+		ResultObj->SetNumberField(TEXT("max_autofix_steps"), MaxAutoFixSteps);
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("get_recent_requests"), ESearchCase::IgnoreCase))
+	{
+		TArray<TSharedPtr<FJsonValue>> RecentValues;
+		{
+			FScopeLock Lock(&RecentRequestsMutex);
+			for (const FRecentRequestSummary& Summary : RecentRequests)
+			{
+				TSharedPtr<FJsonObject> SummaryObj = MakeShared<FJsonObject>();
+				SummaryObj->SetStringField(TEXT("request_id"), Summary.RequestId);
+				SummaryObj->SetStringField(TEXT("action"), Summary.Action);
+				SummaryObj->SetBoolField(TEXT("ok"), Summary.bOk);
+				SummaryObj->SetStringField(TEXT("error_code"), Summary.ErrorCode);
+				SummaryObj->SetNumberField(TEXT("request_ms"), Summary.RequestMs);
+				SummaryObj->SetStringField(TEXT("timestamp"), Summary.Timestamp);
+				RecentValues.Add(MakeShared<FJsonValueObject>(SummaryObj));
+			}
+		}
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		ResultObj->SetArrayField(TEXT("requests"), RecentValues);
+		OutResult.bOk = true;
+		OutResult.Result = ResultObj;
+		return;
 	}
 
 	if (Action.Equals(TEXT("apply_graph_spec"), ESearchCase::IgnoreCase))
@@ -590,11 +1670,18 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			}
 		}
 
+		if (MaxAutoFixSteps > 0 && GraphSpec.AutoFixMaxSteps > MaxAutoFixSteps)
+		{
+			OutResult.Warnings.Add(FString::Printf(TEXT("auto_fix_max_steps clamped to %d (requested %d)."), MaxAutoFixSteps, GraphSpec.AutoFixMaxSteps));
+			GraphSpec.AutoFixMaxSteps = MaxAutoFixSteps;
+		}
+
 		if (bDryRun)
 		{
 			const FSOTS_BPGenApplyResult DryRunResult = BuildDryRunApplyResult(FunctionDef.TargetBlueprintPath, FunctionDef.FunctionName, GraphSpec);
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &DryRunResult, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			ResultJson->SetNumberField(TEXT("planned_links"), GraphSpec.Links.Num());
 			OutResult.bOk = true;
@@ -607,6 +1694,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &ApplyResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = ApplyResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(ApplyResult.Warnings);
@@ -627,12 +1715,19 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			FJsonObjectConverter::JsonObjectToUStruct(GraphObj.ToSharedRef(), FSOTS_BPGenGraphSpec::StaticStruct(), &GraphSpec, 0, 0);
 		}
 
+		if (MaxAutoFixSteps > 0 && GraphSpec.AutoFixMaxSteps > MaxAutoFixSteps)
+		{
+			OutResult.Warnings.Add(FString::Printf(TEXT("auto_fix_max_steps clamped to %d (requested %d)."), MaxAutoFixSteps, GraphSpec.AutoFixMaxSteps));
+			GraphSpec.AutoFixMaxSteps = MaxAutoFixSteps;
+		}
+
 		if (bDryRun)
 		{
 			const FName TargetName = GraphSpec.Target.Name.IsEmpty() ? NAME_None : FName(*GraphSpec.Target.Name);
 			const FSOTS_BPGenApplyResult DryRunResult = BuildDryRunApplyResult(GraphSpec.Target.BlueprintAssetPath, TargetName, GraphSpec);
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &DryRunResult, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			ResultJson->SetNumberField(TEXT("planned_links"), GraphSpec.Links.Num());
 			OutResult.bOk = true;
@@ -645,6 +1740,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &ApplyResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = ApplyResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(ApplyResult.Warnings);
@@ -1046,7 +2142,24 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 			Params->TryGetBoolField(TEXT("include_pins"), bIncludePins);
 		}
 
-		const FSOTS_BPGenNodeDiscoveryResult Discovery = USOTS_BPGenDiscovery::DiscoverNodesWithDescriptors(nullptr, BlueprintPath, SearchText, MaxResults, bIncludePins);
+		int32 EffectiveMaxResults = MaxResults;
+		if (bIncludePins && MaxPinHarvestNodes == 0)
+		{
+			bIncludePins = false;
+			OutResult.Warnings.Add(TEXT("discover_nodes include_pins disabled (max_pin_harvest_nodes=0)."));
+		}
+		if (MaxDiscoveryResults > 0 && EffectiveMaxResults > MaxDiscoveryResults)
+		{
+			OutResult.Warnings.Add(FString::Printf(TEXT("discover_nodes max_results clamped to %d (requested %d)."), MaxDiscoveryResults, EffectiveMaxResults));
+			EffectiveMaxResults = MaxDiscoveryResults;
+		}
+		if (bIncludePins && MaxPinHarvestNodes > 0 && EffectiveMaxResults > MaxPinHarvestNodes)
+		{
+			OutResult.Warnings.Add(FString::Printf(TEXT("discover_nodes pin harvest clamped to %d nodes (requested %d)."), MaxPinHarvestNodes, EffectiveMaxResults));
+			EffectiveMaxResults = MaxPinHarvestNodes;
+		}
+
+		const FSOTS_BPGenNodeDiscoveryResult Discovery = USOTS_BPGenDiscovery::DiscoverNodesWithDescriptors(nullptr, BlueprintPath, SearchText, EffectiveMaxResults, bIncludePins);
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenNodeDiscoveryResult::StaticStruct(), &Discovery, ResultJson.ToSharedRef(), 0, 0);
 
@@ -1096,6 +2209,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &DryEnsure, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = true;
 			OutResult.Result = ResultJson;
@@ -1106,6 +2220,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		const FSOTS_BPGenEnsureResult EnsureResult = USOTS_BPGenEnsure::EnsureFunction(nullptr, BlueprintPath, FunctionName, Signature, bCreateIfMissing, bUpdateIfExists);
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &EnsureResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = EnsureResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(EnsureResult.Warnings);
@@ -1161,6 +2276,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &DryEnsure, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = true;
 			OutResult.Result = ResultJson;
@@ -1171,6 +2287,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		const FSOTS_BPGenEnsureResult EnsureResult = USOTS_BPGenEnsure::EnsureVariable(nullptr, BlueprintPath, VarName, VarType, DefaultValue, bInstanceEditable, bExposeOnSpawn, bCreateIfMissing, bUpdateIfExists);
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenEnsureResult::StaticStruct(), &EnsureResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = EnsureResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(EnsureResult.Warnings);
@@ -1208,6 +2325,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetEnsureResult::StaticStruct(), &DryEnsure, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = DryEnsure.bSuccess;
 			OutResult.Result = ResultJson;
@@ -1222,6 +2340,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		const FSOTS_BPGenWidgetEnsureResult EnsureResult = USOTS_BPGenEnsure::EnsureWidgetComponent(nullptr, Spec);
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetEnsureResult::StaticStruct(), &EnsureResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = EnsureResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(EnsureResult.Warnings);
@@ -1264,6 +2383,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetPropertyResult::StaticStruct(), &DryResult, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = DryResult.bSuccess;
 			OutResult.Result = ResultJson;
@@ -1278,6 +2398,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		const FSOTS_BPGenWidgetPropertyResult PropResult = USOTS_BPGenEnsure::SetWidgetProperties(nullptr, Request);
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenWidgetPropertyResult::StaticStruct(), &PropResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = PropResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(PropResult.Warnings);
@@ -1317,6 +2438,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 
 			TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenBindingEnsureResult::StaticStruct(), &DryBinding, ResultJson.ToSharedRef(), 0, 0);
+			AddChangeSummaryAlias(ResultJson);
 			ResultJson->SetBoolField(TEXT("dry_run"), true);
 			OutResult.bOk = DryBinding.bSuccess;
 			OutResult.Result = ResultJson;
@@ -1331,6 +2453,7 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		const FSOTS_BPGenBindingEnsureResult BindingResult = USOTS_BPGenEnsure::EnsureWidgetBinding(nullptr, BindingRequest);
 		TSharedPtr<FJsonObject> ResultJson = MakeShared<FJsonObject>();
 		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenBindingEnsureResult::StaticStruct(), &BindingResult, ResultJson.ToSharedRef(), 0, 0);
+		AddChangeSummaryAlias(ResultJson);
 		OutResult.bOk = BindingResult.bSuccess;
 		OutResult.Result = ResultJson;
 		OutResult.Warnings.Append(BindingResult.Warnings);
@@ -1825,8 +2948,16 @@ FString FSOTS_BPGenBridgeServer::BuildResponseJson(const FString& Action, const 
 	Response->SetStringField(TEXT("server.protocol_version"), GProtocolVersion);
 	Response->SetNumberField(TEXT("server.port"), Port);
 	const bool bHasAuthToken = !AuthToken.IsEmpty();
-	const bool bHasRateLimit = MaxRequestsPerSecond > 0;
+	const bool bHasRateLimit = MaxRequestsPerSecond > 0 || MaxRequestsPerMinute > 0;
 	Response->SetObjectField(TEXT("server.features"), BuildFeatureFlags(true, bHasAuthToken, bHasRateLimit));
+	if (DispatchResult.RequestMs > 0.0)
+	{
+		Response->SetNumberField(TEXT("server.request_ms"), DispatchResult.RequestMs);
+	}
+	if (DispatchResult.DispatchMs > 0.0)
+	{
+		Response->SetNumberField(TEXT("server.dispatch_ms"), DispatchResult.DispatchMs);
+	}
 
 	if (!DispatchResult.ErrorCode.IsEmpty())
 	{
@@ -1857,8 +2988,21 @@ FString FSOTS_BPGenBridgeServer::BuildResponseJson(const FString& Action, const 
 	Response->SetArrayField(TEXT("warnings"), WarningValues);
 
 	FString ResponseString;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ResponseString);
-	FJsonSerializer::Serialize(Response.ToSharedRef(), Writer);
+	Response->SetNumberField(TEXT("server.serialize_ms"), 0.0);
+
+	double SerializeStartSeconds = FPlatformTime::Seconds();
+	{
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ResponseString);
+		FJsonSerializer::Serialize(Response.ToSharedRef(), Writer);
+	}
+	double SerializeMs = (FPlatformTime::Seconds() - SerializeStartSeconds) * 1000.0;
+
+	Response->SetNumberField(TEXT("server.serialize_ms"), SerializeMs);
+	ResponseString.Reset();
+	{
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ResponseString);
+		FJsonSerializer::Serialize(Response.ToSharedRef(), Writer);
+	}
 
 	ResponseString.AppendChar('\n');
 	return ResponseString;

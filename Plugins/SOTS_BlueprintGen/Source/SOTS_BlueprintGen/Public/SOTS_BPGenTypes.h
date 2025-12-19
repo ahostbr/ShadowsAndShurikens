@@ -682,6 +682,71 @@ struct FSOTS_BPGenAssetResult
 };
 
 /**
+ * Summary of changes applied to a Blueprint asset.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenChangeSummary
+{
+	GENERATED_BODY()
+
+	/** JSON: "blueprint_asset_path" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString BlueprintAssetPath;
+
+	/** JSON: "target_type" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString TargetType;
+
+	/** JSON: "target_name" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FString TargetName;
+
+	/** JSON: "created_node_ids" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> CreatedNodeIds;
+
+	/** JSON: "updated_node_ids" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> UpdatedNodeIds;
+
+	/** JSON: "deleted_node_ids" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> DeletedNodeIds;
+
+	/** JSON: "created_vars" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> CreatedVariables;
+
+	/** JSON: "updated_vars" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> UpdatedVariables;
+
+	/** JSON: "created_functions" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> CreatedFunctions;
+
+	/** JSON: "updated_functions" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> UpdatedFunctions;
+
+	/** JSON: "created_widgets" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> CreatedWidgets;
+
+	/** JSON: "updated_widgets" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> UpdatedWidgets;
+
+	/** JSON: "property_sets" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> PropertySets;
+
+	/** JSON: "bindings_created" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	TArray<FString> BindingsCreated;
+};
+
+/**
  * Result for function/graph-application operations.
  */
 USTRUCT(BlueprintType)
@@ -732,6 +797,10 @@ struct FSOTS_BPGenApplyResult
 	/** JSON: "SkippedNodeIds" (output only, array). NodeIds skipped due to allow flags or missing references. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	TArray<FString> SkippedNodeIds;
+
+	/** JSON: "change_summary" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
+	FSOTS_BPGenChangeSummary ChangeSummary;
 };
 
 /**
@@ -788,6 +857,10 @@ struct FSOTS_BPGenEnsureResult
 	/** JSON: "Warnings". */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
 	TArray<FString> Warnings;
+
+	/** JSON: "change_summary" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Ensure")
+	FSOTS_BPGenChangeSummary ChangeSummary;
 };
 
 /** Widget ensure request. */
@@ -890,6 +963,10 @@ struct FSOTS_BPGenWidgetEnsureResult
 	/** JSON: "error_code" (output). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
 	FString ErrorCode;
+
+	/** JSON: "change_summary" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FSOTS_BPGenChangeSummary ChangeSummary;
 };
 
 /** Widget property update request. */
@@ -948,6 +1025,10 @@ struct FSOTS_BPGenWidgetPropertyResult
 	/** JSON: "error_code". */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
 	FString ErrorCode;
+
+	/** JSON: "change_summary" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FSOTS_BPGenChangeSummary ChangeSummary;
 };
 
 /** Binding ensure request for widget property bindings. */
@@ -1054,6 +1135,10 @@ struct FSOTS_BPGenBindingEnsureResult
 	/** JSON: "error_code". */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
 	FString ErrorCode;
+
+	/** JSON: "change_summary" (output only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|UMG")
+	FSOTS_BPGenChangeSummary ChangeSummary;
 };
 
 /**

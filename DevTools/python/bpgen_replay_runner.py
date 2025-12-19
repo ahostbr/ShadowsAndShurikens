@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import os
 import sys
 from collections import Counter, defaultdict
 from typing import Any, Dict, List
@@ -90,15 +91,22 @@ def run_replay(
     out_report: pathlib.Path,
     diff_path: pathlib.Path | None,
     expected_path: pathlib.Path | None,
+    dangerous_ok: bool,
+    auth_token: str | None,
 ) -> int:
     replay = load_replay(replay_path)
     responses: List[Dict[str, Any]] = []
+    final_auth_token = auth_token or os.environ.get("SOTS_BPGEN_AUTH_TOKEN", "")
 
     print(f"Running replay with {len(replay)} request(s) -> {replay_path}")
     for idx, request in enumerate(replay, start=1):
         action = request.get("action", "<missing>")
         params = request.get("params", {}) or {}
         params.setdefault("client_protocol_version", "1.0")
+        if dangerous_ok:
+            params.setdefault("dangerous_ok", True)
+        if final_auth_token and "auth_token" not in params:
+            params["auth_token"] = final_auth_token
         rid = request.get("request_id")
         print(f"[{idx}] {action} ...", end=" ")
         resp = bpgen_call(action, params, host=host, port=port, request_id=rid)
@@ -148,6 +156,8 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--out", required=True, type=pathlib.Path, help="Path to write JSON report")
     parser.add_argument("--diff", type=pathlib.Path, help="Optional path to write human-readable diff")
     parser.add_argument("--expect", type=pathlib.Path, help="Optional expected report for diffing")
+    parser.add_argument("--dangerous-ok", action="store_true", help="Set dangerous_ok=true on each request")
+    parser.add_argument("--auth-token", type=str, help="Optional auth token (overrides SOTS_BPGEN_AUTH_TOKEN)")
     return parser.parse_args(argv)
 
 
@@ -160,6 +170,8 @@ def main(argv: List[str]) -> int:
         out_report=args.out,
         diff_path=args.diff,
         expected_path=args.expect,
+        dangerous_ok=args.dangerous_ok,
+        auth_token=args.auth_token,
     )
 
 
