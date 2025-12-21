@@ -1,0 +1,63 @@
+Blueprint: DABP_FoleyAudioBank (/Game/Audio/Foley/DABP_FoleyAudioBank.DABP_FoleyAudioBank)
+  Graph: EventGraph
+  Graph: GetSoundFromFoleyEvent
+    Node: GetSoundFromFoleyEvent (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: Event (struct) Dir=Out
+        -> Find.Key
+    Node: Get Assets (K2Node_VariableGet)
+      Pin: Assets (struct) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetSoundFromFoleyEvent.then
+      Pin: Sound (object) Dir=In
+        -> Find.Value
+      Pin: Success (bool) Dir=In
+        -> Find.ReturnValue
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (struct) Dir=In
+        -> Get Assets.Assets
+      Pin: Key (struct) Dir=In
+        -> GetSoundFromFoleyEvent.Event
+      Pin: Value (object) Dir=Out
+        -> Return Node.Sound
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.Success
+    Node: Set Float Parameter
+Target is Audio Parameter Controller Interface (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (interface) Dir=In
+      Pin: InName (name) Dir=In
+      Pin: InFloat (real) Dir=In
+    Node: Set Float Parameter
+Target is Audio Parameter Controller Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: InName (name) Dir=In
+      Pin: InFloat (real) Dir=In
+    Node: Cast To MetaSoundSource (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+        -> Set Float Parameter
+Target is Audio Parameter Controller Interface.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (wildcard) Dir=In
+      Pin: AsMetaSound Source (object) Dir=Out
+        -> Set Float Parameter
+Target is Audio Parameter Controller Interface.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set Float Parameter
+Target is Audio Parameter Controller Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Cast To MetaSoundSource.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Cast To MetaSoundSource.AsMetaSound Source
+      Pin: InName (name) Dir=In
+      Pin: InFloat (real) Dir=In

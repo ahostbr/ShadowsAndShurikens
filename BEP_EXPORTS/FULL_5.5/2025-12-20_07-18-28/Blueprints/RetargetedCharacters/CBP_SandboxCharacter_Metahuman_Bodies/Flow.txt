@@ -1,0 +1,418 @@
+Blueprint: CBP_SandboxCharacter_Metahuman_Bodies (/Game/Blueprints/RetargetedCharacters/CBP_SandboxCharacter_Metahuman_Bodies.CBP_SandboxCharacter_Metahuman_Bodies)
+  Graph: EventGraph
+    Node: Debug Key Num 1 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Update Metahuman Mesh
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Keys.execute
+    Node: Get SkeletalMesh (K2Node_VariableGet)
+      Pin: SkeletalMesh (object) Dir=Out
+        -> Set Skeletal Mesh Asset
+Target is Skeletal Mesh Component.self
+      Pin: self (object) Dir=In
+    Node: Set Skeletal Mesh Asset
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Keys.then
+      Pin: then (exec) Dir=Out
+        -> Set ComponentTags.execute
+      Pin: self (object) Dir=In
+        -> Get SkeletalMesh.SkeletalMesh
+      Pin: NewMesh (object) Dir=In
+        -> GET.Output
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Keys.Keys
+      Pin: Dimension 1 (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: Output (object) Dir=Out
+        -> Set Skeletal Mesh Asset
+Target is Skeletal Mesh Component.NewMesh
+        -> Find.Key
+    Node: Get Index (K2Node_VariableGet)
+      Pin: Index (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+    Node: Get SkeletalMesh (K2Node_VariableGet)
+      Pin: SkeletalMesh (object) Dir=Out
+        -> Set ComponentTags.self
+      Pin: self (object) Dir=In
+    Node: Set ComponentTags (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Skeletal Mesh Asset
+Target is Skeletal Mesh Component.then
+      Pin: then (exec) Dir=Out
+      Pin: ComponentTags (name) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (name) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SkeletalMesh.SkeletalMesh
+    Node: Get BodiesAndRetargeters_Map (K2Node_VariableGet)
+      Pin: BodiesAndRetargeters_Map (object) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get BodiesAndRetargeters_Map.BodiesAndRetargeters_Map
+      Pin: Key (object) Dir=In
+        -> GET.Output
+      Pin: Value (object) Dir=Out
+        -> Get Object Name.Object
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Object Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Find.Value
+      Pin: ReturnValue (string) Dir=Out
+        -> String To Name.InString
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (name) Dir=Out
+        -> Set ComponentTags.ComponentTags
+      Pin: [0] (name) Dir=In
+        -> String To Name.ReturnValue
+    Node: String To Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Object Name.ReturnValue
+      Pin: ReturnValue (name) Dir=Out
+        -> Make Array.[0]
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 1.Pressed
+        -> Debug Key 1.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Index.Index
+      Pin: B (int) Dir=In
+        -> Get AdditionalValue.AdditionalValue
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: C (int) Dir=In
+    Node: Get AdditionalValue (K2Node_VariableGet)
+      Pin: AdditionalValue (int) Dir=Out
+        -> int + int.B
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 0 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Branch.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set AdditionalValue (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: AdditionalValue (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get AdditionalValue (K2Node_VariableGet)
+      Pin: AdditionalValue (int) Dir=Out
+        -> Equal (Integer).A
+      Pin: self (object) Dir=In
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get AdditionalValue.AdditionalValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 0.Pressed
+        -> Debug Key 0.Pressed
+      Pin: Condition (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set AdditionalValue.execute
+      Pin: else (exec) Dir=Out
+        -> Set AdditionalValue.execute
+    Node: Set AdditionalValue (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: AdditionalValue (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 2 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 2.Pressed
+        -> Debug Key 2.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 3 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 3.Pressed
+        -> Debug Key 3.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 4 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 4.Pressed
+        -> Debug Key 4.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 5 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 5.Pressed
+        -> Debug Key 5.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 6 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 6.Pressed
+        -> Debug Key 6.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 7 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 7.Pressed
+        -> Debug Key 7.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 8 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 8.Pressed
+        -> Debug Key 8.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Debug Key Num 9 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Set Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Debug Key Num 9.Pressed
+        -> Debug Key 9.Pressed
+      Pin: then (exec) Dir=Out
+        -> Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies.execute
+      Pin: Index (int) Dir=In
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+        -> Set Index.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Metahuman Mesh
+Target is CBP Sandbox Character Metahuman Bodies (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set AdditionalValue.then
+        -> Set AdditionalValue.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get BodiesAndRetargeters_Map (K2Node_VariableGet)
+      Pin: BodiesAndRetargeters_Map (object) Dir=Out
+        -> Keys.TargetMap
+      Pin: self (object) Dir=In
+    Node: Keys (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Metahuman Mesh
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Set Skeletal Mesh Asset
+Target is Skeletal Mesh Component.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get BodiesAndRetargeters_Map.BodiesAndRetargeters_Map
+      Pin: Keys (object) Dir=Out
+        -> GET.Array
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Make Literal String.ReturnValue
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: Debug Key 1 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 2 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 3 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 4 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 5 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 6 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 7 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 8 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 9 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Set Index.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Debug Key 0 (K2Node_InputDebugKey)
+      Pin: Pressed (exec) Dir=Out
+        -> Branch.execute
+      Pin: Released (exec) Dir=Out
+      Pin: Key (struct) Dir=Out
+      Pin: ActionValue (struct) Dir=Out
+    Node: Make Literal String (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Print String.InString
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In

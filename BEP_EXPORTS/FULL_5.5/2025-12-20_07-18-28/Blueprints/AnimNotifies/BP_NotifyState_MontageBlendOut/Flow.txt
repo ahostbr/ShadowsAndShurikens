@@ -1,0 +1,286 @@
+Blueprint: BP_NotifyState_MontageBlendOut (/Game/Blueprints/AnimNotifies/BP_NotifyState_MontageBlendOut.BP_NotifyState_MontageBlendOut)
+  Graph: Received_NotifyTick
+    Node: Received Notify Tick (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To Character.execute
+      Pin: MeshComp (object) Dir=Out
+      Pin: Animation (object) Dir=Out
+      Pin: FrameDeltaTime (real) Dir=Out
+      Pin: EventReference (struct) Dir=Out
+    Node: Get BlendOutCondition (K2Node_VariableGet)
+      Pin: BlendOutCondition (byte) Dir=Out
+        -> Switch on E_TraversalBlendOutCondition.Selection
+      Pin: self (object) Dir=In
+    Node: Switch on E_TraversalBlendOutCondition (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Selection (byte) Dir=In
+        -> Get BlendOutCondition.BlendOutCondition
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Set ShouldBlendOut.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: NewEnumerator2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Vector).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set ShouldBlendOut.execute
+      Pin: else (exec) Dir=Out
+    Node: Not Equal (Vector) (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Current Acceleration
+Target is Character Movement Component.ReturnValue
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (real) Dir=In
+    Node: Get Character (K2Node_VariableGet)
+      Pin: Character (object) Dir=Out
+        -> Get CharacterMovement.self
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Get Current Acceleration
+Target is Character Movement Component.self
+      Pin: self (object) Dir=In
+        -> Get Character.Character
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Is Falling
+Target is Nav Movement Component.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set ShouldBlendOut.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Character (K2Node_VariableGet)
+      Pin: Character (object) Dir=Out
+        -> Get CharacterMovement.self
+    Node: Get CharacterMovement (K2Node_VariableGet)
+      Pin: CharacterMovement (object) Dir=Out
+        -> Is Falling
+Target is Nav Movement Component.self
+      Pin: self (object) Dir=In
+        -> Get Character.Character
+    Node: Is Falling
+Target is Nav Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Cast To AnimMontage (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Set AnimInstance.then
+      Pin: then (exec) Dir=Out
+        -> Set AnimMontage.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Animation.Animation
+      Pin: AsAnim Montage (object) Dir=Out
+        -> Set AnimMontage.AnimMontage
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MeshComp.MeshComp
+      Pin: ReturnValue (object) Dir=Out
+        -> Set AnimInstance.AnimInstance
+    Node: Set AnimInstance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Character.then
+      Pin: then (exec) Dir=Out
+        -> Cast To AnimMontage.execute
+      Pin: AnimInstance (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Set AnimMontage (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To AnimMontage.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: AnimMontage (object) Dir=In
+        -> Cast To AnimMontage.AsAnim Montage
+      Pin: Output_Get (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Montage Stop with Blend Settings
+Target is Anim Instance.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Cast To Character (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Received Notify Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsCharacter (object) Dir=Out
+        -> Set Character.Character
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get MeshComp (K2Node_VariableGet)
+      Pin: MeshComp (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MeshComp.MeshComp
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To Character.Object
+    Node: Get MeshComp (K2Node_VariableGet)
+      Pin: MeshComp (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+    Node: Set Character (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Character.then
+      Pin: then (exec) Dir=Out
+        -> Set AnimInstance.execute
+      Pin: Character (object) Dir=In
+        -> Cast To Character.AsCharacter
+      Pin: Output_Get (object) Dir=Out
+    Node: Get Animation (K2Node_VariableGet)
+      Pin: Animation (object) Dir=Out
+        -> Cast To AnimMontage.Object
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on E_TraversalBlendOutCondition.NewEnumerator1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on E_TraversalBlendOutCondition.NewEnumerator2
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Montage Stop with Blend Settings
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Get AnimInstance.AnimInstance
+      Pin: BlendOutSettings (struct) Dir=In
+        -> Make Montage Blend Settings.MontageBlendSettings
+      Pin: Montage (object) Dir=In
+        -> Get AnimMontage.AnimMontage
+    Node: Make Montage Blend Settings (K2Node_MakeStruct)
+      Pin: MontageBlendSettings (struct) Dir=Out
+        -> Montage Stop with Blend Settings
+Target is Anim Instance.BlendOutSettings
+      Pin: BlendProfile (object) Dir=In
+        -> Get Blend Profile by Name
+Target is Anim Instance.ReturnValue
+      Pin: Blend (struct) Dir=In
+        -> Make Alpha Blend Args.AlphaBlendArgs
+      Pin: BlendMode (byte) Dir=In
+    Node: Make Alpha Blend Args (K2Node_MakeStruct)
+      Pin: AlphaBlendArgs (struct) Dir=Out
+        -> Make Montage Blend Settings.Blend
+      Pin: CustomCurve (object) Dir=In
+      Pin: BlendTime (real) Dir=In
+        -> Get BlendOutTime.BlendOutTime
+      Pin: BlendOption (byte) Dir=In
+    Node: Get AnimInstance (K2Node_VariableGet)
+      Pin: AnimInstance (object) Dir=Out
+        -> Get Blend Profile by Name
+Target is Anim Instance.self
+    Node: Get Blend Profile by Name
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get AnimInstance.AnimInstance
+      Pin: InBlendProfileName (name) Dir=In
+        -> Get BlendProfile.BlendProfile
+      Pin: ReturnValue (object) Dir=Out
+        -> Make Montage Blend Settings.BlendProfile
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set AnimMontage.then
+      Pin: then_0 (exec) Dir=Out
+        -> Switch on E_TraversalBlendOutCondition.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Set ShouldBlendOut (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_TraversalBlendOutCondition.NewEnumerator0
+      Pin: then (exec) Dir=Out
+      Pin: ShouldBlendOut (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Get ShouldBlendOut.ShouldBlendOut
+      Pin: then (exec) Dir=Out
+        -> Montage Stop with Blend Settings
+Target is Anim Instance.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ShouldBlendOut (K2Node_VariableGet)
+      Pin: ShouldBlendOut (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set ShouldBlendOut (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: ShouldBlendOut (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Set ShouldBlendOut (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: ShouldBlendOut (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Get AnimInstance (K2Node_VariableGet)
+      Pin: AnimInstance (object) Dir=Out
+        -> Montage Stop with Blend Settings
+Target is Anim Instance.self
+    Node: Get AnimMontage (K2Node_VariableGet)
+      Pin: AnimMontage (object) Dir=Out
+        -> Montage Stop with Blend Settings
+Target is Anim Instance.Montage
+    Node: Get BlendOutTime (K2Node_VariableGet)
+      Pin: BlendOutTime (real) Dir=Out
+        -> Make Alpha Blend Args.BlendTime
+      Pin: self (object) Dir=In
+    Node: Get BlendProfile (K2Node_VariableGet)
+      Pin: BlendProfile (name) Dir=Out
+        -> Get Blend Profile by Name
+Target is Anim Instance.InBlendProfileName
+      Pin: self (object) Dir=In
+    Node: Get Current Acceleration
+Target is Character Movement Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get CharacterMovement.CharacterMovement
+      Pin: ReturnValue (struct) Dir=Out
+        -> Not Equal (Vector).A
+  Graph: GetNotifyName
+    Node: Get Notify Name (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Notify Name.then
+      Pin: ReturnValue (string) Dir=In
+        -> Append.ReturnValue
+    Node: Get BlendOutCondition (K2Node_VariableGet)
+      Pin: BlendOutCondition (byte) Dir=Out
+        -> Enum to String.Enumerator
+      Pin: self (object) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Enum to String.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Enum to String (K2Node_GetEnumeratorNameAsString)
+      Pin: Enumerator (byte) Dir=In
+        -> Get BlendOutCondition.BlendOutCondition
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B

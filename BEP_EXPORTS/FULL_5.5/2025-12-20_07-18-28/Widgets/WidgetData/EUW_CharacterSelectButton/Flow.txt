@@ -1,0 +1,264 @@
+Blueprint: EUW_CharacterSelectButton (/Game/Widgets/WidgetData/EUW_CharacterSelectButton.EUW_CharacterSelectButton)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Asset by Object
+Target is Asset Thumbnail Widget.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Get AssetThumbnail (K2Node_VariableGet)
+      Pin: AssetThumbnail (object) Dir=Out
+        -> Set Asset by Object
+Target is Asset Thumbnail Widget.self
+      Pin: self (object) Dir=In
+    Node: Set Asset by Object
+Target is Asset Thumbnail Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Get Blueprint Asset.execute
+      Pin: self (object) Dir=In
+        -> Get AssetThumbnail.AssetThumbnail
+      Pin: Object (object) Dir=In
+        -> Get Object.Object
+    Node: Get Object (K2Node_VariableGet)
+      Pin: Object (object) Dir=Out
+        -> Set Asset by Object
+Target is Asset Thumbnail Widget.Object
+      Pin: self (object) Dir=In
+    Node: Set PawnOverride (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Spawn Character
+Target is Game Animation Widget.execute
+      Pin: PawnOverride (class) Dir=In
+        -> Get Pawn.Pawn
+      Pin: Output_Get (class) Dir=Out
+        -> Spawn Character
+Target is Game Animation Widget.PawnToSpawn
+      Pin: self (object) Dir=In
+        -> Get Game Animation Widget.Game Animation Widget
+    Node: Get Pawn (K2Node_VariableGet)
+      Pin: Pawn (class) Dir=Out
+        -> Set PawnOverride.PawnOverride
+      Pin: self (object) Dir=In
+    Node: Spawn Character
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set PawnOverride.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Game Animation Widget.Game Animation Widget
+      Pin: PawnToSpawn (class) Dir=In
+        -> Set PawnOverride.Output_Get
+    Node: Cast To GameAnimationWidget (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Find Utility Widget from Blueprint
+Target is Editor Utility Subsystem.then
+      Pin: then (exec) Dir=Out
+        -> Set Game Animation Widget.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Find Utility Widget from Blueprint
+Target is Editor Utility Subsystem.ReturnValue
+      Pin: AsGame Animation Widget (object) Dir=Out
+        -> Set Game Animation Widget.Game Animation Widget
+      Pin: bSuccess (bool) Dir=Out
+    Node: Find Utility Widget from Blueprint
+Target is Editor Utility Subsystem (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Pawn.then
+      Pin: then (exec) Dir=Out
+        -> Cast To GameAnimationWidget.execute
+      Pin: self (object) Dir=In
+        -> Editor Utility Subsystem.ReturnValue
+      Pin: InBlueprint (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To GameAnimationWidget.Object
+    Node: Editor Utility Subsystem (K2Node_GetEditorSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Find Utility Widget from Blueprint
+Target is Editor Utility Subsystem.self
+    Node: Set Game Animation Widget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To GameAnimationWidget.then
+      Pin: then (exec) Dir=Out
+      Pin: Game Animation Widget (object) Dir=In
+        -> Cast To GameAnimationWidget.AsGame Animation Widget
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Game Animation Widget (K2Node_VariableGet)
+      Pin: Game Animation Widget (object) Dir=Out
+        -> Set PawnOverride.self
+        -> Spawn Character
+Target is Game Animation Widget.self
+      Pin: self (object) Dir=In
+    Node: Get Object (K2Node_VariableGet)
+      Pin: Object (object) Dir=Out
+        -> Get Blueprint Asset.Object
+      Pin: self (object) Dir=In
+    Node: Get Blueprint Asset (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Asset by Object
+Target is Asset Thumbnail Widget.then
+      Pin: then (exec) Dir=Out
+        -> Generated Class.execute
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Object.Object
+      Pin: ReturnValue (object) Dir=Out
+        -> Generated Class.BlueprintObj
+    Node: Generated Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Blueprint Asset.then
+      Pin: then (exec) Dir=Out
+        -> Cast To Pawn Class.execute
+      Pin: self (object) Dir=In
+      Pin: BlueprintObj (object) Dir=In
+        -> Get Blueprint Asset.ReturnValue
+      Pin: ReturnValue (class) Dir=Out
+        -> Cast To Pawn Class.Class
+    Node: Cast To Pawn Class (K2Node_ClassDynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Generated Class.then
+      Pin: then (exec) Dir=Out
+        -> Set Pawn.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Class (class) Dir=In
+        -> Generated Class.ReturnValue
+      Pin: AsPawn (class) Dir=Out
+        -> Set Pawn.Pawn
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set Pawn (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To Pawn Class.then
+      Pin: then (exec) Dir=Out
+        -> Find Utility Widget from Blueprint
+Target is Editor Utility Subsystem.execute
+      Pin: Pawn (class) Dir=In
+        -> Cast To Pawn Class.AsPawn
+      Pin: Output_Get (class) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Pawn (K2Node_VariableGet)
+      Pin: Pawn (class) Dir=Out
+        -> Not Equal (Class).A
+      Pin: self (object) Dir=In
+    Node: Get Game Animation Widget (K2Node_VariableGet)
+      Pin: Game Animation Widget (object) Dir=Out
+        -> Get PawnOverride.self
+      Pin: self (object) Dir=In
+    Node: Get PawnOverride (K2Node_VariableGet)
+      Pin: PawnOverride (class) Dir=Out
+        -> Not Equal (Class).B
+      Pin: self (object) Dir=In
+        -> Get Game Animation Widget.Game Animation Widget
+    Node: Not Equal (Class) (K2Node_PromotableOperator)
+      Pin: A (class) Dir=In
+        -> Get Pawn.Pawn
+      Pin: B (class) Dir=In
+        -> Get PawnOverride.PawnOverride
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (EditorUtilityButton).then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Class).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set PawnOverride.execute
+      Pin: else (exec) Dir=Out
+        -> Set PawnOverride.execute
+    Node: Set PawnOverride (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: PawnOverride (class) Dir=In
+      Pin: Output_Get (class) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Game Animation Widget.Game Animation Widget
+    Node: Get Game Animation Widget (K2Node_VariableGet)
+      Pin: Game Animation Widget (object) Dir=Out
+        -> Set PawnOverride.self
+      Pin: self (object) Dir=In
+    Node: On Clicked (EditorUtilityButton) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+  Graph: GetBorderColor
+    Node: GetBorderColor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Active.execute
+    Node: Equal (Class) (K2Node_PromotableOperator)
+      Pin: A (class) Dir=In
+        -> Get Pawn.Pawn
+      Pin: B (class) Dir=In
+        -> Get PawnOverride.PawnOverride
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Active.Active
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (struct) Dir=In
+    Node: Set Active (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> GetBorderColor.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Active (bool) Dir=In
+        -> Equal (Class).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Active.then
+      Pin: Condition (bool) Dir=In
+        -> Set Active.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+    Node: Get Pawn (K2Node_VariableGet)
+      Pin: Pawn (class) Dir=Out
+        -> Equal (Class).A
+      Pin: self (object) Dir=In
+    Node: Get Game Animation Widget (K2Node_VariableGet)
+      Pin: Game Animation Widget (object) Dir=Out
+        -> Get PawnOverride.self
+      Pin: self (object) Dir=In
+    Node: Get PawnOverride (K2Node_VariableGet)
+      Pin: PawnOverride (class) Dir=Out
+        -> Equal (Class).B
+      Pin: self (object) Dir=In
+        -> Get Game Animation Widget.Game Animation Widget
+  Graph: Get_EditorUtilityButton_ToolTipText
+    Node: Get_EditorUtilityButton_ToolTipText (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get_EditorUtilityButton_ToolTipText.then
+      Pin: ReturnValue (text) Dir=In
+        -> To Text (String).ReturnValue
+    Node: Get Object (K2Node_VariableGet)
+      Pin: Object (object) Dir=Out
+        -> Get Display Name.Object
+      Pin: self (object) Dir=In
+    Node: Get Display Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Object.Object
+      Pin: ReturnValue (string) Dir=Out
+        -> To Text (String).InString
+    Node: To Text (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InString (string) Dir=In
+        -> Get Display Name.ReturnValue
+      Pin: ReturnValue (text) Dir=Out
+        -> Return Node.ReturnValue

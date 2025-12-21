@@ -79,16 +79,23 @@ def bpgen_call(
                 total += len(chunk)
                 if total > max_bytes:
                     return _default_error(action, request_id_final, "Response exceeded max_bytes guard")
-                if b"\n" in chunk:
-                    break
             data = b"".join(chunks)
     except Exception as exc:  # socket or connection failure
         return _default_error(action, request_id_final, f"Bridge connection failed: {exc}")
 
     try:
         text = data.decode("utf-8", errors="replace")
-        line = text.split("\n", 1)[0]
-        return json.loads(line)
+        text_stripped = text.strip()
+        try:
+            return json.loads(text_stripped)
+        except Exception:
+            # Try progressive parsing to handle pretty-printed JSON arriving in chunks
+            # without relying on newline boundaries.
+            try:
+                parsed = json.loads(text_stripped.split("\n", 1)[0])
+                return parsed
+            except Exception:
+                return _default_error(action, request_id_final, f"Bridge response parse failed: {exc}")
     except Exception as exc:  # decode/parse failure
         return _default_error(action, request_id_final, f"Bridge response parse failed: {exc}")
 

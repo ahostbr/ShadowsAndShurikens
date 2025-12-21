@@ -1,0 +1,480 @@
+Blueprint: BP_AnimNotify_FoleyEvent (/Game/Blueprints/AnimNotifies/BP_AnimNotify_FoleyEvent.BP_AnimNotify_FoleyEvent)
+  Graph: Received_Notify
+    Node: Received Notify (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set MeshComponent.execute
+      Pin: MeshComp (object) Dir=Out
+        -> Set MeshComponent.MeshComponent
+      Pin: Animation (object) Dir=Out
+      Pin: EventReference (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+        -> Draw Debug Sphere.then
+      Pin: ReturnValue (bool) Dir=In
+    Node: Get Sound from Foley Event
+Target is DABP Foley Audio Bank (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Audio Bank
+Target is PlayFoleyEvent.Bank
+      Pin: Event (struct) Dir=In
+        -> Get Event.Event
+      Pin: Sound (object) Dir=Out
+        -> Play Sound at Location.Sound
+      Pin: Success (bool) Dir=Out
+    Node: Play Sound at Location (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Get Console Variable Bool Value.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Sound (object) Dir=In
+        -> Get Sound from Foley Event
+Target is DABP Foley Audio Bank.Sound
+      Pin: Location (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: Rotation (struct) Dir=In
+      Pin: VolumeMultiplier (real) Dir=In
+        -> Get VolumeMultiplier.VolumeMultiplier
+      Pin: PitchMultiplier (real) Dir=In
+        -> Get PitchMultiplier.PitchMultiplier
+      Pin: StartTime (real) Dir=In
+      Pin: AttenuationSettings (object) Dir=In
+      Pin: ConcurrencySettings (object) Dir=In
+      Pin: OwningActor (object) Dir=In
+      Pin: InitialParams (object) Dir=In
+    Node: Get VolumeMultiplier (K2Node_VariableGet)
+      Pin: VolumeMultiplier (real) Dir=Out
+        -> Play Sound at Location.VolumeMultiplier
+      Pin: self (object) Dir=In
+    Node: Get PitchMultiplier (K2Node_VariableGet)
+      Pin: PitchMultiplier (real) Dir=Out
+        -> Play Sound at Location.PitchMultiplier
+      Pin: self (object) Dir=In
+    Node: Get Event (K2Node_VariableGet)
+      Pin: Event (struct) Dir=Out
+        -> Get Sound from Foley Event
+Target is DABP Foley Audio Bank.Event
+      Pin: self (object) Dir=In
+    Node: Get MeshComponent (K2Node_VariableGet)
+      Pin: MeshComponent (object) Dir=Out
+        -> Get Audio Bank
+Target is PlayFoleyEvent.MeshComponent
+    Node: Get Audio Bank
+Target is PlayFoleyEvent (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: MeshComponent (object) Dir=In
+        -> Get MeshComponent.MeshComponent
+      Pin: Bank (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Get Sound from Foley Event
+Target is DABP Foley Audio Bank.self
+      Pin: CanPlaySound (bool) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set MeshComponent.then
+      Pin: InputObject (object) Dir=In
+        -> Get Audio Bank
+Target is PlayFoleyEvent.Bank
+      Pin: Is Valid (exec) Dir=Out
+        -> Branch.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get MeshComponent (K2Node_VariableGet)
+      Pin: MeshComponent (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MeshComponent.MeshComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Play Sound at Location.Location
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: ReturnValue (bool) Dir=In
+    Node: Set MeshComponent (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Received Notify.then
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: MeshComponent (object) Dir=In
+        -> Received Notify.MeshComp
+      Pin: Output_Get (object) Dir=Out
+    Node: VisLog Sphere Shape (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Draw Debug Sphere.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> Get MeshComponent.MeshComponent
+      Pin: Center (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: Radius (real) Dir=In
+      Pin: Text (string) Dir=In
+        -> Get VisLogDebugText.VisLogDebugText
+      Pin: ObjectColor (struct) Dir=In
+        -> Get VisLogDebugColor.VisLogDebugColor
+      Pin: LogCategory (name) Dir=In
+      Pin: bAddToMessageLog (bool) Dir=In
+      Pin: bWireframe (bool) Dir=In
+    Node: Get VisLogDebugColor (K2Node_VariableGet)
+      Pin: VisLogDebugColor (struct) Dir=Out
+        -> VisLog Sphere Shape.ObjectColor
+      Pin: self (object) Dir=In
+    Node: Get VisLogDebugText (K2Node_VariableGet)
+      Pin: VisLogDebugText (string) Dir=Out
+        -> VisLog Sphere Shape.Text
+      Pin: self (object) Dir=In
+    Node: Get MeshComponent (K2Node_VariableGet)
+      Pin: MeshComponent (object) Dir=Out
+        -> VisLog Sphere Shape.WorldContextObject
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: Condition (bool) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Play Sound at Location.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (bool) Dir=In
+        -> Get Audio Bank
+Target is PlayFoleyEvent.CanPlaySound
+      Pin: OutputPin (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Console Variable Bool Value (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Play Sound at Location.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: VariableName (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Console Variable Bool Value.then
+      Pin: Condition (bool) Dir=In
+        -> Get Console Variable Bool Value.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> VisLog Sphere Shape.execute
+      Pin: else (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Branch.else
+      Pin: OutputPin (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (exec) Dir=Out
+        -> Return Node.execute
+    Node: Draw Debug Sphere (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> VisLog Sphere Shape.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Center (struct) Dir=In
+        -> Select.ReturnValue
+      Pin: Radius (real) Dir=In
+      Pin: Segments (int) Dir=In
+      Pin: LineColor (struct) Dir=In
+        -> Get VisLogDebugColor.VisLogDebugColor
+      Pin: Duration (real) Dir=In
+      Pin: Thickness (real) Dir=In
+      Pin: DepthPriority (byte) Dir=In
+    Node: Get Socket Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MeshComponent.MeshComponent
+      Pin: InSocketName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator0
+    Node: Get Side (K2Node_VariableGet)
+      Pin: Side (byte) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator4 (struct) Dir=In
+        -> Get World Location
+Target is Scene Component.ReturnValue
+      Pin: NewEnumerator0 (struct) Dir=In
+        -> Get Socket Location
+Target is Scene Component.ReturnValue
+      Pin: NewEnumerator2 (struct) Dir=In
+        -> Get Socket Location
+Target is Scene Component.ReturnValue
+      Pin: Index (byte) Dir=In
+        -> Get Side.Side
+      Pin: ReturnValue (struct) Dir=Out
+        -> VisLog Sphere Shape.Center
+        -> Draw Debug Sphere.Center
+    Node: Get Socket Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MeshComponent.MeshComponent
+      Pin: InSocketName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator2
+    Node: Get MeshComponent (K2Node_VariableGet)
+      Pin: MeshComponent (object) Dir=Out
+        -> Get World Location
+Target is Scene Component.self
+        -> Get Socket Location
+Target is Scene Component.self
+        -> Get Socket Location
+Target is Scene Component.self
+    Node: Get World Location
+Target is Scene Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get MeshComponent.MeshComponent
+      Pin: ReturnValue (struct) Dir=Out
+        -> Select.NewEnumerator4
+    Node: Get VisLogDebugColor (K2Node_VariableGet)
+      Pin: VisLogDebugColor (struct) Dir=Out
+        -> Draw Debug Sphere.LineColor
+      Pin: self (object) Dir=In
+  Graph: GetNotifyName
+    Node: Get Notify Name (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Notify Name.then
+      Pin: ReturnValue (string) Dir=In
+        -> To String (Text).ReturnValue
+    Node: To String (Text) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InText (text) Dir=In
+        -> Format Text.Result
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Format Text (K2Node_FormatText)
+      Pin: Format (text) Dir=In
+      Pin: Result (text) Dir=Out
+        -> To String (Text).InText
+      Pin: Type (string) Dir=In
+        -> Split.RightS
+    Node: Get Event (K2Node_VariableGet)
+      Pin: Event (struct) Dir=Out
+        -> Get Debug String from Gameplay Tag.GameplayTag
+      Pin: self (object) Dir=In
+    Node: Get Debug String from Gameplay Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: GameplayTag (struct) Dir=In
+        -> Get Event.Event
+      Pin: ReturnValue (string) Dir=Out
+        -> Split.SourceString
+    Node: Split (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: SourceString (string) Dir=In
+        -> Get Debug String from Gameplay Tag.ReturnValue
+      Pin: InStr (string) Dir=In
+      Pin: LeftS (string) Dir=Out
+      Pin: RightS (string) Dir=Out
+        -> Format Text.Type
+      Pin: SearchCase (byte) Dir=In
+      Pin: SearchDir (byte) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+  Graph: GetAudioBank
+    Node: GetAudioBank (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To AnimationEditorPreviewActor.execute
+      Pin: MeshComponent (object) Dir=Out
+        -> Get Owner
+Target is Actor Component.self
+        -> Is Playing
+Target is Skeletal Mesh Component.self
+    Node: Cast To AnimationEditorPreviewActor (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> GetAudioBank.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: CastFailed (exec) Dir=Out
+        -> Branch.execute
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsAnimation Editor Preview Actor (object) Dir=Out
+      Pin: bSuccess (bool) Dir=Out
+    Node: Does Object Implement Interface (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TestObject (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: Interface (class) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Does Object Implement Interface.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Get Foley Audio Bank
+Target is I Foley Audio Bank Interface.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Foley Audio Bank
+Target is I Foley Audio Bank Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: FoleyAudioBank (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Bank (object) Dir=In
+        -> Get DefaultBank.DefaultBank
+      Pin: CanPlaySound (bool) Dir=In
+    Node: Get DefaultBank (K2Node_VariableGet)
+      Pin: DefaultBank (object) Dir=Out
+        -> Return Node.Bank
+      Pin: self (object) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Can Play Footstep Sounds
+Target is I Foley Audio Bank Interface.then
+      Pin: Bank (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: CanPlaySound (bool) Dir=In
+        -> Can Play Footstep Sounds
+Target is I Foley Audio Bank Interface.ReturnValue
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GetAudioBank.MeshComponent
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To AnimationEditorPreviewActor.Object
+        -> Does Object Implement Interface.TestObject
+        -> Reroute Node.InputPin
+    Node: Is Playing
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> GetAudioBank.MeshComponent
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To AnimationEditorPreviewActor.then
+      Pin: Condition (bool) Dir=In
+        -> Is Playing
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+    Node: Can Play Footstep Sounds
+Target is I Foley Audio Bank Interface (K2Node_Message)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: ReturnValue (bool) Dir=Out
+        -> Return Node.CanPlaySound
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Foley Audio Bank
+Target is I Foley Audio Bank Interface.then
+      Pin: Condition (bool) Dir=In
+        -> Has Tag.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Can Play Footstep Sounds
+Target is I Foley Audio Bank Interface.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Make Literal Gameplay Tag Container.ReturnValue
+      Pin: Tag (struct) Dir=In
+        -> Get Event.Event
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Event (K2Node_VariableGet)
+      Pin: Event (struct) Dir=Out
+        -> Has Tag.Tag
+      Pin: self (object) Dir=In
+    Node: Make Literal Gameplay Tag Container (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Has Tag.TagContainer
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: Bank (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: CanPlaySound (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Get Foley Audio Bank
+Target is I Foley Audio Bank Interface.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Can Play Footstep Sounds
+Target is I Foley Audio Bank Interface.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Return Node.Bank
+        -> Return Node.Bank
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Foley Audio Bank
+Target is I Foley Audio Bank Interface.FoleyAudioBank
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get Event (K2Node_VariableGet)
+      Pin: Event (struct) Dir=Out
+        -> Has Tag.Tag
+      Pin: self (object) Dir=In
+    Node: Has Tag (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TagContainer (struct) Dir=In
+        -> Make Literal Gameplay Tag Container.ReturnValue
+      Pin: Tag (struct) Dir=In
+        -> Get Event.Event
+      Pin: bExactMatch (bool) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Cast To AnimationEditorPreviewActor.CastFailed
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Has Tag.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Make Literal Gameplay Tag Container (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Has Tag.TagContainer

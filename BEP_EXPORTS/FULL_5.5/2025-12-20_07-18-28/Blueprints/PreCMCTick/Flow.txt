@@ -1,0 +1,50 @@
+Blueprint: PreCMCTick (/Game/Blueprints/PreCMCTick.PreCMCTick)
+  Graph: EventGraph
+    Node: Event Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Cast To CBP_SandboxCharacter.execute
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Pre CMC Tick
+Target is CBP Sandbox Character.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Get Owner
+Target is Actor Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To CBP_SandboxCharacter.Object
+    Node: Cast To CBP_SandboxCharacter (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Event Begin Play.then
+      Pin: then (exec) Dir=Out
+        -> Set As CBP Sandbox Character.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Owner
+Target is Actor Component.ReturnValue
+      Pin: AsCBP Sandbox Character (object) Dir=Out
+        -> Set As CBP Sandbox Character.As CBP Sandbox Character
+      Pin: bSuccess (bool) Dir=Out
+    Node: Set As CBP Sandbox Character (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To CBP_SandboxCharacter.then
+      Pin: then (exec) Dir=Out
+      Pin: As CBP Sandbox Character (object) Dir=In
+        -> Cast To CBP_SandboxCharacter.AsCBP Sandbox Character
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get As CBP Sandbox Character (K2Node_VariableGet)
+      Pin: As CBP Sandbox Character (object) Dir=Out
+        -> Pre CMC Tick
+Target is CBP Sandbox Character.self
+      Pin: self (object) Dir=In
+    Node: Pre CMC Tick
+Target is CBP Sandbox Character (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get As CBP Sandbox Character.As CBP Sandbox Character
+    Node: This is a simple component which allows us to execute certain functions on the CBP berfore the CMC, using the tick pre-requisite system. (EdGraphNode_Comment)

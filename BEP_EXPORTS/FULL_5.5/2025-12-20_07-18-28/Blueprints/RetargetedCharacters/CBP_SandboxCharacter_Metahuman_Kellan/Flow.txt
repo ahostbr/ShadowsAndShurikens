@@ -1,0 +1,181 @@
+Blueprint: CBP_SandboxCharacter_Metahuman_Kellan (/Game/Blueprints/RetargetedCharacters/CBP_SandboxCharacter_Metahuman_Kellan.CBP_SandboxCharacter_Metahuman_Kellan)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Parent: Tick.execute
+      Pin: DeltaSeconds (real) Dir=Out
+        -> Parent: Tick.DeltaSeconds
+    Node: Parent: Tick (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: DeltaSeconds (real) Dir=In
+        -> Event Tick.DeltaSeconds
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.execute
+      Pin: self (object) Dir=In
+    Node: Get Torso (K2Node_VariableGet)
+      Pin: Torso (object) Dir=Out
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.SkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Get Legs (K2Node_VariableGet)
+      Pin: Legs (object) Dir=Out
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.SkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Get Feet (K2Node_VariableGet)
+      Pin: Feet (object) Dir=Out
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.SkeletalMeshComponent
+      Pin: self (object) Dir=In
+    Node: Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.execute
+      Pin: self (object) Dir=In
+      Pin: SkeletalMeshComponent (object) Dir=In
+        -> Get Feet.Feet
+    Node: Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.then
+      Pin: then (exec) Dir=Out
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.execute
+      Pin: self (object) Dir=In
+      Pin: SkeletalMeshComponent (object) Dir=In
+        -> Get Legs.Legs
+    Node: Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Enable Master Pose
+Target is CBP Sandbox Character Metahuman Kellan.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: SkeletalMeshComponent (object) Dir=In
+        -> Get Torso.Torso
+  Graph: EnableMasterPose
+    Node: EnableMasterPose (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: SkeletalMeshComponent (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get Skeletal Mesh Asset
+Target is Skeletal Mesh Component.self
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Set Leader Pose Component
+Target is Skinned Mesh Component.execute
+    Node: Get AnimClass (K2Node_VariableGet)
+      Pin: AnimClass (class) Dir=Out
+        -> Is Valid Class.Class
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Is Valid Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Class (class) Dir=In
+        -> Get AnimClass.AnimClass
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: Get PostProcessAnimBlueprint (K2Node_VariableGet)
+      Pin: PostProcessAnimBlueprint (class) Dir=Out
+        -> Is Valid Class.Class
+      Pin: self (object) Dir=In
+        -> Get Skeletal Mesh Asset
+Target is Skeletal Mesh Component.ReturnValue
+    Node: Is Valid Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Class (class) Dir=In
+        -> Get PostProcessAnimBlueprint.PostProcessAnimBlueprint
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Valid Class.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Is Valid Class.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Set Leader Pose Component
+Target is Skinned Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewLeaderBoneComponent (object) Dir=In
+        -> Get Body.Body
+      Pin: bForceUpdate (bool) Dir=In
+      Pin: bInFollowerShouldTickPose (bool) Dir=In
+    Node: Get Body (K2Node_VariableGet)
+      Pin: Body (object) Dir=Out
+        -> Set Leader Pose Component
+Target is Skinned Mesh Component.NewLeaderBoneComponent
+      Pin: self (object) Dir=In
+    Node: Is Valid (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Object (object) Dir=In
+        -> Get Skeletal Mesh Asset
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> EnableMasterPose.then
+      Pin: Condition (bool) Dir=In
+        -> Is Valid.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Leader Pose Component
+Target is Skinned Mesh Component.self
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> EnableMasterPose.SkeletalMeshComponent
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+        -> Get AnimClass.self
+    Node: Get Skeletal Mesh Asset
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> EnableMasterPose.SkeletalMeshComponent
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.Object
+        -> Get PostProcessAnimBlueprint.self

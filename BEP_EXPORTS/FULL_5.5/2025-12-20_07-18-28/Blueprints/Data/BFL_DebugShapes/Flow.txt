@@ -1,0 +1,430 @@
+Blueprint: BFL_DebugShapes (/Game/Blueprints/Data/BFL_DebugShapes.BFL_DebugShapes)
+  Graph: DrawDebugArrowWithCircle
+    Node: DrawDebugArrowWithCircle (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Origin.execute
+      Pin: DrawCircle (bool) Dir=Out
+      Pin: DrawAxis (bool) Dir=Out
+      Pin: DrawArrow (bool) Dir=Out
+      Pin: DrawString (bool) Dir=Out
+      Pin: String (string) Dir=Out
+      Pin: StringOffset (struct) Dir=Out
+      Pin: Center (struct) Dir=Out
+        -> vector + vector.A
+      Pin: Direction (struct) Dir=Out
+      Pin: Offset (struct) Dir=Out
+        -> vector + vector.B
+      Pin: Radius (real) Dir=Out
+      Pin: Length (real) Dir=Out
+      Pin: Size (real) Dir=Out
+      Pin: Segments (int) Dir=Out
+      Pin: Color (struct) Dir=Out
+      Pin: Duration (real) Dir=Out
+      Pin: Thickness (real) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: Set Origin (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> DrawDebugArrowWithCircle.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: Origin (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> DrawDebugArrowWithCircle.Center
+      Pin: B (struct) Dir=In
+        -> DrawDebugArrowWithCircle.Offset
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Origin.Origin
+    Node: Draw Debug Circle (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Center (struct) Dir=In
+        -> Get Origin.Origin
+      Pin: Radius (real) Dir=In
+        -> Get Radius.Radius
+      Pin: NumSegments (int) Dir=In
+        -> Get Segments.Segments
+      Pin: LineColor (struct) Dir=In
+        -> Get Color.Color
+      Pin: Duration (real) Dir=In
+        -> Get Duration.Duration
+      Pin: Thickness (real) Dir=In
+        -> Get Thickness.Thickness
+      Pin: YAxis (struct) Dir=In
+        -> Get Forward Vector.ReturnValue
+      Pin: ZAxis (struct) Dir=In
+        -> Get Right Vector.ReturnValue
+      Pin: bDrawAxis (bool) Dir=In
+        -> Get DrawAxis.DrawAxis
+      Pin: DepthPriority (byte) Dir=In
+    Node: Draw Debug Arrow (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ArrowEnd.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LineStart (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: LineEnd (struct) Dir=In
+        -> Set ArrowEnd.Output_Get
+      Pin: ArrowSize (real) Dir=In
+        -> Get Size.Size
+      Pin: LineColor (struct) Dir=In
+        -> Get Color.Color
+      Pin: Duration (real) Dir=In
+        -> Get Duration.Duration
+      Pin: Thickness (real) Dir=In
+        -> Get Thickness.Thickness
+      Pin: DepthPriority (byte) Dir=In
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Origin.Origin
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug Arrow.LineStart
+        -> vector + vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Radius.Radius
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Normalize.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Length.Length
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ArrowEnd.ArrowEnd
+    Node: Rotation From X Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InVec (struct) Dir=In
+        -> Get Direction.Direction
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Forward Vector.InRot
+        -> Get Right Vector.InRot
+    Node: Get Forward Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Rotation From X Vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug Circle.YAxis
+    Node: Get Right Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Rotation From X Vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug Circle.ZAxis
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Origin.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Origin (K2Node_VariableGet)
+      Pin: Origin (struct) Dir=Out
+        -> vector + vector.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get DrawCircle.DrawCircle
+      Pin: then (exec) Dir=Out
+        -> Draw Debug Circle.execute
+      Pin: else (exec) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Get DrawArrow.DrawArrow
+      Pin: then (exec) Dir=Out
+        -> Set ArrowEnd.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Origin (K2Node_VariableGet)
+      Pin: Origin (struct) Dir=Out
+        -> Draw Debug Circle.Center
+    Node: Draw Debug String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: TextLocation (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Text (string) Dir=In
+        -> Get String.String
+      Pin: TestBaseActor (object) Dir=In
+      Pin: TextColor (struct) Dir=In
+        -> LinearColor * LinearColor.ReturnValue
+      Pin: Duration (real) Dir=In
+        -> Get Duration.Duration
+    Node: vector + vector (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get ArrowEnd.ArrowEnd
+      Pin: B (struct) Dir=In
+        -> Get StringOffset.StringOffset
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug String.TextLocation
+      Pin: C (struct) Dir=In
+      Pin: C_X (real) Dir=In
+      Pin: C_Y (real) Dir=In
+      Pin: C_Z (real) Dir=In
+    Node: LinearColor * LinearColor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Color.Color
+      Pin: B (struct) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug String.TextColor
+    Node: float / float (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Thickness.Thickness
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+    Node: Set ArrowEnd (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Draw Debug Arrow.execute
+      Pin: ArrowEnd (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+        -> Draw Debug Arrow.LineEnd
+    Node: Get ArrowEnd (K2Node_VariableGet)
+      Pin: ArrowEnd (struct) Dir=Out
+        -> vector + vector.A
+    Node: Get DrawCircle (K2Node_VariableGet)
+      Pin: DrawCircle (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Radius (K2Node_VariableGet)
+      Pin: Radius (real) Dir=Out
+        -> Draw Debug Circle.Radius
+    Node: Get Segments (K2Node_VariableGet)
+      Pin: Segments (int) Dir=Out
+        -> Draw Debug Circle.NumSegments
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> Draw Debug Circle.LineColor
+    Node: Get Duration (K2Node_VariableGet)
+      Pin: Duration (real) Dir=Out
+        -> Draw Debug Circle.Duration
+    Node: Get Thickness (K2Node_VariableGet)
+      Pin: Thickness (real) Dir=Out
+        -> Draw Debug Circle.Thickness
+    Node: Get DrawAxis (K2Node_VariableGet)
+      Pin: DrawAxis (bool) Dir=Out
+        -> Draw Debug Circle.bDrawAxis
+    Node: Get Direction (K2Node_VariableGet)
+      Pin: Direction (struct) Dir=Out
+        -> Rotation From X Vector.InVec
+    Node: Get DrawArrow (K2Node_VariableGet)
+      Pin: DrawArrow (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Direction (K2Node_VariableGet)
+      Pin: Direction (struct) Dir=Out
+        -> Normalize.A
+    Node: Get Radius (K2Node_VariableGet)
+      Pin: Radius (real) Dir=Out
+        -> vector * vector.B
+    Node: Get Length (K2Node_VariableGet)
+      Pin: Length (real) Dir=Out
+        -> vector * vector.B
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (real) Dir=Out
+        -> Draw Debug Arrow.ArrowSize
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> Draw Debug Arrow.LineColor
+    Node: Get Duration (K2Node_VariableGet)
+      Pin: Duration (real) Dir=Out
+        -> Draw Debug Arrow.Duration
+    Node: Get Thickness (K2Node_VariableGet)
+      Pin: Thickness (real) Dir=Out
+        -> Draw Debug Arrow.Thickness
+    Node: Get Thickness (K2Node_VariableGet)
+      Pin: Thickness (real) Dir=Out
+        -> float / float.A
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> LinearColor * LinearColor.A
+    Node: Get String (K2Node_VariableGet)
+      Pin: String (string) Dir=Out
+        -> Draw Debug String.Text
+    Node: Get Duration (K2Node_VariableGet)
+      Pin: Duration (real) Dir=Out
+        -> Draw Debug String.Duration
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: Condition (bool) Dir=In
+        -> Get DrawString.DrawString
+      Pin: then (exec) Dir=Out
+        -> Draw Debug String.execute
+      Pin: else (exec) Dir=Out
+    Node: Get DrawString (K2Node_VariableGet)
+      Pin: DrawString (bool) Dir=Out
+        -> Branch.Condition
+    Node: Normalize (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Get Direction.Direction
+      Pin: Tolerance (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+        -> vector * vector.A
+    Node: Get StringOffset (K2Node_VariableGet)
+      Pin: StringOffset (struct) Dir=Out
+        -> vector + vector.B
+  Graph: DrawDebugAngleThresholds
+    Node: DrawDebugAngleThresholds (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Origin.execute
+      Pin: Center (struct) Dir=Out
+        -> vector + vector.A
+      Pin: Offset (struct) Dir=Out
+        -> vector + vector.B
+      Pin: InRotation (struct) Dir=Out
+      Pin: YawAngles (real) Dir=Out
+        -> For Each Loop.Array
+      Pin: StartRadius (real) Dir=Out
+      Pin: EndRadius (real) Dir=Out
+      Pin: Color (struct) Dir=Out
+      Pin: Duration (real) Dir=Out
+      Pin: Thickness (real) Dir=Out
+      Pin: __WorldContext (object) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Set Origin.then
+      Pin: Array (real) Dir=In
+        -> DrawDebugAngleThresholds.YawAngles
+      Pin: LoopBody (exec) Dir=Out
+        -> Draw Debug Line.execute
+      Pin: Array Element (real) Dir=Out
+        -> float + float.B
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Draw Debug Line (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LineStart (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: LineEnd (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: LineColor (struct) Dir=In
+        -> Get Color.Color
+      Pin: Duration (real) Dir=In
+        -> Get Duration.Duration
+      Pin: Thickness (real) Dir=In
+        -> Get Thickness.Thickness
+      Pin: DepthPriority (byte) Dir=In
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> Draw Debug Line.LineColor
+    Node: Get Duration (K2Node_VariableGet)
+      Pin: Duration (real) Dir=Out
+        -> Draw Debug Line.Duration
+    Node: Get Thickness (K2Node_VariableGet)
+      Pin: Thickness (real) Dir=Out
+        -> Draw Debug Line.Thickness
+    Node: Get Origin (K2Node_VariableGet)
+      Pin: Origin (struct) Dir=Out
+        -> vector + vector.A
+        -> vector + vector.A
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Origin.Origin
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug Line.LineStart
+    Node: Get (K2Node_VariableGet)
+      Pin: InRotation (struct) Dir=Out
+      Pin: InRotation_Roll (real) Dir=Out
+        -> Get Rotation X Vector.InRot_Roll
+      Pin: InRotation_Pitch (real) Dir=Out
+        -> Get Rotation X Vector.InRot_Pitch
+      Pin: InRotation_Yaw (real) Dir=Out
+        -> float + float.A
+    Node: Get Rotation X Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+      Pin: InRot_Roll (real) Dir=In
+        -> Get.InRotation_Roll
+      Pin: InRot_Pitch (real) Dir=In
+        -> Get.InRotation_Pitch
+      Pin: InRot_Yaw (real) Dir=In
+        -> float + float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+        -> vector * vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Rotation X Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get StartRadius.StartRadius
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get StartRadius (K2Node_VariableGet)
+      Pin: StartRadius (real) Dir=Out
+        -> vector * vector.B
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Origin.Origin
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Draw Debug Line.LineEnd
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Get Rotation X Vector.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get EndRadius.EndRadius
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get EndRadius (K2Node_VariableGet)
+      Pin: EndRadius (real) Dir=Out
+        -> vector * vector.B
+    Node: float + float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get.InRotation_Yaw
+      Pin: B (real) Dir=In
+        -> For Each Loop.Array Element
+      Pin: ReturnValue (real) Dir=Out
+        -> Get Rotation X Vector.InRot_Yaw
+    Node: Set Origin (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> DrawDebugAngleThresholds.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: Origin (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> DrawDebugAngleThresholds.Center
+      Pin: B (struct) Dir=In
+        -> DrawDebugAngleThresholds.Offset
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Origin.Origin

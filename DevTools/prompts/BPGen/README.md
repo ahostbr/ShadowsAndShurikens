@@ -1,6 +1,6 @@
 # BPGen Prompt Pack (SPINE_G)
 
-Use with `SOTS_BPGen` FastMCP server (DevTools/python/sots_bpgen_mcp_server.py) that forwards to the UE TCP bridge.
+Use with the unified SOTS MCP server (`DevTools/python/sots_mcp_server/server.py`) that forwards BPGen actions to the UE TCP bridge.
 
 Included topics
 - topics/overview.md — loop and ground rules.
@@ -18,7 +18,8 @@ Examples
 - examples/05_autofix_schema_reject_insert_conv.md - type mismatch auto-fix + conversion insertion.
 
 Usage tips
-- Prefer `manage_bpgen` for flexibility; wrappers are thin convenience calls.
+- Prefer `manage_bpgen` for flexibility; wrappers are thin convenience calls on the unified server.
 - Use graph edit wrappers (`bpgen_delete_node`, `bpgen_delete_link`, `bpgen_replace_node`) and `dry_run` for previews.
 - Always verify with `bpgen_list`/`bpgen_describe` after `bpgen_apply`.
 - Compile and save explicitly when edits matter (`bpgen_compile` + `bpgen_save`).
+- Preflight on the unified server: run `sots_help` then `sots_smoketest_all`.

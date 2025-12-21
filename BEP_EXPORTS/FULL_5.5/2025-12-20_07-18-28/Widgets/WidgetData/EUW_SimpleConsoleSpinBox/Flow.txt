@@ -1,0 +1,427 @@
+Blueprint: EUW_SimpleConsoleSpinBox (/Game/Widgets/WidgetData/EUW_SimpleConsoleSpinBox.EUW_SimpleConsoleSpinBox)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (object) Dir=Out
+        -> Set Height Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get Size.Size
+      Pin: InHeightOverride (real) Dir=In
+        -> Get Box Height.Box Height
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (object) Dir=Out
+        -> Set Width Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: self (object) Dir=In
+        -> Get Size.Size
+      Pin: InWidthOverride (real) Dir=In
+        -> Get Box Width.Box Width
+    Node: Get Box Height (K2Node_VariableGet)
+      Pin: Box Height (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: self (object) Dir=In
+    Node: Get Box Width (K2Node_VariableGet)
+      Pin: Box Width (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+      Pin: self (object) Dir=In
+    Node: On Value Committed (SpinBox) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get PIEWorlds.execute
+      Pin: InValue (real) Dir=Out
+        -> To String (Float).InDouble
+      Pin: CommitMethod (byte) Dir=Out
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Append.A
+      Pin: self (object) Dir=In
+    Node: Get PIEWorlds (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Value Committed (SpinBox).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: bIncludeDedicatedServer (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Not Empty.TargetArray
+        -> GET.Array
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get PIEWorlds.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: else (exec) Dir=Out
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Execute Console Command.Command
+      Pin: C (string) Dir=In
+        -> To String (Float).ReturnValue
+    Node: To String (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InDouble (real) Dir=In
+        -> On Value Committed (SpinBox).InValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: Command (string) Dir=In
+        -> Append.ReturnValue
+      Pin: SpecificPlayer (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Execute Console Command.WorldContextObject
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: MyGeometry (struct) Dir=Out
+      Pin: InDeltaTime (real) Dir=Out
+    Node: Has Any User Focus
+Target is Widget (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Has Any User Focus
+Target is Widget.ReturnValue
+      Pin: then (exec) Dir=Out
+      Pin: else (exec) Dir=Out
+        -> Get Console Variable Float Value.execute
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Has Any User Focus
+Target is Widget.self
+        -> Set Value.self
+      Pin: self (object) Dir=In
+    Node: Get Console Variable Float Value (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Set Value.execute
+      Pin: self (object) Dir=In
+      Pin: VariableName (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: ReturnValue (real) Dir=Out
+        -> Set Value.Value
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Get Console Variable Float Value.VariableName
+      Pin: self (object) Dir=In
+    Node: Set Value (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get Console Variable Float Value.then
+      Pin: then (exec) Dir=Out
+      Pin: Value (real) Dir=In
+        -> Get Console Variable Float Value.ReturnValue
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set Width Override
+Target is Size Box.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_2 (exec) Dir=Out
+        -> Set bEnableSlider.execute
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Set Min Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Get Use Min (K2Node_VariableGet)
+      Pin: Use Min (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Get Use Min.Use Min
+      Pin: then (exec) Dir=Out
+        -> Set Min Value
+Target is Spin Box.execute
+      Pin: else (exec) Dir=Out
+        -> Clear Min Value
+Target is Spin Box.execute
+    Node: Set Min Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Min Slider Value
+Target is Spin Box.execute
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+      Pin: NewValue (real) Dir=In
+        -> Get Min Value.Min Value
+    Node: Get Min Value (K2Node_VariableGet)
+      Pin: Min Value (real) Dir=Out
+        -> Set Min Value
+Target is Spin Box.NewValue
+      Pin: self (object) Dir=In
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Set Min Slider Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Get Min Value (K2Node_VariableGet)
+      Pin: Min Value (real) Dir=Out
+        -> Set Min Slider Value
+Target is Spin Box.NewValue
+      Pin: self (object) Dir=In
+    Node: Set Min Slider Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Min Value
+Target is Spin Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+      Pin: NewValue (real) Dir=In
+        -> Get Min Value.Min Value
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Set Max Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Get Use Max (K2Node_VariableGet)
+      Pin: Use Max (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Get Use Max.Use Max
+      Pin: then (exec) Dir=Out
+        -> Set Max Value
+Target is Spin Box.execute
+      Pin: else (exec) Dir=Out
+        -> Clear Max Value
+Target is Spin Box.execute
+    Node: Get Max Value (K2Node_VariableGet)
+      Pin: Max Value (real) Dir=Out
+        -> Set Max Value
+Target is Spin Box.NewValue
+      Pin: self (object) Dir=In
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Set Max Slider Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Get Max Value (K2Node_VariableGet)
+      Pin: Max Value (real) Dir=Out
+        -> Set Max Slider Value
+Target is Spin Box.NewValue
+      Pin: self (object) Dir=In
+    Node: Set Max Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Max Slider Value
+Target is Spin Box.execute
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+      Pin: NewValue (real) Dir=In
+        -> Get Max Value.Max Value
+    Node: Set Max Slider Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Max Value
+Target is Spin Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+      Pin: NewValue (real) Dir=In
+        -> Get Max Value.Max Value
+    Node: Get Enable Slider (K2Node_VariableGet)
+      Pin: Enable Slider (bool) Dir=Out
+        -> Set bEnableSlider.bEnableSlider
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set bEnableSlider.then
+      Pin: Condition (bool) Dir=In
+        -> Set bEnableSlider.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Set Delta.execute
+      Pin: else (exec) Dir=Out
+        -> Clear Min Slider Value
+Target is Spin Box.execute
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Clear Min Slider Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Clear Min Slider Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Clear Max Slider Value
+Target is Spin Box.execute
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Clear Max Slider Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Clear Max Slider Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Min Slider Value
+Target is Spin Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Set Delta.self
+      Pin: self (object) Dir=In
+    Node: Set Delta (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: Delta (real) Dir=In
+        -> Get SliderSnapDelta.SliderSnapDelta
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Get SliderSnapDelta (K2Node_VariableGet)
+      Pin: SliderSnapDelta (real) Dir=Out
+        -> Set Delta.Delta
+      Pin: self (object) Dir=In
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Clear Min Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Clear Min Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Clear Min Slider Value
+Target is Spin Box.execute
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Clear Min Slider Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Clear Min Slider Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Min Value
+Target is Spin Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Clear Max Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Clear Max Slider Value
+Target is Spin Box.self
+      Pin: self (object) Dir=In
+    Node: Clear Max Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Clear Max Slider Value
+Target is Spin Box.execute
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Clear Max Slider Value
+Target is Spin Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Clear Max Value
+Target is Spin Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Get SpinBox (K2Node_VariableGet)
+      Pin: SpinBox (object) Dir=Out
+        -> Set bEnableSlider.self
+      Pin: self (object) Dir=In
+    Node: Set bEnableSlider (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_2
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: bEnableSlider (bool) Dir=In
+        -> Get Enable Slider.Enable Slider
+      Pin: Output_Get (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+        -> Get SpinBox.SpinBox
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: Condition (bool) Dir=In
+        -> Get UpdateValueToMatchConsoleVariable.UpdateValueToMatchConsoleVariable
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+    Node: Get UpdateValueToMatchConsoleVariable (K2Node_VariableGet)
+      Pin: UpdateValueToMatchConsoleVariable (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In

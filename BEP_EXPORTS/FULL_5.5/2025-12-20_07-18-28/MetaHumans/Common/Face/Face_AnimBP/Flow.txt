@@ -1,0 +1,438 @@
+Blueprint: Face_AnimBP (/Game/MetaHumans/Common/Face/Face_AnimBP.Face_AnimBP)
+  Graph: EventGraph
+    Node: Try Get Pawn Owner
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+    Node: Event Blueprint Begin Play (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Evaluate Live Link Frame (K2Node_EvaluateLiveLinkFrameWithSpecificRole)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ARKit_HeadRotation.execute
+      Pin: InvalidFrame (exec) Dir=Out
+      Pin: DataResult (struct) Dir=Out
+        -> Get Property Value.BasicData
+        -> Get Property Value.BasicData
+        -> Get Property Value.BasicData
+      Pin: Subject (struct) Dir=In
+        -> Get LLink_Face_Subj.LLink_Face_Subj
+      Pin: Role (class) Dir=In
+    Node: Get Property Value (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BasicData (struct) Dir=In
+        -> Evaluate Live Link Frame.DataResult
+      Pin: PropertyName (name) Dir=In
+      Pin: Value (real) Dir=Out
+        -> float * float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Property Value (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BasicData (struct) Dir=In
+        -> Evaluate Live Link Frame.DataResult
+      Pin: PropertyName (name) Dir=In
+      Pin: Value (real) Dir=Out
+        -> float * float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Property Value (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: BasicData (struct) Dir=In
+        -> Evaluate Live Link Frame.DataResult
+      Pin: PropertyName (name) Dir=In
+      Pin: Value (real) Dir=Out
+        -> float * float.A
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Set ARKit_HeadRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Evaluate Live Link Frame.then
+      Pin: then (exec) Dir=Out
+      Pin: ARKit_HeadRotation (struct) Dir=In
+        -> Make Rotator.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Rotator (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Roll (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Pitch (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: Yaw (real) Dir=In
+        -> float * float.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ARKit_HeadRotation.ARKit_HeadRotation
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Property Value.Value
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Yaw
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Blueprint Update Animation.then
+      Pin: Condition (bool) Dir=In
+        -> Get LLink_Face_Head.LLink_Face_Head
+      Pin: then (exec) Dir=Out
+        -> Evaluate Live Link Frame.execute
+      Pin: else (exec) Dir=Out
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Property Value.Value
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Pitch
+    Node: float * float (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Property Value.Value
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Rotator.Roll
+    Node: Set ARKit Head Rotation (EdGraphNode_Comment)
+    Node: Event Blueprint Update Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DeltaTimeX (real) Dir=Out
+    Node: Get LLink_Face_Subj (K2Node_VariableGet)
+      Pin: LLink_Face_Subj (struct) Dir=Out
+        -> Evaluate Live Link Frame.Subject
+      Pin: self (object) Dir=In
+    Node: Get LLink_Face_Head (K2Node_VariableGet)
+      Pin: LLink_Face_Head (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+  Graph: AnimGraph
+    Node: Output Pose
+AnimGraph (AnimGraphNode_Root)
+      Pin: Result (struct) Dir=In
+        -> Component To Local.Pose
+    Node: Copy Pose From Mesh (AnimGraphNode_CopyPoseFromMesh)
+      Pin: SourceMeshComponent (object) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Save cached pose 'BodyPose'.Pose
+    Node: Save cached pose 'BodyPose' (AnimGraphNode_SaveCachedPose)
+      Pin: Pose (struct) Dir=In
+        -> Copy Pose From Mesh.Pose
+    Node: Use cached pose 'BodyPose' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Live Link Pose.InputPose
+    Node: Use cached pose 'BodyPose' (AnimGraphNode_UseCachedPose)
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BasePose
+    Node: Layered blend per bone (AnimGraphNode_LayeredBoneBlend)
+      Pin: BasePose (struct) Dir=In
+        -> Use cached pose 'BodyPose'.Pose
+      Pin: BlendPoses_0 (struct) Dir=In
+        -> Modify Curve.Pose
+      Pin: BlendWeights_0 (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Local To Component.LocalPose
+    Node: Live Link Pose (AnimGraphNode_LiveLinkPose)
+      Pin: InputPose (struct) Dir=In
+        -> Use cached pose 'BodyPose'.Pose
+      Pin: LiveLinkSubjectName (struct) Dir=In
+        -> Get LLink_Face_Subj.LLink_Face_Subj
+      Pin: bDoLiveLinkEvaluation (bool) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> mh_arkit_mapping_pose.SourcePose
+    Node: mh_arkit_mapping_pose (AnimGraphNode_PoseBlendNode)
+      Pin: SourcePose (struct) Dir=In
+        -> Live Link Pose.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Modify Curve.SourcePose
+    Node: Get LLink_Face_Subj (K2Node_VariableGet)
+      Pin: LLink_Face_Subj (struct) Dir=Out
+        -> Live Link Pose.LiveLinkSubjectName
+      Pin: self (object) Dir=In
+    Node: Get Curve Value
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurveName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.A
+    Node: Modify Curve (AnimGraphNode_ModifyCurve)
+      Pin: SourcePose (struct) Dir=In
+        -> Modify Curve.Pose
+      Pin: CurveValues_0 (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: CurveValues_1 (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: CurveValues_2 (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: CurveValues_3 (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: Alpha (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Source
+    Node: Get Curve Value
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurveName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Safe Divide.B
+    Node: Safe Divide (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Get Curve Value
+Target is Anim Instance.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get Curve Value
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Safe Divide.ReturnValue
+      Pin: Min (real) Dir=In
+      Pin: Max (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Modify Curve.CurveValues_0
+        -> Modify Curve.CurveValues_1
+        -> Modify Curve.CurveValues_2
+        -> Modify Curve.CurveValues_3
+    Node: Mouth Close (EdGraphNode_Comment)
+    Node: Slot 'DefaultSlot'
+Group 'DefaultGroup' (AnimGraphNode_Slot)
+      Pin: Source (struct) Dir=In
+        -> Modify Curve.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Modify Curve.SourcePose
+    Node: Local To Component (AnimGraphNode_LocalToComponentSpace)
+      Pin: LocalPose (struct) Dir=In
+        -> Layered blend per bone.Pose
+      Pin: ComponentPose (struct) Dir=Out
+        -> Transform (Modify) Bone
+Bone: head.ComponentPose
+    Node: Component To Local (AnimGraphNode_ComponentToLocalSpace)
+      Pin: ComponentPose (struct) Dir=In
+        -> Transform (Modify) Bone
+Bone: head.Pose
+      Pin: Pose (struct) Dir=Out
+        -> Output Pose
+AnimGraph.Result
+    Node: Get ARKit_HeadRotation (K2Node_VariableGet)
+      Pin: ARKit_HeadRotation (struct) Dir=Out
+        -> Transform (Modify) Bone
+Bone: head.Rotation
+      Pin: self (object) Dir=In
+    Node: ARKit Head Rotation (EdGraphNode_Comment)
+    Node: Modify Curve (AnimGraphNode_ModifyCurve)
+      Pin: SourcePose (struct) Dir=In
+        -> Slot 'DefaultSlot'
+Group 'DefaultGroup'.Pose
+      Pin: CurveValues_0 (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get JawOpenAlpha.JawOpenAlpha
+      Pin: Pose (struct) Dir=Out
+        -> Modify Curve.SourcePose
+    Node: Modify Curve (AnimGraphNode_ModifyCurve)
+      Pin: SourcePose (struct) Dir=In
+        -> Modify Curve.Pose
+      Pin: CurveValues_0 (real) Dir=In
+      Pin: CurveValues_1 (real) Dir=In
+      Pin: CurveValues_2 (real) Dir=In
+      Pin: CurveValues_3 (real) Dir=In
+      Pin: CurveValues_4 (real) Dir=In
+      Pin: CurveValues_5 (real) Dir=In
+      Pin: CurveValues_6 (real) Dir=In
+      Pin: CurveValues_7 (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get TeethShowAlpha.TeethShowAlpha
+      Pin: Pose (struct) Dir=Out
+        -> Layered blend per bone.BlendPoses_0
+    Node: Get TeethShowAlpha (K2Node_VariableGet)
+      Pin: TeethShowAlpha (real) Dir=Out
+        -> Modify Curve.Alpha
+      Pin: self (object) Dir=In
+    Node: Get JawOpenAlpha (K2Node_VariableGet)
+      Pin: JawOpenAlpha (real) Dir=Out
+        -> Modify Curve.Alpha
+      Pin: self (object) Dir=In
+    Node: Teeth controls (EdGraphNode_Comment)
+    Node: Cache Pose (EdGraphNode_Comment)
+    Node: Transform (Modify) Bone
+Bone: head (AnimGraphNode_ModifyBone)
+      Pin: ComponentPose (struct) Dir=In
+        -> Local To Component.ComponentPose
+      Pin: bAlphaBoolEnabled (bool) Dir=In
+      Pin: Alpha (real) Dir=In
+      Pin: AlphaCurveName (name) Dir=In
+      Pin: Rotation (struct) Dir=In
+        -> Get ARKit_HeadRotation.ARKit_HeadRotation
+      Pin: Pose (struct) Dir=Out
+        -> Component To Local.ComponentPose
+    Node: Modify Curve (AnimGraphNode_ModifyCurve)
+      Pin: SourcePose (struct) Dir=In
+        -> mh_arkit_mapping_pose.Pose
+      Pin: CurveMap (name) Dir=In
+        -> Get CustomControlValues.CustomControlValues
+      Pin: Alpha (real) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Modify Curve.SourcePose
+    Node: Get CustomControlValues (K2Node_VariableGet)
+      Pin: CustomControlValues (name) Dir=Out
+        -> Modify Curve.CurveMap
+      Pin: self (object) Dir=In
+  Graph: Set Control
+    Node: Set Control (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ControlName (name) Dir=Out
+        -> Find Item.ItemToFind
+      Pin: Value (real) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set TeethShowAlpha.then
+      Pin: bControlAdded (bool) Dir=In
+        -> Get Result.Result
+    Node: Get CustomControlValues (K2Node_VariableGet)
+      Pin: CustomControlValues (name) Dir=Out
+        -> Add.TargetMap
+        -> Contains.TargetMap
+        -> Remove.TargetMap
+      Pin: self (object) Dir=In
+    Node: Get All Curve Names
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: OutNames (name) Dir=Out
+        -> Find Item.TargetArray
+    Node: Find Item (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (name) Dir=In
+        -> Get All Curve Names
+Target is Anim Instance.OutNames
+      Pin: ItemToFind (name) Dir=In
+        -> Set Control.ControlName
+      Pin: ReturnValue (int) Dir=Out
+        -> integer >= integer.A
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Control.then
+      Pin: Condition (bool) Dir=In
+        -> integer >= integer.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Add.execute
+      Pin: else (exec) Dir=Out
+        -> Set Result.execute
+    Node: integer >= integer (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> Find Item.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Result (K2Node_VariableGet)
+      Pin: Result (bool) Dir=Out
+        -> Return Node.bControlAdded
+    Node: Add (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set Result.execute
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get CustomControlValues.CustomControlValues
+      Pin: Key (name) Dir=In
+        -> Get ControlName.ControlName
+      Pin: Value (real) Dir=In
+        -> Get Value.Value
+    Node: Set Result (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Add.then
+      Pin: then (exec) Dir=Out
+        -> Set JawOpenAlpha.execute
+      Pin: Result (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Contains (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get CustomControlValues.CustomControlValues
+      Pin: Key (name) Dir=In
+        -> Get ControlName.ControlName
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set Result.then
+      Pin: Condition (bool) Dir=In
+        -> Contains.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Remove.execute
+      Pin: else (exec) Dir=Out
+    Node: Set Result (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: Result (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Remove (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get CustomControlValues.CustomControlValues
+      Pin: Key (name) Dir=In
+        -> Get ControlName.ControlName
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get ControlName (K2Node_VariableGet)
+      Pin: ControlName (name) Dir=Out
+        -> Add.Key
+    Node: Get Value (K2Node_VariableGet)
+      Pin: Value (real) Dir=Out
+        -> Add.Value
+    Node: Get ControlName (K2Node_VariableGet)
+      Pin: ControlName (name) Dir=Out
+        -> Contains.Key
+        -> Remove.Key
+    Node: Set JawOpenAlpha (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Result.then
+      Pin: then (exec) Dir=Out
+        -> Set TeethShowAlpha.execute
+      Pin: JawOpenAlpha (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set TeethShowAlpha (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set JawOpenAlpha.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: TeethShowAlpha (real) Dir=In
+      Pin: Output_Get (real) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: ResetControls
+    Node: ResetControls (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Clear.execute
+    Node: Get CustomControlValues (K2Node_VariableGet)
+      Pin: CustomControlValues (name) Dir=Out
+        -> Clear.TargetMap
+      Pin: self (object) Dir=In
+    Node: Clear (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ResetControls.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get CustomControlValues.CustomControlValues
+  Graph: GetCustomControls
+    Node: GetCustomControls (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetCustomControls.then
+      Pin: Curves (name) Dir=In
+        -> Get CustomControlValues.CustomControlValues
+    Node: Get CustomControlValues (K2Node_VariableGet)
+      Pin: CustomControlValues (name) Dir=Out
+        -> Return Node.Curves
+      Pin: self (object) Dir=In

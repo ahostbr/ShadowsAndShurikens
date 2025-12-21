@@ -1,0 +1,47 @@
+Blueprint: PSC_Traversal_Head (/Game/Characters/UEFN_Mannequin/Animations/MotionMatchingData/Channels/PSC_Traversal_Head.PSC_Traversal_Head)
+  Graph: EventGraph
+  Graph: BP_GetWorldRotation
+    Node: Get World Rotation (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To BPI_InteractionTransform.execute
+      Pin: AnimInstance (object) Dir=Out
+        -> Cast To BPI_InteractionTransform.Object
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Interaction Transform
+Target is BPI Interaction Transform.then
+      Pin: ReturnValue (struct) Dir=In
+        -> ToQuaternion (Rotator).ReturnValue
+    Node: Cast To BPI_InteractionTransform (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Get World Rotation.then
+      Pin: then (exec) Dir=Out
+        -> Get Interaction Transform
+Target is BPI Interaction Transform.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get World Rotation.AnimInstance
+      Pin: AsBPI Interaction Transform (interface) Dir=Out
+        -> Get Interaction Transform
+Target is BPI Interaction Transform.self
+      Pin: bSuccess (bool) Dir=Out
+    Node: Get Interaction Transform
+Target is BPI Interaction Transform (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Cast To BPI_InteractionTransform.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: self (interface) Dir=In
+        -> Cast To BPI_InteractionTransform.AsBPI Interaction Transform
+      Pin: InteractionTransform (struct) Dir=Out
+      Pin: InteractionTransform_Location (struct) Dir=Out
+      Pin: InteractionTransform_Rotation (struct) Dir=Out
+        -> ToQuaternion (Rotator).InRot
+      Pin: InteractionTransform_Scale (struct) Dir=Out
+    Node: ToQuaternion (Rotator) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get Interaction Transform
+Target is BPI Interaction Transform.InteractionTransform_Rotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Return Node.ReturnValue

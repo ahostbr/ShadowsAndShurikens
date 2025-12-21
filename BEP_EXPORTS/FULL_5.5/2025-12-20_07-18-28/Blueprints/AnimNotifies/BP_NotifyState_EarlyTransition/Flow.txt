@@ -1,0 +1,252 @@
+Blueprint: BP_NotifyState_EarlyTransition (/Game/Blueprints/AnimNotifies/BP_NotifyState_EarlyTransition.BP_NotifyState_EarlyTransition)
+  Graph: Received_NotifyTick
+    Node: Received Notify Tick (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Cast To ABP_SandboxCharacter.execute
+      Pin: MeshComp (object) Dir=Out
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.self
+      Pin: Animation (object) Dir=Out
+      Pin: FrameDeltaTime (real) Dir=Out
+      Pin: EventReference (struct) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+      Pin: ReturnValue (bool) Dir=In
+    Node: Get Anim Instance
+Target is Skeletal Mesh Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Received Notify Tick.MeshComp
+      Pin: ReturnValue (object) Dir=Out
+        -> Cast To ABP_SandboxCharacter.Object
+    Node: Cast To ABP_SandboxCharacter (K2Node_DynamicCast)
+      Pin: execute (exec) Dir=In
+        -> Received Notify Tick.then
+      Pin: then (exec) Dir=Out
+        -> Set ABPSanboxCharacter.execute
+      Pin: CastFailed (exec) Dir=Out
+      Pin: Object (object) Dir=In
+        -> Get Anim Instance
+Target is Skeletal Mesh Component.ReturnValue
+      Pin: AsABP Sandbox Character (object) Dir=Out
+        -> Set ABPSanboxCharacter.ABPSanboxCharacter
+      Pin: bSuccess (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set ABPSanboxCharacter.then
+      Pin: Condition (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: else (exec) Dir=Out
+    Node: Set ABPSanboxCharacter (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Cast To ABP_SandboxCharacter.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ABPSanboxCharacter (object) Dir=In
+        -> Cast To ABP_SandboxCharacter.AsABP Sandbox Character
+      Pin: Output_Get (object) Dir=Out
+    Node: Get ABPSanboxCharacter (K2Node_VariableGet)
+      Pin: ABPSanboxCharacter (object) Dir=Out
+        -> Get Gait.self
+    Node: Get Gait (K2Node_VariableGet)
+      Pin: Gait (byte) Dir=Out
+        -> Not Equal (Enum).A
+      Pin: self (object) Dir=In
+        -> Get ABPSanboxCharacter.ABPSanboxCharacter
+    Node: Not Equal (Enum) (K2Node_EnumInequality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set Transition.Transition
+      Pin: A (byte) Dir=In
+        -> Get Gait.Gait
+      Pin: B (byte) Dir=In
+        -> Get GaitNotEqual.GaitNotEqual
+    Node: Get GaitNotEqual (K2Node_VariableGet)
+      Pin: GaitNotEqual (byte) Dir=Out
+        -> Not Equal (Enum).B
+      Pin: self (object) Dir=In
+    Node: Get ABPSanboxCharacter (K2Node_VariableGet)
+      Pin: ABPSanboxCharacter (object) Dir=Out
+        -> Set NotifyTransition_Re-Transition.self
+    Node: Set NotifyTransition_Re-Transition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_EarlyTransition_Destination.NewEnumerator0
+      Pin: then (exec) Dir=Out
+      Pin: NotifyTransition_Re-Transition (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ABPSanboxCharacter.ABPSanboxCharacter
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then_0 (exec) Dir=Out
+        -> Switch on E_EarlyTransition_Condition.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Switch on E_EarlyTransition_Destination (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Selection (byte) Dir=In
+        -> Get TransitionDestination.TransitionDestination
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Set NotifyTransition_Re-Transition.execute
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Set NotifyTransition_ToLoop.execute
+    Node: Switch on E_EarlyTransition_Condition (K2Node_SwitchEnum)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Selection (byte) Dir=In
+        -> Get TransitionCondition.TransitionCondition
+      Pin: NotEqual_ByteByte (object) Dir=In
+      Pin: NewEnumerator1 (exec) Dir=Out
+        -> Set Transition.execute
+      Pin: NewEnumerator0 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Get TransitionDestination (K2Node_VariableGet)
+      Pin: TransitionDestination (byte) Dir=Out
+        -> Switch on E_EarlyTransition_Destination.Selection
+      Pin: self (object) Dir=In
+    Node: Get TransitionCondition (K2Node_VariableGet)
+      Pin: TransitionCondition (byte) Dir=Out
+        -> Switch on E_EarlyTransition_Condition.Selection
+      Pin: self (object) Dir=In
+    Node: Set Transition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: Transition (bool) Dir=In
+        -> Not Equal (Enum).ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Get Transition.Transition
+      Pin: then (exec) Dir=Out
+        -> Switch on E_EarlyTransition_Destination.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Transition (K2Node_VariableGet)
+      Pin: Transition (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get ABPSanboxCharacter (K2Node_VariableGet)
+      Pin: ABPSanboxCharacter (object) Dir=Out
+        -> Set NotifyTransition_ToLoop.self
+    Node: Set NotifyTransition_ToLoop (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_EarlyTransition_Destination.NewEnumerator1
+      Pin: then (exec) Dir=Out
+      Pin: NotifyTransition_ToLoop (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ABPSanboxCharacter.ABPSanboxCharacter
+    Node: Set Transition (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Switch on E_EarlyTransition_Condition.NewEnumerator1
+      Pin: then (exec) Dir=Out
+      Pin: Transition (bool) Dir=In
+      Pin: Output_Get (bool) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Switch on E_EarlyTransition_Condition.NewEnumerator0
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Transition.execute
+    Node: Get EventReference (K2Node_VariableGet)
+      Pin: EventReference (struct) Dir=Out
+        -> Is Blending Out.EventReference
+    Node: Is Blending Out (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: EventReference (struct) Dir=In
+        -> Get EventReference.EventReference
+      Pin: ReturnValue (bool) Dir=Out
+        -> NOT Boolean.A
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Is Blending Out.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+  Graph: GetNotifyName
+    Node: Get Notify Name (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get Notify Name.then
+      Pin: ReturnValue (string) Dir=In
+        -> Append.ReturnValue
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Enum to String.ReturnValue
+      Pin: B (string) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get TransitionDestination (K2Node_VariableGet)
+      Pin: TransitionDestination (byte) Dir=Out
+        -> Enum to String.Enumerator
+      Pin: self (object) Dir=In
+    Node: Enum to String (K2Node_GetEnumeratorNameAsString)
+      Pin: Enumerator (byte) Dir=In
+        -> Get TransitionDestination.TransitionDestination
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.A
+    Node: Get TransitionCondition (K2Node_VariableGet)
+      Pin: TransitionCondition (byte) Dir=Out
+        -> Enum to String.Enumerator
+      Pin: self (object) Dir=In
+    Node: Enum to String (K2Node_GetEnumeratorNameAsString)
+      Pin: Enumerator (byte) Dir=In
+        -> Get TransitionCondition.TransitionCondition
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Get GaitNotEqual (K2Node_VariableGet)
+      Pin: GaitNotEqual (byte) Dir=Out
+        -> Enum to String.Enumerator
+      Pin: self (object) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: NewEnumerator1 (string) Dir=In
+      Pin: NewEnumerator0 (string) Dir=In
+        -> Enum to String.ReturnValue
+      Pin: Index (byte) Dir=In
+        -> Get TransitionCondition.TransitionCondition
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.D
+    Node: Get TransitionCondition (K2Node_VariableGet)
+      Pin: TransitionCondition (byte) Dir=Out
+        -> Select.Index
+      Pin: self (object) Dir=In
+    Node: Enum to String (K2Node_GetEnumeratorNameAsString)
+      Pin: Enumerator (byte) Dir=In
+        -> Get GaitNotEqual.GaitNotEqual
+      Pin: ReturnValue (string) Dir=Out
+        -> Select.NewEnumerator0
+    Node: Get TransitionCondition (K2Node_VariableGet)
+      Pin: TransitionCondition (byte) Dir=Out
+        -> Equal (Enum).A
+      Pin: self (object) Dir=In
+    Node: Equal (Enum) (K2Node_EnumEquality)
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: A (byte) Dir=In
+        -> Get TransitionCondition.TransitionCondition
+      Pin: B (byte) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (string) Dir=In
+        -> Append.ReturnValue
+      Pin: Option 1 (string) Dir=In
+      Pin: Index (bool) Dir=In
+        -> Equal (Enum).ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.B
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+      Pin: B (string) Dir=In
+        -> Enum to String.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Select.Option 0
+      Pin: C (string) Dir=In
+      Pin: D (string) Dir=In
+        -> Select.ReturnValue

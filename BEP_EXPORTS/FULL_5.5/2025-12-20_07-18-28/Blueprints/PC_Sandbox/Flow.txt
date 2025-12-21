@@ -1,0 +1,238 @@
+Blueprint: PC_Sandbox (/Game/Blueprints/PC_Sandbox.PC_Sandbox)
+  Graph: EventGraph
+    Node: EnhancedInputAction IA_NextCharacter (K2Node_EnhancedInputAction)
+      Pin: Triggered (exec) Dir=Out
+        -> Set Current Character Index.execute
+      Pin: Started (exec) Dir=Out
+      Pin: Ongoing (exec) Dir=Out
+      Pin: Canceled (exec) Dir=Out
+      Pin: Completed (exec) Dir=Out
+      Pin: ActionValue (bool) Dir=Out
+      Pin: ElapsedSeconds (real) Dir=Out
+      Pin: TriggeredSeconds (real) Dir=Out
+      Pin: InputAction (object) Dir=Out
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Transform
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: SpawnActor (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Set CachedControlRotation.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: Class (class) Dir=In
+        -> GET.Output
+      Pin: ReturnValue (object) Dir=Out
+        -> Possess
+Target is Controller.InPawn
+      Pin: SpawnTransform (struct) Dir=In
+        -> Get Actor Transform
+Target is Actor.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Get Actor Transform
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor.SpawnTransform
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor.then
+      Pin: then (exec) Dir=Out
+        -> Possess
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Possess
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Destroy Actor
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Set Control Rotation
+Target is Controller.execute
+      Pin: self (object) Dir=In
+      Pin: InPawn (object) Dir=In
+        -> SpawnActor.ReturnValue
+    Node: Get PawnToSpawn (K2Node_VariableGet)
+      Pin: PawnToSpawn (class) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Destroy Actor
+Target is Actor.self
+    Node: Get Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set CachedControlRotation.CachedControlRotation
+    Node: Set CachedControlRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Current Character Index.then
+      Pin: then (exec) Dir=Out
+        -> SpawnActor.execute
+      Pin: CachedControlRotation (struct) Dir=In
+        -> Get Control Rotation
+Target is Controller.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Possess
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewRotation (struct) Dir=In
+        -> Get CachedControlRotation.CachedControlRotation
+    Node: Get CachedControlRotation (K2Node_VariableGet)
+      Pin: CachedControlRotation (struct) Dir=Out
+        -> Set Control Rotation
+Target is Controller.NewRotation
+      Pin: self (object) Dir=In
+    Node: Set View Target with Blend
+Target is Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: NewViewTarget (object) Dir=In
+      Pin: BlendTime (real) Dir=In
+      Pin: BlendFunc (byte) Dir=In
+      Pin: BlendExp (real) Dir=In
+      Pin: bLockOutgoing (bool) Dir=In
+    Node: Get Current Character Index (K2Node_VariableGet)
+      Pin: Current Character Index (int) Dir=Out
+        -> int + int.A
+      Pin: self (object) Dir=In
+    Node: Set Current Character Index (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> EnhancedInputAction IA_NextCharacter.Triggered
+      Pin: then (exec) Dir=Out
+        -> Set CachedControlRotation.execute
+      Pin: Current Character Index (int) Dir=In
+        -> % (Integer).ReturnValue
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: int + int (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Current Character Index.Current Character Index
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (int) Dir=Out
+        -> % (Integer).A
+    Node: % (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (int) Dir=In
+        -> int + int.ReturnValue
+      Pin: B (int) Dir=In
+        -> Length.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> Set Current Character Index.Current Character Index
+    Node: Get Characters (K2Node_VariableGet)
+      Pin: Characters (class) Dir=Out
+        -> Length.TargetArray
+      Pin: self (object) Dir=In
+    Node: Length (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (class) Dir=In
+        -> Get Characters.Characters
+      Pin: ReturnValue (int) Dir=Out
+        -> % (Integer).B
+    Node: Get Characters (K2Node_VariableGet)
+      Pin: Characters (class) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (class) Dir=In
+        -> Get Characters.Characters
+      Pin: Dimension 1 (int) Dir=In
+        -> Get Current Character Index.Current Character Index
+      Pin: Output (class) Dir=Out
+        -> SpawnActor.Class
+    Node: Get Current Character Index (K2Node_VariableGet)
+      Pin: Current Character Index (int) Dir=Out
+        -> GET.Dimension 1
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: Condition (bool) Dir=In
+        -> Is Controller Assigned to Gamepad.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set Virtual Joystick Visibility
+Target is Player Controller.execute
+      Pin: else (exec) Dir=Out
+    Node: Get Platform Name (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Equal, Case Insensitive (String).A
+        -> Equal, Case Insensitive (String).A
+    Node: Equal, Case Insensitive (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Platform Name.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+    Node: Equal, Case Insensitive (String) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Platform Name.ReturnValue
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Equal, Case Insensitive (String).ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal, Case Insensitive (String).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Hide touch input on mobile when a gamepad is connected (EdGraphNode_Comment)
+    Node: Destroys current owned pawn and spawn a new one from the next character in list (EdGraphNode_Comment)
+    Node: Set Virtual Joystick Visibility
+Target is Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: bVisible (bool) Dir=In
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DeltaSeconds (real) Dir=Out
+    Node: Is Controller Assigned to Gamepad (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ControllerId (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: TODO : remove Tick event once Android gamepad functions are fixed (EdGraphNode_Comment)
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Event Tick.then
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: else (exec) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

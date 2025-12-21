@@ -14,7 +14,7 @@
 
 namespace
 {
-	static UBlueprint* LoadBlueprintForEdit(const FString& BlueprintAssetPath)
+	static UBlueprint* Debug_LoadBlueprintForEdit(const FString& BlueprintAssetPath)
 	{
 #if WITH_EDITOR
 		return Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr, *BlueprintAssetPath));
@@ -23,7 +23,7 @@ namespace
 #endif
 	}
 
-	static UEdGraph* FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName)
+	static UEdGraph* Debug_FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName)
 	{
 #if WITH_EDITOR
 		if (!Blueprint || FunctionName.IsNone())
@@ -45,7 +45,7 @@ namespace
 #endif
 	}
 
-	static FString GetBPGenNodeId(const UEdGraphNode* Node)
+	static FString Debug_GetBPGenNodeId(const UEdGraphNode* Node)
 	{
 		if (!Node)
 		{
@@ -60,12 +60,12 @@ namespace
 		return Node->NodeGuid.ToString(EGuidFormats::DigitsWithHyphens);
 	}
 
-	static bool MatchesAnyId(const UEdGraphNode* Node, const TSet<FString>& TargetIds)
+	static bool Debug_MatchesAnyId(const UEdGraphNode* Node, const TSet<FString>& TargetIds)
 	{
-		return Node && TargetIds.Contains(GetBPGenNodeId(Node));
+		return Node && TargetIds.Contains(Debug_GetBPGenNodeId(Node));
 	}
 
-	static bool IsBPGenAnnotation(const FString& Message)
+	static bool Debug_IsBPGenAnnotation(const FString& Message)
 	{
 		return Message.StartsWith(TEXT("[BPGEN]"), ESearchCase::IgnoreCase);
 	}
@@ -74,13 +74,13 @@ namespace
 bool USOTS_BPGenDebug::AnnotateNodes(const UObject* WorldContextObject, const FString& BlueprintAssetPath, FName FunctionName, const TArray<FString>& NodeIds, const FString& AnnotationText)
 {
 #if WITH_EDITOR
-	UBlueprint* Blueprint = LoadBlueprintForEdit(BlueprintAssetPath);
+	UBlueprint* Blueprint = Debug_LoadBlueprintForEdit(BlueprintAssetPath);
 	if (!Blueprint)
 	{
 		return false;
 	}
 
-	UEdGraph* Graph = FindFunctionGraph(Blueprint, FunctionName);
+	UEdGraph* Graph = Debug_FindFunctionGraph(Blueprint, FunctionName);
 	if (!Graph)
 	{
 		return false;
@@ -92,12 +92,12 @@ bool USOTS_BPGenDebug::AnnotateNodes(const UObject* WorldContextObject, const FS
 
 	for (UEdGraphNode* Node : Graph->Nodes)
 	{
-		if (!MatchesAnyId(Node, Targets))
+		if (!Debug_MatchesAnyId(Node, Targets))
 		{
 			continue;
 		}
 
-		const FString ExistingId = GetBPGenNodeId(Node);
+		const FString ExistingId = Debug_GetBPGenNodeId(Node);
 		Node->ErrorMsg = Prefix;
 		Node->bHasCompilerMessage = true;
 		Node->bCommentBubbleVisible = true;
@@ -120,13 +120,13 @@ bool USOTS_BPGenDebug::AnnotateNodes(const UObject* WorldContextObject, const FS
 bool USOTS_BPGenDebug::ClearAnnotations(const UObject* WorldContextObject, const FString& BlueprintAssetPath, FName FunctionName)
 {
 #if WITH_EDITOR
-	UBlueprint* Blueprint = LoadBlueprintForEdit(BlueprintAssetPath);
+	UBlueprint* Blueprint = Debug_LoadBlueprintForEdit(BlueprintAssetPath);
 	if (!Blueprint)
 	{
 		return false;
 	}
 
-	UEdGraph* Graph = FindFunctionGraph(Blueprint, FunctionName);
+	UEdGraph* Graph = Debug_FindFunctionGraph(Blueprint, FunctionName);
 	if (!Graph)
 	{
 		return false;
@@ -140,7 +140,7 @@ bool USOTS_BPGenDebug::ClearAnnotations(const UObject* WorldContextObject, const
 			continue;
 		}
 
-		if (IsBPGenAnnotation(Node->ErrorMsg))
+		if (Debug_IsBPGenAnnotation(Node->ErrorMsg))
 		{
 			Node->ErrorMsg.Reset();
 			Node->bHasCompilerMessage = false;
@@ -164,13 +164,13 @@ bool USOTS_BPGenDebug::ClearAnnotations(const UObject* WorldContextObject, const
 bool USOTS_BPGenDebug::FocusNodeById(const UObject* WorldContextObject, const FString& BlueprintAssetPath, FName FunctionName, const FString& NodeId)
 {
 #if WITH_EDITOR
-	UBlueprint* Blueprint = LoadBlueprintForEdit(BlueprintAssetPath);
+	UBlueprint* Blueprint = Debug_LoadBlueprintForEdit(BlueprintAssetPath);
 	if (!Blueprint || NodeId.IsEmpty())
 	{
 		return false;
 	}
 
-	UEdGraph* Graph = FindFunctionGraph(Blueprint, FunctionName);
+	UEdGraph* Graph = Debug_FindFunctionGraph(Blueprint, FunctionName);
 	if (!Graph)
 	{
 		return false;
@@ -179,7 +179,7 @@ bool USOTS_BPGenDebug::FocusNodeById(const UObject* WorldContextObject, const FS
 	UEdGraphNode* TargetNode = nullptr;
 	for (UEdGraphNode* Node : Graph->Nodes)
 	{
-		if (Node && GetBPGenNodeId(Node) == NodeId)
+		if (Node && Debug_GetBPGenNodeId(Node) == NodeId)
 		{
 			TargetNode = Node;
 			break;

@@ -1,0 +1,407 @@
+Blueprint: LevelVisuals (/Game/LevelPrototyping/LevelVisuals.LevelVisuals)
+  Graph: EventGraph
+    Node: SetLevelStyle
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set StyleIndex.execute
+      Pin: Index (int) Dir=Out
+        -> Set StyleIndex.StyleIndex
+    Node: Set StyleIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SetLevelStyle
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Update Level Visuals
+Target is Level Visuals.execute
+      Pin: StyleIndex (int) Dir=In
+        -> SetLevelStyle
+Custom Event.Index
+      Pin: Output_Get (int) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Update Level Visuals
+Target is Level Visuals (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set StyleIndex.then
+        -> UpdateVisuals
+Custom Event.then
+        -> Event BeginPlay.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: UpdateVisuals
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Level Visuals
+Target is Level Visuals.execute
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Update Level Visuals
+Target is Level Visuals.execute
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Level Visuals
+Target is Level Visuals.execute
+    Node: Update Level Visuals
+Target is Level Visuals (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UpdateLevelVisuals
+    Node: UpdateLevelVisuals (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set NewStyle.execute
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Set NewStyle.then
+      Pin: then_0 (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_2 (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: then_3 (exec) Dir=Out
+        -> Get.execute
+    Node: Get ExponentialHeightFog (K2Node_VariableGet)
+      Pin: ExponentialHeightFog (object) Dir=Out
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.self
+        -> Set Fog Density
+Target is Exponential Height Fog Component.self
+      Pin: self (object) Dir=In
+    Node: Set Fog Inscattering Color
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Set Fog Density
+Target is Exponential Height Fog Component.execute
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog.ExponentialHeightFog
+      Pin: Value (struct) Dir=In
+        -> Break S Level Style.FogColor_3_DA5FC03848B34AFC1BABBCB1640E14A6
+    Node: Break S Level Style (K2Node_BreakStruct)
+      Pin: S_LevelStyle (struct) Dir=In
+        -> Get NewStyle.NewStyle
+      Pin: FogColor_3_DA5FC03848B34AFC1BABBCB1640E14A6 (struct) Dir=Out
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.Value
+      Pin: FogDensity_22_21D76EA447CB464F8ECFC6B3D18938E0 (real) Dir=Out
+        -> Set Fog Density
+Target is Exponential Height Fog Component.Value
+    Node: Set NewStyle (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> UpdateLevelVisuals.then
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: NewStyle (struct) Dir=In
+        -> Get Level Style.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Get NewStyle (K2Node_VariableGet)
+      Pin: NewStyle (struct) Dir=Out
+        -> Break S Level Style.S_LevelStyle
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.execute
+    Node: Get Decal (K2Node_VariableGet)
+      Pin: Decal (object) Dir=Out
+        -> Set Decal Color
+Target is Decal Component.self
+      Pin: self (object) Dir=In
+    Node: Set Decal Color
+Target is Decal Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Decal.Decal
+      Pin: Color (struct) Dir=In
+        -> Break S Level Style.DecalColor_12_1498C751435B031639098A8BF277CF4D
+    Node: Break S Level Style (K2Node_BreakStruct)
+      Pin: S_LevelStyle (struct) Dir=In
+        -> Get NewStyle.NewStyle
+      Pin: DecalColor_12_1498C751435B031639098A8BF277CF4D (struct) Dir=Out
+        -> Set Decal Color
+Target is Decal Component.Color
+    Node: Get NewStyle (K2Node_VariableGet)
+      Pin: NewStyle (struct) Dir=Out
+        -> Break S Level Style.S_LevelStyle
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_2
+      Pin: OutputPin (exec) Dir=Out
+        -> Set Decal Color
+Target is Decal Component.execute
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Update Materials
+Target is Level Block.self
+        -> Get UseLevelVisualsColor.self
+        -> Get ColorGroup.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Update Materials
+Target is Level Block (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Params (struct) Dir=In
+        -> Find.Value
+    Node: Get UseLevelVisualsColor (K2Node_VariableGet)
+      Pin: UseLevelVisualsColor (bool) Dir=Out
+        -> AND Boolean.A
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> AND Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Update Materials
+Target is Level Block.execute
+      Pin: else (exec) Dir=Out
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: Get ColorGroup (K2Node_VariableGet)
+      Pin: ColorGroup (name) Dir=Out
+        -> Find.Key
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get NewStyle (K2Node_VariableGet)
+      Pin: NewStyle (struct) Dir=Out
+        -> Break S Level Style.S_LevelStyle
+    Node: Break S Level Style (K2Node_BreakStruct)
+      Pin: S_LevelStyle (struct) Dir=In
+        -> Get NewStyle.NewStyle
+      Pin: BlockColors_19_BD7B5F9248A47F4BA4AEE2BCADEEA20F (name) Dir=Out
+        -> Find.TargetMap
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Break S Level Style.BlockColors_19_BD7B5F9248A47F4BA4AEE2BCADEEA20F
+      Pin: Key (name) Dir=In
+        -> Get ColorGroup.ColorGroup
+      Pin: Value (struct) Dir=Out
+        -> Update Materials
+Target is Level Block.Params
+      Pin: ReturnValue (bool) Dir=Out
+        -> AND Boolean.B
+    Node: AND Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Get UseLevelVisualsColor.UseLevelVisualsColor
+      Pin: B (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get Level Style (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set NewStyle.NewStyle
+    Node: Set Fog Density
+Target is Exponential Height Fog Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Fog Inscattering Color
+Target is Exponential Height Fog Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get ExponentialHeightFog.ExponentialHeightFog
+      Pin: Value (real) Dir=In
+        -> Break S Level Style.FogDensity_22_21D76EA447CB464F8ECFC6B3D18938E0
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_3
+      Pin: then (exec) Dir=Out
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.execute
+      Pin: else (exec) Dir=Out
+      Pin: Landscape (object) Dir=Out
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.self
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.self
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.self
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.self
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.self
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.self
+      Pin: self (object) Dir=In
+    Node: Get NewStyle (K2Node_VariableGet)
+      Pin: NewStyle (struct) Dir=Out
+        -> Break S Level Style.S_LevelStyle
+    Node: Break S Level Style (K2Node_BreakStruct)
+      Pin: S_LevelStyle (struct) Dir=In
+        -> Get NewStyle.NewStyle
+      Pin: BlockColors_19_BD7B5F9248A47F4BA4AEE2BCADEEA20F (name) Dir=Out
+        -> Find.TargetMap
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Break S Level Style.BlockColors_19_BD7B5F9248A47F4BA4AEE2BCADEEA20F
+      Pin: Key (name) Dir=In
+      Pin: Value (struct) Dir=Out
+        -> Break S Grid Material Params.S_GridMaterialParams
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Break S Grid Material Params (K2Node_BreakStruct)
+      Pin: S_GridMaterialParams (struct) Dir=In
+        -> Find.Value
+      Pin: GridColor_2_93C9D1544CE9BC2796D83F9E713DAB23 (struct) Dir=Out
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.Value
+      Pin: SurfaceColor_4_9B668B134E34B8A2B41BB98E51273395 (struct) Dir=Out
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.Value
+      Pin: GridSizes_16_782DDA9B42440FAB466A829B7C2E5482 (struct) Dir=Out
+      Pin: GridSizes_16_782DDA9B42440FAB466A829B7C2E5482_X (real) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.Value
+      Pin: GridSizes_16_782DDA9B42440FAB466A829B7C2E5482_Y (real) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.Value
+      Pin: GridSizes_16_782DDA9B42440FAB466A829B7C2E5482_Z (real) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.Value
+      Pin: Specularity_21_1B077FB34A0BA551F2D806BF119B8EA8 (real) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.Value
+    Node: Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.execute
+      Pin: self (object) Dir=In
+        -> Get.Landscape
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Break S Grid Material Params.GridColor_2_93C9D1544CE9BC2796D83F9E713DAB23
+    Node: Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.then
+      Pin: then (exec) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.execute
+      Pin: self (object) Dir=In
+        -> Get.Landscape
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (struct) Dir=In
+        -> Break S Grid Material Params.SurfaceColor_4_9B668B134E34B8A2B41BB98E51273395
+    Node: Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Landscape Material Vector Parameter Value
+Target is Landscape Proxy.then
+      Pin: then (exec) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.execute
+      Pin: self (object) Dir=In
+        -> Get.Landscape
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break S Grid Material Params.GridSizes_16_782DDA9B42440FAB466A829B7C2E5482_X
+    Node: Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.then
+      Pin: then (exec) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.execute
+      Pin: self (object) Dir=In
+        -> Get.Landscape
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break S Grid Material Params.GridSizes_16_782DDA9B42440FAB466A829B7C2E5482_Y
+    Node: Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.then
+      Pin: then (exec) Dir=Out
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.execute
+      Pin: self (object) Dir=In
+        -> Get.Landscape
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break S Grid Material Params.GridSizes_16_782DDA9B42440FAB466A829B7C2E5482_Z
+    Node: Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Landscape Material Scalar Parameter Value
+Target is Landscape Proxy.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.Landscape
+      Pin: ParameterName (name) Dir=In
+      Pin: Value (real) Dir=In
+        -> Break S Grid Material Params.Specularity_21_1B077FB34A0BA551F2D806BF119B8EA8
+  Graph: GetLevelStyle
+    Node: GetLevelStyle (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetLevelStyle.then
+      Pin: ReturnValue (struct) Dir=In
+        -> GET.Output
+    Node: Get LevelStyles (K2Node_VariableGet)
+      Pin: LevelStyles (struct) Dir=Out
+        -> GET.Array
+        -> Last Index.TargetArray
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (struct) Dir=In
+        -> Get LevelStyles.LevelStyles
+      Pin: Dimension 1 (int) Dir=In
+        -> Clamp (Integer).ReturnValue
+      Pin: Output (struct) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get StyleIndex (K2Node_VariableGet)
+      Pin: StyleIndex (int) Dir=Out
+        -> Clamp (Integer).Value
+      Pin: self (object) Dir=In
+    Node: Clamp (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (int) Dir=In
+        -> Get StyleIndex.StyleIndex
+      Pin: Min (int) Dir=In
+      Pin: Max (int) Dir=In
+        -> Last Index.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> GET.Dimension 1
+    Node: Last Index (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (struct) Dir=In
+        -> Get LevelStyles.LevelStyles
+      Pin: ReturnValue (int) Dir=Out
+        -> Clamp (Integer).Max

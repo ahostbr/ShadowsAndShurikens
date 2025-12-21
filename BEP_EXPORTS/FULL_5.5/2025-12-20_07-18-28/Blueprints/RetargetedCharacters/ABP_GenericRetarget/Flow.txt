@@ -1,0 +1,325 @@
+Blueprint: ABP_GenericRetarget (/Game/Blueprints/RetargetedCharacters/ABP_GenericRetarget.ABP_GenericRetarget)
+  Graph: EventGraph
+    Node: Get Chain Settings from Retarget Asset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RetargetAsset (object) Dir=In
+        -> Get IKRetargeter.IKRetargeter
+      Pin: TargetChainName (name) Dir=In
+      Pin: OptionalProfileName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ChainSettings_LeftArm.ChainSettings_LeftArm
+    Node: Set ChainSettings_LeftArm (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set ChainSettings_RightArm.execute
+      Pin: ChainSettings_LeftArm (struct) Dir=In
+        -> Get Chain Settings from Retarget Asset.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get Chain Settings from Retarget Asset (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: RetargetAsset (object) Dir=In
+        -> Get IKRetargeter.IKRetargeter
+      Pin: TargetChainName (name) Dir=In
+      Pin: OptionalProfileName (name) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set ChainSettings_RightArm.ChainSettings_RightArm
+    Node: Set ChainSettings_RightArm (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ChainSettings_LeftArm.then
+      Pin: then (exec) Dir=Out
+      Pin: ChainSettings_RightArm (struct) Dir=In
+        -> Get Chain Settings from Retarget Asset.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Event Blueprint Update Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: DeltaTimeX (real) Dir=Out
+    Node: Set IKRetargeter (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: IKRetargeter (object) Dir=In
+        -> Find.Value
+      Pin: Output_Get (object) Dir=Out
+        -> Is Valid.InputObject
+      Pin: self (object) Dir=In
+    Node: Get IKRetargeter (K2Node_VariableGet)
+      Pin: IKRetargeter (object) Dir=Out
+        -> Get Chain Settings from Retarget Asset.RetargetAsset
+        -> Get Chain Settings from Retarget Asset.RetargetAsset
+      Pin: self (object) Dir=In
+    Node: Get IKRetargeter_Map (K2Node_VariableGet)
+      Pin: IKRetargeter_Map (name) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (name) Dir=In
+        -> Get IKRetargeter_Map.IKRetargeter_Map
+      Pin: Key (name) Dir=In
+        -> GET.Output
+      Pin: Value (object) Dir=Out
+        -> Set IKRetargeter.IKRetargeter
+      Pin: ReturnValue (bool) Dir=Out
+    Node: Get Owning Component
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get ComponentTags.self
+    Node: Get ComponentTags (K2Node_VariableGet)
+      Pin: ComponentTags (name) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+        -> Get Owning Component
+Target is Anim Instance.ReturnValue
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (name) Dir=In
+        -> Get ComponentTags.ComponentTags
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (name) Dir=Out
+        -> Find.Key
+    Node: Grab the first tag on the owning Skeletal Mesh and use a map to determine which IK Retargeter to use. The tag is simply the name of the desired IK Retargeter asset. IF THERE IS NO TAG, THE CHARACTER WILL NOT RETARGET!!! (EdGraphNode_Comment)
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Set IKRetargeter.then
+      Pin: InputObject (object) Dir=In
+        -> Set IKRetargeter.Output_Get
+      Pin: Is Valid (exec) Dir=Out
+        -> Set ChainSettings_LeftArm.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Event Blueprint Initialize Animation (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Event Blueprint Update Animation.then
+        -> Event Blueprint Initialize Animation.then
+      Pin: OutputPin (exec) Dir=Out
+        -> Set IKRetargeter.execute
+  Graph: AnimGraph
+    Node: Output Pose
+AnimGraph (AnimGraphNode_Root)
+      Pin: Result (struct) Dir=In
+        -> Retarget Pose From Mesh.Pose
+    Node: Retarget Pose From Mesh (AnimGraphNode_RetargetPoseFromMesh)
+      Pin: Source (struct) Dir=In
+      Pin: SourceMeshComponent (object) Dir=In
+      Pin: IKRetargeterAsset (object) Dir=In
+      Pin: CustomRetargetProfile (struct) Dir=In
+      Pin: Pose (struct) Dir=Out
+        -> Output Pose
+AnimGraph.Result
+  Graph: GetRetargetProfile
+    Node: GetRetargetProfile (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> GetRetargetProfile.then
+      Pin: ReturnValue (struct) Dir=In
+        -> Make Retarget Profile.RetargetProfile
+    Node: Make Retarget Profile (K2Node_MakeStruct)
+      Pin: RetargetProfile (struct) Dir=Out
+        -> Return Node.ReturnValue
+      Pin: RetargetOpProfiles (struct) Dir=In
+      Pin: bApplyTargetRetargetPose (bool) Dir=In
+      Pin: TargetRetargetPoseName (name) Dir=In
+      Pin: bApplySourceRetargetPose (bool) Dir=In
+      Pin: SourceRetargetPoseName (name) Dir=In
+      Pin: bForceAllIKOff (bool) Dir=In
+      Pin: bApplyChainSettings (bool) Dir=In
+      Pin: ChainSettings (name) Dir=In
+        -> Make Map.Map
+      Pin: bApplyRootSettings (bool) Dir=In
+      Pin: RootSettings (struct) Dir=In
+      Pin: bApplyGlobalSettings (bool) Dir=In
+      Pin: GlobalSettings (struct) Dir=In
+    Node: Get Curve Value
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurveName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Lerp (Vector).Alpha
+        -> Lerp.Alpha
+    Node: Make Map (K2Node_MakeMap)
+      Pin: Map (name) Dir=Out
+        -> Make Retarget Profile.ChainSettings
+      Pin: Key 0 (name) Dir=In
+      Pin: Value 0 (struct) Dir=In
+        -> Make Target Chain Settings.TargetChainSettings
+      Pin: Key 1 (name) Dir=In
+      Pin: Value 1 (struct) Dir=In
+        -> Make Target Chain Settings.TargetChainSettings
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Target Chain Settings.IK_StaticLocalOffset
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get Curve Value
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Target Chain Settings.IK_StaticLocalOffset
+    Node: Get ChainSettings_LeftArm (K2Node_VariableGet)
+      Pin: ChainSettings_LeftArm (struct) Dir=Out
+        -> Break Target Chain Settings.TargetChainSettings
+      Pin: self (object) Dir=In
+    Node: Break Target Chain Settings (K2Node_BreakStruct)
+      Pin: TargetChainSettings (struct) Dir=In
+        -> Get ChainSettings_LeftArm.ChainSettings_LeftArm
+      Pin: FK (struct) Dir=Out
+        -> Make Target Chain Settings.FK
+      Pin: IK (struct) Dir=Out
+      Pin: IK_EnableIK (bool) Dir=Out
+        -> Make Target Chain Settings.IK_EnableIK
+      Pin: IK_BlendToSource (real) Dir=Out
+        -> Lerp.A
+      Pin: IK_BlendToSourceTranslation (real) Dir=Out
+      Pin: IK_BlendToSourceRotation (real) Dir=Out
+      Pin: IK_BlendToSourceWeights (struct) Dir=Out
+        -> Make Target Chain Settings.IK_BlendToSourceWeights
+      Pin: IK_StaticOffset (struct) Dir=Out
+        -> Make Target Chain Settings.IK_StaticOffset
+      Pin: IK_StaticLocalOffset (struct) Dir=Out
+        -> Lerp (Vector).A
+      Pin: IK_StaticRotationOffset (struct) Dir=Out
+        -> Make Target Chain Settings.IK_StaticRotationOffset
+      Pin: IK_ScaleVertical (real) Dir=Out
+        -> Make Target Chain Settings.IK_ScaleVertical
+      Pin: IK_Extension (real) Dir=Out
+        -> Make Target Chain Settings.IK_Extension
+      Pin: IK_bAffectedByIKWarping (bool) Dir=Out
+        -> Make Target Chain Settings.IK_bAffectedByIKWarping
+      Pin: SpeedPlanting (struct) Dir=Out
+        -> Make Target Chain Settings.SpeedPlanting
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Target Chain Settings.IK_BlendToSource
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get Curve Value
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Target Chain Settings.IK_BlendToSource
+    Node: Make Target Chain Settings (K2Node_MakeStruct)
+      Pin: TargetChainSettings (struct) Dir=Out
+        -> Make Map.Value 0
+      Pin: FK (struct) Dir=In
+        -> Break Target Chain Settings.FK
+      Pin: IK (struct) Dir=In
+      Pin: IK_EnableIK (bool) Dir=In
+        -> Break Target Chain Settings.IK_EnableIK
+      Pin: IK_BlendToSource (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: IK_BlendToSourceTranslation (real) Dir=In
+      Pin: IK_BlendToSourceRotation (real) Dir=In
+      Pin: IK_BlendToSourceWeights (struct) Dir=In
+        -> Break Target Chain Settings.IK_BlendToSourceWeights
+      Pin: IK_StaticOffset (struct) Dir=In
+        -> Break Target Chain Settings.IK_StaticOffset
+      Pin: IK_StaticLocalOffset (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: IK_StaticRotationOffset (struct) Dir=In
+        -> Break Target Chain Settings.IK_StaticRotationOffset
+      Pin: IK_ScaleVertical (real) Dir=In
+        -> Break Target Chain Settings.IK_ScaleVertical
+      Pin: IK_Extension (real) Dir=In
+        -> Break Target Chain Settings.IK_Extension
+      Pin: IK_bAffectedByIKWarping (bool) Dir=In
+        -> Break Target Chain Settings.IK_bAffectedByIKWarping
+      Pin: SpeedPlanting (struct) Dir=In
+        -> Break Target Chain Settings.SpeedPlanting
+    Node: Get Curve Value
+Target is Anim Instance (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: CurveName (name) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Lerp (Vector).Alpha
+        -> Lerp.Alpha
+    Node: Lerp (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (struct) Dir=In
+        -> Break Target Chain Settings.IK_StaticLocalOffset
+      Pin: B (struct) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get Curve Value
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Make Target Chain Settings.IK_StaticLocalOffset
+    Node: Get ChainSettings_RightArm (K2Node_VariableGet)
+      Pin: ChainSettings_RightArm (struct) Dir=Out
+        -> Break Target Chain Settings.TargetChainSettings
+      Pin: self (object) Dir=In
+    Node: Break Target Chain Settings (K2Node_BreakStruct)
+      Pin: TargetChainSettings (struct) Dir=In
+        -> Get ChainSettings_RightArm.ChainSettings_RightArm
+      Pin: FK (struct) Dir=Out
+        -> Make Target Chain Settings.FK
+      Pin: IK (struct) Dir=Out
+      Pin: IK_EnableIK (bool) Dir=Out
+        -> Make Target Chain Settings.IK_EnableIK
+      Pin: IK_BlendToSource (real) Dir=Out
+        -> Lerp.A
+      Pin: IK_BlendToSourceTranslation (real) Dir=Out
+      Pin: IK_BlendToSourceRotation (real) Dir=Out
+      Pin: IK_BlendToSourceWeights (struct) Dir=Out
+        -> Make Target Chain Settings.IK_BlendToSourceWeights
+      Pin: IK_StaticOffset (struct) Dir=Out
+        -> Make Target Chain Settings.IK_StaticOffset
+      Pin: IK_StaticLocalOffset (struct) Dir=Out
+        -> Lerp (Vector).A
+      Pin: IK_StaticRotationOffset (struct) Dir=Out
+        -> Make Target Chain Settings.IK_StaticRotationOffset
+      Pin: IK_ScaleVertical (real) Dir=Out
+        -> Make Target Chain Settings.IK_ScaleVertical
+      Pin: IK_Extension (real) Dir=Out
+        -> Make Target Chain Settings.IK_Extension
+      Pin: IK_bAffectedByIKWarping (bool) Dir=Out
+        -> Make Target Chain Settings.IK_bAffectedByIKWarping
+      Pin: SpeedPlanting (struct) Dir=Out
+        -> Make Target Chain Settings.SpeedPlanting
+    Node: Lerp (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (real) Dir=In
+        -> Break Target Chain Settings.IK_BlendToSource
+      Pin: B (real) Dir=In
+      Pin: Alpha (real) Dir=In
+        -> Get Curve Value
+Target is Anim Instance.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Make Target Chain Settings.IK_BlendToSource
+    Node: Make Target Chain Settings (K2Node_MakeStruct)
+      Pin: TargetChainSettings (struct) Dir=Out
+        -> Make Map.Value 1
+      Pin: FK (struct) Dir=In
+        -> Break Target Chain Settings.FK
+      Pin: IK (struct) Dir=In
+      Pin: IK_EnableIK (bool) Dir=In
+        -> Break Target Chain Settings.IK_EnableIK
+      Pin: IK_BlendToSource (real) Dir=In
+        -> Lerp.ReturnValue
+      Pin: IK_BlendToSourceTranslation (real) Dir=In
+      Pin: IK_BlendToSourceRotation (real) Dir=In
+      Pin: IK_BlendToSourceWeights (struct) Dir=In
+        -> Break Target Chain Settings.IK_BlendToSourceWeights
+      Pin: IK_StaticOffset (struct) Dir=In
+        -> Break Target Chain Settings.IK_StaticOffset
+      Pin: IK_StaticLocalOffset (struct) Dir=In
+        -> Lerp (Vector).ReturnValue
+      Pin: IK_StaticRotationOffset (struct) Dir=In
+        -> Break Target Chain Settings.IK_StaticRotationOffset
+      Pin: IK_ScaleVertical (real) Dir=In
+        -> Break Target Chain Settings.IK_ScaleVertical
+      Pin: IK_Extension (real) Dir=In
+        -> Break Target Chain Settings.IK_Extension
+      Pin: IK_bAffectedByIKWarping (bool) Dir=In
+        -> Break Target Chain Settings.IK_bAffectedByIKWarping
+      Pin: SpeedPlanting (struct) Dir=In
+        -> Break Target Chain Settings.SpeedPlanting

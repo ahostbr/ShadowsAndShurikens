@@ -8,10 +8,10 @@
 
 namespace
 {
-	static const FString ErrorUnsupportedTarget = TEXT("ERR_UNSUPPORTED_TARGET");
-	static const FString ErrorTargetNotFound = TEXT("ERR_TARGET_NOT_FOUND");
-	static const FString ErrorTargetCreateFailed = TEXT("ERR_TARGET_CREATE_FAILED");
-	static const FString ErrorBlueprintMissing = TEXT("ERR_BLUEPRINT_MISSING");
+	static const FString Resolver_ErrorUnsupportedTarget = TEXT("ERR_UNSUPPORTED_TARGET");
+	static const FString Resolver_ErrorTargetNotFound = TEXT("ERR_TARGET_NOT_FOUND");
+	static const FString Resolver_ErrorTargetCreateFailed = TEXT("ERR_TARGET_CREATE_FAILED");
+	static const FString Resolver_ErrorBlueprintMissing = TEXT("ERR_BLUEPRINT_MISSING");
 }
 
 bool USOTS_BPGenGraphResolver::ResolveTargetGraph(UBlueprint*& OutBlueprint, UEdGraph*& OutGraph, const FSOTS_BPGenGraphTarget& GraphTarget, FString& OutError, FString& OutErrorCode)
@@ -54,7 +54,7 @@ bool USOTS_BPGenGraphResolver::ResolveTargetGraph(UBlueprint*& OutBlueprint, UEd
 		return ResolveWidgetBindingGraph(OutBlueprint, TargetName, GraphTarget.bCreateIfMissing, OutGraph, OutError, OutErrorCode);
 	}
 
-	OutErrorCode = ErrorUnsupportedTarget;
+	OutErrorCode = Resolver_ErrorUnsupportedTarget;
 	OutError = FString::Printf(TEXT("Unsupported target_type '%s'."), *GraphTarget.TargetType);
 	return false;
 }
@@ -65,7 +65,7 @@ bool USOTS_BPGenGraphResolver::LoadBlueprint(const FSOTS_BPGenGraphTarget& Graph
 
 	if (GraphTarget.BlueprintAssetPath.IsEmpty())
 	{
-		OutErrorCode = ErrorBlueprintMissing;
+		OutErrorCode = Resolver_ErrorBlueprintMissing;
 		OutError = TEXT("BlueprintAssetPath is empty.");
 		return false;
 	}
@@ -73,7 +73,7 @@ bool USOTS_BPGenGraphResolver::LoadBlueprint(const FSOTS_BPGenGraphTarget& Graph
 	OutBlueprint = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr, *GraphTarget.BlueprintAssetPath));
 	if (!OutBlueprint)
 	{
-		OutErrorCode = ErrorTargetNotFound;
+		OutErrorCode = Resolver_ErrorTargetNotFound;
 		OutError = FString::Printf(TEXT("Failed to load Blueprint '%s'."), *GraphTarget.BlueprintAssetPath);
 		return false;
 	}
@@ -85,7 +85,7 @@ bool USOTS_BPGenGraphResolver::ResolveFunctionGraph(UBlueprint* Blueprint, const
 {
 	if (!Blueprint)
 	{
-		OutErrorCode = ErrorBlueprintMissing;
+		OutErrorCode = Resolver_ErrorBlueprintMissing;
 		OutError = TEXT("Blueprint was null in ResolveFunctionGraph.");
 		return false;
 	}
@@ -102,7 +102,7 @@ bool USOTS_BPGenGraphResolver::ResolveFunctionGraph(UBlueprint* Blueprint, const
 
 	if (!bCreateIfMissing)
 	{
-		OutErrorCode = ErrorTargetNotFound;
+		OutErrorCode = Resolver_ErrorTargetNotFound;
 		OutError = FString::Printf(TEXT("Function graph '%s' not found."), *TargetName);
 		return false;
 	}
@@ -110,7 +110,7 @@ bool USOTS_BPGenGraphResolver::ResolveFunctionGraph(UBlueprint* Blueprint, const
 	UEdGraph* NewGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, GraphFName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
 	if (!NewGraph)
 	{
-		OutErrorCode = ErrorTargetCreateFailed;
+		OutErrorCode = Resolver_ErrorTargetCreateFailed;
 		OutError = FString::Printf(TEXT("Could not create function graph '%s'."), *TargetName);
 		return false;
 	}
@@ -125,7 +125,7 @@ bool USOTS_BPGenGraphResolver::ResolveEventGraph(UBlueprint* Blueprint, const FS
 {
 	if (!Blueprint)
 	{
-		OutErrorCode = ErrorBlueprintMissing;
+		OutErrorCode = Resolver_ErrorBlueprintMissing;
 		OutError = TEXT("Blueprint was null in ResolveEventGraph.");
 		return false;
 	}
@@ -142,7 +142,7 @@ bool USOTS_BPGenGraphResolver::ResolveEventGraph(UBlueprint* Blueprint, const FS
 
 	if (!bCreateIfMissing)
 	{
-		OutErrorCode = ErrorTargetNotFound;
+		OutErrorCode = Resolver_ErrorTargetNotFound;
 		OutError = FString::Printf(TEXT("EventGraph '%s' not found."), *TargetName);
 		return false;
 	}
@@ -150,7 +150,7 @@ bool USOTS_BPGenGraphResolver::ResolveEventGraph(UBlueprint* Blueprint, const FS
 	UEdGraph* NewGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, GraphFName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
 	if (!NewGraph)
 	{
-		OutErrorCode = ErrorTargetCreateFailed;
+		OutErrorCode = Resolver_ErrorTargetCreateFailed;
 		OutError = FString::Printf(TEXT("Could not create EventGraph '%s'."), *TargetName);
 		return false;
 	}
@@ -165,7 +165,7 @@ bool USOTS_BPGenGraphResolver::ResolveConstructionScript(UBlueprint* Blueprint, 
 {
 	if (!Blueprint)
 	{
-		OutErrorCode = ErrorBlueprintMissing;
+		OutErrorCode = Resolver_ErrorBlueprintMissing;
 		OutError = TEXT("Blueprint was null in ResolveConstructionScript.");
 		return false;
 	}
@@ -182,7 +182,7 @@ bool USOTS_BPGenGraphResolver::ResolveConstructionScript(UBlueprint* Blueprint, 
 
 	if (!bCreateIfMissing)
 	{
-		OutErrorCode = ErrorTargetNotFound;
+		OutErrorCode = Resolver_ErrorTargetNotFound;
 		OutError = FString::Printf(TEXT("ConstructionScript '%s' not found."), *TargetName);
 		return false;
 	}
@@ -190,7 +190,7 @@ bool USOTS_BPGenGraphResolver::ResolveConstructionScript(UBlueprint* Blueprint, 
 	UEdGraph* NewGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, GraphFName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
 	if (!NewGraph)
 	{
-		OutErrorCode = ErrorTargetCreateFailed;
+		OutErrorCode = Resolver_ErrorTargetCreateFailed;
 		OutError = FString::Printf(TEXT("Could not create ConstructionScript '%s'."), *TargetName);
 		return false;
 	}
@@ -205,7 +205,7 @@ bool USOTS_BPGenGraphResolver::ResolveMacroGraph(UBlueprint* Blueprint, const FS
 {
 	if (!Blueprint)
 	{
-		OutErrorCode = ErrorBlueprintMissing;
+		OutErrorCode = Resolver_ErrorBlueprintMissing;
 		OutError = TEXT("Blueprint was null in ResolveMacroGraph.");
 		return false;
 	}
@@ -222,7 +222,7 @@ bool USOTS_BPGenGraphResolver::ResolveMacroGraph(UBlueprint* Blueprint, const FS
 
 	if (!bCreateIfMissing)
 	{
-		OutErrorCode = ErrorTargetNotFound;
+		OutErrorCode = Resolver_ErrorTargetNotFound;
 		OutError = FString::Printf(TEXT("Macro graph '%s' not found."), *TargetName);
 		return false;
 	}
@@ -230,7 +230,7 @@ bool USOTS_BPGenGraphResolver::ResolveMacroGraph(UBlueprint* Blueprint, const FS
 	UEdGraph* NewGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, GraphFName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
 	if (!NewGraph)
 	{
-		OutErrorCode = ErrorTargetCreateFailed;
+		OutErrorCode = Resolver_ErrorTargetCreateFailed;
 		OutError = FString::Printf(TEXT("Could not create macro graph '%s'."), *TargetName);
 		return false;
 	}
@@ -246,7 +246,7 @@ bool USOTS_BPGenGraphResolver::ResolveWidgetBindingGraph(UBlueprint* Blueprint, 
 	UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(Blueprint);
 	if (!WidgetBlueprint)
 	{
-		OutErrorCode = ErrorUnsupportedTarget;
+		OutErrorCode = Resolver_ErrorUnsupportedTarget;
 		OutError = TEXT("Target blueprint is not a WidgetBlueprint.");
 		return false;
 	}

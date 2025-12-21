@@ -1,0 +1,1024 @@
+Blueprint: GameAnimationWidget (/Game/Widgets/GameAnimationWidget.GameAnimationWidget)
+  Graph: EventGraph
+    Node: On Clicked (StillCam_Enable) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Toggle Still Cam State
+Target is Game Animation Widget.execute
+    Node: Toggle Still Cam State
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (StillCam_Enable).then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set StillCam_RotateState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (StillCam_Rotate).then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: StillCam_RotateState (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> NOT Boolean.A
+        -> Set LookAtTarget.LookAtTarget
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Set StillCam_RotateState.Output_Get
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set StillCam_RotateState.StillCam_RotateState
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set StillCam_RotateState.then
+      Pin: then (exec) Dir=Out
+        -> Set LookAtTarget.execute
+      Pin: else (exec) Dir=Out
+      Pin: StillCam (object) Dir=Out
+        -> Set LookAtTarget.self
+      Pin: self (object) Dir=In
+    Node: Set LookAtTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: LookAtTarget (bool) Dir=In
+        -> Set StillCam_RotateState.Output_Get
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.StillCam
+    Node: Set StillCam_FollowState (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (StillCam_Follow).then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: StillCam_FollowState (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> NOT Boolean.A
+        -> Set FollowTarget.FollowTarget
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Set StillCam_FollowState.Output_Get
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set StillCam_FollowState.StillCam_FollowState
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set StillCam_FollowState.then
+      Pin: then (exec) Dir=Out
+        -> Set FollowTarget.execute
+      Pin: else (exec) Dir=Out
+      Pin: StillCam (object) Dir=Out
+        -> Set FollowTarget.self
+      Pin: self (object) Dir=In
+    Node: Set FollowTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: FollowTarget (bool) Dir=In
+        -> Set StillCam_FollowState.Output_Get
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.StillCam
+    Node: On Clicked (StillCam_Follow) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set StillCam_FollowState.execute
+    Node: On Clicked (StillCam_Rotate) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set StillCam_RotateState.execute
+    Node: Bind Event to On Begin PIE (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event Construct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Editor Utility Subsystem.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> Custom OnBeginPIE
+Custom Event.OutputDelegate
+    Node: Event Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Bind Event to On Begin PIE.execute
+    Node: Editor Utility Subsystem (K2Node_GetEditorSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Bind Event to On Begin PIE.self
+        -> Unbind Event from On Begin PIE.self
+    Node: SpawnCharacterEvent
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn Character
+Target is Game Animation Widget.execute
+    Node: Spawn Character
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnCharacterEvent
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Print String.execute
+      Pin: self (object) Dir=In
+      Pin: PawnToSpawn (class) Dir=In
+        -> Get PawnOverride.PawnOverride
+    Node: Get PawnOverride (K2Node_VariableGet)
+      Pin: PawnOverride (class) Dir=Out
+        -> Is Valid Class.Class
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Spawn Controller Widget
+Target is Game Animation Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+    Node: Is Valid Class (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Class (class) Dir=In
+        -> Get PawnOverride.PawnOverride
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: Condition (bool) Dir=In
+        -> Is Valid Class.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: else (exec) Dir=Out
+    Node: Event Destruct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Unbind Event from On Begin PIE.execute
+    Node: Unbind Event from On Begin PIE (K2Node_RemoveDelegate)
+      Pin: execute (exec) Dir=In
+        -> Event Destruct.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Editor Utility Subsystem.ReturnValue
+      Pin: Delegate (delegate) Dir=In
+        -> Custom OnBeginPIE
+Custom Event.OutputDelegate
+    Node: Get PawnOverride (K2Node_VariableGet)
+      Pin: PawnOverride (class) Dir=Out
+        -> Spawn Character
+Target is Game Animation Widget.PawnToSpawn
+      Pin: self (object) Dir=In
+    Node: Print String (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Spawn Character
+Target is Game Animation Widget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: InString (string) Dir=In
+      Pin: bPrintToScreen (bool) Dir=In
+      Pin: bPrintToLog (bool) Dir=In
+      Pin: TextColor (struct) Dir=In
+      Pin: Duration (real) Dir=In
+      Pin: Key (name) Dir=In
+    Node: On Clicked (ControllerWidgetToggle) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Set DisplayControllerWidget.execute
+    Node: Set DisplayControllerWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (ControllerWidgetToggle).then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: DisplayControllerWidget (bool) Dir=In
+        -> NOT Boolean.ReturnValue
+      Pin: Output_Get (bool) Dir=Out
+        -> NOT Boolean.A
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: NOT Boolean (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> Set DisplayControllerWidget.Output_Get
+      Pin: ReturnValue (bool) Dir=Out
+        -> Set DisplayControllerWidget.DisplayControllerWidget
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set DisplayControllerWidget.then
+      Pin: Condition (bool) Dir=In
+        -> Set DisplayControllerWidget.Output_Get
+      Pin: then (exec) Dir=Out
+        -> Spawn Controller Widget
+Target is Game Animation Widget.execute
+      Pin: else (exec) Dir=Out
+        -> Remove Controller Widget
+Target is Game Animation Widget.execute
+    Node: Create WB Simple Controller Widget (K2Node_CreateWidget)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Set ControllerWidget.execute
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set ControllerWidget.ControllerWidget
+      Pin: OwningPlayer (object) Dir=In
+        -> Get Player Controller.ReturnValue
+    Node: Get PIEWorlds (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnControllerWidget
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: bIncludeDedicatedServer (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+        -> Is Not Empty.TargetArray
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Get Player Controller.WorldContextObject
+        -> Create WB Simple Controller Widget.WorldContextObject
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Create WB Simple Controller Widget.OwningPlayer
+        -> Is Valid.InputObject
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get PIEWorlds.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: else (exec) Dir=Out
+    Node: Set ControllerWidget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Create WB Simple Controller Widget.then
+      Pin: then (exec) Dir=Out
+        -> Add to Player Screen
+Target is User Widget.execute
+      Pin: ControllerWidget (object) Dir=In
+        -> Create WB Simple Controller Widget.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Add to Player Screen
+Target is User Widget.self
+      Pin: self (object) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> RemoveControllerWidget
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Remove from Parent
+Target is Widget.execute
+      Pin: else (exec) Dir=Out
+      Pin: ControllerWidget (object) Dir=Out
+        -> Remove from Parent
+Target is Widget.self
+      Pin: self (object) Dir=In
+    Node: Remove from Parent
+Target is Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.ControllerWidget
+    Node: Add to Player Screen
+Target is User Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set ControllerWidget.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Set ControllerWidget.Output_Get
+      Pin: ZOrder (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+    Node: SpawnControllerWidget
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get PIEWorlds.execute
+    Node: RemoveControllerWidget
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Branch.then
+      Pin: InputObject (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Create WB Simple Controller Widget.execute
+      Pin: Is Not Valid (exec) Dir=Out
+    Node: Spawn Controller Widget
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Remove Controller Widget
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Custom OnBeginPIE
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Unbind Event from On Begin PIE.Delegate
+        -> Bind Event to On Begin PIE.Delegate
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: bIsSimulating (bool) Dir=Out
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> Custom OnBeginPIE
+Custom Event.then
+      Pin: then_0 (exec) Dir=Out
+        -> Branch.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Branch.execute
+    Node: Spawn Character Event
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_1
+      Pin: Condition (bool) Dir=In
+        -> Get DisplayControllerWidget.DisplayControllerWidget
+      Pin: then (exec) Dir=Out
+        -> Delay Until Next Tick.execute
+      Pin: else (exec) Dir=Out
+    Node: Get DisplayControllerWidget (K2Node_VariableGet)
+      Pin: DisplayControllerWidget (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Spawn Controller Widget
+Target is Game Animation Widget (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Delay Until Next Tick.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Delay Until Next Tick (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Spawn Character Event
+Target is Game Animation Widget.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: LatentInfo (struct) Dir=In
+  Graph: ToggleStillCamState
+    Node: ToggleStillCamState (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get PIEWorlds.execute
+    Node: SpawnActor Still Cam (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Set OldViewTarget.then
+      Pin: then (exec) Dir=Out
+        -> Set StillCam.execute
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: Class (class) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set StillCam.StillCam
+      Pin: SpawnTransform (struct) Dir=In
+      Pin: SpawnTransform_Location (struct) Dir=In
+        -> Get Camera Location
+Target is Player Camera Manager.ReturnValue
+      Pin: SpawnTransform_Rotation (struct) Dir=In
+        -> Get Camera Rotation
+Target is Player Camera Manager.ReturnValue
+      Pin: SpawnTransform_Scale (struct) Dir=In
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Get Camera Location
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerCameraManager.PlayerCameraManager
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor Still Cam.SpawnTransform_Location
+    Node: Get Camera Rotation
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerCameraManager.PlayerCameraManager
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor Still Cam.SpawnTransform_Rotation
+    Node: Set Field Of View
+Target is Camera Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set View Target with Blend
+Target is Player Controller.then
+      Pin: then (exec) Dir=Out
+        -> Set Constraint Aspect Ratio
+Target is Camera Component.execute
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+      Pin: InFieldOfView (real) Dir=In
+    Node: Set Constraint Aspect Ratio
+Target is Camera Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Field Of View
+Target is Camera Component.then
+      Pin: then (exec) Dir=Out
+        -> Set LookAtTarget.execute
+      Pin: self (object) Dir=In
+        -> Get Camera.Camera
+      Pin: bInConstrainAspectRatio (bool) Dir=In
+    Node: Set View Target with Blend
+Target is Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set StillCam.then
+      Pin: then (exec) Dir=Out
+        -> Set Field Of View
+Target is Camera Component.execute
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+        -> Get PlayerController.PlayerController
+      Pin: NewViewTarget (object) Dir=In
+        -> Set StillCam.Output_Get
+      Pin: BlendTime (real) Dir=In
+      Pin: BlendFunc (byte) Dir=In
+      Pin: BlendExp (real) Dir=In
+      Pin: bLockOutgoing (bool) Dir=In
+    Node: Get FOVAngle
+Target is Player Camera Manager (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerCameraManager.PlayerCameraManager
+      Pin: ReturnValue (real) Dir=Out
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.execute
+      Pin: self (object) Dir=In
+        -> Get.StillCam
+    Node: Set StillCam (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor Still Cam.then
+      Pin: then (exec) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.execute
+      Pin: StillCam (object) Dir=In
+        -> SpawnActor Still Cam.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.NewViewTarget
+      Pin: self (object) Dir=In
+    Node: Get StillCam (K2Node_VariableGet)
+      Pin: StillCam (object) Dir=Out
+        -> Get Camera.self
+      Pin: self (object) Dir=In
+    Node: Get Camera (K2Node_VariableGet)
+      Pin: Camera (object) Dir=Out
+        -> Set Constraint Aspect Ratio
+Target is Camera Component.self
+        -> Set Field Of View
+Target is Camera Component.self
+      Pin: self (object) Dir=In
+        -> Get StillCam.StillCam
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: else (exec) Dir=Out
+      Pin: StillCam (object) Dir=Out
+        -> Destroy Actor
+Target is Actor.self
+      Pin: self (object) Dir=In
+    Node: Get StillCam (K2Node_VariableGet)
+      Pin: StillCam (object) Dir=Out
+        -> Set TargetActor.self
+        -> Set LookAtTarget.self
+        -> Set FollowTarget.self
+        -> Set LastTargetLocation.self
+      Pin: self (object) Dir=In
+    Node: Set TargetActor (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set FollowTarget.then
+      Pin: then (exec) Dir=Out
+        -> Set LastTargetLocation.execute
+      Pin: TargetActor (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+        -> Get Actor Location
+Target is Actor.self
+      Pin: self (object) Dir=In
+        -> Get StillCam.StillCam
+    Node: Set LookAtTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Constraint Aspect Ratio
+Target is Camera Component.then
+      Pin: then (exec) Dir=Out
+        -> Set FollowTarget.execute
+      Pin: LookAtTarget (bool) Dir=In
+        -> Get StillCam_RotateState.StillCam_RotateState
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StillCam.StillCam
+    Node: Get StillCam_RotateState (K2Node_VariableGet)
+      Pin: StillCam_RotateState (bool) Dir=Out
+        -> Set LookAtTarget.LookAtTarget
+      Pin: self (object) Dir=In
+    Node: Set FollowTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set LookAtTarget.then
+      Pin: then (exec) Dir=Out
+        -> Set TargetActor.execute
+      Pin: FollowTarget (bool) Dir=In
+        -> Get StillCam_FollowState.StillCam_FollowState
+      Pin: Output_Get (bool) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StillCam.StillCam
+    Node: Get StillCam_FollowState (K2Node_VariableGet)
+      Pin: StillCam_FollowState (bool) Dir=Out
+        -> Set FollowTarget.FollowTarget
+      Pin: self (object) Dir=In
+    Node: Get Actor Location
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Set TargetActor.Output_Get
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set LastTargetLocation.LastTargetLocation
+    Node: Set LastTargetLocation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set TargetActor.then
+      Pin: then (exec) Dir=Out
+      Pin: LastTargetLocation (struct) Dir=In
+        -> Get Actor Location
+Target is Actor.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get StillCam.StillCam
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.self
+        -> Set PlayerController.PlayerController
+    Node: Get PlayerCameraManager (K2Node_VariableGet)
+      Pin: PlayerCameraManager (object) Dir=Out
+        -> Get FOVAngle
+Target is Player Camera Manager.self
+      Pin: self (object) Dir=In
+        -> Get PlayerController.PlayerController
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerController.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Set TargetActor.TargetActor
+    Node: Get PlayerCameraManager (K2Node_VariableGet)
+      Pin: PlayerCameraManager (object) Dir=Out
+        -> Get Camera Location
+Target is Player Camera Manager.self
+        -> Get Camera Rotation
+Target is Player Camera Manager.self
+      Pin: self (object) Dir=In
+        -> Get PlayerController.PlayerController
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set PlayerController.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> Is Empty.TargetArray
+    Node: Get PIEWorlds (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> ToggleStillCamState.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: bIncludeDedicatedServer (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+        -> Is Not Empty.TargetArray
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> SpawnActor Still Cam.WorldContextObject
+        -> Get Player Controller.WorldContextObject
+        -> Get All Actors Of Class.WorldContextObject
+    Node: Set PlayerController (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+      Pin: PlayerController (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Get PlayerCameraManager.self
+        -> Get View Target
+Target is Controller.self
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.self
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Get PlayerCameraManager.self
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+    Node: Is Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Condition (bool) Dir=In
+        -> Is Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set OldViewTarget.execute
+      Pin: else (exec) Dir=Out
+        -> Get.execute
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get PIEWorlds.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set PlayerController.execute
+      Pin: else (exec) Dir=Out
+    Node: Get View Target
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get PlayerController.PlayerController
+      Pin: ReturnValue (object) Dir=Out
+        -> Set OldViewTarget.OldViewTarget
+    Node: Set OldViewTarget (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> SpawnActor Still Cam.execute
+      Pin: OldViewTarget (object) Dir=In
+        -> Get View Target
+Target is Controller.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Get PlayerController (K2Node_VariableGet)
+      Pin: PlayerController (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.self
+    Node: Set View Target with Blend
+Target is Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Destroy Actor
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get PlayerController.PlayerController
+      Pin: NewViewTarget (object) Dir=In
+        -> Get OldViewTarget.OldViewTarget
+      Pin: BlendTime (real) Dir=In
+      Pin: BlendFunc (byte) Dir=In
+      Pin: BlendExp (real) Dir=In
+      Pin: bLockOutgoing (bool) Dir=In
+    Node: Get OldViewTarget (K2Node_VariableGet)
+      Pin: OldViewTarget (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.NewViewTarget
+      Pin: self (object) Dir=In
+  Graph: Get_StillCam_Enable_Button_Color
+    Node: Get_StillCam_Enable_Button_Color (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Get.else
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Get_StillCam_Enable_Button_Color.then
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StillCam (object) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: Get_StillCam_Follow_Button_Color
+    Node: Get_StillCam_Follow_Button_Color (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Get StillCam_FollowState (K2Node_VariableGet)
+      Pin: StillCam_FollowState (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get_StillCam_Follow_Button_Color.then
+      Pin: Condition (bool) Dir=In
+        -> Get StillCam_FollowState.StillCam_FollowState
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+  Graph: Get_StillCam_Rotate_Button_Color
+    Node: Get_StillCam_Rotate_Button_Color (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Get StillCam_RotateState (K2Node_VariableGet)
+      Pin: StillCam_RotateState (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get_StillCam_Rotate_Button_Color.then
+      Pin: Condition (bool) Dir=In
+        -> Get StillCam_RotateState.StillCam_RotateState
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+  Graph: SpawnCharacter
+    Node: SpawnCharacter (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get PIEWorlds.execute
+      Pin: PawnToSpawn (class) Dir=Out
+    Node: Get PIEWorlds (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnCharacter.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: bIncludeDedicatedServer (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> For Each Loop.Array
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get PIEWorlds.then
+      Pin: Array (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: LoopBody (exec) Dir=Out
+        -> Set CachedControlRotation.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get Player Controller.WorldContextObject
+        -> SpawnActor.WorldContextObject
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Player Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: PlayerIndex (int) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Controlled Pawn
+Target is Controller.self
+        -> Reroute Node.InputPin
+        -> Get Control Rotation
+Target is Controller.self
+    Node: Get Controlled Pawn
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (object) Dir=Out
+        -> Get Actor Transform
+Target is Actor.self
+        -> Reroute Node.InputPin
+    Node: SpawnActor (K2Node_SpawnActorFromClass)
+      Pin: execute (exec) Dir=In
+        -> Set CachedControlRotation.then
+      Pin: then (exec) Dir=Out
+        -> Destroy Actor
+Target is Actor.execute
+      Pin: WorldContextObject (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: Class (class) Dir=In
+        -> Get PawnToSpawn.PawnToSpawn
+      Pin: ReturnValue (object) Dir=Out
+        -> Possess
+Target is Controller.InPawn
+      Pin: SpawnTransform (struct) Dir=In
+        -> Get Actor Transform
+Target is Actor.ReturnValue
+      Pin: CollisionHandlingOverride (byte) Dir=In
+      Pin: TransformScaleMethod (byte) Dir=In
+      Pin: Owner (object) Dir=In
+      Pin: Instigator (object) Dir=In
+    Node: Get Actor Transform
+Target is Actor (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> SpawnActor.SpawnTransform
+    Node: Destroy Actor
+Target is Actor (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SpawnActor.then
+      Pin: then (exec) Dir=Out
+        -> Possess
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+    Node: Possess
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Destroy Actor
+Target is Actor.then
+      Pin: then (exec) Dir=Out
+        -> Set Control Rotation
+Target is Controller.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: InPawn (object) Dir=In
+        -> SpawnActor.ReturnValue
+    Node: Get PawnToSpawn (K2Node_VariableGet)
+      Pin: PawnToSpawn (class) Dir=Out
+        -> SpawnActor.Class
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Get Controlled Pawn
+Target is Controller.ReturnValue
+      Pin: OutputPin (object) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Possess
+Target is Controller.self
+        -> Reroute Node.InputPin
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Destroy Actor
+Target is Actor.self
+    Node: Get Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get Player Controller.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set CachedControlRotation.CachedControlRotation
+    Node: Set CachedControlRotation (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: then (exec) Dir=Out
+        -> SpawnActor.execute
+      Pin: CachedControlRotation (struct) Dir=In
+        -> Get Control Rotation
+Target is Controller.ReturnValue
+      Pin: Output_Get (struct) Dir=Out
+    Node: Set Control Rotation
+Target is Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Possess
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewRotation (struct) Dir=In
+        -> Get CachedControlRotation.CachedControlRotation
+    Node: Get CachedControlRotation (K2Node_VariableGet)
+      Pin: CachedControlRotation (struct) Dir=Out
+        -> Set Control Rotation
+Target is Controller.NewRotation
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set Control Rotation
+Target is Controller.self
+        -> Reroute Node.InputPin
+    Node: Set View Target with Blend
+Target is Player Controller (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: NewViewTarget (object) Dir=In
+        -> Get.StillCam
+      Pin: BlendTime (real) Dir=In
+      Pin: BlendFunc (byte) Dir=In
+      Pin: BlendExp (real) Dir=In
+      Pin: bLockOutgoing (bool) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (object) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.self
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Set Control Rotation
+Target is Controller.then
+      Pin: then (exec) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.execute
+      Pin: else (exec) Dir=Out
+      Pin: StillCam (object) Dir=Out
+        -> Set View Target with Blend
+Target is Player Controller.NewViewTarget
+      Pin: self (object) Dir=In
+  Graph: Get_ControllerWidgetToggle_Button_Color
+    Node: Get_ControllerWidgetToggle_Button_Color (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Get DisplayControllerWidget (K2Node_VariableGet)
+      Pin: DisplayControllerWidget (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get_ControllerWidgetToggle_Button_Color.then
+      Pin: Condition (bool) Dir=In
+        -> Get DisplayControllerWidget.DisplayControllerWidget
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In

@@ -1,0 +1,626 @@
+Blueprint: LevelBlock_Traversable (/Game/LevelPrototyping/LevelBlock_Traversable.LevelBlock_Traversable)
+  Graph: EventGraph
+    Node: Event BeginPlay (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+    Node: Event ActorBeginOverlap (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+    Node: Event Tick (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+      Pin: DeltaSeconds (real) Dir=Out
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Parent: Construction Script.execute
+    Node: Parent: Construction Script (K2Node_CallParentFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set Ledges.execute
+      Pin: self (object) Dir=In
+    Node: Set Ledges (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Parent: Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Set OppositeLedges.execute
+      Pin: Ledges (object) Dir=In
+        -> Make Array.Array
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Set OppositeLedges (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set Ledges.then
+      Pin: then (exec) Dir=Out
+      Pin: OppositeLedges (object) Dir=In
+        -> Make Map.Map
+      Pin: Output_Get (object) Dir=Out
+      Pin: self (object) Dir=In
+    Node: Make Array (K2Node_MakeArray)
+      Pin: Array (object) Dir=Out
+        -> Set Ledges.Ledges
+      Pin: [0] (object) Dir=In
+        -> Get Ledge_1.Ledge_1
+      Pin: [1] (object) Dir=In
+        -> Get Ledge_2.Ledge_2
+      Pin: [2] (object) Dir=In
+        -> Get Ledge_3.Ledge_3
+      Pin: [3] (object) Dir=In
+        -> Get Ledge_4.Ledge_4
+    Node: Make Map (K2Node_MakeMap)
+      Pin: Map (object) Dir=Out
+        -> Set OppositeLedges.OppositeLedges
+      Pin: Key 0 (object) Dir=In
+        -> Get Ledge_1.Ledge_1
+      Pin: Value 0 (object) Dir=In
+        -> Get Ledge_2.Ledge_2
+      Pin: Key 1 (object) Dir=In
+        -> Get Ledge_2.Ledge_2
+      Pin: Value 1 (object) Dir=In
+        -> Get Ledge_1.Ledge_1
+      Pin: Key 2 (object) Dir=In
+        -> Get Ledge_3.Ledge_3
+      Pin: Value 2 (object) Dir=In
+        -> Get Ledge_4.Ledge_4
+      Pin: Key 3 (object) Dir=In
+        -> Get Ledge_4.Ledge_4
+      Pin: Value 3 (object) Dir=In
+        -> Get Ledge_3.Ledge_3
+    Node: Get Ledge_1 (K2Node_VariableGet)
+      Pin: Ledge_1 (object) Dir=Out
+        -> Make Array.[0]
+      Pin: self (object) Dir=In
+    Node: Get Ledge_2 (K2Node_VariableGet)
+      Pin: Ledge_2 (object) Dir=Out
+        -> Make Array.[1]
+      Pin: self (object) Dir=In
+    Node: Get Ledge_3 (K2Node_VariableGet)
+      Pin: Ledge_3 (object) Dir=Out
+        -> Make Array.[2]
+      Pin: self (object) Dir=In
+    Node: Get Ledge_4 (K2Node_VariableGet)
+      Pin: Ledge_4 (object) Dir=Out
+        -> Make Array.[3]
+      Pin: self (object) Dir=In
+    Node: Get Ledge_1 (K2Node_VariableGet)
+      Pin: Ledge_1 (object) Dir=Out
+        -> Make Map.Key 0
+      Pin: self (object) Dir=In
+    Node: Get Ledge_2 (K2Node_VariableGet)
+      Pin: Ledge_2 (object) Dir=Out
+        -> Make Map.Value 0
+      Pin: self (object) Dir=In
+    Node: Get Ledge_2 (K2Node_VariableGet)
+      Pin: Ledge_2 (object) Dir=Out
+        -> Make Map.Key 1
+      Pin: self (object) Dir=In
+    Node: Get Ledge_1 (K2Node_VariableGet)
+      Pin: Ledge_1 (object) Dir=Out
+        -> Make Map.Value 1
+      Pin: self (object) Dir=In
+    Node: Get Ledge_3 (K2Node_VariableGet)
+      Pin: Ledge_3 (object) Dir=Out
+        -> Make Map.Key 2
+      Pin: self (object) Dir=In
+    Node: Get Ledge_4 (K2Node_VariableGet)
+      Pin: Ledge_4 (object) Dir=Out
+        -> Make Map.Value 2
+      Pin: self (object) Dir=In
+    Node: Get Ledge_4 (K2Node_VariableGet)
+      Pin: Ledge_4 (object) Dir=Out
+        -> Make Map.Key 3
+      Pin: self (object) Dir=In
+    Node: Get Ledge_3 (K2Node_VariableGet)
+      Pin: Ledge_3 (object) Dir=Out
+        -> Make Map.Value 3
+      Pin: self (object) Dir=In
+  Graph: GetLedgeTransforms
+    Node: GetLedgeTransforms (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Sequence.execute
+      Pin: HitLocation (struct) Dir=Out
+      Pin: ActorLocation (struct) Dir=Out
+      Pin: TraversalTraceResultInOut (struct) Dir=Out
+        -> Set members in S Traversal Check Result.StructRef
+        -> Set members in S Traversal Check Result.StructRef
+        -> Set members in S Traversal Check Result.StructRef
+        -> Set members in S Traversal Check Result.StructRef
+        -> Break S Traversal Check Result.S_TraversalCheckResult
+        -> Set members in S Traversal Check Result.StructRef
+    Node: Sequence (K2Node_ExecutionSequence)
+      Pin: execute (exec) Dir=In
+        -> GetLedgeTransforms.then
+      Pin: then_0 (exec) Dir=Out
+        -> Find Ledge Closest to Actor
+Target is Level Block Traversable.execute
+      Pin: then_1 (exec) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Find Ledge Closest to Actor
+Target is Level Block Traversable (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Sequence.then_0
+      Pin: then (exec) Dir=Out
+        -> Is Valid.exec
+      Pin: self (object) Dir=In
+      Pin: ActorLocation (struct) Dir=In
+        -> Get ActorLocation.ActorLocation
+      Pin: ReturnValue (object) Dir=Out
+        -> Is Valid.InputObject
+        -> Set ClosestLedge.ClosestLedge
+    Node: Set OppositeLedge (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set members in S Traversal Check Result.execute
+      Pin: OppositeLedge (object) Dir=In
+        -> Find.Value
+      Pin: Output_Get (object) Dir=Out
+    Node: Get OppositeLedges (K2Node_VariableGet)
+      Pin: OppositeLedges (object) Dir=Out
+        -> Find.TargetMap
+      Pin: self (object) Dir=In
+    Node: Find (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetMap (object) Dir=In
+        -> Get OppositeLedges.OppositeLedges
+      Pin: Key (object) Dir=In
+        -> Get ClosestLedge.ClosestLedge
+      Pin: Value (object) Dir=Out
+        -> Set OppositeLedge.OppositeLedge
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Get OppositeLedge (K2Node_VariableGet)
+      Pin: OppositeLedge (object) Dir=Out
+        -> Find Transform Closest to World Location
+Target is Spline Component.self
+    Node: Find Transform Closest to World Location
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get OppositeLedge.OppositeLedge
+      Pin: WorldLocation (struct) Dir=In
+        -> Break S Traversal Check Result.FrontLedgeLocation_50_52B8B8A84F10B0E0A9F287972F2C54D8
+      Pin: CoordinateSpace (byte) Dir=In
+      Pin: bUseScale (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Location (struct) Dir=Out
+        -> Set members in S Traversal Check Result.BackLedgeLocation_55_EB7453EF477E18645DAD9F8950BCF44F
+      Pin: ReturnValue_Rotation (struct) Dir=Out
+        -> Get Up Vector.InRot
+      Pin: ReturnValue_Scale (struct) Dir=Out
+    Node: Get Distance Along Spline at Location
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ClosestLedge.ClosestLedge
+      Pin: InLocation (struct) Dir=In
+        -> Find Location Closest to World Location
+Target is Spline Component.ReturnValue
+      Pin: CoordinateSpace (byte) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Value
+    Node: Get ClosestLedge (K2Node_VariableGet)
+      Pin: ClosestLedge (object) Dir=Out
+        -> Get Distance Along Spline at Location
+Target is Spline Component.self
+    Node: Get ClosestLedge (K2Node_VariableGet)
+      Pin: ClosestLedge (object) Dir=Out
+        -> Find Location Closest to World Location
+Target is Spline Component.self
+    Node: Get HitLocation (K2Node_VariableGet)
+      Pin: HitLocation (struct) Dir=Out
+        -> Find Location Closest to World Location
+Target is Spline Component.WorldLocation
+    Node: Find Location Closest to World Location
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ClosestLedge.ClosestLedge
+      Pin: WorldLocation (struct) Dir=In
+        -> Get HitLocation.HitLocation
+      Pin: CoordinateSpace (byte) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Get Distance Along Spline at Location
+Target is Spline Component.InLocation
+    Node: Get ClosestLedge (K2Node_VariableGet)
+      Pin: ClosestLedge (object) Dir=Out
+        -> Get Spline Length
+Target is Spline Component.self
+    Node: Get Spline Length
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ClosestLedge.ClosestLedge
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.A
+    Node: Clamp (Float) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: Value (real) Dir=In
+        -> Get Distance Along Spline at Location
+Target is Spline Component.ReturnValue
+      Pin: Min (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: Max (real) Dir=In
+        -> float - float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Get Transform at Distance Along Spline
+Target is Spline Component.Distance
+    Node: float - float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Spline Length
+Target is Spline Component.ReturnValue
+      Pin: B (real) Dir=In
+        -> float / float.ReturnValue
+      Pin: ReturnValue (real) Dir=Out
+        -> Clamp (Float).Max
+    Node: Get ClosestLedge (K2Node_VariableGet)
+      Pin: ClosestLedge (object) Dir=Out
+        -> Get Transform at Distance Along Spline
+Target is Spline Component.self
+    Node: Get Transform at Distance Along Spline
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ClosestLedge.ClosestLedge
+      Pin: Distance (real) Dir=In
+        -> Clamp (Float).ReturnValue
+      Pin: CoordinateSpace (byte) Dir=In
+      Pin: bUseScale (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+      Pin: ReturnValue_Location (struct) Dir=Out
+        -> Set members in S Traversal Check Result.FrontLedgeLocation_50_52B8B8A84F10B0E0A9F287972F2C54D8
+      Pin: ReturnValue_Rotation (struct) Dir=Out
+        -> Get Up Vector.InRot
+      Pin: ReturnValue_Scale (struct) Dir=Out
+    Node: Is Valid (K2Node_MacroInstance)
+      Pin: exec (exec) Dir=In
+        -> Find Ledge Closest to Actor
+Target is Level Block Traversable.then
+      Pin: InputObject (object) Dir=In
+        -> Find Ledge Closest to Actor
+Target is Level Block Traversable.ReturnValue
+      Pin: Is Valid (exec) Dir=Out
+        -> Set ClosestLedge.execute
+      Pin: Is Not Valid (exec) Dir=Out
+        -> Set members in S Traversal Check Result.execute
+    Node: Set ClosestLedge (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Valid
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ClosestLedge (object) Dir=In
+        -> Find Ledge Closest to Actor
+Target is Level Block Traversable.ReturnValue
+      Pin: Output_Get (object) Dir=Out
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in S Traversal Check Result.then
+    Node: Set members in S Traversal Check Result (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Is Valid.Is Not Valid
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> GetLedgeTransforms.TraversalTraceResultInOut
+      Pin: StructOut (struct) Dir=Out
+      Pin: HasFrontLedge_34_6C547E244F41599C4D38E1909503CCBA (bool) Dir=In
+    Node: Set members in S Traversal Check Result (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> GetLedgeTransforms.TraversalTraceResultInOut
+      Pin: StructOut (struct) Dir=Out
+      Pin: HasFrontLedge_34_6C547E244F41599C4D38E1909503CCBA (bool) Dir=In
+    Node: Get ClosestLedge (K2Node_VariableGet)
+      Pin: ClosestLedge (object) Dir=Out
+        -> Get Spline Length
+Target is Spline Component.self
+    Node: Get Spline Length
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> Get ClosestLedge.ClosestLedge
+      Pin: ReturnValue (real) Dir=Out
+        -> float >= float.A
+    Node: float >= float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Spline Length
+Target is Spline Component.ReturnValue
+      Pin: B (real) Dir=In
+        -> Get MinLedgeWidth.MinLedgeWidth
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get MinLedgeWidth (K2Node_VariableGet)
+      Pin: MinLedgeWidth (real) Dir=Out
+        -> float >= float.B
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Set ClosestLedge.then
+      Pin: Condition (bool) Dir=In
+        -> float >= float.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set members in S Traversal Check Result.execute
+      Pin: else (exec) Dir=Out
+        -> Set members in S Traversal Check Result.execute
+    Node: Set members in S Traversal Check Result (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: StructRef (struct) Dir=In
+        -> GetLedgeTransforms.TraversalTraceResultInOut
+      Pin: StructOut (struct) Dir=Out
+      Pin: HasFrontLedge_34_6C547E244F41599C4D38E1909503CCBA (bool) Dir=In
+      Pin: FrontLedgeLocation_50_52B8B8A84F10B0E0A9F287972F2C54D8 (struct) Dir=In
+        -> Get Transform at Distance Along Spline
+Target is Spline Component.ReturnValue_Location
+      Pin: FrontLedgeNormal_51_3C4F46204EAF10E382D4D9A8E26ACB5A (struct) Dir=In
+        -> Get Up Vector.ReturnValue
+    Node: Get MinLedgeWidth (K2Node_VariableGet)
+      Pin: MinLedgeWidth (real) Dir=Out
+        -> float / float.A
+      Pin: self (object) Dir=In
+    Node: float / float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get MinLedgeWidth.MinLedgeWidth
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (real) Dir=Out
+        -> float - float.B
+        -> Clamp (Float).Min
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in S Traversal Check Result.then
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (exec) Dir=In
+        -> Sequence.then_1
+      Pin: OutputPin (exec) Dir=Out
+        -> Branch.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Set members in S Traversal Check Result.then
+    Node: Set members in S Traversal Check Result (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: StructRef (struct) Dir=In
+        -> GetLedgeTransforms.TraversalTraceResultInOut
+      Pin: StructOut (struct) Dir=Out
+      Pin: HasBackLedge_41_8550E97541A4EDBCA44DB0B16F1B51C4 (bool) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Condition (bool) Dir=In
+        -> Find.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set OppositeLedge.execute
+      Pin: else (exec) Dir=Out
+        -> Set members in S Traversal Check Result.execute
+    Node: Break S Traversal Check Result (K2Node_BreakStruct)
+      Pin: S_TraversalCheckResult (struct) Dir=In
+        -> GetLedgeTransforms.TraversalTraceResultInOut
+      Pin: FrontLedgeLocation_50_52B8B8A84F10B0E0A9F287972F2C54D8 (struct) Dir=Out
+        -> Find Transform Closest to World Location
+Target is Spline Component.WorldLocation
+    Node: Set members in S Traversal Check Result (K2Node_SetFieldsInStruct)
+      Pin: execute (exec) Dir=In
+        -> Set OppositeLedge.then
+      Pin: then (exec) Dir=Out
+      Pin: StructRef (struct) Dir=In
+        -> GetLedgeTransforms.TraversalTraceResultInOut
+      Pin: StructOut (struct) Dir=Out
+      Pin: HasBackLedge_41_8550E97541A4EDBCA44DB0B16F1B51C4 (bool) Dir=In
+      Pin: BackLedgeLocation_55_EB7453EF477E18645DAD9F8950BCF44F (struct) Dir=In
+        -> Find Transform Closest to World Location
+Target is Spline Component.ReturnValue_Location
+      Pin: BackLedgeNormal_56_F05B9B4A4046704A49754F80A8C7BCE3 (struct) Dir=In
+        -> Get Up Vector.ReturnValue
+    Node: Get ClosestLedge (K2Node_VariableGet)
+      Pin: ClosestLedge (object) Dir=Out
+        -> Find.Key
+    Node: Get ActorLocation (K2Node_VariableGet)
+      Pin: ActorLocation (struct) Dir=Out
+        -> Find Ledge Closest to Actor
+Target is Level Block Traversable.ActorLocation
+    Node: Get Up Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Get Transform at Distance Along Spline
+Target is Spline Component.ReturnValue_Rotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in S Traversal Check Result.FrontLedgeNormal_51_3C4F46204EAF10E382D4D9A8E26ACB5A
+    Node: Get Up Vector (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InRot (struct) Dir=In
+        -> Find Transform Closest to World Location
+Target is Spline Component.ReturnValue_Rotation
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set members in S Traversal Check Result.BackLedgeNormal_56_F05B9B4A4046704A49754F80A8C7BCE3
+    Node: Find the ledge closest to the actors location. (EdGraphNode_Comment)
+    Node: Make sure the ledge is wide enough. If not, the front ledge will not be valid. (EdGraphNode_Comment)
+    Node: Get the closest point on the ledge to the actor, and clamp the location so that it can't be too close to the end of the ledge. This prevents the character from floating if they traverse near a corner. The clamped location will always be half the "min ledge width" from the edge. If the min ledge width is 60 units, the ledge location will always be at least 30 units away from a corner. (EdGraphNode_Comment)
+    Node: Use a map to find the opposite ledge of the closest ledge. (EdGraphNode_Comment)
+    Node: Get the closest point on the back ledge from the front ledges location. (EdGraphNode_Comment)
+  Graph: FindLedgeClosestToActor
+    Node: FindLedgeClosestToActor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: ActorLocation (struct) Dir=Out
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Branch.then
+      Pin: Array (object) Dir=In
+        -> Get Ledges.Ledges
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Find Location Closest to World Location
+Target is Spline Component.self
+        -> Find Up Vector Closest to World Location
+Target is Spline Component.self
+      Pin: Array Index (int) Dir=Out
+        -> Reroute Node.InputPin
+      Pin: Completed (exec) Dir=Out
+        -> Return Node.execute
+    Node: Get Ledges (K2Node_VariableGet)
+      Pin: Ledges (object) Dir=Out
+        -> For Each Loop.Array
+      Pin: self (object) Dir=In
+    Node: Find Location Closest to World Location
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: WorldLocation (struct) Dir=In
+        -> Get ActorLocation.ActorLocation
+      Pin: CoordinateSpace (byte) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.A
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.Completed
+      Pin: ReturnValue (object) Dir=In
+        -> GET.Output
+    Node: Get Ledges (K2Node_VariableGet)
+      Pin: Ledges (object) Dir=Out
+        -> Is Not Empty.TargetArray
+      Pin: self (object) Dir=In
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get Ledges.Ledges
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> FindLedgeClosestToActor.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (object) Dir=In
+    Node: Distance (Vector) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: V1 (struct) Dir=In
+        -> vector + vector.ReturnValue
+      Pin: V2 (struct) Dir=In
+        -> Get ActorLocation.ActorLocation
+      Pin: ReturnValue (real) Dir=Out
+        -> Set ClosestDistance.ClosestDistance
+        -> float < float.A
+    Node: Set ClosestDistance (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Set ClosestIndex.execute
+      Pin: ClosestDistance (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: Output_Get (real) Dir=Out
+    Node: Set ClosestIndex (K2Node_VariableSet)
+      Pin: execute (exec) Dir=In
+        -> Set ClosestDistance.then
+      Pin: then (exec) Dir=Out
+      Pin: ClosestIndex (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: Output_Get (int) Dir=Out
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Set ClosestIndex.ClosestIndex
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> For Each Loop.Array Index
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> OR Boolean.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Set ClosestDistance.execute
+      Pin: else (exec) Dir=Out
+    Node: float < float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Distance (Vector).ReturnValue
+      Pin: B (real) Dir=In
+        -> Get ClosestDistance.ClosestDistance
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get ClosestDistance (K2Node_VariableGet)
+      Pin: ClosestDistance (real) Dir=Out
+        -> float < float.B
+    Node: Get Ledges (K2Node_VariableGet)
+      Pin: Ledges (object) Dir=Out
+        -> GET.Array
+      Pin: self (object) Dir=In
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get Ledges.Ledges
+      Pin: Dimension 1 (int) Dir=In
+        -> Get ClosestIndex.ClosestIndex
+      Pin: Output (object) Dir=Out
+        -> Return Node.ReturnValue
+    Node: Get ClosestIndex (K2Node_VariableGet)
+      Pin: ClosestIndex (int) Dir=Out
+        -> GET.Dimension 1
+    Node: OR Boolean (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (bool) Dir=In
+        -> float < float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Equal (Integer).ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Equal (Integer) (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> OR Boolean.B
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Reroute Node (K2Node_Knot)
+      Pin: InputPin (int) Dir=In
+        -> Reroute Node.OutputPin
+      Pin: OutputPin (int) Dir=Out
+        -> Reroute Node.InputPin
+        -> Equal (Integer).A
+    Node: Get ActorLocation (K2Node_VariableGet)
+      Pin: ActorLocation (struct) Dir=Out
+        -> Find Location Closest to World Location
+Target is Spline Component.WorldLocation
+        -> Find Up Vector Closest to World Location
+Target is Spline Component.WorldLocation
+    Node: vector + vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Find Location Closest to World Location
+Target is Spline Component.ReturnValue
+      Pin: B (struct) Dir=In
+        -> vector * vector.ReturnValue
+      Pin: ReturnValue (struct) Dir=Out
+        -> Distance (Vector).V1
+    Node: Find Up Vector Closest to World Location
+Target is Spline Component (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+      Pin: WorldLocation (struct) Dir=In
+        -> Get ActorLocation.ActorLocation
+      Pin: CoordinateSpace (byte) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector * vector.A
+    Node: vector * vector (K2Node_PromotableOperator)
+      Pin: A (struct) Dir=In
+        -> Find Up Vector Closest to World Location
+Target is Spline Component.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> vector + vector.B
+    Node: Get ActorLocation (K2Node_VariableGet)
+      Pin: ActorLocation (struct) Dir=Out
+        -> Distance (Vector).V2
+    Node: Iterate through all the closest points on all available ledges to find the closest one. An offset is added away from the ledge using its normal to prevent corners from having the same location. If not, traversing against a corner would be inconsistent. (EdGraphNode_Comment)

@@ -18,6 +18,9 @@ public class SOTS_BPGen_Bridge : ModuleRules
             "Json",
             "JsonUtilities",
             "UnrealEd",
+            "Slate",
+            "SlateCore",
+            "ToolMenus",
             "SOTS_BlueprintGen"
         });
 

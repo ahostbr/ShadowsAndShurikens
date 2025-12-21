@@ -15,19 +15,19 @@
 
 namespace
 {
-	static FString GetBPGenNodeId(const UEdGraphNode* Node)
+	static FString Inspector_GetBPGenNodeId(const UEdGraphNode* Node)
 	{
 		return Node ? Node->NodeComment : FString();
 	}
 
-	static FString GetNodeStableId(const UEdGraphNode* Node)
+	static FString Inspector_GetNodeStableId(const UEdGraphNode* Node)
 	{
 		if (!Node)
 		{
 			return FString();
 		}
 
-		const FString NodeId = GetBPGenNodeId(Node);
+		const FString NodeId = Inspector_GetBPGenNodeId(Node);
 		return !NodeId.IsEmpty() ? NodeId : Node->NodeGuid.ToString(EGuidFormats::DigitsWithHyphens);
 	}
 
@@ -51,7 +51,7 @@ namespace
 		}
 	}
 
-	static void SortPinsStable(TArray<FSOTS_BPGenDiscoveredPinDescriptor>& Pins)
+	static void Inspector_SortPinsStable(TArray<FSOTS_BPGenDiscoveredPinDescriptor>& Pins)
 	{
 		Pins.Sort([](const FSOTS_BPGenDiscoveredPinDescriptor& A, const FSOTS_BPGenDiscoveredPinDescriptor& B)
 		{
@@ -66,7 +66,7 @@ namespace
 		});
 	}
 
-	static void SortLinksStable(TArray<FSOTS_BPGenNodeLink>& Links)
+	static void Inspector_SortLinksStable(TArray<FSOTS_BPGenNodeLink>& Links)
 	{
 		Links.Sort([](const FSOTS_BPGenNodeLink& A, const FSOTS_BPGenNodeLink& B)
 		{
@@ -92,7 +92,7 @@ namespace
 		});
 	}
 
-	static void SortNodeSummariesStable(TArray<FSOTS_BPGenNodeSummary>& Nodes)
+	static void Inspector_SortNodeSummariesStable(TArray<FSOTS_BPGenNodeSummary>& Nodes)
 	{
 		Nodes.Sort([](const FSOTS_BPGenNodeSummary& A, const FSOTS_BPGenNodeSummary& B)
 		{
@@ -124,7 +124,7 @@ namespace
 		});
 	}
 
-	static FSOTS_BPGenDiscoveredPinDescriptor MakePinDescriptor(const UEdGraphPin* Pin)
+	static FSOTS_BPGenDiscoveredPinDescriptor Inspector_MakePinDescriptor(const UEdGraphPin* Pin)
 	{
 		FSOTS_BPGenDiscoveredPinDescriptor Descriptor;
 		if (!Pin)
@@ -148,7 +148,7 @@ namespace
 		return Descriptor;
 	}
 
-	static FSOTS_BPGenNodeSummary MakeNodeSummary(UEdGraphNode* Node, bool bIncludePins)
+	static FSOTS_BPGenNodeSummary Inspector_MakeNodeSummary(UEdGraphNode* Node, bool bIncludePins)
 	{
 		FSOTS_BPGenNodeSummary Summary;
 		if (!Node)
@@ -156,7 +156,7 @@ namespace
 			return Summary;
 		}
 
-		Summary.NodeId = GetBPGenNodeId(Node);
+		Summary.NodeId = Inspector_GetBPGenNodeId(Node);
 		Summary.NodeGuid = Node->NodeGuid.ToString(EGuidFormats::DigitsWithHyphens);
 		Summary.NodeClass = Node->GetClass()->GetName();
 		Summary.NodeClassPath = Node->GetClass()->GetPathName();
@@ -169,16 +169,16 @@ namespace
 		{
 			for (UEdGraphPin* Pin : Node->Pins)
 			{
-				Summary.Pins.Add(MakePinDescriptor(Pin));
+				Summary.Pins.Add(Inspector_MakePinDescriptor(Pin));
 			}
 
-			SortPinsStable(Summary.Pins);
+			Inspector_SortPinsStable(Summary.Pins);
 		}
 
 		return Summary;
 	}
 
-	static UBlueprint* LoadBlueprintAsset(const FString& BlueprintPath)
+	static UBlueprint* Inspector_LoadBlueprintAsset(const FString& BlueprintPath)
 	{
 		if (BlueprintPath.IsEmpty())
 		{
@@ -188,7 +188,7 @@ namespace
 		return Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr, *BlueprintPath));
 	}
 
-	static UEdGraph* FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName)
+	static UEdGraph* Inspector_FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName)
 	{
 		if (!Blueprint)
 		{
@@ -206,16 +206,16 @@ namespace
 		return nullptr;
 	}
 
-	static bool LoadBlueprintAndGraph(const FString& BlueprintPath, FName FunctionName, UBlueprint*& OutBlueprint, UEdGraph*& OutGraph, TArray<FString>& OutErrors)
+	static bool Inspector_LoadBlueprintAndGraph(const FString& BlueprintPath, FName FunctionName, UBlueprint*& OutBlueprint, UEdGraph*& OutGraph, TArray<FString>& OutErrors)
 	{
-		OutBlueprint = LoadBlueprintAsset(BlueprintPath);
+		OutBlueprint = Inspector_LoadBlueprintAsset(BlueprintPath);
 		if (!OutBlueprint)
 		{
 			OutErrors.Add(FString::Printf(TEXT("Failed to load Blueprint '%s'."), *BlueprintPath));
 			return false;
 		}
 
-		OutGraph = FindFunctionGraph(OutBlueprint, FunctionName);
+		OutGraph = Inspector_FindFunctionGraph(OutBlueprint, FunctionName);
 		if (!OutGraph)
 		{
 			OutErrors.Add(FString::Printf(TEXT("Function graph '%s' not found in '%s'."), *FunctionName.ToString(), *BlueprintPath));
@@ -225,7 +225,7 @@ namespace
 		return true;
 	}
 
-	static bool SaveBlueprintInternal(UBlueprint* Blueprint, FString& OutError)
+	static bool Inspector_SaveBlueprintInternal(UBlueprint* Blueprint, FString& OutError)
 	{
 		if (!Blueprint)
 		{
@@ -264,7 +264,7 @@ FSOTS_BPGenNodeListResult USOTS_BPGenInspector::ListFunctionGraphNodes(const UOb
 
 	UBlueprint* Blueprint = nullptr;
 	UEdGraph* FunctionGraph = nullptr;
-	if (!LoadBlueprintAndGraph(BlueprintPath, FunctionName, Blueprint, FunctionGraph, Result.Errors))
+	if (!Inspector_LoadBlueprintAndGraph(BlueprintPath, FunctionName, Blueprint, FunctionGraph, Result.Errors))
 	{
 		return Result;
 	}
@@ -277,10 +277,10 @@ FSOTS_BPGenNodeListResult USOTS_BPGenInspector::ListFunctionGraphNodes(const UOb
 			continue;
 		}
 
-		Result.Nodes.Add(MakeNodeSummary(Node, bIncludePins));
+		Result.Nodes.Add(Inspector_MakeNodeSummary(Node, bIncludePins));
 	}
 	
-	SortNodeSummariesStable(Result.Nodes);
+	Inspector_SortNodeSummariesStable(Result.Nodes);
 
 	Result.bSuccess = true;
 	return Result;
@@ -301,7 +301,7 @@ FSOTS_BPGenNodeDescribeResult USOTS_BPGenInspector::DescribeNodeById(const UObje
 
 	UBlueprint* Blueprint = nullptr;
 	UEdGraph* FunctionGraph = nullptr;
-	if (!LoadBlueprintAndGraph(BlueprintPath, FunctionName, Blueprint, FunctionGraph, Result.Errors))
+	if (!Inspector_LoadBlueprintAndGraph(BlueprintPath, FunctionName, Blueprint, FunctionGraph, Result.Errors))
 	{
 		return Result;
 	}
@@ -314,7 +314,7 @@ FSOTS_BPGenNodeDescribeResult USOTS_BPGenInspector::DescribeNodeById(const UObje
 			continue;
 		}
 
-		const FString NodeStableId = GetNodeStableId(Node);
+		const FString NodeStableId = Inspector_GetNodeStableId(Node);
 		if (NodeStableId == NodeId)
 		{
 			TargetNode = Node;
@@ -328,7 +328,7 @@ FSOTS_BPGenNodeDescribeResult USOTS_BPGenInspector::DescribeNodeById(const UObje
 		return Result;
 	}
 
-	Result.Description.Summary = MakeNodeSummary(TargetNode, bIncludePins);
+	Result.Description.Summary = Inspector_MakeNodeSummary(TargetNode, bIncludePins);
 
 	for (UEdGraphPin* Pin : TargetNode->Pins)
 	{
@@ -352,21 +352,21 @@ FSOTS_BPGenNodeDescribeResult USOTS_BPGenInspector::DescribeNodeById(const UObje
 			}
 
 			FSOTS_BPGenNodeLink& Link = Result.Description.Links.AddDefaulted_GetRef();
-			Link.FromNodeId = GetNodeStableId(TargetNode);
+			Link.FromNodeId = Inspector_GetNodeStableId(TargetNode);
 			Link.FromPinName = Pin->PinName;
 
 			UEdGraphNode* LinkedNode = LinkedPin->GetOwningNode();
-			Link.ToNodeId = GetNodeStableId(LinkedNode);
+			Link.ToNodeId = Inspector_GetNodeStableId(LinkedNode);
 			Link.ToPinName = LinkedPin->PinName;
 		}
 	}
 
-	SortPinsStable(Result.Description.Summary.Pins);
+	Inspector_SortPinsStable(Result.Description.Summary.Pins);
 	Result.Description.PinDefaults.Sort([](const FSOTS_BPGenPinDefault& A, const FSOTS_BPGenPinDefault& B)
 	{
 		return A.PinName.LexicalLess(B.PinName);
 	});
-	SortLinksStable(Result.Description.Links);
+	Inspector_SortLinksStable(Result.Description.Links);
 
 	Result.bSuccess = true;
 	return Result;
@@ -377,7 +377,7 @@ FSOTS_BPGenMaintenanceResult USOTS_BPGenInspector::CompileBlueprintAsset(const U
 	FSOTS_BPGenMaintenanceResult Result;
 	Result.BlueprintPath = BlueprintPath;
 
-	UBlueprint* Blueprint = LoadBlueprintAsset(BlueprintPath);
+	UBlueprint* Blueprint = Inspector_LoadBlueprintAsset(BlueprintPath);
 	if (!Blueprint)
 	{
 		Result.Errors.Add(FString::Printf(TEXT("CompileBlueprintAsset: Failed to load Blueprint '%s'."), *BlueprintPath));
@@ -395,7 +395,7 @@ FSOTS_BPGenMaintenanceResult USOTS_BPGenInspector::SaveBlueprintAsset(const UObj
 	FSOTS_BPGenMaintenanceResult Result;
 	Result.BlueprintPath = BlueprintPath;
 
-	UBlueprint* Blueprint = LoadBlueprintAsset(BlueprintPath);
+	UBlueprint* Blueprint = Inspector_LoadBlueprintAsset(BlueprintPath);
 	if (!Blueprint)
 	{
 		Result.Errors.Add(FString::Printf(TEXT("SaveBlueprintAsset: Failed to load Blueprint '%s'."), *BlueprintPath));
@@ -403,7 +403,7 @@ FSOTS_BPGenMaintenanceResult USOTS_BPGenInspector::SaveBlueprintAsset(const UObj
 	}
 
 	FString SaveError;
-	if (!SaveBlueprintInternal(Blueprint, SaveError))
+	if (!Inspector_SaveBlueprintInternal(Blueprint, SaveError))
 	{
 		Result.Errors.Add(SaveError);
 		return Result;
@@ -422,7 +422,7 @@ FSOTS_BPGenMaintenanceResult USOTS_BPGenInspector::RefreshAllNodesInFunction(con
 
 	UBlueprint* Blueprint = nullptr;
 	UEdGraph* FunctionGraph = nullptr;
-	if (!LoadBlueprintAndGraph(BlueprintPath, FunctionName, Blueprint, FunctionGraph, Result.Errors))
+	if (!Inspector_LoadBlueprintAndGraph(BlueprintPath, FunctionName, Blueprint, FunctionGraph, Result.Errors))
 	{
 		return Result;
 	}

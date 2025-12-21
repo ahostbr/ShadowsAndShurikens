@@ -16,7 +16,6 @@ public:
 
 private:
 	TSharedRef<SDockTab> SpawnBPGenRunnerTab(const FSpawnTabArgs& SpawnTabArgs);
-	TSharedRef<SDockTab> SpawnBPGenControlCenterTab(const FSpawnTabArgs& SpawnTabArgs);
 	void RegisterMenus();
 
 	FDelegateHandle MenuRegistrationHandle;

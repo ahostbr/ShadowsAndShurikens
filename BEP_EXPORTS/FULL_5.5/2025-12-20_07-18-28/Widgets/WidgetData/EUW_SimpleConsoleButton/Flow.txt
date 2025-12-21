@@ -1,0 +1,326 @@
+Blueprint: EUW_SimpleConsoleButton (/Game/Widgets/WidgetData/EUW_SimpleConsoleButton.EUW_SimpleConsoleButton)
+  Graph: EventGraph
+    Node: Event Pre Construct (K2Node_Event)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> SetText (Text)
+Target is Text.execute
+      Pin: IsDesignTime (bool) Dir=Out
+    Node: Get Text (K2Node_VariableGet)
+      Pin: Text (object) Dir=Out
+        -> SetText (Text)
+Target is Text.self
+      Pin: self (object) Dir=In
+    Node: SetText (Text)
+Target is Text (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Event Pre Construct.then
+      Pin: then (exec) Dir=Out
+        -> Set Height Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get Text.Text
+      Pin: InText (text) Dir=In
+        -> Get ButtonName.ButtonName
+    Node: Get ButtonName (K2Node_VariableGet)
+      Pin: ButtonName (text) Dir=Out
+        -> SetText (Text)
+Target is Text.InText
+      Pin: self (object) Dir=In
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (object) Dir=Out
+        -> Set Height Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Set Height Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> SetText (Text)
+Target is Text.then
+      Pin: then (exec) Dir=Out
+        -> Set Width Override
+Target is Size Box.execute
+      Pin: self (object) Dir=In
+        -> Get Size.Size
+      Pin: InHeightOverride (real) Dir=In
+        -> Get Button Height.Button Height
+    Node: Get Size (K2Node_VariableGet)
+      Pin: Size (object) Dir=Out
+        -> Set Width Override
+Target is Size Box.self
+      Pin: self (object) Dir=In
+    Node: Set Width Override
+Target is Size Box (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Height Override
+Target is Size Box.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Size.Size
+      Pin: InWidthOverride (real) Dir=In
+        -> Get Button Width.Button Width
+    Node: Get Button Height (K2Node_VariableGet)
+      Pin: Button Height (real) Dir=Out
+        -> Set Height Override
+Target is Size Box.InHeightOverride
+      Pin: self (object) Dir=In
+    Node: Get Button Width (K2Node_VariableGet)
+      Pin: Button Width (real) Dir=Out
+        -> Set Width Override
+Target is Size Box.InWidthOverride
+      Pin: self (object) Dir=In
+    Node: On Clicked (Button) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Command Has Int State (K2Node_VariableGet)
+      Pin: Command Has Int State (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: Command (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Execute Console Command.Command
+      Pin: self (object) Dir=In
+    Node: Get PIEWorlds (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: bIncludeDedicatedServer (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+        -> Is Not Empty.TargetArray
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Execute Console Command.WorldContextObject
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> On Clicked (Button).then
+      Pin: Condition (bool) Dir=In
+        -> Get Command Has Int State.Command Has Int State
+      Pin: then (exec) Dir=Out
+        -> Get Console Variable Int Value.execute
+      Pin: else (exec) Dir=Out
+        -> Get PIEWorlds.execute
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+        -> GET.Output
+      Pin: Command (string) Dir=In
+        -> Append.ReturnValue
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Append (K2Node_CommutativeAssociativeBinaryOperator)
+      Pin: self (object) Dir=In
+      Pin: A (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: B (string) Dir=In
+      Pin: ReturnValue (string) Dir=Out
+        -> Execute Console Command.Command
+        -> Execute Console Command.Command
+      Pin: C (string) Dir=In
+        -> To String (Integer).ReturnValue
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Append.A
+      Pin: self (object) Dir=In
+    Node: To String (Integer) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InInt (int) Dir=In
+        -> Select.ReturnValue
+      Pin: ReturnValue (string) Dir=Out
+        -> Append.C
+    Node: Get PIEWorlds (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Get Console Variable Int Value.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: bIncludeDedicatedServer (bool) Dir=In
+      Pin: ReturnValue (object) Dir=Out
+        -> GET.Array
+        -> Is Not Empty.TargetArray
+    Node: GET (K2Node_GetArrayItem)
+      Pin: Array (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: Dimension 1 (int) Dir=In
+      Pin: Output (object) Dir=Out
+        -> Execute Console Command.WorldContextObject
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Get Console Variable Int Value.VariableName
+      Pin: self (object) Dir=In
+    Node: Get Console Variable Int Value (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Get PIEWorlds.execute
+      Pin: self (object) Dir=In
+      Pin: VariableName (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: ReturnValue (int) Dir=Out
+        -> integer > integer.A
+    Node: integer > integer (K2Node_PromotableOperator)
+      Pin: A (int) Dir=In
+        -> Get Console Variable Int Value.ReturnValue
+      Pin: B (int) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Select.Index
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Select (K2Node_Select)
+      Pin: Option 0 (int) Dir=In
+        -> Get IntValue.IntValue
+      Pin: Option 1 (int) Dir=In
+      Pin: Index (bool) Dir=In
+        -> integer > integer.ReturnValue
+      Pin: ReturnValue (int) Dir=Out
+        -> To String (Integer).InInt
+    Node: Get IntValue (K2Node_VariableGet)
+      Pin: IntValue (int) Dir=Out
+        -> Select.Option 0
+      Pin: self (object) Dir=In
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get PIEWorlds.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: else (exec) Dir=Out
+        -> Execute Console Command.execute
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Execute Console Command.Command
+      Pin: self (object) Dir=In
+    Node: Is Not Empty (K2Node_CallArrayFunction)
+      Pin: self (object) Dir=In
+      Pin: TargetArray (object) Dir=In
+        -> Get PIEWorlds.ReturnValue
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get PIEWorlds.then
+      Pin: Condition (bool) Dir=In
+        -> Is Not Empty.ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: else (exec) Dir=Out
+        -> Execute Console Command.execute
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+        -> Append.ReturnValue
+      Pin: SpecificPlayer (object) Dir=In
+  Graph: GetColorAndOpacity
+    Node: GetColorAndOpacity (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+    Node: Get Console Command (K2Node_VariableGet)
+      Pin: Console Command (string) Dir=Out
+        -> Get Console Variable Float Value.VariableName
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Get Console Variable Float Value.then
+      Pin: Condition (bool) Dir=In
+        -> Not Equal (Boolean).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Return Node.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: Get Command Has Int State (K2Node_VariableGet)
+      Pin: Command Has Int State (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> GetColorAndOpacity.then
+      Pin: Condition (bool) Dir=In
+        -> Get Command Has Int State.Command Has Int State
+      Pin: then (exec) Dir=Out
+        -> Get Console Variable Float Value.execute
+      Pin: else (exec) Dir=Out
+        -> Return Node.execute
+    Node: Return Node (K2Node_FunctionResult)
+      Pin: execute (exec) Dir=In
+        -> Branch.else
+      Pin: ReturnValue (struct) Dir=In
+      Pin: ReturnValue_SpecifiedColor (struct) Dir=In
+      Pin: ReturnValue_ColorUseRule (byte) Dir=In
+    Node: float > float (K2Node_PromotableOperator)
+      Pin: A (real) Dir=In
+        -> Get Console Variable Float Value.ReturnValue
+      Pin: B (real) Dir=In
+      Pin: ReturnValue (bool) Dir=Out
+        -> Not Equal (Boolean).A
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Console Variable Float Value (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+      Pin: VariableName (string) Dir=In
+        -> Get Console Command.Console Command
+      Pin: ReturnValue (real) Dir=Out
+        -> float > float.A
+    Node: Not Equal (Boolean) (K2Node_PromotableOperator)
+      Pin: A (bool) Dir=In
+        -> float > float.ReturnValue
+      Pin: B (bool) Dir=In
+        -> Get Invert Color.Invert Color
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Get Invert Color (K2Node_VariableGet)
+      Pin: Invert Color (bool) Dir=Out
+        -> Not Equal (Boolean).B
+      Pin: self (object) Dir=In

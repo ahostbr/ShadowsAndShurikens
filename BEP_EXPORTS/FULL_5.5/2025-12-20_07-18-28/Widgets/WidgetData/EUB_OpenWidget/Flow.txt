@@ -1,0 +1,53 @@
+Blueprint: EUB_OpenWidget (/Game/Widgets/WidgetData/EUB_OpenWidget.EUB_OpenWidget)
+  Graph: EventGraph
+    Node: Editor Utility Subsystem (K2Node_GetEditorSubsystem)
+      Pin: ReturnValue (object) Dir=Out
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.self
+    Node: Spawn and Register Tab
+Target is Editor Utility Subsystem (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> OpenWidget
+Custom Event.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Editor Utility Subsystem.ReturnValue
+      Pin: InBlueprint (object) Dir=In
+        -> Get WidgetToOpen.WidgetToOpen
+      Pin: ReturnValue (object) Dir=Out
+    Node: OpenWidget
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.execute
+    Node: Get WidgetToOpen (K2Node_VariableGet)
+      Pin: WidgetToOpen (object) Dir=Out
+        -> Spawn and Register Tab
+Target is Editor Utility Subsystem.InBlueprint
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get.execute
+    Node: Bind Event to Button Pressed (K2Node_AddDelegate)
+      Pin: execute (exec) Dir=In
+        -> Get.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get.LinkedButton
+      Pin: Delegate (delegate) Dir=In
+        -> Create Event.OutputDelegate
+    Node: Create Event (K2Node_CreateDelegate)
+      Pin: self (object) Dir=In
+      Pin: OutputDelegate (delegate) Dir=Out
+        -> Bind Event to Button Pressed.Delegate
+    Node: Get (K2Node_VariableGet)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Bind Event to Button Pressed.execute
+      Pin: else (exec) Dir=Out
+      Pin: LinkedButton (object) Dir=Out
+        -> Bind Event to Button Pressed.self
+      Pin: self (object) Dir=In

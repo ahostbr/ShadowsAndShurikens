@@ -7,11 +7,13 @@
 #include "SOTS_BPGenSpawnerRegistry.h"
 #include "JsonObjectConverter.h"
 #include "Engine/Blueprint.h"
+#include "Containers/StringConv.h"
 #include "Sockets.h"
 #include "SocketSubsystem.h"
 #include "IPAddress.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "ScopedTransaction.h"
+#include "Math/UnrealMathUtility.h"
 #include "Async/Async.h"
 #include "HAL/PlatformMisc.h"
 #include "HAL/PlatformProcess.h"
@@ -636,7 +638,24 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	}
 
 	FSocket* RawSocket = SocketSubsystem->CreateSocket(NAME_Stream, TEXT("BPGenBridgeListen"), false);
-	ListenSocket = MakeShareable(RawSocket);
+	ListenSocket = TSharedPtr<FSocket>(RawSocket, [SocketSubsystem](FSocket* Socket)
+	{
+		if (!Socket)
+		{
+			return;
+		}
+
+		Socket->Close();
+		if (SocketSubsystem)
+		{
+			SocketSubsystem->DestroySocket(Socket);
+		}
+	});
+	if (ListenSocket.IsValid())
+	{
+		ListenSocket->SetReuseAddr(true);
+		ListenSocket->SetNonBlocking(true);
+	}
 	if (!ListenSocket.IsValid())
 	{
 		LastStartErrorCode = TEXT("ERR_CREATE_SOCKET_FAILED");
@@ -657,7 +676,8 @@ bool FSOTS_BPGenBridgeServer::Start(const FString& InBindAddress, int32 InPort, 
 	ListenAddr->SetIp(ParsedAddress.Value);
 	ListenAddr->SetPort(Port);
 
-	if (!ListenSocket->Bind(*ListenAddr) || !ListenSocket->Listen(16))
+	const int32 ListenBacklog = 5; // match VibeUE listener backlog
+	if (!ListenSocket->Bind(*ListenAddr) || !ListenSocket->Listen(ListenBacklog))
 	{
 		const ESocketErrors LastErr = SocketSubsystem->GetLastErrorCode();
 		LastStartErrorCode = LexToString(static_cast<int32>(LastErr));
@@ -695,9 +715,12 @@ void FSOTS_BPGenBridgeServer::Stop()
 	TFuture<void> LocalAcceptTask = MoveTemp(AcceptTask);
 	AcceptTask = TFuture<void>();
 
+	TSharedPtr<FSocket> LocalSocket;
 	if (ListenSocket.IsValid())
 	{
 		ListenSocket->Close();
+		LocalSocket = MoveTemp(ListenSocket);
+		ListenSocket.Reset();
 	}
 
 	if (LocalAcceptTask.IsValid())
@@ -705,14 +728,7 @@ void FSOTS_BPGenBridgeServer::Stop()
 		LocalAcceptTask.Wait();
 	}
 
-	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
-	TSharedPtr<FSocket> LocalSocket = MoveTemp(ListenSocket);
-	ListenSocket.Reset();
-	if (LocalSocket.IsValid() && SocketSubsystem)
-	{
-		SocketSubsystem->DestroySocket(LocalSocket.Get());
-		LocalSocket.Reset();
-	}
+	LocalSocket.Reset();
 }
 
 bool FSOTS_BPGenBridgeServer::IsRunning() const
@@ -774,11 +790,18 @@ void FSOTS_BPGenBridgeServer::AcceptLoop()
 			break;
 		}
 
+		bool bPending = false;
+		if (!ListenSocket->HasPendingConnection(bPending) || !bPending)
+		{
+			FPlatformProcess::Sleep(0.1f);
+			continue;
+		}
+
 		TSharedRef<FInternetAddr> ClientAddr = SocketSubsystem->CreateInternetAddr();
 		FSocket* Accepted = ListenSocket->Accept(*ClientAddr, TEXT("BPGenBridgeClient"));
 		if (!Accepted)
 		{
-			FPlatformProcess::Sleep(0.01f);
+			FPlatformProcess::Sleep(0.1f);
 			continue;
 		}
 
@@ -837,123 +860,229 @@ FString FSOTS_BPGenBridgeServer::BytesToString(const TArray<uint8>& Bytes) const
 
 void FSOTS_BPGenBridgeServer::HandleConnection(FSocket* ClientSocket)
 {
-	const double RequestStartSeconds = FPlatformTime::Seconds();
-	const FDateTime RequestStartUtc = FDateTime::UtcNow();
-	TSharedPtr<FSocket> Client = MakeShareable(ClientSocket);
+	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	TSharedPtr<FSocket> Client(ClientSocket, [SocketSubsystem](FSocket* Socket)
+	{
+		if (!Socket)
+		{
+			return;
+		}
+
+		Socket->Close();
+		if (SocketSubsystem)
+		{
+			SocketSubsystem->DestroySocket(Socket);
+		}
+	});
+	if (Client.IsValid())
+	{
+		Client->SetNoDelay(true);
+		const int32 SocketBufferSize = 65536;
+		int32 OutSize = 0;
+		Client->SetSendBufferSize(SocketBufferSize, OutSize);
+		Client->SetReceiveBufferSize(SocketBufferSize, OutSize);
+		Client->SetNonBlocking(false);
+	}
 	if (!Client.IsValid())
 	{
 		return;
 	}
 
-	auto WriteAudit = [&](const TSharedPtr<FJsonObject>& RequestObj, const FString& ResponseString, const FString& ActionName, const FString& RequestIdValue, double RequestMs)
+	auto ProcessRequest = [&](const FString& RequestString)
 	{
-		TSharedPtr<FJsonObject> ResponseObject;
-		TSharedRef<TJsonReader<>> ResponseReader = TJsonReaderFactory<>::Create(ResponseString);
-		if (!FJsonSerializer::Deserialize(ResponseReader, ResponseObject) || !ResponseObject.IsValid())
+		const double RequestStartSeconds = FPlatformTime::Seconds();
+		const FDateTime RequestStartUtc = FDateTime::UtcNow();
+
+		auto WriteAudit = [&](const TSharedPtr<FJsonObject>& RequestObj, const FString& ResponseString, const FString& ActionName, const FString& RequestIdValue, double RequestMs)
 		{
+			TSharedPtr<FJsonObject> ResponseObject;
+			TSharedRef<TJsonReader<>> ResponseReader = TJsonReaderFactory<>::Create(ResponseString);
+			if (!FJsonSerializer::Deserialize(ResponseReader, ResponseObject) || !ResponseObject.IsValid())
+			{
+				return;
+			}
+
+			const TSharedPtr<FJsonObject> SanitizedRequest = SanitizeRequestForAudit(RequestObj);
+			WriteAuditLog(SanitizedRequest, ResponseObject, ActionName, RequestIdValue, RequestStartUtc, FDateTime::UtcNow(), RequestMs);
+		};
+
+		if (RequestString.Len() > MaxRequestBytes)
+		{
+			FSOTS_BPGenBridgeDispatchResult ErrorResult;
+			ErrorResult.bOk = false;
+			ErrorResult.ErrorCode = TEXT("ERR_REQUEST_TOO_LARGE");
+			ErrorResult.Errors.Add(FString::Printf(TEXT("Request exceeded max_bytes limit (%d)."), MaxRequestBytes));
+			ErrorResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
+			const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
+			SendResponseAndClose(Client.Get(), Response);
+			WriteAudit(nullptr, Response, TEXT("unknown"), TEXT(""), ErrorResult.RequestMs);
 			return;
 		}
 
-		const TSharedPtr<FJsonObject> SanitizedRequest = SanitizeRequestForAudit(RequestObj);
-		WriteAuditLog(SanitizedRequest, ResponseObject, ActionName, RequestIdValue, RequestStartUtc, FDateTime::UtcNow(), RequestMs);
+		TSharedPtr<FJsonObject> RequestObject;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(RequestString);
+		if (!FJsonSerializer::Deserialize(Reader, RequestObject) || !RequestObject.IsValid())
+		{
+			FSOTS_BPGenBridgeDispatchResult ErrorResult;
+			ErrorResult.bOk = false;
+			ErrorResult.Errors.Add(TEXT("Failed to parse JSON request."));
+			ErrorResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
+			const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
+			SendResponseAndClose(Client.Get(), Response);
+			WriteAudit(nullptr, Response, TEXT("unknown"), TEXT(""), ErrorResult.RequestMs);
+			return;
+		}
+
+		const FString Action = RequestObject->GetStringField(TEXT("action"));
+		const FString RequestId = RequestObject->GetStringField(TEXT("request_id"));
+
+		TSharedPtr<FJsonObject> Params;
+		if (RequestObject->HasTypedField<EJson::Object>(TEXT("params")))
+		{
+			Params = RequestObject->GetObjectField(TEXT("params"));
+		}
+		else
+		{
+			Params = MakeShared<FJsonObject>();
+		}
+
+		PruneExpiredSessions();
+
+		FSOTS_BPGenBridgeDispatchResult DispatchResult;
+		if (!CheckRateLimit(DispatchResult))
+		{
+			DispatchResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
+			const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
+			SendResponseAndClose(Client.Get(), Response);
+			WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
+			return;
+		}
+
+		if (!CheckAuthToken(Params, DispatchResult))
+		{
+			DispatchResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
+			const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
+			SendResponseAndClose(Client.Get(), Response);
+			WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
+			return;
+		}
+
+		const double DispatchStartSeconds = FPlatformTime::Seconds();
+		if (!DispatchOnGameThread(Action, RequestId, Params, DispatchResult))
+		{
+			DispatchResult.bOk = false;
+			DispatchResult.Errors.Add(TEXT("Request timed out while executing on game thread."));
+		}
+		const double DispatchEndSeconds = FPlatformTime::Seconds();
+		DispatchResult.DispatchMs = (DispatchEndSeconds - DispatchStartSeconds) * 1000.0;
+		DispatchResult.RequestMs = (DispatchEndSeconds - RequestStartSeconds) * 1000.0;
+
+		const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
+		SendResponseAndClose(Client.Get(), Response);
+		WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
+
+		AddRecentRequestSummary(RequestId, Action, DispatchResult);
+		const int32 ErrorCodeCount = DispatchResult.ErrorCode.IsEmpty() ? 0 : 1;
+		UE_LOG(LogSOTS_BPGenBridge, Log, TEXT("BPGen request id=%s action=%s ok=%s error_code=%s error_codes=%d errors=%d warnings=%d ms=%.2f"),
+			*RequestId,
+			*Action,
+			DispatchResult.bOk ? TEXT("true") : TEXT("false"),
+			DispatchResult.ErrorCode.IsEmpty() ? TEXT("none") : *DispatchResult.ErrorCode,
+			ErrorCodeCount,
+			DispatchResult.Errors.Num(),
+			DispatchResult.Warnings.Num(),
+			DispatchResult.RequestMs);
 	};
 
-	TArray<uint8> RequestBytes;
-	bool bTooLarge = false;
-	if (!ReadLine(Client.Get(), RequestBytes, bTooLarge))
+	TArray<uint8> RecvBuffer;
+	RecvBuffer.SetNumUninitialized(4096);
+	FString MessageBuffer;
+	bool bLoggedHexSample = false;
+
+	while (bRunning && Client->GetConnectionState() == SCS_Connected)
 	{
-		Client->Close();
-		return;
+		const bool bIsConnected = Client->GetConnectionState() == SCS_Connected;
+		uint32 PendingDataSize = 0;
+		const bool bHasPending = Client->HasPendingData(PendingDataSize);
+		UE_LOG(LogSOTS_BPGenBridge, VeryVerbose, TEXT("BPGen recv state connected=%s pending=%s size=%u"), bIsConnected ? TEXT("true") : TEXT("false"), bHasPending ? TEXT("true") : TEXT("false"), PendingDataSize);
+
+		int32 BytesRead = 0;
+		const bool bReadSuccess = Client->Recv(RecvBuffer.GetData(), RecvBuffer.Num(), BytesRead);
+		if (!bReadSuccess)
+		{
+			const ESocketErrors LastError = SocketSubsystem ? SocketSubsystem->GetLastErrorCode() : SE_NO_ERROR;
+			if (LastError == SE_EWOULDBLOCK || LastError == SE_EINTR)
+			{
+				UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen recv would block/interrupt; sleeping"));
+				FPlatformProcess::Sleep(0.01f);
+				continue;
+			}
+
+			UE_LOG(LogSOTS_BPGenBridge, Warning, TEXT("BPGen recv failed; error=%d"), static_cast<int32>(LastError));
+			break;
+		}
+
+		if (BytesRead <= 0)
+		{
+			UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen recv zero/empty; sleeping"));
+			FPlatformProcess::Sleep(0.001f);
+			continue;
+		}
+
+		if (!bLoggedHexSample)
+		{
+			const int32 SampleLen = FMath::Min(BytesRead, 50);
+			FString HexSample;
+			HexSample.Reserve(SampleLen * 2);
+			for (int32 Index = 0; Index < SampleLen; ++Index)
+			{
+				HexSample += FString::Printf(TEXT("%02x"), RecvBuffer[Index]);
+			}
+			UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen recv sample (%d bytes): %s%s"), SampleLen, *HexSample, BytesRead > SampleLen ? TEXT("...") : TEXT(""));
+			bLoggedHexSample = true;
+		}
+
+		FUTF8ToTCHAR Converter(reinterpret_cast<const ANSICHAR*>(RecvBuffer.GetData()), BytesRead);
+		MessageBuffer.Append(FString(Converter.Length(), Converter.Get()));
+
+		if (MessageBuffer.Len() > MaxRequestBytes)
+		{
+			FSOTS_BPGenBridgeDispatchResult ErrorResult;
+			ErrorResult.bOk = false;
+			ErrorResult.ErrorCode = TEXT("ERR_REQUEST_TOO_LARGE");
+			ErrorResult.Errors.Add(FString::Printf(TEXT("Request exceeded max_bytes limit (%d)."), MaxRequestBytes));
+			ErrorResult.RequestMs = 0.0;
+			const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
+			SendResponseAndClose(Client.Get(), Response);
+			UE_LOG(LogSOTS_BPGenBridge, Warning, TEXT("BPGen request aborted: buffer exceeded max bytes"));
+			return;
+		}
+
+		TArray<FString> Messages;
+		MessageBuffer.ParseIntoArray(Messages, TEXT("\n"), false);
+		if (Messages.Num() > 1)
+		{
+			UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen buffered %d message(s) this pass"), Messages.Num() - 1);
+		}
+
+		const int32 CompleteCount = FMath::Max(Messages.Num() - 1, 0);
+		for (int32 Index = 0; Index < CompleteCount; ++Index)
+		{
+			FString Line = Messages[Index];
+			Line.ReplaceInline(TEXT("\r"), TEXT(""));
+			if (Line.IsEmpty())
+			{
+				continue;
+			}
+
+			ProcessRequest(Line);
+		}
+
+		MessageBuffer = Messages.Num() > 0 ? Messages.Last() : MessageBuffer;
+		FPlatformProcess::Sleep(0.005f);
 	}
 
-	if (bTooLarge)
-	{
-		FSOTS_BPGenBridgeDispatchResult ErrorResult;
-		ErrorResult.bOk = false;
-		ErrorResult.ErrorCode = TEXT("ERR_REQUEST_TOO_LARGE");
-		ErrorResult.Errors.Add(FString::Printf(TEXT("Request exceeded max_bytes limit (%d)."), MaxRequestBytes));
-		ErrorResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
-		const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
-		SendResponseAndClose(Client.Get(), Response);
-		WriteAudit(nullptr, Response, TEXT("unknown"), TEXT(""), ErrorResult.RequestMs);
-		return;
-	}
-
-	const FString RequestString = BytesToString(RequestBytes);
-
-	TSharedPtr<FJsonObject> RequestObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(RequestString);
-	if (!FJsonSerializer::Deserialize(Reader, RequestObject) || !RequestObject.IsValid())
-	{
-		FSOTS_BPGenBridgeDispatchResult ErrorResult;
-		ErrorResult.bOk = false;
-		ErrorResult.Errors.Add(TEXT("Failed to parse JSON request."));
-		ErrorResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
-		const FString Response = BuildResponseJson(TEXT("unknown"), TEXT(""), ErrorResult);
-		SendResponseAndClose(Client.Get(), Response);
-		WriteAudit(nullptr, Response, TEXT("unknown"), TEXT(""), ErrorResult.RequestMs);
-		return;
-	}
-
-	const FString Action = RequestObject->GetStringField(TEXT("action"));
-	const FString RequestId = RequestObject->GetStringField(TEXT("request_id"));
-
-	TSharedPtr<FJsonObject> Params;
-	if (RequestObject->HasTypedField<EJson::Object>(TEXT("params")))
-	{
-		Params = RequestObject->GetObjectField(TEXT("params"));
-	}
-	else
-	{
-		Params = MakeShared<FJsonObject>();
-	}
-
-	PruneExpiredSessions();
-
-	FSOTS_BPGenBridgeDispatchResult DispatchResult;
-	if (!CheckRateLimit(DispatchResult))
-	{
-		DispatchResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
-		const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
-		SendResponseAndClose(Client.Get(), Response);
-		WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
-		return;
-	}
-
-	if (!CheckAuthToken(Params, DispatchResult))
-	{
-		DispatchResult.RequestMs = (FPlatformTime::Seconds() - RequestStartSeconds) * 1000.0;
-		const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
-		SendResponseAndClose(Client.Get(), Response);
-		WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
-		return;
-	}
-
-	const double DispatchStartSeconds = FPlatformTime::Seconds();
-	if (!DispatchOnGameThread(Action, RequestId, Params, DispatchResult))
-	{
-		DispatchResult.bOk = false;
-		DispatchResult.Errors.Add(TEXT("Request timed out while executing on game thread."));
-	}
-	const double DispatchEndSeconds = FPlatformTime::Seconds();
-	DispatchResult.DispatchMs = (DispatchEndSeconds - DispatchStartSeconds) * 1000.0;
-	DispatchResult.RequestMs = (DispatchEndSeconds - RequestStartSeconds) * 1000.0;
-
-	const FString Response = BuildResponseJson(Action, RequestId, DispatchResult);
-	SendResponseAndClose(Client.Get(), Response);
-	WriteAudit(RequestObject, Response, Action, RequestId, DispatchResult.RequestMs);
-
-	AddRecentRequestSummary(RequestId, Action, DispatchResult);
-	const int32 ErrorCodeCount = DispatchResult.ErrorCode.IsEmpty() ? 0 : 1;
-	UE_LOG(LogSOTS_BPGenBridge, Log, TEXT("BPGen request id=%s action=%s ok=%s error_code=%s error_codes=%d errors=%d warnings=%d ms=%.2f"),
-		*RequestId,
-		*Action,
-		DispatchResult.bOk ? TEXT("true") : TEXT("false"),
-		DispatchResult.ErrorCode.IsEmpty() ? TEXT("none") : *DispatchResult.ErrorCode,
-		ErrorCodeCount,
-		DispatchResult.Errors.Num(),
-		DispatchResult.Warnings.Num(),
-		DispatchResult.RequestMs);
+	UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen connection handler exiting"));
 }
 
 bool FSOTS_BPGenBridgeServer::CheckRateLimit(FSOTS_BPGenBridgeDispatchResult& OutResult)
@@ -3224,16 +3353,41 @@ bool FSOTS_BPGenBridgeServer::SendResponseAndClose(FSocket* ClientSocket, const 
 		return false;
 	}
 
-	FTCHARToUTF8 Converter(*ResponseString);
-	int32 Sent = 0;
-	ClientSocket->Send(reinterpret_cast<const uint8*>(Converter.Get()), Converter.Length(), Sent);
-	ClientSocket->Close();
-
-	ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
-	if (SocketSubsystem)
+	FString NormalizedResponse = ResponseString;
+	while (NormalizedResponse.EndsWith(TEXT("\n")) || NormalizedResponse.EndsWith(TEXT("\r")))
 	{
-		SocketSubsystem->DestroySocket(ClientSocket);
+		NormalizedResponse.LeftChopInline(1, false);
+	}
+	NormalizedResponse.AppendChar('\n');
+
+	UE_LOG(LogSOTS_BPGenBridge, Verbose, TEXT("BPGen sending response len=%d: %s"), NormalizedResponse.Len(), *NormalizedResponse);
+
+	FTCHARToUTF8 Converter(*NormalizedResponse);
+	const uint8* Buffer = reinterpret_cast<const uint8*>(Converter.Get());
+	const int32 Length = Converter.Length();
+	int32 TotalSent = 0;
+	int32 Attempts = 0;
+	while (TotalSent < Length && Attempts < 16)
+	{
+		int32 SentNow = 0;
+		if (!ClientSocket->Send(Buffer + TotalSent, Length - TotalSent, SentNow))
+		{
+			FPlatformProcess::Sleep(0.001f);
+			++Attempts;
+			continue;
+		}
+
+		if (SentNow <= 0)
+		{
+			FPlatformProcess::Sleep(0.001f);
+			++Attempts;
+			continue;
+		}
+
+		TotalSent += SentNow;
+		++Attempts;
 	}
 
-	return Sent == Converter.Length();
+	ClientSocket->Close();
+	return TotalSent == Length;
 }

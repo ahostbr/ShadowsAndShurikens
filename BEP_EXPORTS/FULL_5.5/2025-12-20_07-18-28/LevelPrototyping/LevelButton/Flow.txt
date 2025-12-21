@@ -1,0 +1,291 @@
+Blueprint: LevelButton (/Game/LevelPrototyping/LevelButton.LevelButton)
+  Graph: EventGraph
+    Node: Call Button Pressed (K2Node_CallDelegate)
+      Pin: execute (exec) Dir=In
+        -> On Component Begin Overlap (Trigger).then
+        -> SimulatePress
+Custom Event.then
+      Pin: then (exec) Dir=Out
+        -> Branch.execute
+      Pin: self (object) Dir=In
+    Node: On Component Begin Overlap (Trigger) (K2Node_ComponentBoundEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call Button Pressed.execute
+      Pin: OverlappedComponent (object) Dir=Out
+      Pin: OtherActor (object) Dir=Out
+      Pin: OtherComp (object) Dir=Out
+      Pin: OtherBodyIndex (int) Dir=Out
+      Pin: bFromSweep (bool) Dir=Out
+      Pin: SweepResult (struct) Dir=Out
+    Node: SimulatePress
+Custom Event (K2Node_CustomEvent)
+      Pin: OutputDelegate (delegate) Dir=Out
+      Pin: then (exec) Dir=Out
+        -> Call Button Pressed.execute
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> Call Button Pressed.then
+      Pin: Condition (bool) Dir=In
+        -> Get ExecuteConsoleCommand.ExecuteConsoleCommand
+      Pin: then (exec) Dir=Out
+        -> Execute Console Command.execute
+      Pin: else (exec) Dir=Out
+    Node: Get ExecuteConsoleCommand (K2Node_VariableGet)
+      Pin: ExecuteConsoleCommand (bool) Dir=Out
+        -> Branch.Condition
+      Pin: self (object) Dir=In
+    Node: Execute Console Command (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: Command (string) Dir=In
+        -> Get ConsoleCommand.ConsoleCommand
+      Pin: SpecificPlayer (object) Dir=In
+    Node: Get ConsoleCommand (K2Node_VariableGet)
+      Pin: ConsoleCommand (string) Dir=Out
+        -> Execute Console Command.Command
+      Pin: self (object) Dir=In
+  Graph: UserConstructionScript
+    Node: Construction Script (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Update Name
+Target is Level Button.execute
+    Node: Update Name
+Target is Level Button (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Construction Script.then
+      Pin: then (exec) Dir=Out
+        -> Update Color
+Target is Level Button.execute
+      Pin: self (object) Dir=In
+    Node: Update Color
+Target is Level Button (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Name
+Target is Level Button.then
+      Pin: then (exec) Dir=Out
+        -> Update Scale
+Target is Level Button.execute
+      Pin: self (object) Dir=In
+    Node: Update Scale
+Target is Level Button (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Color
+Target is Level Button.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+  Graph: UpdateName
+    Node: UpdateName (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Text
+Target is Text Render Component.execute
+    Node: Set Text
+Target is Text Render Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateName.then
+      Pin: then (exec) Dir=Out
+        -> Set Text Render Color
+Target is Text Render Component.execute
+      Pin: self (object) Dir=In
+        -> Get Name.Name
+      Pin: Value (text) Dir=In
+        -> Get ButtonName.ButtonName
+    Node: Get Name (K2Node_VariableGet)
+      Pin: Name (object) Dir=Out
+        -> Set Text
+Target is Text Render Component.self
+      Pin: self (object) Dir=In
+    Node: Get ButtonName (K2Node_VariableGet)
+      Pin: ButtonName (text) Dir=Out
+        -> Set Text
+Target is Text Render Component.Value
+      Pin: self (object) Dir=In
+    Node: Get Name (K2Node_VariableGet)
+      Pin: Name (object) Dir=Out
+        -> Set Text Render Color
+Target is Text Render Component.self
+      Pin: self (object) Dir=In
+    Node: Set Text Render Color
+Target is Text Render Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Set Text
+Target is Text Render Component.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Name.Name
+      Pin: Value (struct) Dir=In
+        -> To Color (LinearColor).ReturnValue
+    Node: Get TextColor (K2Node_VariableGet)
+      Pin: TextColor (struct) Dir=Out
+        -> To Color (LinearColor).InLinearColor
+      Pin: self (object) Dir=In
+    Node: To Color (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InLinearColor (struct) Dir=In
+        -> Get TextColor.TextColor
+      Pin: InUseSRGB (bool) Dir=In
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Text Render Color
+Target is Text Render Component.Value
+  Graph: UpdateColor
+    Node: UpdateColor (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set Vector Parameter Value on Materials
+Target is Mesh Component.execute
+    Node: Set Vector Parameter Value on Materials
+Target is Mesh Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateColor.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Plate.Plate
+      Pin: ParameterName (name) Dir=In
+      Pin: ParameterValue (struct) Dir=In
+        -> To Vector (LinearColor).ReturnValue
+    Node: Get Plate (K2Node_VariableGet)
+      Pin: Plate (object) Dir=Out
+        -> Set Vector Parameter Value on Materials
+Target is Mesh Component.self
+      Pin: self (object) Dir=In
+    Node: To Vector (LinearColor) (K2Node_CallFunction)
+      Pin: self (object) Dir=In
+      Pin: InLinearColor (struct) Dir=In
+        -> Get Color.Color
+      Pin: ReturnValue (struct) Dir=Out
+        -> Set Vector Parameter Value on Materials
+Target is Mesh Component.ParameterValue
+    Node: Get Color (K2Node_VariableGet)
+      Pin: Color (struct) Dir=Out
+        -> To Vector (LinearColor).InLinearColor
+      Pin: self (object) Dir=In
+  Graph: UpdateScale
+    Node: UpdateScale (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Set World Scale 3D
+Target is Scene Component.execute
+    Node: Get PlateScale (K2Node_VariableGet)
+      Pin: PlateScale (real) Dir=Out
+        -> Set World Scale 3D
+Target is Scene Component.NewScale_X
+        -> Set World Scale 3D
+Target is Scene Component.NewScale_Y
+      Pin: self (object) Dir=In
+    Node: Set World Scale 3D
+Target is Scene Component (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateScale.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> Get Plate.Plate
+      Pin: NewScale (struct) Dir=In
+      Pin: NewScale_X (real) Dir=In
+        -> Get PlateScale.PlateScale
+      Pin: NewScale_Y (real) Dir=In
+        -> Get PlateScale.PlateScale
+      Pin: NewScale_Z (real) Dir=In
+    Node: Get Plate (K2Node_VariableGet)
+      Pin: Plate (object) Dir=Out
+        -> Set World Scale 3D
+Target is Scene Component.self
+      Pin: self (object) Dir=In
+  Graph: UpdateSenders
+    Node: UpdateSenders (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out
+        -> Get All Actors Of Class.execute
+    Node: Update Name
+Target is Teleporter Sender (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Branch.then
+      Pin: then (exec) Dir=Out
+        -> Update Color
+Target is Teleporter Sender.execute
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Update Color
+Target is Teleporter Sender (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Name
+Target is Teleporter Sender.then
+      Pin: then (exec) Dir=Out
+        -> Update Rotation
+Target is Teleporter Sender.execute
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Get All Actors Of Class (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> UpdateSenders.then
+      Pin: then (exec) Dir=Out
+        -> For Each Loop.Exec
+      Pin: self (object) Dir=In
+      Pin: WorldContextObject (object) Dir=In
+      Pin: ActorClass (class) Dir=In
+      Pin: OutActors (object) Dir=Out
+        -> For Each Loop.Array
+    Node: Self-Reference (K2Node_Self)
+      Pin: self (object) Dir=Out
+        -> Equal (Object).B
+    Node: For Each Loop (K2Node_MacroInstance)
+      Pin: Exec (exec) Dir=In
+        -> Get All Actors Of Class.then
+      Pin: Array (object) Dir=In
+        -> Get All Actors Of Class.OutActors
+      Pin: LoopBody (exec) Dir=Out
+        -> Branch.execute
+      Pin: Array Element (object) Dir=Out
+        -> Get Destination.self
+        -> Update Name
+Target is Teleporter Sender.self
+        -> Update Color
+Target is Teleporter Sender.self
+        -> Update Rotation
+Target is Teleporter Sender.self
+        -> Update Scale
+Target is Teleporter Sender.self
+      Pin: Array Index (int) Dir=Out
+      Pin: Completed (exec) Dir=Out
+    Node: Get Destination (K2Node_VariableGet)
+      Pin: Destination (object) Dir=Out
+        -> Equal (Object).A
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Equal (Object) (K2Node_PromotableOperator)
+      Pin: A (object) Dir=In
+        -> Get Destination.Destination
+      Pin: B (object) Dir=In
+        -> Self-Reference.self
+      Pin: ReturnValue (bool) Dir=Out
+        -> Branch.Condition
+      Pin: ErrorTolerance (None) Dir=In
+    Node: Branch (K2Node_IfThenElse)
+      Pin: execute (exec) Dir=In
+        -> For Each Loop.LoopBody
+      Pin: Condition (bool) Dir=In
+        -> Equal (Object).ReturnValue
+      Pin: then (exec) Dir=Out
+        -> Update Name
+Target is Teleporter Sender.execute
+      Pin: else (exec) Dir=Out
+    Node: Update Rotation
+Target is Teleporter Sender (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Color
+Target is Teleporter Sender.then
+      Pin: then (exec) Dir=Out
+        -> Update Scale
+Target is Teleporter Sender.execute
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+    Node: Update Scale
+Target is Teleporter Sender (K2Node_CallFunction)
+      Pin: execute (exec) Dir=In
+        -> Update Rotation
+Target is Teleporter Sender.then
+      Pin: then (exec) Dir=Out
+      Pin: self (object) Dir=In
+        -> For Each Loop.Array Element
+  Graph: ButtonPressed
+    Node: ButtonPressed (K2Node_FunctionEntry)
+      Pin: then (exec) Dir=Out

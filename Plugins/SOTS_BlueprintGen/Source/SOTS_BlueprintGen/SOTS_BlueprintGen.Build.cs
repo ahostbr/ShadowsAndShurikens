@@ -40,8 +40,7 @@ public class SOTS_BlueprintGen : ModuleRules
                 "ToolMenus",
                 "EditorStyle",
                 "AssetRegistry",
-                "BlueprintGraph",
-                "SOTS_BPGen_Bridge"
+                "BlueprintGraph"
             }
         );
 

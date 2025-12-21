@@ -8,7 +8,11 @@ SOTS MCP Server (read-only by default)
 
 from __future__ import annotations
 
+import base64
+import datetime as dt
+import io
 import json
+import mimetypes
 import os
 import re
 import subprocess
@@ -17,8 +21,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 import logging
+import uuid
+import time
+from collections import deque
 
 from mcp.server.fastmcp import FastMCP  # official MCP Python SDK
+try:
+    from mcp.types import ImageContent, TextContent
+except Exception:  # pragma: no cover - optional import guard
+    ImageContent = None
+    TextContent = None
 
 # Ensure DevTools/python is importable before pulling sibling modules
 DEVTOOLS_PY_ROOT = Path(__file__).resolve().parent.parent
@@ -54,6 +66,14 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return val.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _sots_ok(data: Any = None, warnings: Optional[List[str]] = None, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    return {"ok": True, "data": data, "error": None, "warnings": warnings or [], "meta": meta or {}}
+
+
+def _sots_err(error: str, data: Any = None, warnings: Optional[List[str]] = None, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    return {"ok": False, "data": data, "error": error, "warnings": warnings or [], "meta": meta or {}}
+
+
 @dataclass(frozen=True)
 class SotsPaths:
     project_root: Path
@@ -83,6 +103,9 @@ def _resolve_paths() -> SotsPaths:
 PATHS = _resolve_paths()
 ALLOW_APPLY = _env_bool("SOTS_ALLOW_APPLY", False)
 EXPORTS_ROOT = (PATHS.project_root / "DevTools" / "prompts" / "BPGen").resolve()
+ALLOW_BPGEN_APPLY = _env_bool("SOTS_ALLOW_BPGEN_APPLY", ALLOW_APPLY)
+ALLOW_DEVTOOLS_RUN = _env_bool("SOTS_ALLOW_DEVTOOLS_RUN", True)
+REPORTS_DIR = (PATHS.devtools_py / "reports").resolve()
 
 ROOT_MAP = {
     "repo": PATHS.project_root,
@@ -93,7 +116,10 @@ TOOL_ALIASES = {
     "sots_search_workspace": "sots_search (root=Repo)",
     "sots_search_exports": "sots_search (root=Exports)",
     "manage_bpgen": "bpgen_call",
-    "agents_run_prompt": "sots_agents_run (shared runner)",
+    "agents_run_prompt": "sots_agents_run",
+    "agents_server_info": "sots_agents_help",
+    "bpgen_call": "manage_bpgen",
+    "bpgen_ping": "bpgen_ping",
 }
 
 # File-safe logging (never stdout)
@@ -125,6 +151,29 @@ def _get_server_logger() -> logging.Logger:
     logger.propagate = False
     _SERVER_LOGGER = logger
     return logger
+
+
+def _new_request_id() -> str:
+    return uuid.uuid4().hex[:12]
+
+
+def _jsonl_log(entry: Dict[str, Any]) -> None:
+    try:
+        log_dir = PATHS.devtools_py / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        p = log_dir / "sots_mcp_server.jsonl"
+        entry2 = dict(entry)
+        # Redact secrets
+        def _redact(val: Any) -> Any:
+            if isinstance(val, str) and ("OPENAI_API_KEY" in val or "Authorization" in val):
+                return "[redacted]"
+            return val
+        for k in list(entry2.keys()):
+            entry2[k] = _redact(entry2[k])
+        with p.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry2, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 # Agents orchestrator (lazy init)
@@ -216,13 +265,6 @@ BPGEN_MUTATION_ACTIONS = {
 
 
 def _bpgen_call(action: str, params: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    if not ALLOW_APPLY and action not in BPGEN_READ_ONLY_ACTIONS:
-        return {
-            "ok": False,
-            "action": action,
-            "errors": ["APPLY is disabled. Set SOTS_ALLOW_APPLY=1 to enable mutating BPGen actions."],
-        }
-
     return bpgen_call(
         action,
         params or {},
@@ -235,8 +277,9 @@ def _bpgen_call(action: str, params: Optional[Dict[str, Any]]) -> Dict[str, Any]
 
 
 def _bpgen_guard_mutation(action: str) -> Optional[Dict[str, Any]]:
-    if not ALLOW_APPLY and action not in BPGEN_READ_ONLY_ACTIONS:
-        return {"ok": False, "error": "SOTS_ALLOW_APPLY=0", "action": action}
+    if not _is_allowed_bpgen_mutation() and action not in BPGEN_READ_ONLY_ACTIONS:
+        _get_server_logger().warning("Blocked bpgen mutation action=%s (SOTS_ALLOW_BPGEN_APPLY=0)", action)
+        return _sots_err("Blocked by SOTS_ALLOW_BPGEN_APPLY=0", meta={"action": action})
     return None
 
 # Allowlist of executable scripts (read-only operations)
@@ -249,6 +292,9 @@ ALLOWED_SCRIPTS: Dict[str, Path] = {
     # Optional (if present in your toolbox):
     "sots_tools": PATHS.devtools_py / "sots_tools.py",
 }
+ALLOWED_SCRIPTS_META: Dict[str, Dict[str, Any]] = {
+    name: {"read_only": True} for name in ALLOWED_SCRIPTS.keys()
+}
 
 SAFE_SEARCH_ROOTS = {
     "Plugins": PATHS.project_root / "Plugins",
@@ -258,9 +304,18 @@ SAFE_SEARCH_ROOTS = {
     "Content": PATHS.project_root / "Content",
     "Repo": PATHS.project_root,
     "Exports": EXPORTS_ROOT,
+    "Reports": REPORTS_DIR,
 }
 
 DEFAULT_EXTS = [".h", ".hpp", ".cpp", ".c", ".cc", ".inl", ".cs", ".uplugin", ".uproject", ".ini", ".py", ".md", ".txt", ".json"]
+IMAGE_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
+IMAGE_MAX_BYTES = 8 * 1024 * 1024  # 8MB pre-check
+IMAGE_MIN_DIM = 256
+IMAGE_MAX_DIM = 4096
+IMAGE_DEFAULT_MAX_DIM = 1280
+IMAGE_DEFAULT_QUALITY = 85
+IMAGE_SANDBOX_ROOT = (PATHS.devtools_py / "SOTS_Capture").resolve()
+IMAGE_DEFAULT_PATH = (IMAGE_SANDBOX_ROOT / "VisualDigest" / "latest" / "latest.jpg").resolve()
 
 def _safe_relpath(p: Path, root: Path) -> str:
     try:
@@ -273,6 +328,18 @@ def _get_root(root: str) -> Path:
     if key not in ROOT_MAP:
         raise ValueError(f"Invalid root: {root}. Allowed: {sorted(ROOT_MAP.keys())}")
     return ROOT_MAP[key]
+
+
+def _gate(name: str, default: bool = False) -> bool:
+    return _env_bool(name, default)
+
+
+def _is_allowed_bpgen_mutation() -> bool:
+    return ALLOW_BPGEN_APPLY
+
+
+def _is_allowed_devtools_run() -> bool:
+    return ALLOW_DEVTOOLS_RUN
 
 def _ensure_under_root(p: Path, root: Path) -> Path:
     pr = p.resolve()
@@ -306,16 +373,16 @@ def _run_python(script: Path, args: Sequence[str]) -> Dict[str, Any]:
 
 def _list_reports(max_items: int = 200) -> List[Dict[str, Any]]:
     reports: List[Dict[str, Any]] = []
-    if not PATHS.reports_dir.exists():
+    if not REPORTS_DIR.exists():
         return reports
 
-    for p in sorted(PATHS.reports_dir.rglob("*")):
+    for p in sorted(REPORTS_DIR.rglob("*")):
         if not p.is_file():
             continue
         try:
             st = p.stat()
             reports.append({
-                "path": _safe_relpath(p, PATHS.project_root),
+                "path": _safe_relpath(p, REPORTS_DIR),
                 "bytes": st.st_size,
                 "mtime_epoch": int(st.st_mtime),
             })
@@ -327,15 +394,14 @@ def _list_reports(max_items: int = 200) -> List[Dict[str, Any]]:
     return reports
 
 def _read_text_file(rel_path: str, max_chars: int = 20000) -> Dict[str, Any]:
-    p = (PATHS.project_root / rel_path).resolve()
-    _ensure_under_root(p, PATHS.project_root)
+    p = (REPORTS_DIR / rel_path).resolve()
+    _ensure_under_root(p, REPORTS_DIR)
     if not p.exists() or not p.is_file():
         return {"ok": False, "error": f"File not found: {rel_path}"}
 
-    # Only allow reading from DevTools/reports by default (safest)
-    reports_root = PATHS.reports_dir.resolve()
+    reports_root = REPORTS_DIR.resolve()
     if reports_root not in p.parents and p != reports_root:
-        return {"ok": False, "error": "Read denied: only DevTools/reports/* is readable via this tool."}
+        return {"ok": False, "error": "Read denied: only DevTools/python/reports/* is readable via this tool."}
 
     try:
         txt = p.read_text(encoding="utf-8", errors="replace")
@@ -350,6 +416,120 @@ def _compile_pattern(query: str, regex: bool, case_sensitive: bool) -> re.Patter
     flags = 0 if case_sensitive else re.IGNORECASE
     pat = query if regex else re.escape(query)
     return re.compile(pat, flags)
+
+
+def _clamp_int(value: int, lo: int, hi: int) -> int:
+    return max(lo, min(hi, value))
+
+
+def _mime_for_ext(ext: str) -> str:
+    ext = ext.lower()
+    if ext in {".jpg", ".jpeg"}:
+        return "image/jpeg"
+    if ext == ".png":
+        return "image/png"
+    if ext == ".webp":
+        return "image/webp"
+    guess, _ = mimetypes.guess_type("file" + ext)
+    return guess or "application/octet-stream"
+
+
+def _build_content_blocks(img_bytes: bytes, mime: str, meta_text: str) -> List[Any]:
+    b64 = base64.b64encode(img_bytes).decode("ascii")
+    if ImageContent and TextContent:
+        try:
+            return [
+                ImageContent(type="image", data=b64, mimeType=mime),
+                TextContent(type="text", text=meta_text),
+            ]
+        except Exception:
+            pass
+    return [
+        {"type": "image", "data": b64, "mimeType": mime},
+        {"type": "text", "text": meta_text},
+    ]
+
+
+def _load_image_with_optional_downscale(path: Path, max_dim: int, quality: int, force_jpeg: bool, request_id: str) -> Tuple[List[Any], Dict[str, Any]]:
+    p = path.resolve()
+    _ensure_under_root(p, PATHS.project_root)
+    _ensure_under_root(p, IMAGE_SANDBOX_ROOT)  # stay under DevTools/python/SOTS_Capture
+
+    if IMAGE_SANDBOX_ROOT not in p.parents and p != IMAGE_DEFAULT_PATH:
+        raise ValueError(f"Image path not allowed; expected under {IMAGE_SANDBOX_ROOT}")
+
+    if p.suffix.lower() not in IMAGE_ALLOWED_EXTS:
+        raise ValueError(f"Extension not allowed: {p.suffix}. Allowed: {sorted(IMAGE_ALLOWED_EXTS)}")
+
+    if not p.exists() or not p.is_file():
+        raise FileNotFoundError(f"Image not found: {p}")
+
+    st = p.stat()
+    if st.st_size > IMAGE_MAX_BYTES and ImageContent is None:
+        raise ValueError("Image exceeds max bytes and Pillow not available for downscale/convert. Install pillow.")
+
+    meta: Dict[str, Any] = {
+        "path": _safe_relpath(p, PATHS.project_root),
+        "bytes": st.st_size,
+        "mtime_iso": dt.datetime.fromtimestamp(st.st_mtime).astimezone().isoformat(timespec="seconds"),
+        "force_jpeg": bool(force_jpeg),
+        "request_id": request_id,
+    }
+
+    max_dim = _clamp_int(max_dim, IMAGE_MIN_DIM, IMAGE_MAX_DIM)
+    quality = _clamp_int(quality, 40, 95)
+
+    try:
+        from PIL import Image  # type: ignore
+    except Exception:
+        meta["pillow"] = False
+        if st.st_size > IMAGE_MAX_BYTES:
+            raise ValueError("Image exceeds max bytes and Pillow not available.")
+        data = p.read_bytes()
+        mime = _mime_for_ext(p.suffix)
+        meta["mode"] = "raw"
+        meta["final_bytes"] = len(data)
+        return _build_content_blocks(data, mime, json.dumps(meta, indent=2)), meta
+
+    meta["pillow"] = True
+    with Image.open(p) as im:
+        orig_w, orig_h = im.size
+        meta["orig_size"] = [orig_w, orig_h]
+        target_max = max_dim
+        if target_max > 0:
+            scale = min(target_max / float(orig_w), target_max / float(orig_h), 1.0)
+        else:
+            scale = 1.0
+        if scale < 1.0:
+            new_w = max(1, int(orig_w * scale))
+            new_h = max(1, int(orig_h * scale))
+            im = im.resize((new_w, new_h))
+            meta["resized"] = [new_w, new_h]
+        fmt = "JPEG" if force_jpeg or im.format not in {"JPEG", "PNG", "WEBP"} else (im.format or "JPEG")
+        mime = "image/jpeg" if fmt == "JPEG" else _mime_for_ext(f".{fmt.lower()}")
+        buf = io.BytesIO()
+        save_kwargs: Dict[str, Any] = {}
+        if fmt == "JPEG":
+            save_kwargs["quality"] = quality
+            save_kwargs["optimize"] = True
+        im.convert("RGB").save(buf, format=fmt, **save_kwargs)
+        data = buf.getvalue()
+        meta["final_bytes"] = len(data)
+        meta["final_mime"] = mime
+        return _build_content_blocks(data, mime, json.dumps(meta, indent=2)), meta
+
+
+def _run_image_tool(path: Optional[str], max_dim: int, quality: int, force_jpeg: bool, tool_name: str) -> Any:
+    req_id = _new_request_id()
+    target = Path(path).expanduser().resolve() if path and path.strip() else IMAGE_DEFAULT_PATH
+    try:
+        contents, meta = _load_image_with_optional_downscale(target, max_dim, quality, force_jpeg, req_id)
+        _jsonl_log({"ts": time.time(), "tool": tool_name, "ok": True, "error": None, "request_id": req_id, "path": str(target), "meta": meta})
+        return contents
+    except Exception as exc:
+        res = _sots_err(str(exc), meta={"request_id": req_id, "path": str(target)})
+        _jsonl_log({"ts": time.time(), "tool": tool_name, "ok": res.get("ok", False), "error": res.get("error"), "request_id": req_id, "path": str(target)})
+        return res
 
 def _search_files(
     query: str,
@@ -450,13 +630,27 @@ def run_devtool(name: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
     name: depmap | tag_usage | todo_backlog | api_surface | plugin_discovery | sots_tools
     args: forwarded CLI args (validated only as a list of strings)
     """
+    req_id = _new_request_id()
     args = args or []
 
     if name not in ALLOWED_SCRIPTS:
-        return {"ok": False, "error": f"Devtool not allowed: {name}. Allowed: {sorted(ALLOWED_SCRIPTS.keys())}"}
+        res = _sots_err(f"Devtool not allowed: {name}. Allowed: {sorted(ALLOWED_SCRIPTS.keys())}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_run_devtool", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
+
+    read_only_meta = ALLOWED_SCRIPTS_META.get(name, {})
+    is_read_only = bool(read_only_meta.get("read_only"))
+
+    if not _is_allowed_devtools_run() and not is_read_only:
+        res = _sots_err("Blocked by SOTS_ALLOW_DEVTOOLS_RUN=0", meta={"request_id": req_id, "read_only": is_read_only})
+        _jsonl_log({"ts": time.time(), "tool": "sots_run_devtool", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
     script = ALLOWED_SCRIPTS[name]
-    return _run_python(script, args)
+    out = _run_python(script, args)
+    res = _sots_ok(out, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_run_devtool", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 @mcp.tool(
     name="sots_list_dir",
@@ -464,12 +658,15 @@ def run_devtool(name: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
     annotations={"readOnlyHint": True, "title": "List dir (repo/exports)"},
 )
 def sots_list_dir(path: str = ".", root: str = "repo") -> Dict[str, Any]:
+    req_id = _new_request_id()
     try:
         base = _get_root(root)
         target = (base / path).resolve()
         _ensure_under_root(target, base)
         if not target.exists() or not target.is_dir():
-            return {"ok": False, "error": f"Not a directory: {path}"}
+            res = _sots_err(f"Not a directory: {path}", meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "sots_list_dir", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
         entries: List[Dict[str, Any]] = []
         for child in sorted(target.iterdir()):
             try:
@@ -482,10 +679,14 @@ def sots_list_dir(path: str = ".", root: str = "repo") -> Dict[str, Any]:
                 })
             except Exception:
                 continue
-        return {"ok": True, "entries": entries}
+        res = _sots_ok({"entries": entries}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_list_dir", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
     except Exception as exc:
         _get_server_logger().error("sots_list_dir failed: %s", exc)
-        return {"ok": False, "error": str(exc)}
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_list_dir", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
 
 @mcp.tool(
@@ -494,20 +695,45 @@ def sots_list_dir(path: str = ".", root: str = "repo") -> Dict[str, Any]:
     annotations={"readOnlyHint": True, "title": "Read file (repo/exports)"},
 )
 def sots_read_file(path: str, start_line: int = 1, max_lines: int = 200, root: str = "repo") -> Dict[str, Any]:
+    req_id = _new_request_id()
     try:
         base = _get_root(root)
         target = (base / path).resolve()
         _ensure_under_root(target, base)
         if not target.exists() or not target.is_file():
-            return {"ok": False, "error": f"File not found: {path}"}
+            res = _sots_err(f"File not found: {path}", meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "sots_read_file", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
         data = target.read_text(encoding="utf-8", errors="replace").splitlines()
         start = max(0, start_line - 1)
         end = start + max(0, max_lines)
         lines = data[start:end]
-        return {"ok": True, "text": "\n".join(lines)}
+        res = _sots_ok({"text": "\n".join(lines)}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_read_file", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
     except Exception as exc:
         _get_server_logger().error("sots_read_file failed: %s", exc)
-        return {"ok": False, "error": str(exc)}
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_read_file", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
+
+
+@mcp.tool(
+    name="sots_read_image",
+    description="Return an image content block from DevTools/python/SOTS_Capture (VisualDigest-safe) with optional downscale and JPEG re-encode. Read-only.",
+    annotations={"readOnlyHint": True, "title": "Read image (VisualDigest)"},
+)
+def sots_read_image(path: str = "", max_dim: int = IMAGE_DEFAULT_MAX_DIM, quality: int = IMAGE_DEFAULT_QUALITY, force_jpeg: bool = True) -> Any:
+    return _run_image_tool(path, max_dim, quality, force_jpeg, tool_name="sots_read_image")
+
+
+@mcp.tool(
+    name="sots_latest_digest_image",
+    description="Convenience: return the VisualDigest latest image as an IMAGE content block (downscaled/encoded). Read-only.",
+    annotations={"readOnlyHint": True, "title": "Read latest digest image"},
+)
+def sots_latest_digest_image(max_dim: int = IMAGE_DEFAULT_MAX_DIM, quality: int = IMAGE_DEFAULT_QUALITY, force_jpeg: bool = True) -> Any:
+    return _run_image_tool(str(IMAGE_DEFAULT_PATH), max_dim, quality, force_jpeg, tool_name="sots_latest_digest_image")
 
 
 @mcp.tool(
@@ -523,14 +749,20 @@ def sots_search_workspace(
     max_results: int = 200,
     root_key: str = "Repo",
 ) -> Dict[str, Any]:
-    return _search_files(
-        query=query,
-        root_key=root_key,
-        exts=exts,
-        regex=regex,
-        case_sensitive=case_sensitive,
-        max_results=max_results,
+    req_id = _new_request_id()
+    res = _sots_ok(
+        _search_files(
+            query=query,
+            root_key=root_key,
+            exts=exts,
+            regex=regex,
+            case_sensitive=case_sensitive,
+            max_results=max_results,
+        ),
+        meta={"request_id": req_id},
     )
+    _jsonl_log({"ts": time.time(), "tool": "sots_search_workspace", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 
 @mcp.tool(
@@ -545,14 +777,20 @@ def sots_search_exports(
     case_sensitive: bool = False,
     max_results: int = 200,
 ) -> Dict[str, Any]:
-    return _search_files(
-        query=query,
-        root_key="Exports",
-        exts=exts,
-        regex=regex,
-        case_sensitive=case_sensitive,
-        max_results=max_results,
+    req_id = _new_request_id()
+    res = _sots_ok(
+        _search_files(
+            query=query,
+            root_key="Exports",
+            exts=exts,
+            regex=regex,
+            case_sensitive=case_sensitive,
+            max_results=max_results,
+        ),
+        meta={"request_id": req_id},
     )
+    _jsonl_log({"ts": time.time(), "tool": "sots_search_exports", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 
 @mcp.tool(
@@ -561,6 +799,7 @@ def sots_search_exports(
     annotations={"readOnlyHint": True, "title": "Agents: health"},
 )
 def sots_agents_health() -> Dict[str, Any]:
+    req_id = _new_request_id()
     agents_importable = True
     notes: List[str] = []
     default_model = os.environ.get("SOTS_MODEL_CODE") or os.environ.get("SOTS_MODEL_DEVTOOLS") or os.environ.get("SOTS_MODEL_EDITOR") or ""
@@ -581,13 +820,17 @@ def sots_agents_health() -> Dict[str, Any]:
         default_model or "unknown",
     )
 
-    return {
-        "ok": ok,
-        "agents_importable": agents_importable,
-        "has_api_key": has_api_key,
-        "default_model": default_model,
-        "notes": notes,
-    }
+    res = _sots_ok(
+        {
+            "agents_importable": agents_importable,
+            "has_api_key": has_api_key,
+            "default_model": default_model,
+            "notes": notes,
+        },
+        meta={"request_id": req_id},
+    )
+    _jsonl_log({"ts": time.time(), "tool": "sots_agents_health", "ok": ok, "error": res["error"], "request_id": req_id})
+    return res
 
 
 @mcp.tool(
@@ -601,9 +844,12 @@ def sots_agents_run(
     model: str = "",
     reasoning_effort: str = "high",
 ) -> Dict[str, Any]:
+    req_id = _new_request_id()
     prompt = (prompt or "").strip()
     if not prompt:
-        return {"ok": False, "output_text": "", "error": "prompt is empty"}
+        res = _sots_err("prompt is empty", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_agents_run", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
     payload = {
         "prompt": prompt,
@@ -617,7 +863,9 @@ def sots_agents_run(
     }
 
     if not os.environ.get("OPENAI_API_KEY"):
-        return {"ok": False, "output_text": "", "error": "OPENAI_API_KEY is missing", "meta": payload}
+        res = _sots_err("OPENAI_API_KEY is missing", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_agents_run", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
     try:
         res = sots_agents_run_task(payload)
@@ -628,10 +876,14 @@ def sots_agents_run(
             meta.get("lane"),
             meta.get("mode"),
         )
-        return res
+        out = _sots_ok(res, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_agents_run", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
     except Exception as exc:
         _get_server_logger().exception("sots_agents_run failed")
-        return {"ok": False, "output_text": "", "error": str(exc)}
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_agents_run", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
 
 @mcp.tool(
@@ -640,16 +892,22 @@ def sots_agents_run(
     annotations={"readOnlyHint": True, "title": "Agents: help"},
 )
 def sots_agents_help() -> Dict[str, Any]:
-    return {
-        "ok": True,
-        "tools": {
-            "sots_agents_health": {"params": [], "notes": "Checks import + OPENAI_API_KEY + default model."},
-            "sots_agents_run": {
-                "params": ["prompt (required)", "system", "model", "reasoning_effort"],
-                "notes": "Runs via sots_agents_runner in plan/read-only mode.",
-            },
+    req_id = _new_request_id()
+    res = _sots_ok(
+        {
+            "tools": {
+                "sots_agents_health": {"params": [], "notes": "Checks import + OPENAI_API_KEY + default model."},
+                "sots_agents_run": {
+                    "params": ["prompt (required)", "system", "model", "reasoning_effort"],
+                    "notes": "Runs via sots_agents_runner in plan/read-only mode.",
+                },
+                "agents_run_prompt": {"alias_for": "sots_agents_run"},
+            }
         },
-    }
+        meta={"request_id": req_id},
+    )
+    _jsonl_log({"ts": time.time(), "tool": "sots_agents_help", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 
 @mcp.tool(
@@ -658,17 +916,24 @@ def sots_agents_help() -> Dict[str, Any]:
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "Agents: run prompt"},
 )
 def agents_run_prompt(prompt: str, mode: Optional[str] = None, lane: Optional[str] = None) -> Dict[str, Any]:
+    req_id = _new_request_id()
     prompt = (prompt or "").strip()
     if not prompt:
-        return {"ok": False, "errors": ["prompt is empty"], "allow_apply": ALLOW_APPLY}
+        res = _sots_err("prompt is empty", meta={"allow_apply": ALLOW_APPLY, "request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "agents_run_prompt", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
     try:
         orch = _get_agents_orchestrator()
         res = orch.run_one(prompt, mode_override=mode, lane_override=lane)
         res["allow_apply"] = ALLOW_APPLY
-        return res
+        out = _sots_ok(res, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "agents_run_prompt", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
     except Exception as exc:
-        return {"ok": False, "errors": [f"orchestrator failure: {exc}"], "allow_apply": ALLOW_APPLY}
+        res = _sots_err(f"orchestrator failure: {exc}", meta={"allow_apply": ALLOW_APPLY, "request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "agents_run_prompt", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
 
 @mcp.tool(
@@ -679,7 +944,10 @@ def agents_run_prompt(prompt: str, mode: Optional[str] = None, lane: Optional[st
 def agents_server_info() -> Dict[str, Any]:
     info = _agents_info()
     info["allow_apply"] = ALLOW_APPLY
-    return {"ok": True, "agents": info}
+    req_id = _new_request_id()
+    res = _sots_ok({"agents": info}, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "agents_server_info", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 
 @mcp.tool(
@@ -688,7 +956,16 @@ def agents_server_info() -> Dict[str, Any]:
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: call"},
 )
 def bpgen_call_tool(action: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    return _bpgen_call(action, params)
+    req_id = _new_request_id()
+    guard = _bpgen_guard_mutation(action)
+    if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_call", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+        return guard
+    res = _bpgen_call(action, params)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_call", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -697,7 +974,10 @@ def bpgen_call_tool(action: str, params: Optional[Dict[str, Any]] = None) -> Dic
     annotations={"readOnlyHint": True, "title": "BPGen: ping"},
 )
 def bpgen_ping_tool() -> Dict[str, Any]:
-    return _bpgen_call("ping", {})
+    req_id = _new_request_id()
+    res = _sots_ok(_bpgen_call("ping", {}), meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_ping", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 
 @mcp.tool(
@@ -773,11 +1053,14 @@ def bpgen_describe(blueprint_asset_path: str, function_name: str, node_id: str, 
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: refresh"},
 )
 def bpgen_refresh(blueprint_asset_path: str, function_name: str, include_pins: bool = False) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "refresh_nodes"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_refresh", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(
+    res = _bpgen_call(
         action,
         {
             "blueprint_asset_path": blueprint_asset_path,
@@ -785,6 +1068,9 @@ def bpgen_refresh(blueprint_asset_path: str, function_name: str, include_pins: b
             "include_pins": include_pins,
         },
     )
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_refresh", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -793,11 +1079,17 @@ def bpgen_refresh(blueprint_asset_path: str, function_name: str, include_pins: b
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: compile"},
 )
 def bpgen_compile(blueprint_asset_path: str) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "compile_blueprint"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_compile", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(action, {"blueprint_asset_path": blueprint_asset_path})
+    res = _bpgen_call(action, {"blueprint_asset_path": blueprint_asset_path})
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_compile", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -806,31 +1098,45 @@ def bpgen_compile(blueprint_asset_path: str) -> Dict[str, Any]:
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: save"},
 )
 def bpgen_save(blueprint_asset_path: str) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "save_blueprint"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_save", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(action, {"blueprint_asset_path": blueprint_asset_path})
+    res = _bpgen_call(action, {"blueprint_asset_path": blueprint_asset_path})
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_save", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
     name="bpgen_apply",
-    description="Apply a BPGen graph spec (mutating; gated by SOTS_ALLOW_APPLY).",
+    description="Apply a BPGen graph spec (mutating; gated by SOTS_ALLOW_APPLY). Supports dry_run.",
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: apply"},
 )
-def bpgen_apply(blueprint_asset_path: str, function_name: str, graph_spec: Dict[str, Any]) -> Dict[str, Any]:
+def bpgen_apply(blueprint_asset_path: str, function_name: str, graph_spec: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "apply_graph_spec"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_apply", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(
-        action,
-        {
-            "blueprint_asset_path": blueprint_asset_path,
-            "function_name": function_name,
-            "graph_spec": graph_spec,
-        },
-    )
+    payload = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "function_name": function_name,
+        "graph_spec": graph_spec,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_apply", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_apply", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -839,20 +1145,28 @@ def bpgen_apply(blueprint_asset_path: str, function_name: str, graph_spec: Dict[
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: delete node"},
 )
 def bpgen_delete_node(blueprint_asset_path: str, function_name: str, node_id: str, compile: bool = True, dry_run: bool = False) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "delete_node_by_id"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_delete_node", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(
-        action,
-        {
-            "blueprint_asset_path": blueprint_asset_path,
-            "function_name": function_name,
-            "node_id": node_id,
-            "compile": compile,
-            "dry_run": dry_run,
-        },
-    )
+    payload = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "function_name": function_name,
+        "node_id": node_id,
+        "compile": compile,
+        "dry_run": dry_run,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_delete_node", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_delete_node", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -870,23 +1184,31 @@ def bpgen_delete_link(
     compile: bool = True,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "delete_link"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_delete_link", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(
-        action,
-        {
-            "blueprint_asset_path": blueprint_asset_path,
-            "function_name": function_name,
-            "from_node_id": from_node_id,
-            "from_pin": from_pin,
-            "to_node_id": to_node_id,
-            "to_pin": to_pin,
-            "compile": compile,
-            "dry_run": dry_run,
-        },
-    )
+    payload = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "function_name": function_name,
+        "from_node_id": from_node_id,
+        "from_pin": from_pin,
+        "to_node_id": to_node_id,
+        "to_pin": to_pin,
+        "compile": compile,
+        "dry_run": dry_run,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_delete_link", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_delete_link", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -903,9 +1225,12 @@ def bpgen_replace_node(
     compile: bool = True,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "replace_node"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_replace_node", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
     params: Dict[str, Any] = {
         "blueprint_asset_path": blueprint_asset_path,
@@ -917,29 +1242,44 @@ def bpgen_replace_node(
     }
     if pin_remap:
         params["pin_remap"] = pin_remap
-    return _bpgen_call(action, params)
+    if dry_run:
+        out = _sots_ok({"action": action, "params": params, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_replace_node", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, params)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_replace_node", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
     name="bpgen_ensure_function",
-    description="Ensure a function exists (mutating; gated).",
+    description="Ensure a function exists (mutating; gated). Supports dry_run.",
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: ensure function"},
 )
-def bpgen_ensure_function(blueprint_asset_path: str, function_name: str, signature: Optional[Dict[str, Any]] = None, create_if_missing: bool = True, update_if_exists: bool = True) -> Dict[str, Any]:
+def bpgen_ensure_function(blueprint_asset_path: str, function_name: str, signature: Optional[Dict[str, Any]] = None, create_if_missing: bool = True, update_if_exists: bool = True, dry_run: bool = False) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "ensure_function"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_function", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(
-        action,
-        {
-            "blueprint_asset_path": blueprint_asset_path,
-            "function_name": function_name,
-            "signature": signature or {},
-            "create_if_missing": create_if_missing,
-            "update_if_exists": update_if_exists,
-        },
-    )
+    payload = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "function_name": function_name,
+        "signature": signature or {},
+        "create_if_missing": create_if_missing,
+        "update_if_exists": update_if_exists,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_function", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_function", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -956,24 +1296,33 @@ def bpgen_ensure_variable(
     update_if_exists: bool = True,
     instance_editable: bool = True,
     expose_on_spawn: bool = False,
+    dry_run: bool = False,
 ) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "ensure_variable"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_variable", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(
-        action,
-        {
-            "blueprint_asset_path": blueprint_asset_path,
-            "variable_name": variable_name,
-            "pin_type": pin_type,
-            "default_value": default_value,
-            "create_if_missing": create_if_missing,
-            "update_if_exists": update_if_exists,
-            "instance_editable": instance_editable,
-            "expose_on_spawn": expose_on_spawn,
-        },
-    )
+    payload = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "variable_name": variable_name,
+        "pin_type": pin_type,
+        "default_value": default_value,
+        "create_if_missing": create_if_missing,
+        "update_if_exists": update_if_exists,
+        "instance_editable": instance_editable,
+        "expose_on_spawn": expose_on_spawn,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_variable", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_variable", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -982,11 +1331,17 @@ def bpgen_ensure_variable(
     annotations={"readOnlyHint": True, "title": "BPGen: spec schema"},
 )
 def bpgen_get_spec_schema() -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "get_spec_schema"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_get_spec_schema", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(action, {})
+    res = _bpgen_call(action, {})
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_get_spec_schema", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -995,14 +1350,20 @@ def bpgen_get_spec_schema() -> Dict[str, Any]:
     annotations={"readOnlyHint": True, "title": "BPGen: canonicalize"},
 )
 def bpgen_canonicalize_spec(graph_spec: Dict[str, Any], options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    req_id = _new_request_id()
     action = "canonicalize_spec"
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_canonicalize_spec", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
     params: Dict[str, Any] = {"graph_spec": graph_spec}
     if options:
         params["options"] = options
-    return _bpgen_call(action, params)
+    res = _bpgen_call(action, params)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_canonicalize_spec", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -1011,10 +1372,16 @@ def bpgen_canonicalize_spec(graph_spec: Dict[str, Any], options: Optional[Dict[s
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: manage"},
 )
 def manage_bpgen(action: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    req_id = _new_request_id()
     guard = _bpgen_guard_mutation(action)
     if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "manage_bpgen", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
         return guard
-    return _bpgen_call(action, params)
+    res = _bpgen_call(action, params)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "manage_bpgen", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 
 @mcp.tool(
@@ -1023,7 +1390,10 @@ def manage_bpgen(action: str, params: Optional[Dict[str, Any]] = None) -> Dict[s
     annotations={"readOnlyHint": True, "title": "List SOTS Reports"},
 )
 def list_reports(max_items: int = 200) -> Dict[str, Any]:
-    return {"ok": True, "reports": _list_reports(max_items=max_items)}
+    req_id = _new_request_id()
+    res = _sots_ok({"reports": _list_reports(max_items=max_items)}, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_list_reports", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 @mcp.tool(
     name="sots_read_report",
@@ -1032,7 +1402,10 @@ def list_reports(max_items: int = 200) -> Dict[str, Any]:
 )
 def read_report(path: str, max_chars: int = 20000) -> Dict[str, Any]:
     # path must be relative to project root, and must live under DevTools/reports/*
-    return _read_text_file(path, max_chars=max_chars)
+    req_id = _new_request_id()
+    res = _sots_ok(_read_text_file(path, max_chars=max_chars), meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_read_report", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 @mcp.tool(
     name="sots_search",
@@ -1047,14 +1420,20 @@ def search(
     case_sensitive: bool = False,
     max_results: int = 200,
 ) -> Dict[str, Any]:
-    return _search_files(
-        query=query,
-        root_key=root_key,
-        exts=exts,
-        regex=regex,
-        case_sensitive=case_sensitive,
-        max_results=max_results,
+    req_id = _new_request_id()
+    res = _sots_ok(
+        _search_files(
+            query=query,
+            root_key=root_key,
+            exts=exts,
+            regex=regex,
+            case_sensitive=case_sensitive,
+            max_results=max_results,
+        ),
+        meta={"request_id": req_id},
     )
+    _jsonl_log({"ts": time.time(), "tool": "sots_search", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 @mcp.tool(
     name="sots_server_info",
@@ -1062,25 +1441,224 @@ def search(
     annotations={"readOnlyHint": True, "title": "SOTS MCP Server Info"},
 )
 def server_info() -> Dict[str, Any]:
-    return {
-        "ok": True,
-        "project_root": str(PATHS.project_root),
-        "devtools_py": str(PATHS.devtools_py),
-        "reports_dir": str(PATHS.reports_dir),
-        "roots": {"repo": str(PATHS.project_root), "exports": str(EXPORTS_ROOT)},
-        "allowed_devtools": sorted(ALLOWED_SCRIPTS.keys()),
-        "safe_search_roots": {k: str(v) for k, v in SAFE_SEARCH_ROOTS.items()},
-        "default_exts": DEFAULT_EXTS,
-        "allow_apply": ALLOW_APPLY,
-        "gates": {"SOTS_ALLOW_APPLY": {"value": ALLOW_APPLY, "note": "Mutating BPGen actions blocked when false."}},
-        "tool_aliases": TOOL_ALIASES,
-        "agents": _agents_info(),
-        "bpgen": {**BPGEN_CFG, "allow_apply": ALLOW_APPLY, "read_only_actions": sorted(BPGEN_READ_ONLY_ACTIONS)},
-        "notes": [
-            "APPLY is gated via SOTS_ALLOW_APPLY env var.",
-            "Avoid stdout logging; tool results carry stdout/stderr from invoked scripts.",
-        ],
+    req_id = _new_request_id()
+    res = _sots_ok(
+        {
+            "project_root": str(PATHS.project_root),
+            "devtools_py": str(PATHS.devtools_py),
+            "reports_dir": str(PATHS.reports_dir),
+            "roots": {"repo": str(PATHS.project_root), "exports": str(EXPORTS_ROOT)},
+            "allowed_devtools": sorted(ALLOWED_SCRIPTS.keys()),
+            "safe_search_roots": {k: str(v) for k, v in SAFE_SEARCH_ROOTS.items()},
+            "default_exts": DEFAULT_EXTS,
+            "allow_apply": ALLOW_APPLY,
+            "gates": {
+                "SOTS_ALLOW_APPLY": {"value": ALLOW_APPLY, "note": "Mutating BPGen actions blocked when false."},
+                "SOTS_ALLOW_BPGEN_APPLY": {"value": ALLOW_BPGEN_APPLY, "note": "BPGen mutations gated."},
+                "SOTS_ALLOW_DEVTOOLS_RUN": {"value": ALLOW_DEVTOOLS_RUN, "note": "Devtools runs gated."},
+            },
+            "tool_aliases": TOOL_ALIASES,
+            "agents": _agents_info(),
+            "bpgen": {**BPGEN_CFG, "allow_apply": ALLOW_APPLY, "read_only_actions": sorted(BPGEN_READ_ONLY_ACTIONS)},
+            "notes": [
+                "APPLY is gated via SOTS_ALLOW_APPLY env var.",
+                "Avoid stdout logging; tool results carry stdout/stderr from invoked scripts.",
+            ],
+        },
+        meta={"request_id": req_id},
+    )
+    _jsonl_log({"ts": time.time(), "tool": "sots_server_info", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
+
+
+@mcp.tool(
+    name="sots_help",
+    description="List canonical tools, aliases, gates, and roots.",
+    annotations={"readOnlyHint": True, "title": "SOTS Help/Index"},
+)
+def sots_help() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    canonical_tools = [
+        "sots_list_dir",
+        "sots_read_file",
+        "sots_search_workspace",
+        "sots_search_exports",
+        "sots_search",
+        "sots_read_image",
+        "sots_latest_digest_image",
+        "sots_list_reports",
+        "sots_read_report",
+        "sots_run_devtool",
+        "sots_agents_health",
+        "sots_agents_run",
+        "sots_agents_help",
+        "agents_run_prompt",
+        "agents_server_info",
+        "bpgen_ping",
+        "bpgen_call",
+        "manage_bpgen",
+        "bpgen_discover",
+        "bpgen_list",
+        "bpgen_describe",
+        "bpgen_refresh",
+        "bpgen_compile",
+        "bpgen_save",
+        "bpgen_apply",
+        "bpgen_delete_node",
+        "bpgen_delete_link",
+        "bpgen_replace_node",
+        "bpgen_ensure_function",
+        "bpgen_ensure_variable",
+        "bpgen_get_spec_schema",
+        "bpgen_canonicalize_spec",
+        "sots_server_info",
+        "sots_help",
+        "sots_env_dump_safe",
+        "sots_where_am_i",
+        "sots_smoketest_all",
+        "sots_last_error",
+    ]
+    res = _sots_ok(
+        {
+            "tools": canonical_tools,
+            "aliases": TOOL_ALIASES,
+            "gates": {
+                "SOTS_ALLOW_APPLY": ALLOW_APPLY,
+                "SOTS_ALLOW_BPGEN_APPLY": ALLOW_BPGEN_APPLY,
+                "SOTS_ALLOW_DEVTOOLS_RUN": ALLOW_DEVTOOLS_RUN,
+            },
+            "roots": {"repo": str(PATHS.project_root), "exports": str(EXPORTS_ROOT)},
+        },
+        meta={"request_id": req_id},
+    )
+    _jsonl_log({"ts": time.time(), "tool": "sots_help", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
+
+
+@mcp.tool(
+    name="sots_last_error",
+    description="Return the last error entry from the JSONL log (bounded scan).",
+    annotations={"readOnlyHint": True, "title": "SOTS Last Error"},
+)
+def sots_last_error() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    log_path = PATHS.devtools_py / "logs" / "sots_mcp_server.jsonl"
+    if not log_path.exists():
+        res = _sots_err("No log file found", meta={"request_id": req_id})
+        return res
+    last_err = None
+    try:
+        with log_path.open("r", encoding="utf-8") as f:
+            dq = deque(f, maxlen=500)
+        for line in reversed(dq):
+            try:
+                obj = json.loads(line)
+            except Exception:
+                continue
+            if obj.get("ok") is False:
+                last_err = obj
+                break
+        if last_err is None:
+            res = _sots_err("No error entries found", meta={"request_id": req_id})
+        else:
+            res = _sots_ok({"last_error": last_err}, meta={"request_id": req_id})
+    except Exception as exc:
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_last_error", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
+
+
+def _safe_git_branch() -> str:
+    head = PATHS.project_root / ".git" / "HEAD"
+    if not head.exists():
+        return "unknown"
+    try:
+        text = head.read_text(encoding="utf-8", errors="replace").strip()
+        if text.startswith("ref:"):
+            return text.split("/")[-1]
+        return text[:32] or "unknown"
+    except Exception:
+        return "unknown"
+
+
+@mcp.tool(
+    name="sots_env_dump_safe",
+    description="Return presence booleans for key env vars (no values).",
+    annotations={"readOnlyHint": True, "title": "SOTS Env Dump (safe)"},
+)
+def sots_env_dump_safe() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    keys = [
+        "OPENAI_API_KEY",
+        "SOTS_BPGEN_HOST",
+        "SOTS_BPGEN_PORT",
+        "SOTS_ALLOW_APPLY",
+        "SOTS_ALLOW_BPGEN_APPLY",
+        "SOTS_ALLOW_DEVTOOLS_RUN",
+    ]
+    presence = {k: (os.environ.get(k) is not None) for k in keys}
+    res = _sots_ok({"env_present": presence}, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_env_dump_safe", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
+
+
+@mcp.tool(
+    name="sots_where_am_i",
+    description="Return repo locations and basic context (read-only).",
+    annotations={"readOnlyHint": True, "title": "SOTS Where Am I"},
+)
+def sots_where_am_i() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    data = {
+        "repo_root": str(PATHS.project_root),
+        "exports_root": str(EXPORTS_ROOT),
+        "branch": _safe_git_branch(),
+        "paths": {
+            "DevTools": (PATHS.project_root / "DevTools").exists(),
+            "Plugins": (PATHS.project_root / "Plugins").exists(),
+            "Source": (PATHS.project_root / "Source").exists(),
+            "Config": (PATHS.project_root / "Config").exists(),
+            "Exports": EXPORTS_ROOT.exists(),
+        },
     }
+    res = _sots_ok(data, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_where_am_i", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
+
+
+@mcp.tool(
+    name="sots_smoketest_all",
+    description="Run safe smoketests (server_info, agents_health, bpgen_ping) without mutations.",
+    annotations={"readOnlyHint": True, "title": "SOTS Smoketest All"},
+)
+def sots_smoketest_all() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    results: Dict[str, Any] = {}
+    warnings: List[str] = []
+
+    try:
+        results["server_info"] = server_info()
+    except Exception as exc:
+        warnings.append(f"server_info failed: {exc}")
+        results["server_info"] = _sots_err(str(exc))
+
+    try:
+        results["agents_health"] = sots_agents_health()
+    except Exception as exc:
+        warnings.append(f"sots_agents_health failed: {exc}")
+        results["agents_health"] = _sots_err(str(exc))
+
+    try:
+        results["bpgen_ping"] = bpgen_ping_tool()
+    except Exception as exc:
+        warnings.append(f"bpgen_ping failed: {exc}")
+        results["bpgen_ping"] = _sots_err(str(exc))
+
+    ok = all(r.get("ok") for r in results.values() if isinstance(r, dict))
+    res = _sots_ok({"results": results}, warnings=warnings, meta={"request_id": req_id})
+    res["ok"] = ok
+    _jsonl_log({"ts": time.time(), "tool": "sots_smoketest_all", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
 
 def main() -> None:
     # Stdio transport is what VS Code uses for local MCP subprocesses.
