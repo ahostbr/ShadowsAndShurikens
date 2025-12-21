@@ -35,6 +35,13 @@ static bool AreDebugWidgetsAllowed()
 }
 #endif
 
+static TAutoConsoleVariable<int32> CVarLightProbeShowProbeMesh(
+    TEXT("sots.lightprobe.ShowProbeMesh"),
+    0,
+    TEXT("Show the LightProbe proxy mesh for debugging (mesh remains shadowless)."),
+    ECVF_Default
+);
+
 
 ULightLevelProbeComponent::ULightLevelProbeComponent()
 {
@@ -82,7 +89,7 @@ void ULightLevelProbeComponent::BeginPlay()
 
     if (UWorld* World = GetWorld())
     {
-        if (ProbeUpdateInterval > 0.0f)
+        if (ProbeUpdateInterval > 0.0f && ProbeCapture && RenderTarget)
         {
             World->GetTimerManager().SetTimer(
                 UpdateTimerHandle,
@@ -121,8 +128,12 @@ void ULightLevelProbeComponent::InitializeProbe()
             ProbeMesh->SetRelativeRotation(ProbeMeshRotation);
             ProbeMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
             ProbeMesh->SetGenerateOverlapEvents(false);
-            ProbeMesh->CastShadow = true;
+            ProbeMesh->CastShadow = false;
+            ProbeMesh->bCastHiddenShadow = false;
             ProbeMesh->bOwnerNoSee = true;
+            const bool bProbeMeshVisible = CVarLightProbeShowProbeMesh.GetValueOnGameThread() != 0;
+            ProbeMesh->SetHiddenInGame(!bProbeMeshVisible);
+            ProbeMesh->SetVisibility(bProbeMeshVisible);
 
             UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
             if (CubeMesh)
@@ -184,8 +195,8 @@ void ULightLevelProbeComponent::InitializeProbe()
             ProbeCapture->SetRelativeLocation(FVector::ZeroVector);
             ProbeCapture->SetRelativeRotation(FRotator::ZeroRotator);
             ProbeCapture->FOVAngle = ProbeFOV;
-            ProbeCapture->bCaptureEveryFrame = true;
-            ProbeCapture->bCaptureOnMovement = true;
+            ProbeCapture->bCaptureEveryFrame = false;
+            ProbeCapture->bCaptureOnMovement = false;
             ProbeCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
             ProbeCapture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_RenderScenePrimitives;
 
@@ -283,7 +294,9 @@ void ULightLevelProbeComponent::ShutdownProbe()
 
 void ULightLevelProbeComponent::UpdateLightLevel()
 {
-    if (!RenderTarget) return;
+    if (!RenderTarget || !ProbeCapture) return;
+
+    ProbeCapture->CaptureScene();
 
     const int32 SizeX = RenderTarget->SizeX;
     const int32 SizeY = RenderTarget->SizeY;

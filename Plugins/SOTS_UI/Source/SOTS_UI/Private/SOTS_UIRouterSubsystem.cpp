@@ -1,6 +1,8 @@
 #include "SOTS_UIRouterSubsystem.h"
 
 #include "Blueprint/UserWidget.h"
+#include "ConsoleVariables.h"
+#include "Containers/Set.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
@@ -32,12 +34,39 @@ namespace
 		ESOTS_UILayer::HUD
 	};
 
-		static const FGameplayTag UINavLayerTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Input.Layer.UI.Nav")), false);
-		static const FGameplayTag TAG_InteractionVerb_Pickup = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Pickup")), false);
-		static const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Execute")), false);
-		static const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStart")), false);
-		static const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStop")), false);
-		static const FGameplayTag TAG_Context_Interaction = FGameplayTag::RequestGameplayTag(FName(TEXT("Context.Interaction")), false);
+	static const FGameplayTag UINavLayerTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Input.Layer.UI.Nav")), false);
+	static const FGameplayTag TAG_InteractionVerb_Pickup = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Pickup")), false);
+	static const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Execute")), false);
+	static const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStart")), false);
+	static const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStop")), false);
+	static const FGameplayTag TAG_Context_Interaction = FGameplayTag::RequestGameplayTag(FName(TEXT("Context.Interaction")), false);
+
+	static TAutoConsoleVariable<int32> CVarLogUnhandledInteractionVerbs(
+		TEXT("sots.ui.LogUnhandledInteractionVerbs"),
+		0,
+		TEXT("When enabled, logs each unhandled interaction verb once per session."),
+		ECVF_Default);
+
+	static TSet<FName> LoggedUnhandledInteractionVerbTags;
+
+	void MaybeLogUnhandledInteractionVerb(const FGameplayTag& VerbTag)
+	{
+		if (CVarLogUnhandledInteractionVerbs.GetValueOnGameThread() == 0 || !VerbTag.IsValid())
+		{
+			return;
+		}
+
+		const FName VerbName = VerbTag.GetTagName();
+		if (VerbName.IsNone() || LoggedUnhandledInteractionVerbTags.Contains(VerbName))
+		{
+			return;
+		}
+
+		LoggedUnhandledInteractionVerbTags.Add(VerbName);
+		UE_LOG(LogSOTS_UIRouter, Verbose, TEXT(
+			"UIRouter: Interaction verb %s is not owned by UI. SOTS_Interaction, SOTS_BodyDrag, and SOTS_KillExecutionManager handle execute/drag semantics. Enable sots.ui.LogUnhandledInteractionVerbs to repeat this message once per verb per session."),
+			*VerbTag.ToString());
+	}
 }
 
 USOTS_UIRouterSubsystem* USOTS_UIRouterSubsystem::Get(const UObject* WorldContextObject)
@@ -1083,14 +1112,8 @@ void USOTS_UIRouterSubsystem::HandleInteractionActionRequested(const FSOTS_Inter
 		return;
 	}
 
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-	if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Execute) ||
-		Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStart) ||
-		Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStop))
-	{
-		UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("UIRouter: Interaction action %s deferred (stub)."), *Request.VerbTag.ToString());
-	}
-#endif
+		// Non-pickup verbs are handled by interaction subsystems (SOTS_Interaction, SOTS_BodyDrag, SOTS_KillExecutionManager); no routing change here.
+		MaybeLogUnhandledInteractionVerb(Request.VerbTag);
 }
 
 bool USOTS_UIRouterSubsystem::DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload)
