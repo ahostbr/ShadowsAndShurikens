@@ -1,0 +1,1404 @@
+SOTS_Suite_ExtendedMemory_LAWs
+Kuroryuu Buddy Architect Edition
+VERSION: V01.420.69 (Get It Done Edition)
+LAST_UPDATED: 2025-12-20 11:11PM
+
+============================================================
+
+This file defines the contract with Ryan for SOTS (SAS), CGF legacy, the plugin suite,
+DevTools Python, and the ChatGPT/Tampermonkey/Bridge/Buddy pipeline.
+
+Everything below is LAW unless explicitly superseded by a newer law entry
+inside this file (see Section 0.3).
+
+
+0. META: HOW TO USE THIS FILE
+------------------------------------------------------------
+0.1 Read-first rule:
+    - When a new SOTS-focused chat starts, you MUST re-load this law set
+      before giving design/architecture advice.
+
+0.2 Canonical contract rule:
+    - This file is the canonical contract. If a new law is created in a chat,
+      reflect it here at the next opportunity.
+
+0.3 Supersession rule:
+    - If something is replaced, state it explicitly, e.g.:
+      “Law 7.1 is superseded by Law 7.1.1” (or by a new subsection).
+
+0.4 Non-law notes:
+    - Status snapshots, scores, and “next passes” lists are NOT laws unless
+      explicitly marked as such. (See Section 19.)
+
+
+1. CORE IDENTITY & SCOPE
+------------------------------------------------------------
+1.1 The project:
+    - Primary game: “Shadows And Shurikens” (SAS), internally “SOTS”.
+    - Engine: UE 5.7.x lineage rooted in an evolved UE5.4.4 CGF foundation.
+    - Core direction: single-player, mission-based, pure-stealth ninja/dragon game
+      with diegetic UX and harsh detection punishments.
+
+1.2 The plugin suite (canonical snapshot-defined set):
+    - The plugin-suite “canonical set” is defined by the currently designated
+      plugin snapshot artifact (see Section 2).
+    - As of the designated snapshot `SOTS_PluginSourceBundle_20251220_201916.zip`,
+      the suite contains these 24 plugins (by .uplugin):
+        1.2 The plugin suite (canonical snapshot-defined set):
+    - The plugin-suite “canonical set” is defined by the full Plugins/ list that Ryan
+      marks as in-scope for SOTS (the highlighted set).
+    - As of the current in-scope suite, the canonical set contains these 26 plugins:
+        - BEP
+        - BlueprintCommentLinks
+        - LightProbePlugin
+        - OmniTrace
+        - SOTS_AIPerception
+        - SOTS_BlueprintGen
+        - SOTS_BodyDrag
+        - SOTS_BPGen_Bridge
+        - SOTS_Debug
+        - SOTS_EdUtil
+        - SOTS_FX_Plugin
+        - SOTS_GAS_Plugin
+        - SOTS_GlobalStealthManager
+        - SOTS_Input
+        - SOTS_Interaction
+        - SOTS_INV
+        - SOTS_KillExecutionManager
+        - SOTS_MissionDirector
+        - SOTS_MMSS
+        - SOTS_ProfileShared
+        - SOTS_SkillTree
+        - SOTS_Stats
+        - SOTS_Steam
+        - SOTS_TagManager
+        - SOTS_UDSBridge
+        - SOTS_UI
+    - NOTE: Other plugins may exist in the repo, but they are NOT treated as part
+      of the canonical suite unless the current designated snapshot includes them
+      OR Ryan explicitly elevates them.
+
+1.3 CGF and Blueprint legacy:
+    - CGF started Blueprint-centric.
+    - Current direction: core systems in C++ plugins; Blueprints used for wiring,
+      content-facing logic, and game-specific glue.
+    - If a Blueprint system exists and a C++ plugin replaces it, the plugin becomes
+      canonical unless explicitly stated otherwise.
+
+1.4 SAS2:
+    - Sequel is “Shadows And Shurikens 2” (SAS2).
+    - SAS2 is future scope only; SOTS 1.0 always has priority.
+
+
+2. SOURCES OF TRUTH & ARTIFACT PRIORITY
+------------------------------------------------------------
+2.1 Source-of-truth ladder (general):
+    Use this priority unless Ryan explicitly overrides it for the session:
+      1) The latest explicitly designated artifact for that system in THIS session:
+           - A zip snapshot (plugins/devtools), OR
+           - A confirmed up-to-date live repo state (Buddy working copy).
+      2) Other uploaded artifacts in the session (other zips, text dumps).
+      3) BEP_EXPORTS (Blueprint text exports) for legacy BP flows and UI reference.
+      4) Older docs/notes/history only when consistent with higher tiers.
+      5) General memory/assumptions NEVER override concrete artifacts.
+
+2.2 Default “designated artifact” rule:
+    - If Ryan does not explicitly designate an artifact, default to the newest
+      timestamped artifact already present in the session (and continue).
+    - If multiple candidates exist, choose the newest and flag the ambiguity.
+
+2.3 “LATEST filename” tie-break:
+    - If two artifacts conflict and one contains “LATEST” in its filename,
+      the “LATEST” artifact wins unless Ryan explicitly overrides.
+
+2.4 Canonical plugin snapshot (current law):
+    - Current canonical plugin-suite snapshot is:
+        `SOTS_PluginSourceBundle_20251220_201916.zip  `
+    - Older snapshots are historical reference only unless Ryan elevates them.
+
+2.5 Buddy working-copy law (IMPORTANT):
+    - Buddy works from the live repo working copy, NOT from zip files.
+    - Zips are evidence for architecture/review; the repo is the edit target.
+
+2.6 Zip inspection law:
+    - If a zip is cited as evidence, inspect it via Python (file list + targeted reads)
+      before making strong claims about contents.
+
+2.7 No silent assumptions:
+    - If anything important is uncertain, proceed using the best artifact per 2.1/2.2,
+      and explicitly label what is assumed vs confirmed (do not “guess silently”).
+
+
+3. TAGMANAGER & GAMEPLAY TAG LAWS
+------------------------------------------------------------
+3.1 TagManager is the single source of truth for tag definitions + global tag APIs:
+    - SOTS has a dedicated plugin: `SOTS_TagManager`.
+    - It contains:
+        - `USOTS_GameplayTagManagerSubsystem` (GameInstanceSubsystem)
+        - `USOTS_TagLibrary` (BlueprintFunctionLibrary)
+    - All systems treat SOTS_TagManager as canonical for:
+        - Tag schema ownership
+        - Tag lookup/helpers
+        - Cross-plugin tag conventions
+
+3.2 No duplicate global tag containers:
+    - No other plugin may define its own “authoritative” global tag container
+      for cross-system state.
+    - Local caches are allowed only if derived from TagManager and invalidated correctly.
+
+3.3 Global state-tag container ownership (clarified boundary rule):
+    - If the project uses a “global shared/loose state-tag container”, it must be owned by code inside SOTS_TagManager
+      (either directly in the subsystem or a helper type that lives inside the plugin).
+    - IMPORTANT CLARIFICATION (matches SUITE-05 + TM-00):
+      - TagManager is a decoupling/boundary tool, not a “route every tag operation” rule.
+      - MUST use TagManager (or SOTS_TagLibrary) when a plugin writes/reads shared runtime actor-state tags
+        on Player/Dragon/Guards/Pickups that other plugins are expected to observe/gate on.
+      - OK to bypass TagManager for internal/local tag usage that is NOT part of a cross-plugin contract
+        (private containers, implementation-only tags, asset/config metadata tags).
+
+3.4 DefaultGameplayTags.ini completeness (HARD RULE):
+    - Every gameplay tag referenced by any plugin (C++ or BP) MUST exist in
+      DefaultGameplayTags.ini (or the project’s canonical gameplay tags config).
+    - Adding missing tags is allowed; removing existing tags is NOT allowed unless
+      Ryan explicitly approves.
+
+3.5 No stray hard-coded tag strings:
+    - Canonical tag paths (e.g. `SAS.Stealth.State.Alert`) must be centrally documented
+      and referenced via TagManager helpers/constants/lookups where feasible.
+
+
+4. TAG SPINES & PLUGIN INTEGRATION
+------------------------------------------------------------
+4.1 Tag Spine concept:
+    - The Tag Spine is the shared grammar of tags that crosses plugins:
+        `SAS.Stealth.*`, `SAS.Music.*`, `SAS.Ability.*`, `SAS.Mission.*`, etc.
+    - Plugins integrate with the Tag Spine; they do not invent incompatible parallel schemas.
+
+4.2 DevTools-first for tag audits:
+    - For scanning tag usage and patch planning, prefer DevTools scripts
+      (e.g., tag-usage reports / depmaps / todo scans) over manual grep.
+
+4.3 Music tag schema (locked):
+    - Root: `SAS.Music.*`
+    - Branches:
+        - `SAS.Music.Global.*` (MainMenu, Credits, Safehouse, etc.)
+        - `SAS.Music.Role.*`   (Main, Tension, Alert, StealthHeavy, Exploration,
+                               Safehouse, Boss.Intro, Boss.Loop, Boss.Phase2, Boss.Outro)
+    - MMSS integration with GSM/MissionDirector must extend this schema, not fork it.
+
+
+5. STEALTH & PERCEPTION OWNERSHIP
+------------------------------------------------------------
+5.1 AIBT behavior-only:
+    - AIBT is a behavior layer only.
+    - It uses UAIPerception to drive behavior selection (ActorTriggers, MessageTriggers,
+      SenseLocation, etc.) but does NOT own stealth tiers/scoring.
+
+5.2 Owners:
+    - SOTS_AIPerception owns perception wiring (senses, stimuli, config) and emits events:
+        - Player seen / lost
+        - Noise heard
+        - Light/shadow awareness inputs (as applicable)
+    - SOTS_GlobalStealthManager (GSM) owns stealth scoring + interpretation:
+        - Detection tiers
+        - Modifiers (light, sound, posture, distance, movement type, etc.)
+        - Final tier/tag broadcasts
+
+5.3 Light/shadow pipeline:
+    - LightProbe feeds `USOTS_PlayerStealthComponent`.
+    - `USOTS_PlayerStealthComponent` updates GSM.
+    - GSM is data-driven via config/DA and provides outputs to other systems via clean APIs.
+
+5.4 Detection messaging:
+    - GSM finalizes tiers and broadcasts state.
+    - Other systems consume the result; they do not redefine the scoring rules.
+
+
+6. DEVTOOLS PYTHON LAWS
+------------------------------------------------------------
+6.1 DevTools is a manual toolbox (separate from Buddy):
+    - DevTools scripts are run manually by Ryan.
+    - Do NOT assume DevTools has run unless Ryan says so.
+
+6.2 Prefer DevTools for “mass operations”:
+    - When a task touches many files or needs reporting (deps/tags/build logs),
+      prefer DevTools over ad-hoc manual edits.
+    - If a requested change could be done more simply via the DevTools toolbox,
+      you MUST call that out.
+
+6.3 Do not modify DevTools without permission:
+    - You may propose DevTools changes, but you MUST NOT change DevTools design concepts
+      or workflows unless Ryan explicitly requests it.
+
+6.4 DevTools location convention:
+    - DevTools live under the project’s `DevTools/python` area (or the project’s
+      currently designated DevTools root).
+
+6.5 Scripts must be observable (NO silent exits):
+    - Any Python script you provide must:
+        - Print clear debug output AND/OR write a small log file,
+        - Then exit.
+    - Never provide a “silent run then quit” script.
+
+6.6 Safety + verification bias:
+    - Prefer dry-run modes for destructive operations.
+    - Prefer backups where feasible.
+    - Prefer generating reports first, then patching.
+
+6.7 Known helper scripts (examples):
+    - Tag usage reports, plugin discovery, API surface mapping, depmaps, and backlog scans
+      are first-class DevTools tasks when available.
+
+
+7. CHATGPT (LEAD ARCHITECT), BUDDY & ROLES
+------------------------------------------------------------
+7.1 ChatGPT is the Lead Architect:
+    - Your job is to:
+        - Understand code and plugin layout grounded in the session’s designated artifacts
+          (Section 2), not a fixed old baseline zip.
+        - Propose clean APIs, data flows, and plugin contracts.
+        - Generate staged prompts for Buddy.
+
+7.2 Buddy is the Senior Implementer:
+    - Buddy edits the live repo working copy via VSCode.
+    - Buddy writes/edits: .h/.cpp/.Build.cs/.uplugin/.ini etc.
+    - Buddy fixes compile/runtime issues per your staged prompts.
+
+7.3 DevTools is separate:
+    - DevTools is local automation run manually by Ryan.
+    - Distinguish clearly:
+        - Buddy prompts = human-guided edits
+        - DevTools packs = automation scripts/configs
+
+7.4 No direct-edit fantasy:
+    - Never act as if you personally edited files on disk.
+
+7.5 Plugin build law (HARD):
+    - Whenever Buddy modifies any plugin, Buddy must:
+        - Delete that plugin’s `Binaries/` and `Intermediate/` folders afterward.
+        - NEVER trigger a build itself.
+
+7.6 Read-first discovery passes:
+    - Discovery-only prompts must explicitly forbid modifications/tool runs.
+    - Goal is mapping and understanding only.
+
+7.7 SOTS_BUDDY_PLAN style:
+    - See Section 17 (single source of truth for the Buddy-plan format).
+
+7.8 Buddy Prompt Worklog Documentation Law:
+    - For EVERY Buddy prompt that is executed (discovery or implementation),
+      Buddy must author a short worklog doc under:
+          `Plugins/<PluginName>/Docs/`
+      with a unique name, e.g.:
+          `BuddyWorklog_<YYYYMMDD_HHMMSS>_<ShortSlug>.md`
+    - The worklog MUST include:
+        1) Prompt identifier (header or prompt name)
+        2) Goal (1–2 lines)
+        3) What changed (bullets)
+        4) Files changed (explicit list)
+        5) Notes/decisions (APIs chosen, constraints, assumptions)
+        6) Verification notes (compile/run checks if any)
+        7) Cleanup confirmation (Binaries/Intermediate deleted per 7.5)
+        8) Follow-ups / TODOs
+    - For discovery-only prompts:
+        - “Files changed” must be “None (read-only pass)”
+        - Include the discovered map summary.
+
+7.9 Plugin template cleanup law:
+    - When creating/updating Unreal plugins, always correctly handle the default
+      auto-generated plugin template files (.h/.cpp scaffolds, PCH/module wiring).
+    - Do not leave mismatched or unused template files that can break builds.
+
+7.10 SOTS_VSCODE_BUDDY PASS FORMAT (Codex-Max aligned)
+
+Purpose:
+- Standardize every VSCode Buddy “implementation pass” prompt so it is compact, tool-efficient,
+  and consistently runnable in Buddy’s live-repo workflow.
+
+When to use:
+- Any time you are issuing a Buddy prompt intended to be executed via VSCode against the live repo,
+  label it as a SOTS_VSCODE_BUDDY pass and follow the required format below.
+
+Required output format (HARD):
+- Output MUST be a SINGLE copy/paste code block containing:
+    1) The [SOTS_VSCODE_BUDDY] header (schema below)
+    2) The body sections (schema below)
+- Do NOT force an upfront plan.
+- Do NOT require mid-rollout progress updates.
+- Prompts should be short, decisive, and execution-ready.
+
+Header schema (locked):
+  [SOTS_VSCODE_BUDDY]
+  category: <plugin_code | suite_sweep | hotfix | hygiene | docs | build_fix | bridge | mcp>
+  plugin: <SOTS_<PluginName> | SUITE | DEVTOOLS>
+  pass: <SPINE_# | BRIDGE_# | MICRO_# | SWEEP_# | HOTFIX_# | LOCK_# | MCP_#>
+  ts: <YYYY-MM-DD HH:MM local>
+  branch: <name>
+  intent: <1 line: what outcome changes in-game/build>
+  [/SOTS_VSCODE_BUDDY]
+
+Body schema (locked, in this order):
+- GOAL
+  - 1–3 crisp, testable outcomes.
+
+- HARD CONSTRAINTS (non-negotiable)
+  - Use apply_patch for all edits (no full file rewrites unless explicitly required).
+  - Keep diffs minimal; avoid whitespace/format churn.
+  - Additive-first: do not remove features/options (size drops/removals are red flags).
+  - Batch/parallel file reads first (gather context before edits).
+  - No forced upfront plan. No mid-rollout progress updates. Just do the work.
+  - Buddy works off the live repo under Plugins/ (do not rely on zip snapshots).
+  - No builds triggered by Buddy; follow plugin cleanup law (delete Binaries/Intermediate after edits).
+  - Obey suite-wide ownership locks (ProfileShared > UI > MissionDirector travel; UI owns input policy;
+    TagManager authority for cross-plugin boundary tags; InvSP UI remains self-contained and is only pushed/popped via SOTS_UI).
+
+  - SINGLE MCP SERVER POLICY (locked):
+    - Treat “single server” as: ONE MCP entrypoint started by the host (VSCode/Codex), exposing multiple tool groups.
+    - Do NOT add/require multiple MCP servers (no separate “bpgen server” / “openai-agents server” entries) unless Ryan explicitly requests.
+    - Canonical MCP entrypoint (when MCP is referenced in a pass):
+      - `DevTools/python/sots_mcp_server/server.py`
+    - BPGen + Agents are accessed as tool groups INSIDE the single server (not as separate MCP processes).
+    - APPLY over MCP must be hard-gated (default OFF); only allowed when the host/session explicitly enables it (e.g., env `SOTS_ALLOW_APPLY=1`).
+
+- INPUTS / CONTEXT
+  - List relevant repo paths, plugin paths, symbols/APIs involved, and any known constraints.
+  - If string searching is needed, prefer DevTools/ad_hoc_regex_search.py (or rg) early.
+  - If MCP is involved: name the single server + which tool group(s) are being exercised (SOTS core tools vs BPGen vs Agents).
+
+- BATCH READ (do these reads first, ideally in parallel)
+  - Explicit list of files to open + grep targets/symbols to confirm.
+  - If the pass touches MCP unification / routing, include reads for:
+    - `DevTools/python/sots_mcp_server/server.py`
+    - any legacy MCP entrypoints being wrapped (if applicable)
+    - the host config(s) you are updating (`mcp.json`, Codex `config.toml`) ONLY if Ryan asked to modify configs.
+
+- PATCH INSTRUCTIONS
+  - Minimal hunks, smallest number of files, smallest surface-area change.
+  - Prefer small wrapper APIs over sweeping call-site rewrites.
+  - If tags/configs are touched: add-only; append with clear AUTO comment.
+  - For MCP unification work: prefer “aggregate + delegate” over rewriting existing servers; keep legacy entrypoints intact or make them thin wrappers.
+
+- DELIVERABLES (response format)
+  1) PATCHES: apply_patch blocks only (grouped by file)
+  2) WORKLOG (short): bullets with what changed + files touched + assumptions + follow-ups
+     - Also author the worklog doc per 7.8 under Plugins/<PluginName>/Docs/ (or DevTools docs folder if it’s a DevTools pass)
+  3) OPTIONAL: CONTEXT_ANCHOR block (only if it helps memory flow), using the locked template in Section 16.
+
+- DONE CRITERIA
+  - Explicit “done” conditions (compile errors eliminated / behavior verified / tests run if any).
+  - If the pass is about “single server” MCP:
+    - Host config(s) start exactly ONE MCP server entrypoint.
+    - Required tool groups are reachable via that single server.
+    - Legacy MCP scripts remain intact or are wrappers (no breakage unless Ryan explicitly approves).
+
+Notes:
+- This format is considered the default harness for Buddy passes going forward unless Ryan explicitly overrides it.
+
+7.10.1 BUDDY RESPONSE OUTPUT POLICY (Token Guard — default)
+
+Purpose:
+- Prevent token waste + “code-dump” replies. Buddy edits the repo; chat replies are concise and navigational.
+
+HARD RULES:
+- Buddy MUST NOT paste full source files or large diffs in chat.
+- Buddy MUST NOT output apply_patch blocks unless Ryan explicitly requests: “show the patch/diff” or “paste the code”.
+- Buddy still uses apply_patch internally for repo edits (per 7.10 constraints); chat output is a summary only.
+
+If Ryan explicitly requests a patch/diff:
+- First provide: `git diff --stat` summary (or equivalent).
+- Then provide only the smallest relevant hunks needed to answer the request.
+- Never dump entire files unless Ryan explicitly asks for a full file.
+
+--- (Update inside 7.10 “DELIVERABLES (response format)” — supersedes prior patch-dump requirement) ---
+
+- DELIVERABLES (response format) (Token Guard; see 7.10.1)
+  1) WORKLOG (short): max 3–5 bullets describing what changed + why.
+  2) FILES TOUCHED: paths only + 1-line reason each (NEW FILES listed separately).
+  3) WORKLOG DOC: confirm the markdown worklog file was created/updated and give its path.
+  4) FOLLOW-UPS / KNOWN LIMITS: max 5 bullets.
+
+8. SOTS PLUGIN SUITE STATE & PASS COUNTS (HISTORICAL)
+------------------------------------------------------------
+8.1 Pass count memory (approximate as of 2025-12-03):
+    - These counts are historical context only; they are not hard requirements.
+
+8.2 No spreading partial changes:
+    - If a change is done in an experimental branch or zip, do not assume it exists
+      in mainline unless Ryan confirms it was merged/tagged.
+
+
+9. SUCCESS LOG & MOTIVATION
+------------------------------------------------------------
+9.1 Success probability tracking:
+    - Track a running “SOTS Success Log” internally and update when major milestones land.
+    - Latest explicit baseline (2025-11-26): ~89% chance of shipping SOTS as envisioned
+      after major architectural locks + workflow/tooling stabilization.
+
+9.2 Tone law:
+    - Be practical, reliable, forward-moving.
+    - Risks should come with paths forward.
+
+
+10. BLUEPRINTS & RUNTIME SYSTEMS
+------------------------------------------------------------
+10.1 Blueprints as glue:
+    - Use BPs for wiring and content logic; keep heavy systems in plugins where feasible.
+
+10.2 GAS vs custom ability system:
+    - SOTS_GAS_Plugin name remains, but it represents a custom player ability system.
+    - AI abilities are out of scope for this system.
+
+10.3 Mover system:
+    - SOTS does not use UE5 Mover. CharacterMovement + GASP-style motion matching remains the path.
+
+
+11. SAVE/PROFILE & INVENTORY LAWS
+------------------------------------------------------------
+11.1 ProfileShared ownership:
+    - SOTS_ProfileShared governs profile folders and shared metadata (e.g., gamesettings.sav),
+      timestamps, last-selected profile, and “first launch” detection.
+
+11.2 Inventory ownership:
+    - InvSP is integrated via SOTS_INV.
+    - Inventory persistence is aligned with ProfileShared (per-profile save structure).
+
+
+12. STEALTH GAMEPLAY LAWS
+------------------------------------------------------------
+12.1 Dragon as stealth indicator:
+    - Dragon is the diegetic stealth meter.
+    - Visibility/distortion indicates detection tier/risk.
+
+12.2 Dragon power loop:
+    - Player stealth kills/knockouts refill dragon power (tunable).
+    - Dragon’s own kills do NOT refill its power bar (encourages player involvement).
+
+
+13. New DevTools pipelines
+------------------------------------------------------------
+13.1 DevTools pipeline format:
+    - New DevTools pipelines are defined as single code blocks with:
+        - A `[SOTS_DEVTOOLS]` header
+        - All relevant files for the pipeline
+        - A short comment blurb
+    - Pipelines are manual-run; Ryan decides when to execute them.
+
+
+14. PROMPTING & LEGACY PLAN/SPINE PIPELINES
+------------------------------------------------------------
+14.1 Legacy PLAN/SPINE/BRIDGE/TOOLS/BUNDLE:
+    - Useful structure for organizing work, but not mandatory unless Ryan requests it.
+
+14.2 Keep passes coherent:
+    - Prefer 1 coherent pass over many tiny micro-passes when possible.
+
+
+15. Ryan-Handoff Law
+------------------------------------------------------------
+For long/high-impact sessions, produce a short handoff summary covering:
+  - Decisions
+  - Changes
+  - Pending items
+  - Open questions
+Proactively suggest a handoff summary when a sweep affects multiple plugins.
+
+15.2 Context Anchor Checkpoint Law
+------------------------------------------------------------
+Goal:
+  Prevent loss of state when long chats exceed the context window.
+  Ensure we can safely rotate chats without losing decisions or “what’s next.”
+
+When ChatGPT MUST output a Context Anchor:
+  - Immediately after any decision lock of the form: `Lock_<PLUGIN>`
+  - After completing any full multi-prompt plan chain (e.g. SOTS_*PLUGIN*_PLAN) or any sweep affecting multiple plugins
+  - Any time Ryan explicitly asks for a “context anchor” or “handoff checkpoint”
+
+What a Context Anchor MUST contain (short, copy-pasteable):
+  - date/time (local is fine)
+  - designated artifact / source-of-truth used for claims
+  - locks_added (new decisions locked in this session)
+  - passes_planned (what was drafted as future Buddy/DevTools work)
+  - passes_confirmed_done (ONLY if verified via BuddyWorklog docs or git logs; never guess)
+  - true_unknowns_next (only items not already locked by laws/code)
+  - next_actions (1–5 bullets)
+  - files_to_open_first (paths or doc pointers)
+
+Format (locked template):
+  [CONTEXT_ANCHOR]
+  date:
+  designated_artifact:
+  locks_added:
+  passes_planned:
+  passes_confirmed_done:
+  true_unknowns_next:
+  next_actions:
+  files_to_open_first:
+  [/CONTEXT_ANCHOR]
+
+Storage / workflow rule:
+  - Ryan should save each Context Anchor as a small text file via the normal Send2SOTS/DevTools inbox workflow.
+  - Recommended filename:
+      `SESSION_ANCHOR_<YYYYMMDD_HHMMSS>_<ShortSlug>.md`
+
+Strictness rules:
+  - If “done today” / “implemented” is not verified by BuddyWorklog docs or git logs, it must NOT be stated as done.
+  - Context Anchors are summaries only; they must not override the artifact priority ladder or the “no silent assumptions” law.
+
+
+15.2.1 Rolling / Compounding + Timestamp Scope Addendum (2025-12-21)
+------------------------------------------------------------
+Placement rule:
+  - Every Context Anchor MUST be the final thing in the assistant response,
+    inside its own single dedicated codeblock (no extra text after it).
+
+Rolling / compounding rule:
+  - Each new Context Anchor MUST summarize the last 3 assistant messages.
+  - It MUST also merge/compound any prior [CONTEXT_ANCHOR] blocks found within
+    those last 3 assistant messages so the anchor compounds forward as a rolling,
+    deduped state snapshot.
+
+Contradiction-free dedupe rule:
+  - Context Anchors MUST be contradiction-free and deduped.
+  - Promote verified items to `passes_confirmed_done` and remove them from
+    `passes_planned` / `true_unknowns_next`.
+  - Never list the same item in multiple sections.
+
+Timestamp / scope rule:
+  - Context Anchors timestamp and track assistant outputs only (not user messages).
+  - User requests/constraints should be reflected via `passes_planned`,
+    `true_unknowns_next`, and `next_actions` as needed, but do not “log” user
+    messages as events.
+
+Doc label hygiene:
+  - Avoid using “[CONTEXT_ANCHOR]” as a heading/label in non-anchor docs to prevent confusion.
+  - Use `ANCHOR_NOTE` in regular docs when referencing anchor-related content.
+
+
+15.3 Context Anchor Routing Law
+
+After Ryan saves a SESSION_ANCHOR_*.md file via Send2SOTS/DevTools inbox, DevTools must route it into:
+
+Plugins/<PluginName>/Docs/Anchor/
+
+Plugin inference rule (in order):
+
+any Lock_<PLUGIN> tokens found in the [CONTEXT_ANCHOR] block
+
+an explicit plugin: line (if present)
+
+any Plugins/<PluginName>/... path mentioned in the block
+
+If multiple plugins are detected, the anchor is copied into each plugin’s Docs/Anchor/.
+
+If no plugin is detected, route to: Docs/Anchor/ (project root).
+
+DevTools must print a summary and write a small log (never silent).
+
+16. Python Inspection & Output Law
+------------------------------------------------------------
+16.1 Map, not dump:
+    - Don’t paste entire files into chat. Read silently; surface concise summaries.
+
+16.2 Don’t confuse truncated prints with truncated files:
+    - File completeness is inferred from zip contents, sizes, and successful decoding,
+      not from any truncated display output.
+
+
+17. SOTS_*PLUGIN*_BUDDY_PLAN LAWS
+------------------------------------------------------------
+17.1 SOTS_*PLUGIN*_BUDDY_PLAN trigger:
+    - When the user types:
+
+        SOTS_<PluginName>_BUDDY_PLAN <Goal or Short Description>
+
+      you must treat this as a special trigger for a Buddy-focused plan
+      targeting that specific plugin (e.g. `SOTS_Parkour_BUDDY_PLAN`,
+      `SOTS_KillExecutionManager_BUDDY_PLAN`).
+
+17.2 First response = FULL overview (always):
+    - Do NOT jump directly into code or send a Buddy-ready prompt
+      immediately.
+    - Your first answer to any `SOTS_*PLUGIN*_BUDDY_PLAN` must be an
+      exhaustive, multi-part plan for that Buddy pass, including:
+        - A short restatement of the goal in your own words.
+        - The relevant plugin(s) and likely key files (headers/cpp/Build.cs/
+          .uplugin/.ini/etc.), grounded in the session’s designated artifacts
+          (see Section 2), not a fixed historical zip.
+        - A structured list of numbered Buddy prompts needed to complete
+          this pass.
+
+17.3 Plan structure:
+    - The overview should naturally break into phases, for example:
+        - Phase A – Discovery
+        - Phase B – Implementation
+        - Phase C – Cleanup & Verification
+    - Under each phase, list Buddy prompts like:
+        - Prompt 1: Summarize current state of files X/Y.
+        - Prompt 2: Add new class Z with these methods.
+        - Prompt 3: Refactor function Foo to call Bar, update includes, etc.
+    - This list is conceptual; the actual prompt bodies are provided later
+      on demand.
+
+17.4 Make each Buddy prompt “nice and palatable”:
+    - Assume Buddy is skilled but busy.
+    - Each prompt should, when expanded:
+        - Focus on one coherent chunk of work.
+        - Specify exact file paths, class names, methods, and key
+          details.
+        - Be copy-pasteable by the user directly into Buddy.
+    - Avoid giant omnibus prompts. If a task can be broken into 2–3 clear
+      steps, you should split it.
+
+17.5 No full prompt bodies in the overview:
+    - In the `SOTS_*PLUGIN*_BUDDY_PLAN` overview, you only give:
+        - Titles and short descriptions for each numbered prompt.
+    - You do NOT include the full text Buddy should receive yet.
+    - After the overview, you only expand a prompt when the user explicitly
+      asks for it, e.g.:
+        - “Give me Prompt 1 for Buddy.”
+        - “Let’s do Prompt 3 now.”
+
+17.6 On request, output a single Buddy prompt:
+    - When the user asks for a specific Buddy prompt:
+        - Output exactly that prompt’s full body, fully self-contained.
+        - Include:
+            - Brief context reminder.
+            - File paths, class and function names.
+            - A numbered list of edits/steps.
+            - Any constraints (no builds; delete Binaries/Intermediate after plugin edits).
+    - Do not re-list or re-expand other prompts in that response unless the
+      user asks for a recap.
+
+17.7 Behavior outside SOTS_*PLUGIN*_BUDDY_PLAN:
+    - When the user is NOT invoking `SOTS_*PLUGIN*_BUDDY_PLAN`:
+        - Act as Lead Architect normally.
+        - Answer questions, review designs, suggest refactors, explain
+          trade-offs.
+        - You may suggest “this would be good as a SOTS_*PLUGIN*_BUDDY_PLAN”
+          if a task is large enough.
+
+17.8 Interaction with DEVTOOLS:
+    - `SOTS_*PLUGIN*_BUDDY_PLAN` is primarily for Buddy (manual editing in
+      VSCode / repo work).
+    - DEVTOOLS passes (with [SOTS_DEVTOOLS] headers) remain valid for
+      automation and mass operations, and are run manually by Ryan.
+    - You may:
+        - Design a `SOTS_*PLUGIN*_BUDDY_PLAN` that includes “Phase A – Discovery”
+          steps that *request* DevTools outputs (e.g., run a tag usage report or
+          plugin depmap) and then have Buddy proceed using those results.
+        - Or design [SOTS_DEVTOOLS] packs separately when requested.
+    - Keep the distinction clear:
+        - `SOTS_*PLUGIN*_BUDDY_PLAN` = staged human/Buddy coding work on repo files.
+        - [SOTS_DEVTOOLS] = Python automation run manually by Ryan.
+	- [CONTEXT_ANCHOR] = Something Your Drop Normally Threwout SOTS_*PLUGIN*_BUDDY_PLAN passes
+
+17.9 Code-block + header schema for SOTS_*PLUGIN*_BUDDY_PLAN responses:
+    - Every response generated directly in reaction to a `SOTS_*PLUGIN*_BUDDY_PLAN` command
+      (both the initial overview and any subsequent individual Buddy prompt body) MUST:
+        - Be wrapped in a single fenced code block in the chat (no extra prose outside).
+        - Begin with a chatgpt_inbox-style header block appropriate for Buddy work.
+    - The Buddy-plan header follows the same schema principles as [SOTS_DEVTOOLS] headers so
+      that inbox routing continues to work correctly. The header MUST look like:
+
+        [SOTS_BUDDY_PLAN]
+        category: buddy_plan
+        plugin: SOTS_<PluginName>
+        pass: PLAN
+        prompt_index: N
+        prompt_total: M
+        [/SOTS_BUDDY_PLAN]
+
+      where:
+        - `SOTS_<PluginName>` is the concrete plugin name (e.g. `SOTS_Parkour`).
+        - `prompt_index` is the 1-based index of the current Buddy prompt or overview.
+        - `prompt_total` is the total number of Buddy prompts planned for this PLAN phase.
+    - Inside the body text of that single code block you MUST always include a plain line
+      stating the X-of-X status for this PLAN phase, for example:
+        - `PLAN phase: this is 1 of 4 prompts for this SOTS_Parkour_BUDDY_PLAN.`
+    - These requirements apply ONLY to responses directly triggered by a
+      `SOTS_*PLUGIN*_BUDDY_PLAN` command. Normal architectural discussion or
+      [SOTS_DEVTOOLS] packs may use their own headers (or no headers) as appropriate.
+
+
+17.10 SOTS_BPGEN SWEEP LAW (SOTS_BPGEN_PLAN) — “VibeUE parity, but native”
+------------------------------------------------------------
+Purpose:
+- Define a dedicated sweep type for Unreal Editor/content-side operations executed through **SOTS_BPGen**.
+- SOTS_BPGen is treated as a **1:1 parity surface** to VibeUE-style actions (Blueprint/UMG/EnhancedInput/Materials/Level Actors),
+  but **native to the SOTS suite** and callable via our Buddy workflow.
+- Use SOTS_BPGEN_PLAN when the work requires Editor-native asset manipulation (not just C++ code edits).
+
+Trigger:
+- When Ryan explicitly requests `[SOTS_BPGEN_PLAN]`, start a BPGen sweep prompt pack using the header schema below.
+
+Header schema (single fenced code block; no prose outside when emitting a BPGen pass):
+    [SOTS_BPGEN_PLAN]
+    category: bpgen_plan
+    plugin: <SOTS_BlueprintGen | SOTS_<OtherPlugin> | ProjectContent>
+    pass: PLAN | APPLY | VERIFY
+    prompt_index: N
+    prompt_total: M
+    [/SOTS_BPGEN_PLAN]
+
+Mandatory start commands (ALWAYS at the top of PLAN):
+- BPGen_HealthCheck (or equivalent “is BPGen loaded + ready” call)
+- BPGen_ListActions (or equivalent “help/introspection” call)
+  - Treat the returned action list + argument schema as canonical (NO guessing).
+- BPGen_ResolveAssetPaths
+  - Confirm each target asset path exists (no “maybe this is the path” edits).
+- BPGen_OpenAssets
+  - Open ONLY the assets that will be touched in this pass.
+
+Phase contract: READ → PLAN → WRITE → VERIFY
+PLAN (read-only):
+- Inspect current state using BPGen read actions:
+  - Blueprint graphs: list events/functions, summarize graph, enumerate nodes near target, read pin types/links
+  - UMG: widget tree + bindings + component properties
+  - Enhanced Input: mapping contexts/actions + mappings/modifiers/triggers
+  - Materials: instances + parameter values + (if needed) material node graph
+  - Level Actors: find/spawn/transform queries (READ only in PLAN)
+- Output:
+  - Exact asset paths to be edited
+  - Exact intended edits (what will change)
+  - Ordered action list (BPGen action + target + args) to apply
+- No mutations in PLAN unless Ryan explicitly says “apply while planning”.
+
+APPLY (mutating):
+- Perform minimal, scoped edits only, using BPGen write actions.
+- Blueprints (canonical micro-steps):
+  - discover/locate_target
+  - create_node (prefer stable keys / spawner keys)
+  - connect_pins
+  - configure_node (defaults, literal values, ref paths, function names)
+  - optional: position/layout (only if needed for readability)
+- UMG:
+  - add_component → set_property → bind_events (explicit bindings, minimal touch)
+- Enhanced Input:
+  - create/update mapping context in-place with minimal deltas
+- Materials:
+  - create MI / set scalar/vector/texture params; node edits only if required
+- Compile touched Blueprints (allowed) and save ONLY touched assets (no SaveAll).
+
+VERIFY:
+- Re-compile/validate touched assets and confirm the expected state exists:
+  - Blueprint nodes present + correctly wired + correct defaults
+  - UMG bindings present + correct targets
+  - Input mappings exist + expected keys/modifiers/triggers
+  - Material params updated
+  - Level actor changes confirmed (if applicable)
+- If any step fails:
+  - Stop immediately
+  - Report the smallest reproducible failure + last successful BPGen action + the next minimal fix
+
+Safety / invariants (non-negotiable):
+- ADD-ONLY discipline:
+  - Do not delete nodes/assets/mappings/options or remove features unless Ryan explicitly requests deletion.
+- No C++ builds/runs as part of BPGen sweeps.
+- Third-party content safety:
+  - Do not edit vendor/third-party plugin assets in-place (InvSP/ProHUD/etc.) unless Ryan explicitly approves.
+  - Prefer child/adapter assets under SOTS/SAS namespaces.
+- No mass rename/move/reparent unless Ryan explicitly approves.
+- Always produce a brief worklog entry for the pass (asset list + actions + results).
+- If the sweep also touches C++ plugin code in the repo, still obey the per-plugin cleanup law:
+  - Delete that plugin’s Binaries/ and Intermediate/ after edits. (No builds.)
+
+Compatibility note:
+- If an operation exists in VibeUE but is also present in SOTS_BPGen, **default to SOTS_BPGen**.
+- Only fall back to VibeUE tooling if BPGen is missing the required action surface for that specific task.
+
+VIBEUE Lives On Ryans Disk at "E:\SAS\ShadowsAndShurikens\Plugins\VibeUE\" And Should Always Be Refrenced To Buddy When Making Prompts
+
+
+18. UI HUB / ROUTER LAW (SOTS_UI)
+------------------------------------------------------------
+UI HUB / ROUTER LAW (SOTS_UI IS THE ONLY UI COMPOSITION ROOT)
+
+18.1 Ownership / Authority
+   - SOTS_UI is the single UI HUB / Router for the entire game.
+   - SOTS_UI is the ONLY system allowed to:
+       - Create widgets (CreateWidget)
+       - Add/remove widgets to viewport (AddToViewport, RemoveFromParent)
+       - Push/pop/replace screens in the UI stack
+       - Set input mode / cursor / focus (SetInputMode*, SetShowMouseCursor, SetUserFocus, etc.)
+       - Own Z-order, layers, and stack rules
+
+18.2 Forbidden Pattern (Hard Rule)
+   - NO other plugin (CGF legacy widgets, SOTS gameplay plugins, SOTS_INV, InvSP integration code,
+     ProHUDV2 usage code, AIBT helpers, etc.) may directly create/push/pop/focus widgets or touch viewport/input mode.
+   - If another system needs UI, it must request it through SOTS_UI.
+
+18.3 UI Intents + Payloads (The Only Communication Path)
+   - All UI requests must be expressed as:
+       - UI Intent (what you want to happen) + Payload (data)
+   - Intents are routed through a single SOTS_UI backend entry point:
+       - USOTS_UIRouterSubsystem (GameInstanceSubsystem)
+   - Payloads are data-only structs (no widget refs, no gameplay ownership), passed as:
+       - FInstancedStruct (preferred), or a strict UStruct union.
+
+18.4 Widget Registry (IDs/Tags, never direct widget classes)
+   - All widgets/screens/panels are referenced by ID/tag (e.g. SAS.UI.Screen.* / SAS.UI.Modal.* / SAS.UI.HUD.*).
+   - SOTS_UI owns a central Widget Registry (UDataAsset type defined in SOTS_UI; asset lives in /Game):
+       - WidgetId (GameplayTag)
+       - Soft Widget Class
+       - Layer (HUD/Overlay/Modal/Debug or tag-equivalent)
+       - Input policy (GameOnly / UIOnly / GameAndUI)
+       - Pause policy
+       - Cache policy (KeepAlive / Recreate)
+       - Optional: ZOrder, AllowMultiple, CloseOnEscape, CloseOnFocusLoss, etc.
+   - No other plugin may “know” widget classes at compile time.
+
+18.5 Third-Party UI Wrapping Law (ProHUDV2 / InvSP / Interaction Essentials)
+   - Third-party UI systems are presentation layers only.
+   - They are accessed ONLY via SOTS_UI adapters/presenters owned by SOTS_UI:
+       - USOTS_ProHUDAdapter (bridge that is the ONLY place that calls ProHUD interfaces)
+       - USOTS_InvSPAdapter  (bridge that is the ONLY place that drives InvSP UI presentation)
+       - USOTS_InteractionEssentialsAdapter (bridge that is the ONLY place that drives Interaction Essentials UI)
+   - No other plugin may include third-party UI interfaces/structs or call third-party UI directly.
+
+18.6 Data Backends (Already Valid + Remain Authoritative)
+   - SOTS_UI continues to own authoritative UI-facing “model” subsystems such as:
+       - USOTS_HUDSubsystem (health %, detection level, objective text + delegates)
+       - USOTS_NotificationSubsystem (notification list + delegates)
+       - USOTS_WaypointSubsystem (waypoint list + delegates)
+   - Widgets (including legacy CGF widgets) must:
+       - Read UI state from these subsystems
+       - Send ALL requests back through USOTS_UIRouterSubsystem (never mutate state from random widgets)
+
+18.7 ProHUDV2 Scope For SOTS (Locked)
+   - ProHUDV2 is used ONLY as a visual layer for:
+       - Notifications
+       - World-space waypoints / markers
+   - ProHUDV2 compass/minimap/crosshair systems are not used for SOTS.
+   - SOTS_UI emits/consumes SOTS-native data; the ProHUD adapter only translates it to ProHUD calls.
+
+18.8 Implementation Anchor (So We Don’t Rebuild Systems Twice)
+   - “Single entry point” in code means:
+       - USOTS_UIRouterSubsystem is the only public API other plugins call for UI actions.
+   - Existing subsystems remain the data source of truth (HUD/Notifications/Waypoints).
+   - Adapters are replaceable without changing gameplay plugins.
+
+18.9 LAW EXCEPTION — DEBUG UI BYPASS (MUST NOT SHIP)
+   - Debug-only overlays/widgets may bypass SOTS_UI *only* when:
+       - Compiled out for Shipping/Test (e.g., WITH_EDITOR / !(UE_BUILD_SHIPPING || UE_BUILD_TEST))
+         AND/OR behind a runtime cvar/config gate that defaults OFF.
+   - If there’s any doubt, route the debug UI through SOTS_UI anyway.
+
+18.10
+(SOTS_Input owns input routing, SOTS_UI owns input mode/focus).
+
+19. SUITE STATUS SNAPSHOTS (AUDIT LOG)
+------------------------------------------------------------
+19.1 Purpose:
+    - This section stores timestamped “suite status snapshots” (human-written audits).
+    - Snapshots are NOT laws; they are historical logs to guide prioritization.
+
+19.2 Snapshot format:
+    - Title line with date + label
+    - Must-fix-before-ship bullets
+    - Scoreboard (0–100%) + notes
+    - Next passes (highest leverage)
+
+
+20. SOURCE MODULE LAW
+------------------------------------------------------------
+SOTS is a Blueprint-only shell (no /Source game module). All C++ must live in plugins.
+No plugin may include/cast/reference any project-level CharacterBase or game-module types;
+use components/interfaces/subsystems instead. No plugin Build.cs may depend on the game module.
+
+21. CODE REVIEW STAGE LOCKS (12-16-25)
+------------------------------------------------------------
+Purpose:
+- This section captures the FULL set of “Ryan locked this in” decisions made during the CODE REVIEW STAGE.
+- These are BEHAVIOR OWNERSHIP + SEMANTICS locks (code surfaces), NOT runtime verification results.
+- Paste this whole section into SOTS_Suite_ExtendedMemory_LAWs.txt just ABOVE the END marker block.
+
+
+21.1 Stage policy (LOCKED)
+- Shipping / shipping-hygiene passes are DEFERRED until we are actually approaching ship (years from now).
+- This is a CODE-ONLY review:
+  - We are verifying that code surfaces exist + are correct.
+  - Runtime behavior verification will be done later by Ryan, plugin-by-plugin.
+- DataAssets + config wiring are DEFERRED until the very end (after code is verified across the suite).
+- GameplayTags are NOT deferred:
+  - For each plugin, ensure all tag paths referenced by that plugin exist in DefaultGameplayTags.ini (ADD-ONLY).
+- Even though DA/config wiring is deferred, BEHAVIOR OWNERSHIP decisions must be locked now:
+  - who owns what
+  - who calls what
+  - intended semantics
+
+
+21.2 SUITE-WIDE behavior ownership (LOCKED)
+SUITE-01: Map travel ownership (mission start/end/fail → OpenLevel / seamless travel)
+- Locked chain:
+  - SOTS_ProfileShared = canonical save/profile authority and snapshot persistence surface
+  - SOTS_UI = routes player intents/choices (restart, continue, return to menu, etc.)
+  - SOTS_MissionDirector = mission lifecycle owner; applies snapshot → world/map/actors as needed during mission setup
+- Note:
+  - MissionDirector may require new components on Player/Dragon/Enemies to apply snapshot state.
+
+SUITE-02: “SaveProfile() happens now” decisions
+- Locked: Save can occur in 3 ways:
+  1) time-based autosaves,
+  2) player-initiated saves via SOTS_UI,
+  3) checkpoint-based saves at specific mission moments.
+
+SUITE-03: Canonical owner of Input layer push/pop decisions (beyond UI.Nav auto behavior)
+- Locked: SOTS_UI owns all UI (and therefore UI-related input-layer policy).
+
+SUITE-04: Canonical FX trigger pattern across the whole suite
+- Locked: (A) Everyone calls FXManager one-shots directly (direct FXManager calls).
+
+SUITE-05: Tag authority preference for gating (clarified)
+- Locked: TagManager is the canonical authority ONLY for cross-plugin/shared runtime actor-state tags.
+  - “Shared runtime actor-state tags” = tags written to Player/Dragon/Guards/Pickups that are intended to be observed/consumed by other plugins to stay decoupled.
+  - These boundary tags MUST be written/read via SOTS_TagManager (or SOTS_TagLibrary) so plugins don’t hard-couple to each other.
+- Allowed: Internal/local tag usage may remain direct when it is NOT part of a cross-plugin contract:
+  - tags used purely inside one plugin’s implementation,
+  - private containers that are not treated as shared truth,
+  - asset/config metadata tags.
+
+21.3 Plugin locks (LOCKED)
+
+
+21.3.1 SOTS_TagManager (LOCKED)
+
+TM-00: Scope of TagManager usage (clarified)
+- TagManager is a decoupling/boundary tool, not a “route every tag operation” rule.
+- MUST use TagManager when:
+  - a plugin sets/clears a tag on a shared actor (Player/Dragon/Guard/Pickup) AND
+  - another plugin is expected to react/gate based on that tag.
+- OK to bypass TagManager when:
+  - tag usage is local/internal to a single plugin and not part of a cross-plugin contract,
+  - tag is asset/config metadata only.
+
+TM-01: Which core actors MUST implement IGameplayTagAssetInterface in SOTS v1?
+- Locked: Player, Dragon, Guards, and future pickup actors (pickups mostly handled via SOTS_INV but must expose tags).
+
+TM-02: Are ANY systems allowed to bypass TagManager for tag reads/writes (direct container mutation, legacy tag mgr)?
+- Locked: For boundary/shared runtime actor-state tags (Player/Dragon/Guards/Pickups that other plugins observe), NO bypass — use TagManager/TagLibrary.
+- Allowed: For internal/local tags that never cross plugin boundaries, bypass is OK (see SUITE-05 + TM-00).
+
+
+TM-03: Reactive tag-change events (OnTagAdded/Removed) part of TagManager’s contract?
+- Locked: YES.
+
+TM-04: Prune/cleanup API for transient actors (projectiles, spawned props, short-lived AI)?
+- Locked: YES — Option 2 (handle-based scoped tags)
+  - AddLooseTag returns a handle
+  - RemoveLooseTag(handle) removes exactly what was added
+  - Handles must be invalidated/cleaned automatically on EndPlay as a safety backstop
+  - Bulk “clear by prefix/source” tools are NOT required at this stage
+
+TM-05: Canonical “union tag view” helper (asset + loose + scoped)
+- Locked: Use TagManager’s union query surface when a system needs the authoritative “what tags does this actor have right now?” view across:
+  - IGameplayTagAssetInterface tags (ability/system tags on the actor),
+  - loose tags,
+  - scoped/handle tags.
+- Canonical API:
+  - USOTS_GameplayTagManagerSubsystem::GetActorTags(...)
+  - USOTS_TagLibrary::GetActorTags(...)
+- Notes:
+  - Prefer this for debug dumps, gating checks that must include transient/scoped tags, and any cross-plugin boundary inspection.
+  - This does NOT change TM-00: TagManager is still only REQUIRED at cross-plugin boundaries; internal/local tag usage can remain direct.
+
+# (Optional) cross-reference note under SUITE-05 (no behavior change)
+- “If you need the full union tag set for boundary actors, use GetActorTags rather than mixing direct container reads.”
+
+# -------------------------------
+# NEW DOC PAGE
+# Save as: Plugins/SOTS_TagManager/Docs/TagBoundary.md
+# -------------------------------
+
+# TagBoundary (SOTS_TagManager)
+
+## Purpose
+TagManager is a **decoupling boundary tool**: it exists so plugins can communicate via shared runtime actor-state tags without hard references.
+
+This page defines when TagManager is REQUIRED vs optional.
+
+## Decision Rule (Locked)
+Use TagManager/TagLibrary when reading or writing **shared runtime actor-state tags** on:
+- Player
+- Dragon
+- Guards
+- Pickups (and other shared “world actors” intended to be observed)
+
+…**IF** another plugin is expected to observe/react/gate based on that tag.
+
+If the tag is purely internal to one plugin (private containers, local-only state, asset metadata), you can use direct tag containers.
+
+(Authoritative lock reference: SUITE-05 + TM-00)
+
+## What Counts as a “Boundary Tag”?
+A boundary tag is any tag that:
+1) is written to one of the shared actors above, AND  
+2) is meant to be consumed by code in a different plugin.
+
+Typical examples:
+- Stealth state/tier tags written to Player by stealth systems and consumed by UI/AI/Abilities.
+- “InCover / Detected” type tags used as gates across plugins.
+- Inventory/pickup state tags observed by UI/Abilities/Interaction.
+
+## Canonical APIs
+### Writes (boundary tags)
+- Use TagManager mutation functions (and any “UpdateTagPresence” style helper used by the owning system) to set/clear boundary tags.
+- Prefer scoped/handle-based tags for transient state where appropriate (TM-04).
+
+### Reads (boundary tags)
+- Use TagLibrary/TagManager query helpers for boundary reads.
+- If you need the **full union view** (asset + loose + scoped) use:
+  - USOTS_GameplayTagManagerSubsystem::GetActorTags(...)
+  - USOTS_TagLibrary::GetActorTags(...)
+
+## Example: Stealth Boundary Tags
+Boundary tags seen in practice include stealth tiers and stealth state flags written on Player and consumed by other plugins (stealth/UI/AI/ability gates).
+(Exact tag names are governed by DefaultGameplayTags.ini; this doc stays conceptual.)
+
+## Non-goals (Intentional)
+- TagManager is NOT meant to route every single gameplay tag read/write in the entire codebase.
+- Internal/local tags do not need TagManager unless they become part of a cross-plugin contract.
+
+## “When in doubt” rule of thumb
+- If changing this tag could break another plugin’s behavior, it’s a boundary tag → use TagManager.
+- If nobody outside your plugin can see/care about it, it’s local → direct is fine.
+
+21.3.2 SOTS_ProfileShared (LOCKED)
+PS-01: Profile identity scheme (slot key safety)
+- Locked: Sanitize via UI name entry rules (widget blocks invalid characters).
+
+PS-02: Long-term persistence authority
+- Locked: (B) Profile folders are canonical (profile folder + central metadata save).
+
+PS-03: Who owns TotalPlaySeconds accumulation?
+- Locked: SOTS_MissionDirector.
+
+PS-04: Snapshot providers allowed to be no-op for now?
+- Locked: None (no intentional no-op providers at this stage).
+
+PS-05: Provider ordering priority table locked now?
+- Locked: YES (explicit priority ordering is required).
+
+PS-06: Snapshot versioning (add SnapshotVersion now)?
+- Locked: YES.
+
+PS-07: Transform restore policy
+- Locked: (A) Always set transform.
+
+
+21.3.3 SOTS_Input (LOCKED)
+IN-01: Dragon control layer in v1?
+- Locked: NO (still needed later; CGF BEP export contains example dragon controls).
+
+IN-02: Canonical attachment point for input ownership
+- Locked: PlayerController.
+
+IN-03: Montage buffer windows (Input.Buffer.Channel.Execution) — categories that open a buffer window
+- Locked: MINIMAL
+  - Buffer windows supported ONLY for:
+    - Execution montages
+    - Vanish/QTE-style montages
+  - Buffer rules:
+    - Queue size = 1
+    - Latest input wins
+    - Auto-clear on montage end / cancel / abort
+
+IN-04: OnInputDeviceChanged consumer (cursor hiding, prompts, etc.) — who owns the behavior?
+- Locked: PlayerController > SOTS_UI.
+
+
+21.3.4 SOTS_UI (LOCKED)
+UI-01: Back/Escape close policy owner
+- Locked: Router enforces close behavior (Input → Router → Router closes widget).
+
+UI-02: ReturnToMainMenu flow owner (the thing that actually performs the flow)
+- Locked: Input → Router.
+
+UI-03: UI Intent/Action tag policy
+- Locked: YES — standardize a single tag namespace; ensure all are authored in DefaultGameplayTags.ini (ADD-ONLY).
+
+RYAN NOTES (LOCKED) — InvSP exception rule
+- InvSP is an exclusion:
+  - InvSP BP UI is too heavy to convert right now.
+  - InvSP UI will ONLY be pushed/popped via SOTS_UI.
+  - InvSP handles internal navigation itself.
+  - Ryan will do small edits to core InvSP widgets (inventory menu, etc.) to integrate push/pop via SOTS_UI.
+
+
+21.3.5 SOTS_Interaction (LOCKED)
+IX-01: Interactable data policy
+- Locked: (C) Hybrid.
+
+IX-02: LOS + collision semantics
+- Locked: Tunable (not fixed to ECC_Visibility only).
+
+IX-03: Cross-plugin Interaction “Action Request” seam (verbs → other plugins)
+- Locked: SOTS_InteractionSubsystem emits an action-request event for canonical verbs so downstream systems stay decoupled.
+  - Payload: FSOTS_InteractionActionRequest
+  - Event: OnInteractionActionRequested (Subsystem multicast)
+  - Driver may forward for BP consumers (driver-level forwarding event is allowed).
+- Locked canonical verb tags:
+  - Interaction.Verb.Pickup
+  - Interaction.Verb.Execute
+  - Interaction.Verb.DragStart
+  - Interaction.Verb.DragStop
+- Locked routing (initial):
+  - Pickup should route into SOTS_INV (inventory facade pickup request).
+  - Execute should route into SOTS_KillExecutionManager (later wiring allowed).
+  - DragStart/DragStop should route into SOTS_BodyDrag (later wiring allowed).
+- Note: Until pickup metadata is fully surfaced, ItemTag/Quantity may be unset; listeners must tolerate missing values.
+
+21.3.6 SOTS_MMSS (LOCKED)
+MMSS-01: MissionId == None behavior
+- Locked: (A) Still respect TrackId if provided.
+
+MMSS-02: Resume fidelity expectation
+- Locked: (A) “Close enough” timer-based.
+
+MMSS-03: Layering
+- Locked: (B) Plan for multi-layer (stingers/overlay/boss phases).
+
+
+21.3.7 SOTS_Stats (LOCKED)
+ST-01: v1 non-negotiable stat tags (initial set)
+- Locked:
+  - SAS.Player.Stats.Health
+  - SAS.Player.Stats.Sneak
+  - SAS.Player.Stats.Tooling
+  - SAS.Player.Stats.DragonPowerLevel
+  - SAS.Player.Stats.PoisioningSkill
+  - SAS.Player.Stats.OverallSkillTreeLevel
+- Note:
+  - These are tightly tied to SkillTree and should be managed/created together.
+
+ST-02: StatsComponent placement
+- Locked: (B) Separate components per pawn.
+
+ST-03: Stat authority model
+- Locked: (A) Snapshot is authoritative.
+
+ST-04: Difficulty-dependent stats exist (can’t store raw)?
+- Locked: NO (difficulty currently affects saving + AI only).
+
+
+21.3.8 SOTS_GlobalStealthManager (LOCKED)
+GSM-01: Authoritative producers list (who feeds LightExposure/Noise/InCover/etc. into GSM)
+- Locked: LightProbe + PlayerStealthComponent.
+
+GSM-02: Dragon-as-meter behavior
+- Locked: YES — dragon reacts to stealth state transitions; canonical stealth meter.
+
+GSM-03: Suspicion reporting granularity
+- Locked: (A) Continuous updates into GSM.
+
+
+21.3.9 SOTS_AIPerception (LOCKED)
+AIP-01: FX trigger consumer
+- Locked: (A) AIPerception calls FXManager directly.
+
+AIP-02: Noise/reporting expectation (must call ReportNoise/ReportDamage)
+- Locked: PlayerStealthComponent, AI perception component, Interaction component for thrown items/distractions, etc.
+
+AIP-03: AIP → GSM integration
+- Locked: Every update (not transitions-only).
+
+
+21.3.10 SOTS_GAS_Plugin (LOCKED)
+GAS-01: Owner tag gating reads from
+- Locked: (A) TagManager.
+
+GAS-02: RequiredOwnerTags / BlockedOwnerTags semantics
+- Locked: YES (Required=HasAll, Blocked=HasAny).
+
+GAS-03: RequiredInventoryTags semantics
+- Locked: Option C — both “any-of” and “all-of” must be supported.
+
+GAS-04: Restore ranks + cooldown remaining on load?
+- Locked: RANK RESTORE ONLY.
+  - Cooldown remaining restore is NOT locked / deferred.
+
+
+21.3.11 SOTS_SkillTree (LOCKED)
+SK-01: Tree registration “one place” — who registers trees and when?
+- Locked: Must support all three:
+  - startup (first play and beyond),
+  - safehouse init (mid-missions),
+  - mission init (first play + direct loads).
+
+SK-02: Skill points model
+- Locked: (A) Global pool.
+
+SK-03: Unlock persistence identity
+- Locked: (C) Hybrid.
+
+SK-04: FX on unlock owner
+- Locked: (B) Broadcast event + FX listens.
+
+RYAN NOTES (LOCKED)
+- SkillTree is one of the last systems to fully flesh out.
+- Only default paths must exist early for testing; it will evolve over time.
+
+
+21.3.12 SOTS_MissionDirector (LOCKED)
+MD-01: Mission travel owner
+- Locked: Use SUITE-01 chain.
+
+MD-02: Objective evaluation policy
+- Locked: (A) Event-driven only (no tick).
+
+MD-03: v1 objective type list (canonical set)
+- Locked:
+  - Kill
+  - Non Lethal
+  - Steal
+  - Locate
+  - Sabotage
+  - Question/Interogate
+
+MD-04: Reward application owner
+- Locked chain: MissionDirector > SkillTree > SOTS_Stats > SOTS_UI.
+
+
+21.3.13 SOTS_INV (LOCKED)
+INV-01: Item identity convention
+- Locked: YES — ItemId == ItemTag.GetTagName() (must be fleshed out / consistent).
+
+INV-02: Provider seam decision (canonical provider in v1)
+- Locked: BP provider is canonical in v1.
+
+INV-03: Inventory UI ownership
+- Locked: (B) Inventory provider owns opening/closing inventory UI.
+
+RYAN NOTES (LOCKED) — InvSP FULL UI EXCEPTION (v2)  (supersedes the prior InvSP exception note)
+- InvSP is a sealed third-party UI “black box”; do not refactor its internal UI stack/navigation/back-close into SOTS_UI.
+- This is an explicit exception to Law 18.1/18.2 (UI composition root) for InvSP ONLY.
+
+- SOTS_UI may drive InvSP ONLY via USOTS_InvSPAdapter entrypoints:
+  - Open / Close / Toggle / Refresh (Inventory + Container menus)
+
+- InvSP owns ALL UI composition and interaction for its menus:
+  - CreateWidget / AddToViewport / RemoveFromParent
+  - SetInputMode* / cursor / focus
+  - Internal navigation
+  - Back/Escape close behavior
+
+- SOTS_UI Router must NOT enforce Back/Escape close while InvSP is active.
+
+- Lifecycle awareness (so the rest of the suite can react cleanly):
+  - SOTS_UI exposes delegates for ExternalMenuOpened / ExternalMenuClosed (MenuId tag).
+  - InvSP adapter (Blueprint glue) broadcasts these on open/close, including self-close via Back/Escape.
+
+- Blueprint-first policy:
+  - Keep this integration in Blueprint for maximum control right now; once the behavior is locked, it may be BEP-exported and converted to C++.
+
+
+21.3.14 SOTS_FX_Plugin (LOCKED)
+FX-01: Canonical FX trigger pattern
+- Locked: (A) Direct FXManager calls.
+
+FX-02: Pool overflow policy preference
+- Locked: (B) Reject new and log.
+
+RYAN NOTES (LOCKED)
+- FX is ever-evolving; only a small amount is locked right now.
+- Default authored FX will be created later via DataAssets by Ryan.
+
+
+21.3.15 SOTS_Steam (LOCKED scope)
+STEAM-01: Lock v1 feature scope
+- Locked: Leaderboards (priority #1) + Achievements (secondary).
+- No other Steam features in v1.
+
+
+21.3.16 OmniTrace (LOCKED)
+OT-01: Debug surface scope
+- Locked: OmniTrace debug is important across many systems (not just KEM).
+
+OT-02: Blueprint-callable debug draw function too (for debug widgets)?
+- Locked: YES.
+
+OT-03: EOmniTraceGridPattern future
+- Locked: (A) planned feature → keep and implement later.
+- Note: any “remove” intent referenced earlier was for SOTS_Parkour, not OmniTrace.
+
+
+21.3.17 LightProbePlugin (LOCKED)
+LP-01: Stealth pipeline contract
+- Locked: Set-only — LightProbe sets PlayerStealthComponent light level;
+  PlayerStealthComponent pushes into GSM (LightProbe does NOT push into GSM directly).
+
+LP-02: Visual artifact policy
+- Locked: YES — probe cube must never cast visible shadows (enforce via component settings).
+
+
+21.3.18 SOTS_Debug (LOCKED)
+DBG-01: Log category
+- Locked: YES — promote LogTemp → LogSOTS_Debug (or similar).
+
+DBG-02: “One-button debug” owner
+- Locked: YES — SOTS_Input binds a dev-only shortcut to toggle debug widgets/cvars.
+
+
+21.3.19 SOTS_UDSBridge (LOCKED)
+UDS-01: Breadcrumbs used in v1 gameplay (not just debug)?
+- Locked: YES.
+
+UDS-02: Trail length model
+- Locked: (C) Hybrid:
+  - valid for 30 seconds
+  - max count 30
+
+UDS-03: Breadcrumb metadata tags in v1?
+- Locked: NO — just direction to next breadcrumb.
+
+UDS-04: Expected consumer of breadcrumbs
+- Locked: SOTS_AIPerception > AIBT.
+
+
+21.3.20 SOTS_BodyDrag (LOCKED)
+BD-01: Component placement
+- Locked: Player ONLY.
+
+BD-02: Drag blocking rules
+- Locked: YES to all via tags.
+
+BD-03: Physics drop defaults
+- Locked: YES — Dead=true, KO=false.
+
+BD-04: Flow owner
+- Locked: SOTS_Input > SOTS_Interaction > SOTS_BodyDrag.
+
+
+21.3.21 SOTS_EdUtil (Editor-only) (LOCKED)
+EDU-00: Plugin state
+- Locked: Plugin is finished for now until Ryan requests more features (no changes needed currently).
+
+EDU-01: Scope lock
+- Locked: (A) small general editor helpers only.
+
+EDU-02: Schema governance
+- Locked: Unknown / not locked (plugin frozen for now).
+
+EDU-03: File IO policy
+- Locked: Project-only.
+
+EDU-04: Guardrails requirement
+- Locked: YES — destructive operations require dry-run/report-only modes by contract.
+
+
+21.3.22 BlueprintCommentLinks (Editor-only) (LOCKED)
+- Locked: Not applicable / done plugin. No current changes needed.
+
+
+21.3.23 BEP (Blueprint Exporter Plugin) (LOCKED)
+BEP-01: “Live update mode” for default exports (watch & re-export changed files)
+- Locked: Later (not now).
+
+BEP-02: Tag relevance / tag reporting
+- Locked: NO — keep BEP strictly export-only (no automatic per-plugin tag-usage reporting).
+
+# LAWFILE_STAMPS (add-only)
+# 2025-12-17 — GPT-5.2 Thinking — “ChatGPT was here.”
+
+============================================================
+END OF SOTS_Suite_ExtendedMemory_LAWs (Kuroryuu Buddy Architect Edition)
+============================================================

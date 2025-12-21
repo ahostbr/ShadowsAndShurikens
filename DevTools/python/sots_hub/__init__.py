@@ -1,1 +1,0 @@
-# SOTS Hub package marker.

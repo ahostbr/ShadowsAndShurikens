@@ -22,6 +22,7 @@ from .duplicates import (
 )
 from .model import FileEntry, Node, ScanStats
 from .scanner import ScanCancelled, ScanOptions, scan_path
+from .workers import ScanWorker
 from .treemap import TreemapRect, build_treemap
 
 try:
@@ -51,39 +52,6 @@ def human_size(num: int) -> str:
 
 
 if QT_AVAILABLE:
-
-    class ScanWorker(QtCore.QThread):
-        progress = QtCore.Signal(str)
-        finished = QtCore.Signal(object, object)  # Node, ScanStats
-        cancelled = QtCore.Signal()
-        failed = QtCore.Signal(str)
-
-        def __init__(self, root: str, options: ScanOptions, parent: Optional[QtCore.QObject] = None) -> None:
-            super().__init__(parent)
-            self.root = root
-            self.options = options
-            self._cancel_event = threading.Event()
-
-        def cancel(self) -> None:
-            self._cancel_event.set()
-
-        def run(self) -> None:  # noqa: D401
-            try:
-                node, stats = scan_path(
-                    self.root,
-                    options=self.options,
-                    progress_cb=self.progress.emit,
-                    cancel_event=self._cancel_event,
-                )
-            except ScanCancelled:
-                self.cancelled.emit()
-                return
-            except Exception:
-                self.failed.emit(traceback.format_exc())
-                return
-
-            self.finished.emit(node, stats)
-
 
     class DuplicateWorker(QtCore.QThread):
         progress = QtCore.Signal(str, int, int)  # path, files_scanned, candidates
