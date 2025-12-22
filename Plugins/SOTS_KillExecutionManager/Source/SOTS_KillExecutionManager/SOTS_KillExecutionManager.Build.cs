@@ -40,5 +40,12 @@ public class SOTS_KillExecutionManager : ModuleRules
                 "SOTS_TagManager"
             }
         );
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "SOTS_Interaction"
+            }
+        );
     }
 }

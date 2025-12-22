@@ -7,6 +7,8 @@
 #include "SOTS_KillExecutionManagerModule.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "SOTS_ExecutionHelperActor.h"
@@ -31,6 +33,8 @@
 #include "LevelSequencePlayer.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
+#include "SOTS_InteractionSubsystem.h"
+#include "SOTS_InteractionTypes.h"
 
 DEFINE_LOG_CATEGORY(LogSOTS_KEM);
 
@@ -39,6 +43,7 @@ namespace
     // Maximum number of debug records to keep in memory for UI.
     constexpr int32 KEM_MaxDebugRecords = 10;
     constexpr float KEM_DefaultAnchorSearchRadius = 400.f;
+    const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.Execute"), false);
 
     static TAutoConsoleVariable<int32> CVarSOTSKEMTelemetryLogging(
         TEXT("sots.kem.telemetryLogging"),
@@ -362,8 +367,31 @@ USOTS_KEMManagerSubsystem::USOTS_KEMManagerSubsystem()
     CurrentState = ESOTS_KEMState::Ready;
 }
 
+void USOTS_KEMManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    Super::Initialize(Collection);
+
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        CachedInteractionSubsystem = GameInstance->GetSubsystem<USOTS_InteractionSubsystem>();
+    }
+
+    if (USOTS_InteractionSubsystem* Interaction = CachedInteractionSubsystem.Get())
+    {
+        Interaction->OnInteractionActionRequested.AddDynamic(this, &USOTS_KEMManagerSubsystem::HandleInteractionActionRequested);
+        bBoundToInteraction = true;
+    }
+}
+
 void USOTS_KEMManagerSubsystem::Deinitialize()
 {
+    if (bBoundToInteraction && CachedInteractionSubsystem.IsValid())
+    {
+        CachedInteractionSubsystem->OnInteractionActionRequested.RemoveDynamic(this, &USOTS_KEMManagerSubsystem::HandleInteractionActionRequested);
+    }
+    bBoundToInteraction = false;
+    CachedInteractionSubsystem.Reset();
+
     StopAllActiveLevelSequences();
     Super::Deinitialize();
 }
@@ -389,6 +417,49 @@ USOTS_KEMManagerSubsystem* USOTS_KEMManagerSubsystem::Get(const UObject* WorldCo
     }
 
     return nullptr;
+}
+
+void USOTS_KEMManagerSubsystem::HandleInteractionActionRequested(const FSOTS_InteractionActionRequest& Request)
+{
+    if (!Request.VerbTag.IsValid() || !Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Execute))
+    {
+        return;
+    }
+
+    AActor* Instigator = Request.InstigatorActor.Get();
+    if (APlayerController* PC = Cast<APlayerController>(Instigator))
+    {
+        if (APawn* Pawn = PC->GetPawn())
+        {
+            Instigator = Pawn;
+        }
+    }
+
+    if (!Instigator || !Request.TargetActor.IsValid())
+    {
+        UE_LOG(LogSOTSKEM, Verbose, TEXT("Interaction Execute request ignored: missing instigator/target."));
+        return;
+    }
+
+    if (!Request.ExecutionTag.IsValid())
+    {
+        if (!bLoggedMissingInteractionExecutionTagOnce)
+        {
+            UE_LOG(LogSOTSKEM, Verbose, TEXT("Interaction Execute request missing ExecutionTag; falling back to KEM selection (Instigator=%s Target=%s)."),
+                *GetNameSafe(Instigator), *GetNameSafe(Request.TargetActor.Get()));
+            bLoggedMissingInteractionExecutionTagOnce = true;
+        }
+
+        RequestExecution(this,
+                         Instigator,
+                         Request.TargetActor.Get(),
+                         Request.ContextTags,
+                         nullptr,
+                         TEXT("InteractionExecuteFallback"));
+        return;
+    }
+
+    RequestExecution_Blessed(this, Instigator, Request.TargetActor.Get(), Request.ExecutionTag);
 }
 
 void USOTS_KEMManagerSubsystem::SetAbilityRequirementLibrary(USOTS_AbilityRequirementLibraryAsset* InLibrary)

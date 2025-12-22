@@ -20,9 +20,7 @@ public class SOTS_Interaction : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "SOTS_BodyDrag",
                 "SOTS_INV",
-                "SOTS_KillExecutionManager",
                 "SOTS_TagManager",
                 "OmniTrace",
                 "EnhancedInput"

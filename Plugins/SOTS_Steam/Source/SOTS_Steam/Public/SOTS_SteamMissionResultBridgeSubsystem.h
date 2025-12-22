@@ -31,7 +31,7 @@ private:
     void DispatchAchievements(const FSOTS_SteamMissionResult& Result);
 
     TWeakObjectPtr<USOTS_MissionDirectorSubsystem> MissionDirector;
-    FDelegateHandle MissionEndedHandle;
+    bool bMissionEndedBound = false;
 
     double LastSubmissionTimeSeconds = 0.0;
     float SubmissionRateLimitSeconds = 1.5f;

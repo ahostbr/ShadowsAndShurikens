@@ -8,8 +8,8 @@
 USOTS_BodyDragInteractableComponent::USOTS_BodyDragInteractableComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    StartDragOptionTagName = TEXT("SAS.Interaction.Option.BodyDrag.Start");
-    DropDragOptionTagName = TEXT("SAS.Interaction.Option.BodyDrag.Drop");
+    StartDragOptionTagName = TEXT("Interaction.Verb.DragStart");
+    DropDragOptionTagName = TEXT("Interaction.Verb.DragStop");
     DragText = FText::FromString(TEXT("Drag Body"));
     DropText = FText::FromString(TEXT("Drop Body"));
 }

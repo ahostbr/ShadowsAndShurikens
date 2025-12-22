@@ -1,7 +1,7 @@
 #include "SOTS_UIRouterSubsystem.h"
 
 #include "Blueprint/UserWidget.h"
-#include "ConsoleVariables.h"
+#include "HAL/IConsoleManager.h"
 #include "Containers/Set.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"

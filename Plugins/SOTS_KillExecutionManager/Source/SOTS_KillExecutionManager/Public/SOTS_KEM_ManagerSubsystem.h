@@ -22,6 +22,8 @@ class ULevelSequence;
 class ULevelSequencePlayer;
 class ALevelSequenceActor;
 struct FStreamableHandle;
+class USOTS_InteractionSubsystem;
+struct FSOTS_InteractionActionRequest;
 
 USTRUCT(BlueprintType)
 struct FSOTS_KEMAnchorDebugInfo
@@ -121,7 +123,9 @@ class SOTS_KILLEXECUTIONMANAGER_API USOTS_KEMManagerSubsystem : public UGameInst
 
 public:
     USOTS_KEMManagerSubsystem();
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
+    virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
 
     UFUNCTION(BlueprintCallable, Category="SOTS|KEM", meta=(WorldContext="WorldContextObject"))
     static USOTS_KEMManagerSubsystem* Get(const UObject* WorldContextObject);
@@ -681,4 +685,11 @@ private:
     void StopAllActiveLevelSequences();
 
     TMap<FGuid, FActiveLevelSequenceRun> ActiveLevelSequenceRuns;
+
+    UFUNCTION()
+    void HandleInteractionActionRequested(const FSOTS_InteractionActionRequest& Request);
+
+    TWeakObjectPtr<USOTS_InteractionSubsystem> CachedInteractionSubsystem;
+    bool bBoundToInteraction = false;
+    bool bLoggedMissingInteractionExecutionTagOnce = false;
 };

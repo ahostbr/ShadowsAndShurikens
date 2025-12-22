@@ -19,9 +19,10 @@ void USOTS_SteamMissionResultBridgeSubsystem::Initialize(FSubsystemCollectionBas
 
         if (MissionDirector.IsValid())
         {
-            MissionEndedHandle = MissionDirector->OnMissionEnded.AddUObject(
+            MissionDirector->OnMissionEnded.AddDynamic(
                 this,
                 &USOTS_SteamMissionResultBridgeSubsystem::HandleMissionEnded);
+            bMissionEndedBound = true;
         }
     }
 
@@ -30,13 +31,15 @@ void USOTS_SteamMissionResultBridgeSubsystem::Initialize(FSubsystemCollectionBas
 
 void USOTS_SteamMissionResultBridgeSubsystem::Deinitialize()
 {
-    if (MissionDirector.IsValid() && MissionEndedHandle.IsValid())
+    if (MissionDirector.IsValid() && bMissionEndedBound)
     {
-        MissionDirector->OnMissionEnded.Remove(MissionEndedHandle);
+        MissionDirector->OnMissionEnded.RemoveDynamic(
+            this,
+            &USOTS_SteamMissionResultBridgeSubsystem::HandleMissionEnded);
     }
 
     MissionDirector.Reset();
-    MissionEndedHandle.Reset();
+    bMissionEndedBound = false;
     LastSubmissionTimeSeconds = 0.0;
     Super::Deinitialize();
 }

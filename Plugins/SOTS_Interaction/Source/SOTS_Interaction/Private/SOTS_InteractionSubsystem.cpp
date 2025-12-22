@@ -8,10 +8,8 @@
 #include "SOTS_InteractionTagAccess_Impl.h"
 #include "SOTS_InteractionLog.h"
 #include "SOTS_InventoryFacadeLibrary.h"
-#include "SOTS_KEM_ManagerSubsystem.h"
 #include "SOTS_TagAccessHelpers.h"
 #include "SOTS_GameplayTagManagerSubsystem.h"
-#include "SOTS_BodyDragPlayerComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Components/ActorComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -34,41 +32,6 @@ namespace
     const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.DragStart"), false);
     const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.DragStop"), false);
     const FGameplayTag TAG_Context_Interaction = FGameplayTag::RequestGameplayTag(TEXT("Context.Interaction"), false);
-
-    USOTS_BodyDragPlayerComponent* ResolveBodyDragPlayerComponent(const FSOTS_InteractionActionRequest& Request)
-    {
-        AActor* Instigator = Request.InstigatorActor.Get();
-        if (!Instigator)
-        {
-            return nullptr;
-        }
-
-        if (APlayerController* PC = Cast<APlayerController>(Instigator))
-        {
-            if (APawn* Pawn = PC->GetPawn())
-            {
-                if (USOTS_BodyDragPlayerComponent* Comp = Pawn->FindComponentByClass<USOTS_BodyDragPlayerComponent>())
-                {
-                    return Comp;
-                }
-            }
-
-            if (USOTS_BodyDragPlayerComponent* Comp = PC->FindComponentByClass<USOTS_BodyDragPlayerComponent>())
-            {
-                return Comp;
-            }
-        }
-
-        if (APawn* Pawn = Cast<APawn>(Instigator))
-        {
-            if (USOTS_BodyDragPlayerComponent* Comp = Pawn->FindComponentByClass<USOTS_BodyDragPlayerComponent>())
-            {
-                return Comp;
-            }
-        }
-
-        return Instigator->FindComponentByClass<USOTS_BodyDragPlayerComponent>();
-    }
 
     void RouteActionRequest(USOTS_InteractionSubsystem* Subsystem, const FSOTS_InteractionActionRequest& Request)
     {
@@ -121,57 +84,8 @@ namespace
             return;
         }
 
-        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Execute))
-        {
-            AActor* Instigator = Request.InstigatorActor.Get();
-            AActor* Target = Request.TargetActor.Get();
-            if (!Instigator || !Target)
-            {
-                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: Execute action missing instigator/target; skipping KEM route."));
-                return;
-            }
-
-            if (!Request.ExecutionTag.IsValid())
-            {
-                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: Execute action missing ExecutionTag; skipping KEM route."));
-                return;
-            }
-
-            if (USOTS_KEMManagerSubsystem* KEM = USOTS_KEMManagerSubsystem::Get(Subsystem))
-            {
-                KEM->RequestExecution_Blessed(Subsystem, Instigator, Target, Request.ExecutionTag, NAME_None, true);
-            }
-
-            return;
-        }
-
-        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStart))
-        {
-            if (USOTS_BodyDragPlayerComponent* PlayerComp = ResolveBodyDragPlayerComponent(Request))
-            {
-                if (AActor* TargetActor = Request.TargetActor.Get())
-                {
-                    PlayerComp->TryBeginDrag(TargetActor);
-                }
-            }
-            else
-            {
-                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: DragStart missing BodyDrag player component."));
-            }
-            return;
-        }
-
-        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStop))
-        {
-            if (USOTS_BodyDragPlayerComponent* PlayerComp = ResolveBodyDragPlayerComponent(Request))
-            {
-                PlayerComp->TryDropBody();
-            }
-            else
-            {
-                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: DragStop missing BodyDrag player component."));
-            }
-        }
+        // BodyDrag routing was removed to break a circular dependency loop (Interaction <-> BodyDrag).
+        // Consumers (e.g., BodyDrag, KEM) subscribe to OnInteractionActionRequested for cross-plugin verbs.
     }
 }
 
