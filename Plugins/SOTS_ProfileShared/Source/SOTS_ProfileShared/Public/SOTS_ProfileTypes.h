@@ -4,6 +4,8 @@
 #include "GameplayTagContainer.h"
 #include "SOTS_ProfileTypes.generated.h"
 
+inline constexpr int32 SOTS_PROFILE_SHARED_CURRENT_SNAPSHOT_VERSION = 1;
+
 USTRUCT(BlueprintType)
 struct SOTS_PROFILESHARED_API FSOTS_ProfileId
 {
@@ -203,6 +205,9 @@ USTRUCT(BlueprintType)
 struct SOTS_PROFILESHARED_API FSOTS_ProfileSnapshot
 {
     GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Profile")
+    int32 SnapshotVersion = SOTS_PROFILE_SHARED_CURRENT_SNAPSHOT_VERSION;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SOTS|Profile")
     FSOTS_ProfileMetadata Meta;

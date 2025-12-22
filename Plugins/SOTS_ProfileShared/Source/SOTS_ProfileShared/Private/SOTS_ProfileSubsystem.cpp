@@ -7,6 +7,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Math/Transform.h"
 #include "SOTS_ProfileSaveGame.h"
 
 FString USOTS_ProfileSubsystem::GetSlotNameForProfile(const FSOTS_ProfileId& ProfileId) const
@@ -28,6 +29,7 @@ bool USOTS_ProfileSubsystem::SaveProfile(const FSOTS_ProfileId& ProfileId, const
         SnapshotToSave.Meta.DisplayName = ProfileId.ProfileName.ToString();
     }
     SnapshotToSave.Meta.LastPlayedUtc = FDateTime::UtcNow();
+    SnapshotToSave.SnapshotVersion = SOTS_PROFILE_SHARED_CURRENT_SNAPSHOT_VERSION;
 
     if (USOTS_ProfileSaveGame* SaveGame = Cast<USOTS_ProfileSaveGame>(UGameplayStatics::CreateSaveGameObject(USOTS_ProfileSaveGame::StaticClass())))
     {
@@ -79,6 +81,7 @@ void USOTS_ProfileSubsystem::BuildSnapshotFromWorld(FSOTS_ProfileSnapshot& OutSn
         OutSnapshot.Meta.DisplayName = OutSnapshot.Meta.Id.ProfileName.ToString();
     }
 
+    OutSnapshot.SnapshotVersion = SOTS_PROFILE_SHARED_CURRENT_SNAPSHOT_VERSION;
     GatherPlayerSnapshot(OutSnapshot);
     InvokeProviderBuild(OutSnapshot);
 }
@@ -173,7 +176,14 @@ void USOTS_ProfileSubsystem::RestorePlayerFromSnapshot(const FSOTS_ProfileSnapsh
     APawn* Pawn = nullptr;
     if (TryGetPlayerPawn(Pawn) && Pawn)
     {
-        Pawn->SetActorTransform(Snapshot.PlayerCharacter.Transform);
+        if (!Snapshot.PlayerCharacter.Transform.ContainsNaN())
+        {
+            Pawn->SetActorTransform(Snapshot.PlayerCharacter.Transform);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[ProfileSubsystem] Snapshot transform invalid; skipping actor transform restore."));
+        }
         ApplyOptionalStats(Pawn, Snapshot.PlayerCharacter);
     }
 }
