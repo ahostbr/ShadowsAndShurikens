@@ -18,6 +18,9 @@
 #include "SOTS_FXManagerSubsystem.h"
 #include "SOTS_KillExecutionManagerKEMAnchorDebugWidget.h"
 #include "Engine/Engine.h"
+#include "Logging/LogMacros.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSOTSSuiteDebug, Log, All);
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 // Console toggle for all SOTS debug widgets (dev builds only, default off)
 static TAutoConsoleVariable<int32> CVarSOTSDebugWidgets(
@@ -259,15 +262,15 @@ void USOTS_SuiteDebugSubsystem::DumpSuiteStateToLog() const
     const FString Stats = GetStatsSummary(5);
     const FString Abil = GetAbilitiesSummary();
 
-    UE_LOG(LogTemp, Log, TEXT("--- SOTS Suite State Dump ---"));
-    UE_LOG(LogTemp, Log, TEXT("%s"), *GSM);
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Mission);
-    UE_LOG(LogTemp, Log, TEXT("%s"), *MMSS);
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Tag);
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Inv);
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Stats);
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Abil);
-    UE_LOG(LogTemp, Log, TEXT("----------------------------"));
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("--- SOTS Suite State Dump ---"));
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *GSM);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *Mission);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *MMSS);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *Tag);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *Inv);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *Stats);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("%s"), *Abil);
+    UE_LOG(LogSOTSSuiteDebug, Log, TEXT("----------------------------"));
 }
 
 void USOTS_SuiteDebugSubsystem::ToggleKEMAnchorOverlay()
@@ -317,7 +320,7 @@ void USOTS_SuiteDebugSubsystem::ShowKEMAnchorOverlay()
 
     if (!KEMAnchorDebugWidgetClass)
     {
-        UE_LOG(LogTemp, Warning, TEXT("SuiteDebug: KEM anchor debug widget class is not configured."));
+        UE_LOG(LogSOTSSuiteDebug, Warning, TEXT("SuiteDebug: KEM anchor debug widget class is not configured."));
         return;
     }
 

@@ -92,3 +92,25 @@ void USOTS_UDSBridgeBlueprintLib::ForceUDSBridgeRefresh(UObject* WorldContextObj
 		}
 	}
 }
+
+bool USOTS_UDSBridgeBlueprintLib::GetRecentUDSBreadcrumbs(UObject* WorldContextObject, int32 MaxCount, TArray<FSOTS_UDSBreadcrumb>& OutBreadcrumbs)
+{
+	OutBreadcrumbs.Reset();
+
+	UWorld* World = ResolveWorld(WorldContextObject);
+	if (!World)
+	{
+		return false;
+	}
+
+	if (UGameInstance* GI = World->GetGameInstance())
+	{
+		if (USOTS_UDSBridgeSubsystem* Subsystem = GI->GetSubsystem<USOTS_UDSBridgeSubsystem>())
+		{
+			Subsystem->GetRecentBreadcrumbs(MaxCount, OutBreadcrumbs);
+			return true;
+		}
+	}
+
+	return false;
+}

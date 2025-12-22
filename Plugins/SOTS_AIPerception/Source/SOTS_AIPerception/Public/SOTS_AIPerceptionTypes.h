@@ -427,3 +427,18 @@ struct FSOTS_AIPerceptionBlackboardConfig
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|AI|Blackboard")
     FBlackboardKeySelector HasLOSKey;
 };
+
+USTRUCT(BlueprintType)
+struct FSOTS_PerceivedBreadcrumb
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    FVector Location = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    double TimestampSeconds = 0.0;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|AI|Perception")
+    FName WorldName = NAME_None;
+};

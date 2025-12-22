@@ -30,7 +30,8 @@ public class SOTS_AIPerception : ModuleRules
                 "AIModule",
                 "SOTS_TagManager",
                 "SOTS_ProfileShared",
-                "SOTS_FX_Plugin"
+                "SOTS_FX_Plugin",
+                "SOTS_UDSBridge"
             }
         );
         

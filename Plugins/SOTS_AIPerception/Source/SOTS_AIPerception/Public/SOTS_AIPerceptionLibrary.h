@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
+#include "SOTS_AIPerceptionTypes.h"
 #include "SOTS_AIPerceptionLibrary.generated.h"
 
 UCLASS()
@@ -37,6 +38,13 @@ public:
         FGameplayTag DamageTag,
         FVector Location,
         bool bHasLocation,
+        bool bLogIfFailed = false);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|AIPerception", meta=(WorldContext="WorldContextObject"))
+    static bool SOTS_GetRecentUDSBreadcrumbs(
+        UObject* WorldContextObject,
+        int32 MaxCount,
+        TArray<FSOTS_PerceivedBreadcrumb>& OutBreadcrumbs,
         bool bLogIfFailed = false);
 };
 

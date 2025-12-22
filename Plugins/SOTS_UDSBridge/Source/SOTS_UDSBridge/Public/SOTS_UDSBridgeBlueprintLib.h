@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "SOTS_UDSBridgeSubsystem.h"
 #include "SOTS_UDSBridgeBlueprintLib.generated.h"
-
-class USOTS_UDSBridgeSubsystem;
 
 UCLASS()
 class SOTS_UDSBRIDGE_API USOTS_UDSBridgeBlueprintLib : public UBlueprintFunctionLibrary
@@ -25,4 +24,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UDSBridge", meta = (WorldContext = "WorldContextObject"))
 	static void ForceUDSBridgeRefresh(UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UDSBridge", meta = (WorldContext = "WorldContextObject"))
+	static bool GetRecentUDSBreadcrumbs(UObject* WorldContextObject, int32 MaxCount, TArray<FSOTS_UDSBreadcrumb>& OutBreadcrumbs);
 };

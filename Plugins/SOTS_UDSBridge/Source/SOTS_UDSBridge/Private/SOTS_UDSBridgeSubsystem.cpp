@@ -1238,6 +1238,8 @@ void USOTS_UDSBridgeSubsystem::EmitBreadcrumbIfNeeded()
 		NextBreadcrumbEmitTimeSeconds = 0.0;
 	}
 
+	const double Interval = FMath::Max(0.1, static_cast<double>(Config->BreadcrumbEmitIntervalSeconds));
+
 	APawn* Pawn = CachedPlayerPawn.IsValid() ? CachedPlayerPawn.Get() : GetPlayerPawn();
 	if (!Pawn)
 	{
@@ -1249,7 +1251,7 @@ void USOTS_UDSBridgeSubsystem::EmitBreadcrumbIfNeeded()
 	{
 		const FName WorldName = FName(*World->GetMapName());
 		AppendBreadcrumbSample(Pawn->GetActorLocation(), Now, WorldName);
-		NextBreadcrumbEmitTimeSeconds = Now + Config->BreadcrumbEmitIntervalSeconds;
+		NextBreadcrumbEmitTimeSeconds = Now + Interval;
 		return;
 	}
 
@@ -1260,7 +1262,7 @@ void USOTS_UDSBridgeSubsystem::EmitBreadcrumbIfNeeded()
 
 	const FName WorldName = FName(*World->GetMapName());
 	AppendBreadcrumbSample(Pawn->GetActorLocation(), Now, WorldName);
-	NextBreadcrumbEmitTimeSeconds = Now + Config->BreadcrumbEmitIntervalSeconds;
+	NextBreadcrumbEmitTimeSeconds = Now + Interval;
 }
 
 void USOTS_UDSBridgeSubsystem::AppendBreadcrumbSample(const FVector& Location, double TimestampSeconds, FName WorldName)

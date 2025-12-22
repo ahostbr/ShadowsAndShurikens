@@ -2,6 +2,7 @@
 
 #include "SOTS_AIPerceptionSubsystem.h"
 #include "SOTS_AIPerceptionTypes.h"
+#include "SOTS_UDSBridgeBlueprintLib.h"
 #include "Engine/World.h"
 
 bool USOTS_AIPerceptionLibrary::SOTS_TryReportNoise(
@@ -86,5 +87,35 @@ bool USOTS_AIPerceptionLibrary::SOTS_TryReportDamageStimulus(
 #endif
 
     return false;
+}
+
+bool USOTS_AIPerceptionLibrary::SOTS_GetRecentUDSBreadcrumbs(
+    UObject* WorldContextObject,
+    int32 MaxCount,
+    TArray<FSOTS_PerceivedBreadcrumb>& OutBreadcrumbs,
+    bool bLogIfFailed)
+{
+    OutBreadcrumbs.Reset();
+
+    TArray<FSOTS_UDSBreadcrumb> BridgeCrumbs;
+    const bool bFound = USOTS_UDSBridgeBlueprintLib::GetRecentUDSBreadcrumbs(WorldContextObject, MaxCount, BridgeCrumbs);
+
+    for (const FSOTS_UDSBreadcrumb& BridgeCrumb : BridgeCrumbs)
+    {
+        FSOTS_PerceivedBreadcrumb Perceived;
+        Perceived.Location = BridgeCrumb.Location;
+        Perceived.TimestampSeconds = BridgeCrumb.TimestampSeconds;
+        Perceived.WorldName = BridgeCrumb.WorldName;
+        OutBreadcrumbs.Add(Perceived);
+    }
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (!bFound && bLogIfFailed)
+    {
+        UE_LOG(LogSOTS_AIPerception, Verbose, TEXT("[AIPerc/UDS] Breadcrumb pull failed (bridge missing or disabled)."));
+    }
+#endif
+
+    return bFound && OutBreadcrumbs.Num() > 0;
 }
 
