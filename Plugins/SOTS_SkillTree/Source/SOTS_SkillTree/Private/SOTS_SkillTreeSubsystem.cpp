@@ -319,6 +319,7 @@ bool USOTS_SkillTreeSubsystem::UnlockNode(FName TreeId, FName NodeId)
            State.AvailablePoints);
 
     OnSkillTreeStateChanged.Broadcast(State);
+    OnSkillNodeUnlocked.Broadcast(TreeId, NodeId);
     return true;
 }
 

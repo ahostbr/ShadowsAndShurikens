@@ -34,6 +34,7 @@ class SOTS_SKILLTREE_API USOTS_SkillTreeSubsystem : public UGameInstanceSubsyste
 
 public:
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillTreeStateChanged, const FSOTS_SkillTreeRuntimeState&, NewState);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillNodeUnlocked, FName, TreeId, FName, NodeId);
 
     // Registers a tree definition for runtime use.
     UFUNCTION(BlueprintCallable, Category="SOTS|SkillTree")
@@ -123,6 +124,10 @@ public:
     // Broadcast whenever a tree's runtime state changes.
     UPROPERTY(BlueprintAssignable, Category="SOTS|SkillTree")
     FOnSkillTreeStateChanged OnSkillTreeStateChanged;
+
+    // Broadcast immediately after a node unlock so FX/UI/Stats listeners can react without polling.
+    UPROPERTY(BlueprintAssignable, Category="SOTS|SkillTree")
+    FOnSkillNodeUnlocked OnSkillNodeUnlocked;
 
     // Convenience helper for code that only cares about the presence of a
     // single skill tag. By default this simply queries the global tag state.

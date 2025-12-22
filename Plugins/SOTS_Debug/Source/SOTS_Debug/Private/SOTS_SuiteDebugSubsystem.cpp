@@ -330,6 +330,7 @@ void USOTS_SuiteDebugSubsystem::ShowKEMAnchorOverlay()
     {
         if (USOTS_KillExecutionManagerKEMAnchorDebugWidget* Widget = CreateWidget<USOTS_KillExecutionManagerKEMAnchorDebugWidget>(PC, KEMAnchorDebugWidgetClass))
         {
+            // TODO: route this through USOTS_UIRouterSubsystem so UI ownership stays centralized.
             Widget->AddToViewport();
             KEMAnchorDebugWidgetInstance = Widget;
         }

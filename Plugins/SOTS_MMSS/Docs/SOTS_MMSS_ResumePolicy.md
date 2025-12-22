@@ -1,0 +1,14 @@
+# SOTS_MMSS Resume Policy
+
+## Track + mission state
+- `RequestMusicByTag` and `RequestMusicByMissionAndTag` (`Plugins/SOTS_MMSS/Source/SOTS_MMSS/Private/SOTS_MMSSSubsystem.cpp#L105-L133`) update `CurrentTrackId`, `CurrentTrackIdName`, and `CurrentMusicRoleTag` before calling `InternalRequestTrack`. The subsystem thus keeps the requested tag even when no mission is active, and `SetCurrentMissionId` simply flips the mission context without wiping the track fields.
+- `InternalRequestTrack` validates the mission-specific entry if `MissionId` is populated; when `MissionId == NAME_None` it instead falls back to `Library->DefaultMusicSet` and always selects the first entry (lines `#L235-L262`), ignoring the requested `TrackId` but still preserving the outgoing tag fields for profiling/role helpers. This means that mission-less playback keeps the intent in `CurrentTrackIdName`/`CurrentMusicRoleTag` (which also flow into the snapshot via `BuildProfileData` at `#L143-L149`), even though the runtime audio component may only have a single default track to play.
+- Profile serialization (`BuildProfileData` / `ApplyProfileData`, `#L143-L159`) captures `CurrentMusicRoleTag`, `CurrentTrackIdName`, and the `PlaybackPositionSeconds` stored in `LastPlaybackTimeSeconds`, so reloading a profile re-issues the desired tag even without a mission id.
+
+## "Close enough" timer resume
+- `LastPlaybackTimeSeconds` is only seeded explicitly from `RequestRoleTrack(... StartTime)` and when a snapshot is applied (`#L134-L158`). The audio component is never queried for its current playback time, so the stored value reflects the last resume request rather than an exact sample of the prior play head (see `Plugins/121625_OVERVIEW.txt:579-586` for the same observation).
+- `HandleLoadedSound` attempts resuming by checking `bWasPlayingBeforeWorldChange`, the recorded playback time, and whether the newly loaded sound matches the previous one (`#L392-L455`). Because `bWasPlayingBeforeWorldChange` is never set to `true` anywhere in `SOTS_MMSSSubsystem`, this branch never fires today, leaving resume as a best-effort "close enough" placeholder rather than an exact frame resume.
+- Treat this surface as tolerant: anything that needs a more faithful resume must capture the playback position (and set the resume flag) before tearing down the audio component and then replay using the saved position, but the current implementation only stores/upgrades the time during manual or snapshot-driven requests.
+
+## Multi-layer plan
+- The subsystem currently tracks a single `FGameplayTag`, single persistent `UAudioComponent`, and does not expose any per-layer state, so only one music track can be active at any time. Multi-layer behavior (e.g., stacking role-based layers or transitioning between layers without killing the base track) is still planned and not yet implemented in code. Documenting this gap here keeps the policy intact until the multi-layer design lands.

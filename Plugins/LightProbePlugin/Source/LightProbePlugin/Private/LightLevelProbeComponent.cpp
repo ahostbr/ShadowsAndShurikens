@@ -250,6 +250,7 @@ void ULightLevelProbeComponent::InitializeProbe()
                     DebugWidget->RenderTarget = RenderTarget;
                     DebugWidget->ImageSize = DebugWidgetSize;
                     DebugWidget->ScreenOffset = DebugWidgetOffset;
+                    // TODO: route this through USOTS_UIRouterSubsystem so the UI owner is clear.
                     DebugWidget->AddToViewport(1000);
                 }
             }
