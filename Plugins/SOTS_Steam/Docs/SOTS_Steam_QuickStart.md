@@ -74,3 +74,5 @@ LeaderboardsSubsystem->SubmitMissionResultToLeaderboards(Result, PlayerName, /*b
 ```
 
 Any achievement or leaderboard whose definition tags are a subset of `Result.AdditionalTags` (plus the built-in mission/difficulty tags) will be unlocked/updated automatically.
+
+Starting with this pass, `USOTS_SteamMissionResultBridgeSubsystem` listens for `USOTS_MissionDirectorSubsystem::OnMissionEnded`, builds the matching `FSOTS_SteamMissionResult`, and routes the payload through the leaderboard submissions before the achievements path, including a short rate limit and Steam-availability guard so the suite remains stable when Steam is offline. You can still construct your own mission result and drive the subsystems manually when needed.

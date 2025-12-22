@@ -20,8 +20,6 @@
 #include "SOTS_UISettings.h"
 #include "SOTS_InputAPI.h"
 #include "SOTS_InteractionSubsystem.h"
-#include "SOTS_InteractableComponent.h"
-#include "SOTS_InventoryFacadeLibrary.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UIRouter, Log, All);
 
@@ -35,12 +33,6 @@ namespace
 	};
 
 	static const FGameplayTag UINavLayerTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Input.Layer.UI.Nav")), false);
-	static const FGameplayTag TAG_InteractionVerb_Pickup = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Pickup")), false);
-	static const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.Execute")), false);
-	static const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStart")), false);
-	static const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(FName(TEXT("Interaction.Verb.DragStop")), false);
-	static const FGameplayTag TAG_Context_Interaction = FGameplayTag::RequestGameplayTag(FName(TEXT("Context.Interaction")), false);
-
 	static TAutoConsoleVariable<int32> CVarLogUnhandledInteractionVerbs(
 		TEXT("sots.ui.LogUnhandledInteractionVerbs"),
 		0,
@@ -147,6 +139,7 @@ void USOTS_UIRouterSubsystem::Deinitialize()
 {
 	ActiveLayerStacks.Empty();
 	CachedWidgets.Empty();
+	ActiveExternalMenus.Empty();
 	ProHUDAdapter = nullptr;
 	InvSPAdapterInstance = nullptr;
 	InteractionAdapter = nullptr;
@@ -232,6 +225,11 @@ bool USOTS_UIRouterSubsystem::PopWidget(ESOTS_UILayer OptionalLayerFilter, bool 
 		{
 			if (Stack->Entries.Num() > 0)
 			{
+				if (Stack->Entries.Last().bExternalMenu)
+				{
+					return false;
+				}
+
 				RemoveTopFromLayer(Layer);
 				RefreshInputAndPauseState();
 				return true;
@@ -410,6 +408,7 @@ bool USOTS_UIRouterSubsystem::OpenInventoryMenu()
 		Adapter->OpenInventory();
 	}
 
+	NotifyExternalMenuOpened(InventoryTag);
 	return PushInventoryWidget(InventoryTag, ESOTS_UIInventoryRequestType::OpenInventory);
 }
 
@@ -430,7 +429,9 @@ bool USOTS_UIRouterSubsystem::CloseInventoryMenu()
 		Adapter->CloseInventory();
 	}
 
-	return PopWidgetById(InventoryTag);
+	const bool bWasActive = IsWidgetActive(InventoryTag);
+	NotifyExternalMenuClosed(InventoryTag);
+	return bWasActive;
 }
 
 bool USOTS_UIRouterSubsystem::ToggleInventoryMenu()
@@ -445,14 +446,15 @@ bool USOTS_UIRouterSubsystem::ToggleInventoryMenu()
 		return false;
 	}
 
-	ESOTS_UILayer ActiveLayer = ESOTS_UILayer::HUD;
-	if (IsWidgetActive(InventoryTag, &ActiveLayer))
+	if (IsWidgetActive(InventoryTag))
 	{
 		if (USOTS_InvSPAdapter* Adapter = GetInvSPAdapter())
 		{
 			Adapter->CloseInventory();
 		}
-		return PopFirstMatchingFromLayer(ActiveLayer, InventoryTag);
+
+		NotifyExternalMenuClosed(InventoryTag);
+		return true;
 	}
 
 	if (USOTS_InvSPAdapter* Adapter = EnsureInvSPAdapter())
@@ -460,6 +462,7 @@ bool USOTS_UIRouterSubsystem::ToggleInventoryMenu()
 		Adapter->OpenInventory();
 	}
 
+	NotifyExternalMenuOpened(InventoryTag);
 	return PushInventoryWidget(InventoryTag, ESOTS_UIInventoryRequestType::ToggleInventory);
 }
 
@@ -481,6 +484,7 @@ bool USOTS_UIRouterSubsystem::OpenItemContainerMenu(AActor* ContainerActor)
 		Adapter->OpenContainer(ContainerActor);
 	}
 
+	NotifyExternalMenuOpened(ContainerTag);
 	return PushInventoryWidget(ContainerTag, ESOTS_UIInventoryRequestType::OpenContainer, ContainerActor);
 }
 
@@ -501,7 +505,9 @@ bool USOTS_UIRouterSubsystem::CloseItemContainerMenu()
 		Adapter->CloseContainer();
 	}
 
-	return PopWidgetById(ContainerTag);
+	const bool bWasActive = IsWidgetActive(ContainerTag);
+	NotifyExternalMenuClosed(ContainerTag);
+	return bWasActive;
 }
 
 void USOTS_UIRouterSubsystem::EnsureGameplayHUDReady()
@@ -632,6 +638,43 @@ bool USOTS_UIRouterSubsystem::ShowConfirmDialog(const F_SOTS_UIConfirmDialogPayl
 	return PushWidgetById(ModalTag, PayloadStruct);
 }
 
+void USOTS_UIRouterSubsystem::NotifyExternalMenuOpened(FGameplayTag MenuIdTag)
+{
+	if (!MenuIdTag.IsValid() || !IsExternalMenuTag(MenuIdTag))
+	{
+		return;
+	}
+
+	if (ActiveExternalMenus.Contains(MenuIdTag))
+	{
+		return;
+	}
+
+	ActiveExternalMenus.Add(MenuIdTag);
+	OnExternalMenuOpened.Broadcast(MenuIdTag);
+}
+
+void USOTS_UIRouterSubsystem::NotifyExternalMenuClosed(FGameplayTag MenuIdTag)
+{
+	if (!MenuIdTag.IsValid())
+	{
+		return;
+	}
+
+	if (IsExternalMenuTag(MenuIdTag))
+	{
+		if (ActiveExternalMenus.Remove(MenuIdTag) > 0)
+		{
+			OnExternalMenuClosed.Broadcast(MenuIdTag);
+		}
+	}
+
+	if (IsWidgetActive(MenuIdTag))
+	{
+		PopWidgetById(MenuIdTag);
+	}
+}
+
 F_SOTS_UIConfirmDialogPayload USOTS_UIRouterSubsystem::BuildReturnToMainMenuPayload(const FText& MessageOverride) const
 {
 	F_SOTS_UIConfirmDialogPayload Payload;
@@ -740,6 +783,7 @@ bool USOTS_UIRouterSubsystem::PushWidgetByEntry(const FSOTS_WidgetRegistryEntry&
 	ActiveEntry.CachePolicy = Entry.CachePolicy;
 	ActiveEntry.bPauseGame = Entry.bPauseGame;
 	ActiveEntry.bCloseOnEscape = Entry.bCloseOnEscape;
+	ActiveEntry.bExternalMenu = IsExternalMenuTag(Entry.WidgetId);
 	ActiveEntry.Payload = Payload;
 
 	Stack.Entries.Add(ActiveEntry);
@@ -901,12 +945,20 @@ void USOTS_UIRouterSubsystem::RemoveTopFromLayer(ESOTS_UILayer Layer)
 	{
 		if (Stack->Entries.Num() > 0)
 		{
-			if (UUserWidget* Widget = Stack->Entries.Last().Widget.Get())
+			FSOTS_ActiveWidgetEntry& RemovedEntry = Stack->Entries.Last();
+			if (UUserWidget* Widget = RemovedEntry.Widget.Get())
 			{
 				Widget->RemoveFromParent();
 			}
 
+			const FGameplayTag RemovedTag = RemovedEntry.WidgetId;
+			const bool bWasExternal = RemovedEntry.bExternalMenu;
 			Stack->Entries.RemoveAt(Stack->Entries.Num() - 1);
+
+			if (bWasExternal && ActiveExternalMenus.Remove(RemovedTag) > 0)
+			{
+				OnExternalMenuClosed.Broadcast(RemovedTag);
+			}
 		}
 	}
 }
@@ -1068,52 +1120,8 @@ void USOTS_UIRouterSubsystem::HandleInteractionActionRequested(const FSOTS_Inter
 		return;
 	}
 
-	if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Pickup))
-	{
-		FSOTS_InvPickupRequest InvRequest;
-		InvRequest.InstigatorActor = Request.InstigatorActor;
-		InvRequest.PickupActor = Request.TargetActor;
-		InvRequest.ItemTag = Request.ItemTag;
-		InvRequest.Quantity = Request.Quantity > 0 ? Request.Quantity : 1;
-		InvRequest.ContextTags = Request.ContextTags;
-		if (TAG_Context_Interaction.IsValid())
-		{
-			InvRequest.ContextTags.AddTag(TAG_Context_Interaction);
-		}
-
-		if (!InvRequest.ItemTag.IsValid())
-		{
-			// Best-effort fallback: try reading pickup metadata from the target's interactable component.
-			if (AActor* TargetActor = Request.TargetActor.Get())
-			{
-				if (const USOTS_InteractableComponent* IC = TargetActor->FindComponentByClass<USOTS_InteractableComponent>())
-				{
-					if (IC->PickupItemTag.IsValid())
-					{
-						InvRequest.ItemTag = IC->PickupItemTag;
-					}
-
-					if (IC->PickupQuantity > 0 && InvRequest.Quantity <= 0)
-					{
-						InvRequest.Quantity = IC->PickupQuantity;
-					}
-				}
-			}
-
-			if (!InvRequest.ItemTag.IsValid())
-			{
-				UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("UIRouter: Pickup action missing ItemTag after fallback; skipping route."));
-				return;
-			}
-		}
-
-		FSOTS_InvPickupResult InvResult;
-		USOTS_InventoryFacadeLibrary::RequestPickup_FromRequest(this, InvRequest, InvResult);
-		return;
-	}
-
-		// Non-pickup verbs are handled by interaction subsystems (SOTS_Interaction, SOTS_BodyDrag, SOTS_KillExecutionManager); no routing change here.
-		MaybeLogUnhandledInteractionVerb(Request.VerbTag);
+	// Interaction action requests are owned by gameplay subsystems; UI stays intent-only.
+	MaybeLogUnhandledInteractionVerb(Request.VerbTag);
 }
 
 bool USOTS_UIRouterSubsystem::DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload)
@@ -1363,16 +1371,55 @@ bool USOTS_UIRouterSubsystem::PopFirstMatchingFromLayer(ESOTS_UILayer Layer, FGa
 		{
 			if (Stack->Entries[Index].WidgetId == WidgetId)
 			{
+				const bool bWasExternal = Stack->Entries[Index].bExternalMenu;
+				const FGameplayTag RemovedTag = Stack->Entries[Index].WidgetId;
 				if (UUserWidget* Widget = Stack->Entries[Index].Widget.Get())
 				{
 					Widget->RemoveFromParent();
 				}
 
 				Stack->Entries.RemoveAt(Index);
+				if (bWasExternal && ActiveExternalMenus.Remove(RemovedTag) > 0)
+				{
+					OnExternalMenuClosed.Broadcast(RemovedTag);
+				}
 				RefreshInputAndPauseState();
 				return true;
 			}
 		}
+	}
+
+	return false;
+}
+
+bool USOTS_UIRouterSubsystem::IsExternalMenuTag(const FGameplayTag& MenuIdTag) const
+{
+	if (!MenuIdTag.IsValid())
+	{
+		return false;
+	}
+
+	static const FGameplayTag InvSPRootTag = FGameplayTag::RequestGameplayTag(FName(TEXT("SAS.UI.InvSP")), false);
+	if (InvSPRootTag.IsValid() && MenuIdTag.MatchesTag(InvSPRootTag))
+	{
+		return true;
+	}
+
+	static const FGameplayTag InventoryTag = FGameplayTag::RequestGameplayTag(FName(TEXT("UI.Menu.Inventory")), false);
+	if (InventoryTag.IsValid() && MenuIdTag == InventoryTag)
+	{
+		return true;
+	}
+
+	static const FGameplayTag ContainerTag = FGameplayTag::RequestGameplayTag(FName(TEXT("UI.Menu.Container")), false);
+	if (ContainerTag.IsValid() && MenuIdTag == ContainerTag)
+	{
+		return true;
+	}
+
+	if (!InvSPRootTag.IsValid())
+	{
+		return MenuIdTag.ToString().StartsWith(TEXT("SAS.UI.InvSP"));
 	}
 
 	return false;

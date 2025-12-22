@@ -2,8 +2,8 @@
 
 ## Scope
 - The router owns UI flows such as pickup notifications, inventory widgets, modal dialogs, and explicit interaction prompts.
-- Interaction verbs other than `Interaction.Verb.Pickup` (for example `Interaction.Verb.Execute`, `Interaction.Verb.DragStart`, `Interaction.Verb.DragStop`) are not routed through the UI subsystem; their gameplay semantics live in SOTS_Interaction, SOTS_BodyDrag, or SOTS_KillExecutionManager.
-- The router intentionally does not dispatch those verbs to gameplay systems because they already have dedicated owners.
+- Interaction verbs are routed by gameplay subsystems (SOTS_Interaction -> SOTS_INV / SOTS_BodyDrag / SOTS_KillExecutionManager); the router does not dispatch action requests.
+- The router may log unhandled verbs for debugging but stays intent-only.
 
 ## Logging policy
 - Log output from the router stays silent unless explicit debugging is requested.
@@ -17,4 +17,4 @@
 3. Reset the CVar or restart the session to allow the verb to log again in the next run.
 
 ## Reminder
-- Preserve the existing return/flow expectations for non-pickup callers; the router still treats unhandled verbs as no-ops and the caller flow does not change.
+- Preserve existing return/flow expectations for callers; the router treats all action verbs as no-ops and the caller flow does not change.

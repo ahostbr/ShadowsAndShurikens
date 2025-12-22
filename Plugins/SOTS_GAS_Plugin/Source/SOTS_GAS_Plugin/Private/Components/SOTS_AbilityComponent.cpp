@@ -11,6 +11,7 @@
 #include "SOTS_InventoryBridgeSubsystem.h"
 #include "SOTS_InventoryTypes.h"
 #include "SOTS_SkillTreeSubsystem.h"
+#include "SOTS_TagLibrary.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 
@@ -84,16 +85,21 @@ namespace
 
 namespace SOTSAbilityInventoryCosts
 {
-    static FGameplayTag SelectPrimaryTag(const FGameplayTagContainer& Tags)
+    static void GatherValidTags(const FGameplayTagContainer& Tags, TArray<FGameplayTag>& OutTags)
     {
+        OutTags.Reset();
         for (const FGameplayTag& Tag : Tags)
         {
             if (Tag.IsValid())
             {
-                return Tag;
+                OutTags.Add(Tag);
             }
         }
-        return FGameplayTag();
+
+        OutTags.Sort([](const FGameplayTag& A, const FGameplayTag& B)
+        {
+            return A.ToString() < B.ToString();
+        });
     }
 
     static FSOTS_InventoryOpReport MakeFallbackReport(AActor* Owner, const FGameplayTag& ItemTag, int32 Count, ESOTS_InventoryOpResult Result, const FString& Reason)
@@ -127,40 +133,113 @@ namespace SOTSAbilityInventoryCosts
 #endif
     }
 
-    static FSOTS_InventoryOpReport HasRequiredItem(UAC_SOTS_Abilitys* Component, AActor* Owner, const FGameplayTagContainer& Tags, int32 Count, bool bDebugLog)
+    static FSOTS_InventoryOpReport HasRequiredItem(
+        UAC_SOTS_Abilitys* Component,
+        AActor* Owner,
+        const FGameplayTagContainer& Tags,
+        int32 Count,
+        E_SOTS_AbilityInventoryTagMatchMode MatchMode,
+        bool bDebugLog)
     {
-        const FGameplayTag ItemTag = SelectPrimaryTag(Tags);
-        if (!ItemTag.IsValid())
+        TArray<FGameplayTag> ValidTags;
+        GatherValidTags(Tags, ValidTags);
+        if (ValidTags.Num() == 0)
         {
-            return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::InvalidTag, TEXT("No inventory tag configured"));
+            return MakeFallbackReport(Owner, FGameplayTag(), Count, ESOTS_InventoryOpResult::InvalidTag, TEXT("No inventory tag configured"));
         }
 
         if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(Component))
         {
-            FSOTS_InventoryOpReport Report = Bridge->HasItemByTag_WithReport(Owner, ItemTag, Count);
-            MaybeLogInventoryReport(bDebugLog, TEXT("HasItem"), Report);
-            return Report;
+            FSOTS_InventoryOpReport LastReport;
+
+            if (MatchMode == E_SOTS_AbilityInventoryTagMatchMode::AllOf)
+            {
+                for (const FGameplayTag& Tag : ValidTags)
+                {
+                    LastReport = Bridge->HasItemByTag_WithReport(Owner, Tag, Count);
+                    MaybeLogInventoryReport(bDebugLog, TEXT("HasItem(All)"), LastReport);
+                    if (LastReport.Result != ESOTS_InventoryOpResult::Success)
+                    {
+                        return LastReport;
+                    }
+                }
+                return LastReport;
+            }
+
+            for (const FGameplayTag& Tag : ValidTags)
+            {
+                LastReport = Bridge->HasItemByTag_WithReport(Owner, Tag, Count);
+                MaybeLogInventoryReport(bDebugLog, TEXT("HasItem(Any)"), LastReport);
+                if (LastReport.Result == ESOTS_InventoryOpResult::Success)
+                {
+                    return LastReport;
+                }
+            }
+
+            return LastReport;
         }
 
-        return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::ProviderMissing, TEXT("Inventory bridge missing"));
+        return MakeFallbackReport(Owner, ValidTags[0], Count, ESOTS_InventoryOpResult::ProviderMissing, TEXT("Inventory bridge missing"));
     }
 
-    static FSOTS_InventoryOpReport ConsumeItem(UAC_SOTS_Abilitys* Component, AActor* Owner, const FGameplayTagContainer& Tags, int32 Count, bool bDebugLog)
+    static FSOTS_InventoryOpReport ConsumeItem(
+        UAC_SOTS_Abilitys* Component,
+        AActor* Owner,
+        const FGameplayTagContainer& Tags,
+        int32 Count,
+        E_SOTS_AbilityInventoryTagMatchMode MatchMode,
+        bool bDebugLog)
     {
-        const FGameplayTag ItemTag = SelectPrimaryTag(Tags);
-        if (!ItemTag.IsValid())
+        TArray<FGameplayTag> ValidTags;
+        GatherValidTags(Tags, ValidTags);
+        if (ValidTags.Num() == 0)
         {
-            return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::InvalidTag, TEXT("No inventory tag configured"));
+            return MakeFallbackReport(Owner, FGameplayTag(), Count, ESOTS_InventoryOpResult::InvalidTag, TEXT("No inventory tag configured"));
         }
 
         if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(Component))
         {
-            FSOTS_InventoryOpReport Report = Bridge->TryConsumeItemByTag_WithReport(Owner, ItemTag, Count);
-            MaybeLogInventoryReport(bDebugLog, TEXT("Consume"), Report);
-            return Report;
+            FSOTS_InventoryOpReport LastReport;
+
+            if (MatchMode == E_SOTS_AbilityInventoryTagMatchMode::AllOf)
+            {
+                for (const FGameplayTag& Tag : ValidTags)
+                {
+                    LastReport = Bridge->HasItemByTag_WithReport(Owner, Tag, Count);
+                    MaybeLogInventoryReport(bDebugLog, TEXT("HasItem(All)"), LastReport);
+                    if (LastReport.Result != ESOTS_InventoryOpResult::Success)
+                    {
+                        return LastReport;
+                    }
+                }
+
+                for (const FGameplayTag& Tag : ValidTags)
+                {
+                    LastReport = Bridge->TryConsumeItemByTag_WithReport(Owner, Tag, Count);
+                    MaybeLogInventoryReport(bDebugLog, TEXT("Consume(All)"), LastReport);
+                    if (LastReport.Result != ESOTS_InventoryOpResult::Success)
+                    {
+                        return LastReport;
+                    }
+                }
+
+                return LastReport;
+            }
+
+            for (const FGameplayTag& Tag : ValidTags)
+            {
+                LastReport = Bridge->TryConsumeItemByTag_WithReport(Owner, Tag, Count);
+                MaybeLogInventoryReport(bDebugLog, TEXT("Consume(Any)"), LastReport);
+                if (LastReport.Result == ESOTS_InventoryOpResult::Success)
+                {
+                    return LastReport;
+                }
+            }
+
+            return LastReport;
         }
 
-        return MakeFallbackReport(Owner, ItemTag, Count, ESOTS_InventoryOpResult::ProviderMissing, TEXT("Inventory bridge missing"));
+        return MakeFallbackReport(Owner, ValidTags[0], Count, ESOTS_InventoryOpResult::ProviderMissing, TEXT("Inventory bridge missing"));
     }
 
     static E_SOTS_AbilityActivateResult MapToAbilityResult(const FSOTS_InventoryOpReport& Report)
@@ -438,16 +517,65 @@ float UAC_SOTS_Abilitys::GetWorldTime() const
     return World ? World->GetTimeSeconds() : 0.0f;
 }
 
-bool UAC_SOTS_Abilitys::PassesOwnerTagGate(const F_SOTS_AbilityDefinition& /*Def*/) const
+bool UAC_SOTS_Abilitys::PassesOwnerTagGate(const F_SOTS_AbilityDefinition& Def) const
 {
-    // Hook into your global GameplayTag manager here if desired.
+    const AActor* OwnerActor = GetOwner();
+    if (!OwnerActor)
+    {
+        return Def.RequiredOwnerTags.IsEmpty() && Def.BlockedOwnerTags.IsEmpty();
+    }
+
+    if (!Def.RequiredOwnerTags.IsEmpty())
+    {
+        const bool bHasAll = USOTS_TagLibrary::ActorHasAllTags(this, OwnerActor, Def.RequiredOwnerTags);
+        if (!bHasAll)
+        {
+            return false;
+        }
+    }
+
+    if (!Def.BlockedOwnerTags.IsEmpty())
+    {
+        const bool bHasAny = USOTS_TagLibrary::ActorHasAnyTag(this, OwnerActor, Def.BlockedOwnerTags);
+        if (bHasAny)
+        {
+            return false;
+        }
+    }
+
     return true;
 }
 
-int32 UAC_SOTS_Abilitys::QueryInventoryItemCount(const FGameplayTagContainer& Tags) const
+int32 UAC_SOTS_Abilitys::QueryInventoryItemCount(const FGameplayTagContainer& Tags, E_SOTS_AbilityInventoryTagMatchMode MatchMode) const
 {
+    if (Tags.IsEmpty())
+    {
+        return 0;
+    }
+
     if (USOTS_InventoryBridgeSubsystem* Bridge = USOTS_InventoryBridgeSubsystem::Get(this))
     {
+        if (MatchMode == E_SOTS_AbilityInventoryTagMatchMode::AllOf)
+        {
+            const AActor* OwnerActor = GetOwner();
+            int32 MinCount = INT32_MAX;
+            bool bHasValidTag = false;
+
+            for (const FGameplayTag& Tag : Tags)
+            {
+                if (!Tag.IsValid())
+                {
+                    continue;
+                }
+
+                bHasValidTag = true;
+                const FSOTS_InventoryOpReport Report = Bridge->HasItemByTag_WithReport(const_cast<AActor*>(OwnerActor), Tag, 1);
+                MinCount = FMath::Min(MinCount, Report.ActualQty);
+            }
+
+            return bHasValidTag ? MinCount : 0;
+        }
+
         return Bridge->GetCarriedItemCountByTags(Tags);
     }
 
@@ -474,13 +602,13 @@ bool UAC_SOTS_Abilitys::HasSufficientCharges(const F_SOTS_AbilityDefinition& Def
 
         case E_SOTS_AbilityChargeMode::InventoryLinked:
         {
-            const int32 Count = QueryInventoryItemCount(Def.RequiredInventoryTags);
+            const int32 Count = QueryInventoryItemCount(Def.RequiredInventoryTags, Def.InventoryTagMatchMode);
             return Count > 0;
         }
 
         case E_SOTS_AbilityChargeMode::Hybrid:
         {
-            const int32 InventoryCount = QueryInventoryItemCount(Def.RequiredInventoryTags);
+            const int32 InventoryCount = QueryInventoryItemCount(Def.RequiredInventoryTags, Def.InventoryTagMatchMode);
 
             // MaxCharges <= 0 means infinite internal charges; only inventory gates us
             if (Def.MaxCharges <= 0)
@@ -828,7 +956,13 @@ FSOTS_AbilityActivateReport UAC_SOTS_Abilitys::ProcessActivationRequest(const FS
     if (bHasInventoryRequirement)
     {
         const int32 RequiredCount = 1; // current authored abilities use single-item requirements
-        const FSOTS_InventoryOpReport InventoryCheck = SOTSAbilityInventoryCosts::HasRequiredItem(this, GetOwner(), Def.RequiredInventoryTags, RequiredCount, bDebugLogAbilityInventoryCosts);
+        const FSOTS_InventoryOpReport InventoryCheck = SOTSAbilityInventoryCosts::HasRequiredItem(
+            this,
+            GetOwner(),
+            Def.RequiredInventoryTags,
+            RequiredCount,
+            Def.InventoryTagMatchMode,
+            bDebugLogAbilityInventoryCosts);
         const E_SOTS_AbilityActivateResult InventoryResult = SOTSAbilityInventoryCosts::MapToAbilityResult(InventoryCheck);
 
         if (InventoryResult != E_SOTS_AbilityActivateResult::Success)
@@ -897,7 +1031,13 @@ FSOTS_AbilityActivateReport UAC_SOTS_Abilitys::ProcessActivationRequest(const FS
     if (bHasInventoryRequirement && Def.InventoryMode == E_SOTS_AbilityInventoryMode::RequireAndConsume)
     {
         const int32 ConsumeCount = 1;
-        const FSOTS_InventoryOpReport ConsumeReport = SOTSAbilityInventoryCosts::ConsumeItem(this, GetOwner(), Def.RequiredInventoryTags, ConsumeCount, bDebugLogAbilityInventoryCosts);
+        const FSOTS_InventoryOpReport ConsumeReport = SOTSAbilityInventoryCosts::ConsumeItem(
+            this,
+            GetOwner(),
+            Def.RequiredInventoryTags,
+            ConsumeCount,
+            Def.InventoryTagMatchMode,
+            bDebugLogAbilityInventoryCosts);
         const E_SOTS_AbilityActivateResult ConsumeResult = SOTSAbilityInventoryCosts::MapToAbilityResult(ConsumeReport);
 
         if (ConsumeResult != E_SOTS_AbilityActivateResult::Success)
@@ -1037,7 +1177,7 @@ void UAC_SOTS_Abilitys::GetAbilityCharges(FGameplayTag AbilityTag, int32& OutCur
 
         case E_SOTS_AbilityChargeMode::InventoryLinked:
         {
-            const int32 Count = QueryInventoryItemCount(Def.RequiredInventoryTags);
+            const int32 Count = QueryInventoryItemCount(Def.RequiredInventoryTags, Def.InventoryTagMatchMode);
             OutCurrentCharges = Count;
             OutMaxCharges     = Count;
             break;
@@ -1045,7 +1185,7 @@ void UAC_SOTS_Abilitys::GetAbilityCharges(FGameplayTag AbilityTag, int32& OutCur
 
         case E_SOTS_AbilityChargeMode::Hybrid:
         {
-            const int32 Count    = QueryInventoryItemCount(Def.RequiredInventoryTags);
+            const int32 Count    = QueryInventoryItemCount(Def.RequiredInventoryTags, Def.InventoryTagMatchMode);
             const int32 Internal = (Def.MaxCharges > 0)
                                    ? (State ? State->CurrentCharges : Def.MaxCharges)
                                    : INT32_MAX; // treat internal as infinite if MaxCharges <= 0

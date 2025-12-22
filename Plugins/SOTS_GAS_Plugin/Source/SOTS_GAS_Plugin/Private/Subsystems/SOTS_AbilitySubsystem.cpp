@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "Math/UnrealMathUtility.h"
+#include "SOTS_GAS_Plugin.h"
 #include "SOTS_ProfileSubsystem.h"
 
 void USOTS_AbilitySubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -65,7 +66,42 @@ void USOTS_AbilitySubsystem::BuildProfileData(FSOTS_AbilityProfileData& OutData)
 void USOTS_AbilitySubsystem::ApplyProfileData(const FSOTS_AbilityProfileData& InData)
 {
     GrantedAbilityTags = InData.GrantedAbilityTags;
-    AbilityRanks = InData.AbilityRanks;
+    GrantedAbilityTags.Sort([](const FGameplayTag& A, const FGameplayTag& B)
+    {
+        return A.ToString() < B.ToString();
+    });
+
+    AbilityRanks.Reset();
+    TArray<FGameplayTag> SortedRankTags;
+    InData.AbilityRanks.GetKeys(SortedRankTags);
+    SortedRankTags.Sort([](const FGameplayTag& A, const FGameplayTag& B)
+    {
+        return A.ToString() < B.ToString();
+    });
+
+    for (const FGameplayTag& RankTag : SortedRankTags)
+    {
+        const int32 RankValue = InData.AbilityRanks.FindRef(RankTag);
+        if (!RankTag.IsValid() || RankValue <= 0)
+        {
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+            UE_LOG(LogSOTSGAS, Warning, TEXT("[AbilitySubsystem] Skipping invalid rank entry Tag=%s Rank=%d"),
+                   *RankTag.ToString(), RankValue);
+#endif
+            continue;
+        }
+
+        AbilityRanks.Add(RankTag, RankValue);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (!GrantedAbilityTags.Contains(RankTag))
+        {
+            UE_LOG(LogSOTSGAS, Warning, TEXT("[AbilitySubsystem] Rank restored for non-granted ability Tag=%s Rank=%d"),
+                   *RankTag.ToString(), RankValue);
+        }
+#endif
+    }
+
     AbilityCooldownRemaining = InData.CooldownsRemaining;
 }
 

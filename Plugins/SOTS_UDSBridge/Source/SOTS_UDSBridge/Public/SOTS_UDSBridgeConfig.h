@@ -122,6 +122,15 @@ public:
 	bool bEnableTrailBreadcrumbs = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	bool bEnableBreadcrumbHistory = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs", meta = (ClampMin = "0.1", ClampMax = "300.0"))
+	float BreadcrumbEmitIntervalSeconds = 30.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs", meta = (ClampMin = "1", ClampMax = "120"))
+	int32 BreadcrumbMaxHistory = 30;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
 	float BreadcrumbInterval = 0.45f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")

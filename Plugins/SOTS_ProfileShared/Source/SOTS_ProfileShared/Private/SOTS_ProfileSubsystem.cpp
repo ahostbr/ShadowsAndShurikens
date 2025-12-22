@@ -9,6 +9,54 @@
 #include "Kismet/GameplayStatics.h"
 #include "Math/Transform.h"
 #include "SOTS_ProfileSaveGame.h"
+#include "UObject/SoftObjectPath.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSOTSProfileShared, Log, All);
+
+namespace
+{
+    bool TryResolveMissionDirectorTotalPlaySeconds(const UObject* WorldContextObject, float& OutSeconds)
+    {
+        OutSeconds = 0.0f;
+
+        if (!WorldContextObject)
+        {
+            return false;
+        }
+
+        const UWorld* World = WorldContextObject->GetWorld();
+        if (!World)
+        {
+            return false;
+        }
+
+        if (UGameInstance* GameInstance = World->GetGameInstance())
+        {
+            static const FSoftClassPath MissionDirectorPath(TEXT("/Script/SOTS_MissionDirector.SOTS_MissionDirectorSubsystem"));
+            if (UClass* MissionDirectorClass = MissionDirectorPath.ResolveClass())
+            {
+                if (UObject* MissionDirector = GameInstance->GetSubsystemBase(MissionDirectorClass))
+                {
+                    static const FName FuncName(TEXT("GetTotalPlaySeconds"));
+                    if (UFunction* Func = MissionDirector->FindFunction(FuncName))
+                    {
+                        struct FParams
+                        {
+                            float ReturnValue = 0.0f;
+                        };
+
+                        FParams Params;
+                        MissionDirector->ProcessEvent(Func, &Params);
+                        OutSeconds = Params.ReturnValue;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+}
 
 FString USOTS_ProfileSubsystem::GetSlotNameForProfile(const FSOTS_ProfileId& ProfileId) const
 {
@@ -40,7 +88,7 @@ bool USOTS_ProfileSubsystem::SaveProfile(const FSOTS_ProfileId& ProfileId, const
         }
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("[ProfileSubsystem] SaveProfile failed for slot %s"), *SlotName);
+    UE_LOG(LogSOTSProfileShared, Warning, TEXT("[ProfileSubsystem] SaveProfile failed for slot %s"), *SlotName);
     return false;
 }
 
@@ -51,7 +99,7 @@ bool USOTS_ProfileSubsystem::LoadProfile(const FSOTS_ProfileId& ProfileId, FSOTS
 
     if (!UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
     {
-        UE_LOG(LogTemp, Verbose, TEXT("[ProfileSubsystem] LoadProfile: no save for slot %s"), *SlotName);
+        UE_LOG(LogSOTSProfileShared, Verbose, TEXT("[ProfileSubsystem] LoadProfile: no save for slot %s"), *SlotName);
         return false;
     }
 
@@ -69,7 +117,7 @@ bool USOTS_ProfileSubsystem::LoadProfile(const FSOTS_ProfileId& ProfileId, FSOTS
         }
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("[ProfileSubsystem] LoadProfile failed for slot %s"), *SlotName);
+    UE_LOG(LogSOTSProfileShared, Warning, TEXT("[ProfileSubsystem] LoadProfile failed for slot %s"), *SlotName);
     return false;
 }
 
@@ -83,6 +131,13 @@ void USOTS_ProfileSubsystem::BuildSnapshotFromWorld(FSOTS_ProfileSnapshot& OutSn
 
     OutSnapshot.SnapshotVersion = SOTS_PROFILE_SHARED_CURRENT_SNAPSHOT_VERSION;
     GatherPlayerSnapshot(OutSnapshot);
+
+    float TotalPlaySeconds = 0.0f;
+    if (TryResolveMissionDirectorTotalPlaySeconds(this, TotalPlaySeconds))
+    {
+        OutSnapshot.Meta.TotalPlaySeconds = FMath::Max(0, FMath::RoundToInt(TotalPlaySeconds));
+    }
+
     InvokeProviderBuild(OutSnapshot);
 }
 
@@ -90,6 +145,7 @@ void USOTS_ProfileSubsystem::ApplySnapshotToWorld(const FSOTS_ProfileSnapshot& S
 {
     RestorePlayerFromSnapshot(Snapshot);
     InvokeProviderApply(Snapshot);
+    OnProfileRestored.Broadcast(Snapshot);
 }
 
 void USOTS_ProfileSubsystem::RegisterProvider(UObject* Provider, int32 Priority)
@@ -143,19 +199,19 @@ void USOTS_ProfileSubsystem::SOTS_DumpCurrentPlayerStatsSnapshot()
         BuildOptionalStats(Pawn, Snapshot);
         if (Snapshot.StatValues.Num() == 0)
         {
-            UE_LOG(LogTemp, Log, TEXT("ProfileStats: no stats available"));
+            UE_LOG(LogSOTSProfileShared, Log, TEXT("ProfileStats: no stats available"));
         }
         else
         {
             for (const auto& Pair : Snapshot.StatValues)
             {
-                UE_LOG(LogTemp, Log, TEXT("ProfileStats: Tag=%s Value=%.2f"), *Pair.Key.ToString(), Pair.Value);
+                UE_LOG(LogSOTSProfileShared, Log, TEXT("ProfileStats: Tag=%s Value=%.2f"), *Pair.Key.ToString(), Pair.Value);
             }
         }
         return;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("SOTS_DumpCurrentPlayerStatsSnapshot: player pawn unavailable."));
+    UE_LOG(LogSOTSProfileShared, Warning, TEXT("SOTS_DumpCurrentPlayerStatsSnapshot: player pawn unavailable."));
 }
 
 void USOTS_ProfileSubsystem::GatherPlayerSnapshot(FSOTS_ProfileSnapshot& OutSnapshot) const
@@ -182,7 +238,7 @@ void USOTS_ProfileSubsystem::RestorePlayerFromSnapshot(const FSOTS_ProfileSnapsh
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("[ProfileSubsystem] Snapshot transform invalid; skipping actor transform restore."));
+            UE_LOG(LogSOTSProfileShared, Warning, TEXT("[ProfileSubsystem] Snapshot transform invalid; skipping actor transform restore."));
         }
         ApplyOptionalStats(Pawn, Snapshot.PlayerCharacter);
     }
@@ -245,6 +301,11 @@ void USOTS_ProfileSubsystem::ApplyOptionalStats(AActor* Actor, const FSOTS_Chara
 void USOTS_ProfileSubsystem::InvokeProviderBuild(FSOTS_ProfileSnapshot& InOutSnapshot)
 {
     PruneInvalidProviders();
+    if (Providers.Num() == 0 && !bLoggedMissingProvidersOnce)
+    {
+        UE_LOG(LogSOTSProfileShared, Verbose, TEXT("[ProfileSubsystem] No snapshot providers registered."));
+        bLoggedMissingProvidersOnce = true;
+    }
     for (const FSOTS_ProfileProviderEntry& Entry : Providers)
     {
         UObject* ProviderObj = Entry.Provider.Get();
@@ -263,6 +324,11 @@ void USOTS_ProfileSubsystem::InvokeProviderBuild(FSOTS_ProfileSnapshot& InOutSna
 void USOTS_ProfileSubsystem::InvokeProviderApply(const FSOTS_ProfileSnapshot& Snapshot)
 {
     PruneInvalidProviders();
+    if (Providers.Num() == 0 && !bLoggedMissingProvidersOnce)
+    {
+        UE_LOG(LogSOTSProfileShared, Verbose, TEXT("[ProfileSubsystem] No snapshot providers registered."));
+        bLoggedMissingProvidersOnce = true;
+    }
     for (const FSOTS_ProfileProviderEntry& Entry : Providers)
     {
         UObject* ProviderObj = Entry.Provider.Get();
@@ -296,6 +362,39 @@ void USOTS_ProfileSubsystem::SortProviders()
         }
         return A.Sequence < B.Sequence;
     });
+    UpdateProviderResolutionCache();
+}
+
+void USOTS_ProfileSubsystem::UpdateProviderResolutionCache()
+{
+    const int32 ProviderCount = Providers.Num();
+    FString PrimaryName;
+    int32 PrimaryPriority = 0;
+
+    if (ProviderCount > 0)
+    {
+        if (UObject* ProviderObj = Providers[0].Provider.Get())
+        {
+            PrimaryName = ProviderObj->GetClass() ? ProviderObj->GetClass()->GetName() : FString();
+            PrimaryPriority = Providers[0].Priority;
+        }
+    }
+
+    if (ProviderCount > 1 &&
+        (PrimaryName != CachedPrimaryProviderName ||
+         PrimaryPriority != CachedPrimaryProviderPriority ||
+         ProviderCount != CachedProviderCount))
+    {
+        UE_LOG(LogSOTSProfileShared, Verbose,
+            TEXT("[ProfileSubsystem] Provider arbitration resolved to '%s' (Priority=%d, Providers=%d)."),
+            *PrimaryName,
+            PrimaryPriority,
+            ProviderCount);
+    }
+
+    CachedPrimaryProviderName = PrimaryName;
+    CachedPrimaryProviderPriority = PrimaryPriority;
+    CachedProviderCount = ProviderCount;
 }
 
 UActorComponent* USOTS_ProfileSubsystem::FindStatsComponent(AActor* Actor) const

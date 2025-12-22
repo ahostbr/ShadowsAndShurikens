@@ -7,8 +7,11 @@
 #include "SOTS_InteractionTrace.h"
 #include "SOTS_InteractionTagAccess_Impl.h"
 #include "SOTS_InteractionLog.h"
+#include "SOTS_InventoryFacadeLibrary.h"
+#include "SOTS_KEM_ManagerSubsystem.h"
 #include "SOTS_TagAccessHelpers.h"
 #include "SOTS_GameplayTagManagerSubsystem.h"
+#include "SOTS_BodyDragPlayerComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Components/ActorComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -30,6 +33,146 @@ namespace
     const FGameplayTag TAG_InteractionVerb_Execute = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.Execute"), false);
     const FGameplayTag TAG_InteractionVerb_DragStart = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.DragStart"), false);
     const FGameplayTag TAG_InteractionVerb_DragStop = FGameplayTag::RequestGameplayTag(TEXT("Interaction.Verb.DragStop"), false);
+    const FGameplayTag TAG_Context_Interaction = FGameplayTag::RequestGameplayTag(TEXT("Context.Interaction"), false);
+
+    USOTS_BodyDragPlayerComponent* ResolveBodyDragPlayerComponent(const FSOTS_InteractionActionRequest& Request)
+    {
+        AActor* Instigator = Request.InstigatorActor.Get();
+        if (!Instigator)
+        {
+            return nullptr;
+        }
+
+        if (APlayerController* PC = Cast<APlayerController>(Instigator))
+        {
+            if (APawn* Pawn = PC->GetPawn())
+            {
+                if (USOTS_BodyDragPlayerComponent* Comp = Pawn->FindComponentByClass<USOTS_BodyDragPlayerComponent>())
+                {
+                    return Comp;
+                }
+            }
+
+            if (USOTS_BodyDragPlayerComponent* Comp = PC->FindComponentByClass<USOTS_BodyDragPlayerComponent>())
+            {
+                return Comp;
+            }
+        }
+
+        if (APawn* Pawn = Cast<APawn>(Instigator))
+        {
+            if (USOTS_BodyDragPlayerComponent* Comp = Pawn->FindComponentByClass<USOTS_BodyDragPlayerComponent>())
+            {
+                return Comp;
+            }
+        }
+
+        return Instigator->FindComponentByClass<USOTS_BodyDragPlayerComponent>();
+    }
+
+    void RouteActionRequest(USOTS_InteractionSubsystem* Subsystem, const FSOTS_InteractionActionRequest& Request)
+    {
+        if (!Subsystem || !Request.VerbTag.IsValid())
+        {
+            return;
+        }
+
+        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Pickup))
+        {
+            FSOTS_InvPickupRequest InvRequest;
+            InvRequest.InstigatorActor = Request.InstigatorActor;
+            InvRequest.PickupActor = Request.TargetActor;
+            InvRequest.ItemTag = Request.ItemTag;
+            InvRequest.Quantity = Request.Quantity > 0 ? Request.Quantity : 1;
+            InvRequest.ContextTags = Request.ContextTags;
+
+            if (TAG_Context_Interaction.IsValid())
+            {
+                InvRequest.ContextTags.AddTag(TAG_Context_Interaction);
+            }
+
+            if (!InvRequest.ItemTag.IsValid())
+            {
+                if (AActor* TargetActor = Request.TargetActor.Get())
+                {
+                    if (const USOTS_InteractableComponent* IC = TargetActor->FindComponentByClass<USOTS_InteractableComponent>())
+                    {
+                        if (IC->PickupItemTag.IsValid())
+                        {
+                            InvRequest.ItemTag = IC->PickupItemTag;
+                        }
+
+                        if (IC->PickupQuantity > 0 && InvRequest.Quantity <= 0)
+                        {
+                            InvRequest.Quantity = IC->PickupQuantity;
+                        }
+                    }
+                }
+            }
+
+            if (!InvRequest.ItemTag.IsValid())
+            {
+                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: Pickup action missing ItemTag; skipping INV route."));
+                return;
+            }
+
+            FSOTS_InvPickupResult InvResult;
+            USOTS_InventoryFacadeLibrary::RequestPickup_FromRequest(Subsystem, InvRequest, InvResult);
+            return;
+        }
+
+        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_Execute))
+        {
+            AActor* Instigator = Request.InstigatorActor.Get();
+            AActor* Target = Request.TargetActor.Get();
+            if (!Instigator || !Target)
+            {
+                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: Execute action missing instigator/target; skipping KEM route."));
+                return;
+            }
+
+            if (!Request.ExecutionTag.IsValid())
+            {
+                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: Execute action missing ExecutionTag; skipping KEM route."));
+                return;
+            }
+
+            if (USOTS_KEMManagerSubsystem* KEM = USOTS_KEMManagerSubsystem::Get(Subsystem))
+            {
+                KEM->RequestExecution_Blessed(Subsystem, Instigator, Target, Request.ExecutionTag, NAME_None, true);
+            }
+
+            return;
+        }
+
+        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStart))
+        {
+            if (USOTS_BodyDragPlayerComponent* PlayerComp = ResolveBodyDragPlayerComponent(Request))
+            {
+                if (AActor* TargetActor = Request.TargetActor.Get())
+                {
+                    PlayerComp->TryBeginDrag(TargetActor);
+                }
+            }
+            else
+            {
+                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: DragStart missing BodyDrag player component."));
+            }
+            return;
+        }
+
+        if (Request.VerbTag.MatchesTagExact(TAG_InteractionVerb_DragStop))
+        {
+            if (USOTS_BodyDragPlayerComponent* PlayerComp = ResolveBodyDragPlayerComponent(Request))
+            {
+                PlayerComp->TryDropBody();
+            }
+            else
+            {
+                UE_LOG(LogSOTSInteraction, Verbose, TEXT("Interaction: DragStop missing BodyDrag player component."));
+            }
+        }
+    }
 }
 
 USOTS_InteractionSubsystem::USOTS_InteractionSubsystem()
@@ -104,12 +247,14 @@ FSOTS_InteractionActionRequest USOTS_InteractionSubsystem::BuildActionRequestPay
         Request.ContextTags.AddTag(Context.InteractionTypeTag);
     }
 
+    if (OptionTag.IsValid() && OptionTag.MatchesTagExact(TAG_InteractionVerb_Execute) && Context.InteractionTypeTag.IsValid())
+    {
+        Request.ExecutionTag = Context.InteractionTypeTag;
+    }
+
     // If this is a pickup verb, attempt to populate item metadata.
     if (OptionTag.IsValid() && OptionTag.MatchesTagExact(TAG_InteractionVerb_Pickup))
     {
-        // 1) If the option index corresponds to an option that carries metadata (not present today), prefer that. (Placeholder)
-        // 2) Else try reading from the target's interactable component.
-
         // Attempt to read from the target's interactable component.
         if (AActor* Target = Context.TargetActor.Get())
         {
@@ -487,11 +632,10 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInt
     GatherOptions(Context, Options);
     int32 MatchedOptionIndex = INDEX_NONE;
     bool bHadLOS = true;
+    const FSOTS_InteractionOption* FoundOpt = nullptr;
 
     if (Options.Num() > 0)
     {
-        const FSOTS_InteractionOption* FoundOpt = nullptr;
-
         for (int32 Index = 0; Index < Options.Num(); ++Index)
         {
             const FSOTS_InteractionOption& Opt = Options[Index];
@@ -552,7 +696,12 @@ FSOTS_InteractionExecuteReport USOTS_InteractionSubsystem::ExecuteInteractionInt
 
     if (IsCrossPluginVerb(OptionTag))
     {
-        const FSOTS_InteractionActionRequest Request = BuildActionRequestPayload(Context, OptionTag, MatchedOptionIndex, bHadLOS);
+        FSOTS_InteractionActionRequest Request = BuildActionRequestPayload(Context, OptionTag, MatchedOptionIndex, bHadLOS);
+        if (FoundOpt)
+        {
+            Request.ContextTags.AppendTags(FoundOpt->MetaTags);
+        }
+        RouteActionRequest(this, Request);
         OnInteractionActionRequested.Broadcast(Request);
 
         Report.Result = ESOTS_InteractionExecuteResult::Success;

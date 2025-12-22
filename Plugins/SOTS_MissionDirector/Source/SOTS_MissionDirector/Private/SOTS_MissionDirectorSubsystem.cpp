@@ -7,13 +7,19 @@
 #include "SOTS_GlobalStealthManagerSubsystem.h"
 #include "SOTS_KEM_ManagerSubsystem.h"
 #include "SOTS_KEM_Types.h"
-#include "SOTS_ProfileTypes.h"
 #include "SOTS_ProfileSubsystem.h"
+#include "SOTS_SkillTreeSubsystem.h"
+#include "SOTS_StatsLibrary.h"
 #include "SOTS_TagAccessHelpers.h"
 #include "SOTS_UIRouterSubsystem.h"
 #include "SOTS_ShaderWarmupSubsystem.h"
 #include "SOTS_UIPayloadTypes.h"
 #include "Misc/PackageName.h"
+
+namespace
+{
+    constexpr float kTotalPlaySecondsCadence = 1.0f;
+}
 
 USOTS_MissionDirectorSubsystem::USOTS_MissionDirectorSubsystem()
     : bMissionActive(false)
@@ -50,6 +56,8 @@ void USOTS_MissionDirectorSubsystem::Initialize(FSubsystemCollectionBase& Collec
     MilestoneHistory.Reset();
     bLoggedMissingStatsOnce = false;
     bLoggedMissingUIRouterOnce = false;
+    bMissionRunEnded = false;
+    bRewardsDispatched = false;
 
     ResetConditionTracking();
 
@@ -86,6 +94,7 @@ void USOTS_MissionDirectorSubsystem::Initialize(FSubsystemCollectionBase& Collec
 
 void USOTS_MissionDirectorSubsystem::Deinitialize()
 {
+    StopTotalPlaySecondsTimer();
     CancelWarmupTravel();
 
     if (CachedStealthSubsystem)
@@ -152,6 +161,8 @@ void USOTS_MissionDirectorSubsystem::StartMissionRun(FName MissionId, FGameplayT
 
     float CurrentTime = World ? World->GetTimeSeconds() : 0.0f;
 
+    SetMissionState(ESOTS_MissionState::InProgress, static_cast<double>(CurrentTime));
+
     bMissionActive = true;
     CurrentMissionId = MissionId;
     ActiveMissionIdForProfile = MissionId;
@@ -161,6 +172,10 @@ void USOTS_MissionDirectorSubsystem::StartMissionRun(FName MissionId, FGameplayT
     PrimaryObjectivesCompleted = 0;
     OptionalObjectivesCompleted = 0;
     EventLog.Reset();
+    bMissionRunEnded = false;
+    bRewardsDispatched = false;
+
+    StartTotalPlaySecondsTimer();
 
     UE_LOG(LogSOTSMissionDirector, Log, TEXT("Mission run started: %s"), *CurrentMissionId.ToString());
 }
@@ -264,8 +279,10 @@ void USOTS_MissionDirectorSubsystem::StartMission(USOTS_MissionDefinition* Missi
 
     ResetConditionTracking();
 
+    const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
+
     ActiveMission = MissionDef;
-    MissionState = ESOTS_MissionState::InProgress;
+    SetMissionState(ESOTS_MissionState::InProgress, NowSeconds);
     MissionStealthConfigHandle = FSOTS_GSM_Handle();
 
     ObjectiveCompletion.Reset();
@@ -293,7 +310,6 @@ void USOTS_MissionDirectorSubsystem::StartMission(USOTS_MissionDefinition* Missi
 
     InitializeMissionRuntimeState(MissionDef);
 
-    const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
     const FSOTS_MissionMilestoneSnapshot Snapshot = BuildMilestoneSnapshot(NowSeconds);
     TryWriteMilestoneToStatsAndProfile(Snapshot);
 
@@ -482,12 +498,14 @@ void USOTS_MissionDirectorSubsystem::RegisterScoreEvent(ESOTSMissionEventCategor
 void USOTS_MissionDirectorSubsystem::FailMission(const FGameplayTag& FailReasonTag)
 {
     if (MissionState == ESOTS_MissionState::Completed ||
-        MissionState == ESOTS_MissionState::Failed)
+        MissionState == ESOTS_MissionState::Failed ||
+        MissionState == ESOTS_MissionState::Aborted)
     {
         return;
     }
 
-    MissionState = ESOTS_MissionState::Failed;
+    const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
+    SetMissionState(ESOTS_MissionState::Failed, NowSeconds);
 
     if (USOTS_GameplayTagManagerSubsystem* TagSubsystem = SOTS_GetTagSubsystem(this))
     {
@@ -504,7 +522,6 @@ void USOTS_MissionDirectorSubsystem::FailMission(const FGameplayTag& FailReasonT
         FailReasonTag.IsValid() ? *FailReasonTag.ToString() : TEXT("None"));
 
     // Persistence + UI intents for mission failed.
-    const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
     TryWriteMilestoneToStatsAndProfile(BuildMilestoneSnapshot(NowSeconds));
     EmitMissionTerminalUIIntent(MissionState);
 
@@ -543,11 +560,62 @@ void USOTS_MissionDirectorSubsystem::FailMission(const FGameplayTag& FailReasonT
         }
     }
 
+    FSOTS_MissionRunSummary Summary;
+    EndMissionRun(false, Summary);
+
+    HandleMissionTerminalState();
+}
+
+void USOTS_MissionDirectorSubsystem::AbortMission(const FGameplayTag& AbortReasonTag)
+{
+    if (MissionState == ESOTS_MissionState::Completed ||
+        MissionState == ESOTS_MissionState::Failed ||
+        MissionState == ESOTS_MissionState::Aborted)
+    {
+        return;
+    }
+
+    const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
+    SetMissionState(ESOTS_MissionState::Aborted, NowSeconds);
+
+    if (USOTS_GameplayTagManagerSubsystem* TagSubsystem = SOTS_GetTagSubsystem(this))
+    {
+        CurrentOutcomeTag = TagSubsystem->GetTagByName(TEXT("MissionOutcome.Aborted"));
+        if (!CurrentOutcomeTag.IsValid())
+        {
+            CurrentOutcomeTag = TagSubsystem->GetTagByName(TEXT("MissionOutcome.Failed"));
+        }
+    }
+    else
+    {
+        CurrentOutcomeTag = FGameplayTag();
+    }
+
+    UE_LOG(LogSOTSMissionDirector, Log,
+        TEXT("Mission '%s' aborted. ReasonTag=%s"),
+        *CurrentMissionId.ToString(),
+        AbortReasonTag.IsValid() ? *AbortReasonTag.ToString() : TEXT("None"));
+
+    TryWriteMilestoneToStatsAndProfile(BuildMilestoneSnapshot(NowSeconds));
+    EmitMissionTerminalUIIntent(MissionState);
+
+    OnMissionAborted.Broadcast();
+
+    FSOTS_MissionRunSummary Summary;
+    EndMissionRun(false, Summary);
+
     HandleMissionTerminalState();
 }
 
 void USOTS_MissionDirectorSubsystem::EndMissionRun(bool bSuccess, FSOTS_MissionRunSummary& OutSummary)
 {
+    if (bMissionRunEnded)
+    {
+        return;
+    }
+
+    bMissionRunEnded = true;
+
     if (!bMissionActive)
     {
         UE_LOG(LogSOTSMissionDirector, Warning, TEXT("EndMissionRun called while no mission is active."));
@@ -591,6 +659,8 @@ void USOTS_MissionDirectorSubsystem::EndMissionRun(bool bSuccess, FSOTS_MissionR
         }
     }
 
+    StopTotalPlaySecondsTimer();
+
     bMissionActive = false;
     ActiveMissionIdForProfile = NAME_None;
 
@@ -603,11 +673,28 @@ void USOTS_MissionDirectorSubsystem::EndMissionRun(bool bSuccess, FSOTS_MissionR
     OnMissionEnded.Broadcast(OutSummary);
 }
 
+float USOTS_MissionDirectorSubsystem::GetTotalPlaySeconds() const
+{
+    if (!bMissionActive)
+    {
+        return TotalPlaySeconds;
+    }
+
+    if (const UWorld* World = GetWorld())
+    {
+        const double NowSeconds = static_cast<double>(World->GetTimeSeconds());
+        const double Delta = FMath::Max(0.0, NowSeconds - LastPlaySecondsSampleTime);
+        return TotalPlaySeconds + static_cast<float>(Delta);
+    }
+
+    return TotalPlaySeconds;
+}
+
 float USOTS_MissionDirectorSubsystem::GetTimeSinceStart(const UObject* WorldContextObject) const
 {
     if (!bMissionActive)
     {
-        return 0.0f;
+        return LastDurationSecondsForProfile > 0.0f ? LastDurationSecondsForProfile : 0.0f;
     }
 
     const UWorld* World = nullptr;
@@ -618,6 +705,60 @@ float USOTS_MissionDirectorSubsystem::GetTimeSinceStart(const UObject* WorldCont
 
     const float CurrentTime = World ? World->GetTimeSeconds() : MissionStartTimeSeconds;
     return FMath::Max(0.0f, CurrentTime - MissionStartTimeSeconds);
+}
+
+void USOTS_MissionDirectorSubsystem::StartTotalPlaySecondsTimer()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    FTimerManager& TimerManager = World->GetTimerManager();
+    if (TimerManager.IsTimerActive(TotalPlaySecondsTimerHandle))
+    {
+        return;
+    }
+
+    LastPlaySecondsSampleTime = World->GetTimeSeconds();
+    TimerManager.SetTimer(TotalPlaySecondsTimerHandle, this, &USOTS_MissionDirectorSubsystem::HandleTotalPlaySecondsTick, kTotalPlaySecondsCadence, true);
+}
+
+void USOTS_MissionDirectorSubsystem::StopTotalPlaySecondsTimer()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    FTimerManager& TimerManager = World->GetTimerManager();
+    if (TimerManager.IsTimerActive(TotalPlaySecondsTimerHandle))
+    {
+        HandleTotalPlaySecondsTick();
+        TimerManager.ClearTimer(TotalPlaySecondsTimerHandle);
+    }
+}
+
+void USOTS_MissionDirectorSubsystem::HandleTotalPlaySecondsTick()
+{
+    if (!bMissionActive || MissionState != ESOTS_MissionState::InProgress)
+    {
+        if (UWorld* World = GetWorld())
+        {
+            LastPlaySecondsSampleTime = World->GetTimeSeconds();
+        }
+        return;
+    }
+
+    if (UWorld* World = GetWorld())
+    {
+        const double NowSeconds = static_cast<double>(World->GetTimeSeconds());
+        const double Delta = FMath::Max(0.0, NowSeconds - LastPlaySecondsSampleTime);
+        TotalPlaySeconds += static_cast<float>(Delta);
+        LastPlaySecondsSampleTime = NowSeconds;
+    }
 }
 
 void USOTS_MissionDirectorSubsystem::AppendEventInternal(const FSOTS_MissionEventLogEntry& Entry)
@@ -646,6 +787,148 @@ FName USOTS_MissionDirectorSubsystem::EvaluateRankFromScore(float FinalScore) co
         return FName(TEXT("C"));
     }
     return FName(TEXT("D"));
+}
+
+bool USOTS_MissionDirectorSubsystem::SetMissionState(ESOTS_MissionState NewState, double TimestampSeconds)
+{
+    if (MissionState == NewState)
+    {
+        return false;
+    }
+
+    const ESOTS_MissionState OldState = MissionState;
+    MissionState = NewState;
+
+    FSOTS_MissionStateChangedPayload Payload;
+    if (ActiveMission)
+    {
+        Payload.MissionId = ActiveMission->MissionIdentifier.Id.IsNone()
+            ? FSOTS_MissionId{ ActiveMission->MissionId }
+            : ActiveMission->MissionIdentifier;
+    }
+    else
+    {
+        Payload.MissionId.Id = CurrentMissionId;
+    }
+    Payload.OldState = OldState;
+    Payload.NewState = NewState;
+    Payload.TimestampSeconds = TimestampSeconds;
+
+    OnMissionStateChanged.Broadcast(Payload);
+    return true;
+}
+
+void USOTS_MissionDirectorSubsystem::DispatchMissionRewards(const FSOTS_MissionRewards& Rewards, double TimestampSeconds)
+{
+    if (bRewardsDispatched)
+    {
+        return;
+    }
+
+    bRewardsDispatched = true;
+
+    FSOTS_MissionRewardIntent Intent;
+    Intent.Rewards = Rewards;
+    Intent.TimestampSeconds = TimestampSeconds;
+    if (ActiveMission)
+    {
+        Intent.MissionId = ActiveMission->MissionIdentifier.Id.IsNone()
+            ? FSOTS_MissionId{ ActiveMission->MissionId }
+            : ActiveMission->MissionIdentifier;
+    }
+    else
+    {
+        Intent.MissionId.Id = CurrentMissionId;
+    }
+
+    OnMissionRewardIntent.Broadcast(Intent);
+
+    APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+    if (!PlayerPawn)
+    {
+        return;
+    }
+
+    USOTS_GameplayTagManagerSubsystem* TagSubsystem = SOTS_GetTagSubsystem(this);
+    if (TagSubsystem)
+    {
+        auto AddRewardTags = [&](const FGameplayTagContainer& Tags)
+        {
+            for (const FGameplayTag& Tag : Tags)
+            {
+                if (Tag.IsValid())
+                {
+                    TagSubsystem->AddTagToActor(PlayerPawn, Tag);
+                }
+            }
+        };
+
+        AddRewardTags(Rewards.GrantedTags);
+        AddRewardTags(Rewards.GrantedSkillTags);
+        AddRewardTags(Rewards.GrantedAbilityTags);
+    }
+
+    USOTS_SkillTreeSubsystem* SkillTreeSubsystem = nullptr;
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        SkillTreeSubsystem = GI->GetSubsystem<USOTS_SkillTreeSubsystem>();
+    }
+
+    if (SkillTreeSubsystem && Rewards.SkillPointDelta != 0)
+    {
+        TArray<FName> TargetTreeIds = Rewards.RewardSkillTreeIds;
+        if (TargetTreeIds.Num() == 0)
+        {
+            TargetTreeIds = SkillTreeSubsystem->GetRegisteredTreeIds();
+            if (TargetTreeIds.Num() != 1)
+            {
+                TargetTreeIds.Reset();
+            }
+        }
+
+        for (const FName& TreeId : TargetTreeIds)
+        {
+            if (!TreeId.IsNone())
+            {
+                SkillTreeSubsystem->AddSkillPoints(TreeId, Rewards.SkillPointDelta);
+            }
+        }
+    }
+
+    if (Rewards.StatDeltas.Num() > 0)
+    {
+        for (const TPair<FGameplayTag, float>& Pair : Rewards.StatDeltas)
+        {
+            if (!Pair.Key.IsValid() || FMath::IsNearlyZero(Pair.Value))
+            {
+                continue;
+            }
+
+            if (Pair.Value >= 0.0f && SkillTreeSubsystem && !SkillTreeSubsystem->CanRaiseStat(Pair.Key))
+            {
+                continue;
+            }
+
+            USOTS_StatsLibrary::AddToActorStat(this, PlayerPawn, Pair.Key, Pair.Value);
+        }
+    }
+
+    const FGameplayTag UiCategory = FGameplayTag::RequestGameplayTag(TEXT("SAS.UI.Mission.MissionUpdated"), false);
+    EmitMissionUIIntent(FText::FromString(TEXT("Mission rewards granted")), UiCategory);
+
+    if (Rewards.FXTag_OnRewardsGranted.IsValid())
+    {
+        if (USOTS_FXManagerSubsystem* FX = USOTS_FXManagerSubsystem::Get())
+        {
+            FX->TriggerFXByTag(
+                this,
+                Rewards.FXTag_OnRewardsGranted,
+                nullptr,
+                nullptr,
+                FVector::ZeroVector,
+                FRotator::ZeroRotator);
+        }
+    }
 }
 
 bool USOTS_MissionDirectorSubsystem::ValidateMissionDefinition(const USOTS_MissionDefinition* MissionDef, FString& OutError) const
@@ -1065,7 +1348,8 @@ void USOTS_MissionDirectorSubsystem::EvaluateMissionCompletion()
 
     if (bShouldComplete)
     {
-        MissionState = ESOTS_MissionState::Completed;
+        const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
+        SetMissionState(ESOTS_MissionState::Completed, NowSeconds);
         if (!CurrentOutcomeTag.IsValid())
         {
             if (USOTS_GameplayTagManagerSubsystem* TagSubsystem = SOTS_GetTagSubsystem(this))
@@ -1080,7 +1364,6 @@ void USOTS_MissionDirectorSubsystem::EvaluateMissionCompletion()
         OnMissionCompleted.Broadcast();
 
         // Persistence + UI intents for mission completed.
-        const double NowSeconds = GetWorld() ? static_cast<double>(GetWorld()->GetTimeSeconds()) : 0.0;
         TryWriteMilestoneToStatsAndProfile(BuildMilestoneSnapshot(NowSeconds));
         EmitMissionTerminalUIIntent(MissionState);
 
@@ -1114,43 +1397,16 @@ void USOTS_MissionDirectorSubsystem::EvaluateMissionCompletion()
                         TagSubsystem->AddTagToActor(PlayerPawn, MissionCompletedTag);
                     }
                 }
-
-                // Apply mission rewards in a tag-driven manner.
-                if (ActiveMission)
-                {
-                    const FSOTS_MissionRewards& Rewards = ActiveMission->Rewards;
-
-                    auto AddRewardTags = [&](const FGameplayTagContainer& Tags)
-                    {
-                        for (const FGameplayTag& Tag : Tags)
-                        {
-                            if (Tag.IsValid())
-                            {
-                                TagSubsystem->AddTagToActor(PlayerPawn, Tag);
-                            }
-                        }
-                    };
-
-                    AddRewardTags(Rewards.GrantedTags);
-                    AddRewardTags(Rewards.GrantedSkillTags);
-                    AddRewardTags(Rewards.GrantedAbilityTags);
-
-                    if (Rewards.FXTag_OnRewardsGranted.IsValid())
-                    {
-                        if (USOTS_FXManagerSubsystem* FX = USOTS_FXManagerSubsystem::Get())
-                        {
-                            FX->TriggerFXByTag(
-                                this,
-                                Rewards.FXTag_OnRewardsGranted,
-                                nullptr,
-                                nullptr,
-                                FVector::ZeroVector,
-                                FRotator::ZeroRotator);
-                        }
-                    }
-                }
             }
         }
+
+        if (ActiveMission)
+        {
+            DispatchMissionRewards(ActiveMission->Rewards, NowSeconds);
+        }
+
+        FSOTS_MissionRunSummary Summary;
+        EndMissionRun(true, Summary);
 
         HandleMissionTerminalState();
     }
@@ -1246,6 +1502,21 @@ void USOTS_MissionDirectorSubsystem::ActivateDefaultRoute()
 
             const FGameplayTag UiCategory = FGameplayTag::RequestGameplayTag(TEXT("SAS.UI.Mission.RouteActivated"), false);
             EmitMissionUIIntent(FText::FromString(FString::Printf(TEXT("Route Activated: %s"), *ActiveRouteId.Id.ToString())), UiCategory);
+
+            FSOTS_RouteActivatedPayload Payload;
+            if (ActiveMission)
+            {
+                Payload.MissionId = ActiveMission->MissionIdentifier.Id.IsNone()
+                    ? FSOTS_MissionId{ ActiveMission->MissionId }
+                    : ActiveMission->MissionIdentifier;
+            }
+            else
+            {
+                Payload.MissionId.Id = CurrentMissionId;
+            }
+            Payload.RouteId = ActiveRouteId;
+            Payload.TimestampSeconds = NowSeconds;
+            OnRouteActivated.Broadcast(Payload);
     }
 }
 
@@ -1345,7 +1616,8 @@ bool USOTS_MissionDirectorSubsystem::SetObjectiveState(const FSOTS_ObjectiveId& 
         return false;
     }
 
-    if (RuntimeState->State == NewState)
+    const ESOTS_ObjectiveState OldState = RuntimeState->State;
+    if (OldState == NewState)
     {
         return false;
     }
@@ -1375,6 +1647,25 @@ bool USOTS_MissionDirectorSubsystem::SetObjectiveState(const FSOTS_ObjectiveId& 
     default:
         break;
     }
+
+    FSOTS_ObjectiveStateChangedPayload Payload;
+    if (ActiveMission)
+    {
+        Payload.MissionId = ActiveMission->MissionIdentifier.Id.IsNone()
+            ? FSOTS_MissionId{ ActiveMission->MissionId }
+            : ActiveMission->MissionIdentifier;
+    }
+    else
+    {
+        Payload.MissionId.Id = CurrentMissionId;
+    }
+    Payload.RouteId = RouteId;
+    Payload.bIsGlobalObjective = bIsGlobalObjective;
+    Payload.ObjectiveId = ObjectiveId;
+    Payload.OldState = OldState;
+    Payload.NewState = NewState;
+    Payload.TimestampSeconds = TimestampSeconds;
+    OnObjectiveStateChanged.Broadcast(Payload);
 
     OnObjectiveUpdated.Broadcast(ObjectiveId.Id);
 
@@ -1812,7 +2103,7 @@ void USOTS_MissionDirectorSubsystem::HandleStealthLevelChanged(
             Progress.EventTag = ProgressTag;
             Progress.TimestampSeconds = World->GetTimeSeconds();
             Progress.Value01 = static_cast<float>(NewLevel);
-            HandleProgressEvent(Progress);
+            PushMissionProgressEvent(Progress);
         }
     }
 
@@ -1860,7 +2151,7 @@ void USOTS_MissionDirectorSubsystem::HandleAIAwarenessStateChanged(
         Event.TimestampSeconds = World->GetTimeSeconds();
     }
 
-    HandleProgressEvent(Event);
+    PushMissionProgressEvent(Event);
 }
 
 void USOTS_MissionDirectorSubsystem::HandleGlobalAlertnessChanged(float NewValue, float /*OldValue*/)
@@ -1884,7 +2175,7 @@ void USOTS_MissionDirectorSubsystem::HandleGlobalAlertnessChanged(float NewValue
         Event.TimestampSeconds = World->GetTimeSeconds();
     }
 
-    HandleProgressEvent(Event);
+    PushMissionProgressEvent(Event);
 }
 
 void USOTS_MissionDirectorSubsystem::HandleExecutionEvent(const FSOTS_KEM_ExecutionEvent& Event)
@@ -1915,7 +2206,7 @@ void USOTS_MissionDirectorSubsystem::HandleExecutionEvent(const FSOTS_KEM_Execut
             {
                 Progress.TimestampSeconds = World->GetTimeSeconds();
             }
-            HandleProgressEvent(Progress);
+            PushMissionProgressEvent(Progress);
         }
     }
 
@@ -2103,6 +2394,13 @@ bool USOTS_MissionDirectorSubsystem::IsObjectiveCompleted(FName ObjectiveId) con
 
 void USOTS_MissionDirectorSubsystem::NotifyMissionEvent(const FGameplayTag& EventTag)
 {
+    if (EventTag.IsValid())
+    {
+        FSOTS_MissionProgressEvent Event;
+        Event.EventTag = EventTag;
+        PushMissionProgressEvent(Event);
+    }
+
     CompleteObjectiveByTag(EventTag);
 }
 
@@ -2215,7 +2513,9 @@ FSOTS_MissionRuntimeState USOTS_MissionDirectorSubsystem::GetCurrentMissionState
     State.RouteStatesById = RouteStatesById;
     State.StartTimeSeconds = MissionStartTimeSeconds;
 
-    if (MissionState == ESOTS_MissionState::Completed || MissionState == ESOTS_MissionState::Failed)
+    if (MissionState == ESOTS_MissionState::Completed ||
+        MissionState == ESOTS_MissionState::Failed ||
+        MissionState == ESOTS_MissionState::Aborted)
     {
         State.EndTimeSeconds = MissionStartTimeSeconds + GetTimeSinceStart(this);
     }
@@ -2327,4 +2627,9 @@ void USOTS_MissionDirectorSubsystem::BuildProfileSnapshot(FSOTS_ProfileSnapshot&
 void USOTS_MissionDirectorSubsystem::ApplyProfileSnapshot(const FSOTS_ProfileSnapshot& Snapshot)
 {
     ApplyProfileData(Snapshot.Missions);
+    TotalPlaySeconds = static_cast<float>(FMath::Max(0, Snapshot.Meta.TotalPlaySeconds));
+    if (UWorld* World = GetWorld())
+    {
+        LastPlaySecondsSampleTime = World->GetTimeSeconds();
+    }
 }

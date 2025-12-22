@@ -137,6 +137,7 @@ void USOTS_MMSSSubsystem::RequestRoleTrack(FGameplayTag RoleTag, FName TrackIdNa
     CurrentTrackIdName = TrackIdName.IsNone() && RoleTag.IsValid() ? RoleTag.GetTagName() : TrackIdName;
     LastPlaybackTimeSeconds = FMath::Max(StartTime, 0.0f);
     bIsPlaying = RoleTag.IsValid();
+    bWasPlayingBeforeWorldChange = LastPlaybackTimeSeconds > 0.0f;
     RequestMusicByTag(nullptr, RoleTag, true, -1.0f, -1.0f);
 }
 
@@ -153,6 +154,7 @@ void USOTS_MMSSSubsystem::ApplyProfileData(const FSOTS_MMSSProfileData& InData)
     CurrentTrackIdName = InData.CurrentTrackId;
     LastPlaybackTimeSeconds = FMath::Max(InData.PlaybackPositionSeconds, 0.0f);
     bIsPlaying = CurrentMusicRoleTag.IsValid();
+    bWasPlayingBeforeWorldChange = LastPlaybackTimeSeconds > 0.0f;
     if (CurrentMusicRoleTag.IsValid())
     {
         RequestMusicByTag(nullptr, CurrentMusicRoleTag, true, -1.0f, -1.0f);
@@ -232,8 +234,7 @@ void USOTS_MMSSSubsystem::InternalRequestTrack(
     }
     else
     {
-        // No mission id: use the default music set and always pick the first
-        // track entry, ignoring the requested TrackId.
+        // No mission id: prefer the requested TrackId inside the default music set.
         const TMap<FGameplayTag, FSOTS_MusicTrackEntry>& DefaultTracks = Library->DefaultMusicSet.Tracks;
         if (DefaultTracks.Num() == 0)
         {
@@ -242,18 +243,37 @@ void USOTS_MMSSSubsystem::InternalRequestTrack(
             return;
         }
 
-        auto It = DefaultTracks.CreateConstIterator();
-        if (It)
+        if (TrackId.IsValid())
         {
-            EffectiveTrackId = It->Key;
-            TrackData = It->Value;
-            bFoundTrack = true;
-
-            if (DebugMode != ESOTS_MusicDebugMode::Off)
+            if (const FSOTS_MusicTrackEntry* DefaultTrack = DefaultTracks.Find(TrackId))
             {
-                UE_LOG(LogSOTSMusicManager, Log,
-                       TEXT("[MusicManager] Using DefaultMusicSet (no MissionId). Track=%s"),
-                       *EffectiveTrackId.ToString());
+                EffectiveTrackId = TrackId;
+                TrackData = *DefaultTrack;
+                bFoundTrack = true;
+                if (DebugMode != ESOTS_MusicDebugMode::Off)
+                {
+                    UE_LOG(LogSOTSMusicManager, Log,
+                           TEXT("[MusicManager] DefaultMusicSet matched requested TrackId=%s."),
+                           *TrackId.ToString());
+                }
+            }
+        }
+
+        if (!bFoundTrack)
+        {
+            auto It = DefaultTracks.CreateConstIterator();
+            if (It)
+            {
+                EffectiveTrackId = It->Key;
+                TrackData = It->Value;
+                bFoundTrack = true;
+
+                if (DebugMode != ESOTS_MusicDebugMode::Off)
+                {
+                    UE_LOG(LogSOTSMusicManager, Log,
+                           TEXT("[MusicManager] DefaultMusicSet fallback (no MissionId). Track=%s"),
+                           *EffectiveTrackId.ToString());
+                }
             }
         }
     }
@@ -384,6 +404,9 @@ void USOTS_MMSSSubsystem::HandleLoadedSound(
         return;
     }
 
+    const bool bResumeWithStoredTime = bWasPlayingBeforeWorldChange && LastPlaybackTimeSeconds > 0.0f;
+    const float StoredPlaybackTime = LastPlaybackTimeSeconds;
+
     // Fade out previous playback using a short-lived component for crossfades.
     USoundBase* PreviousSound = nullptr;
 
@@ -394,8 +417,6 @@ void USOTS_MMSSSubsystem::HandleLoadedSound(
         // At the moment we do not query an exact playback time from the
         // component; crossfades start from the beginning of the previous
         // track and we treat the upcoming track as a fresh start.
-        LastPlaybackTimeSeconds = 0.0f;
-        bWasPlayingBeforeWorldChange = false;
 
         if (PreviousSound)
         {
@@ -418,8 +439,6 @@ void USOTS_MMSSSubsystem::HandleLoadedSound(
     }
     else
     {
-        LastPlaybackTimeSeconds = 0.0f;
-        bWasPlayingBeforeWorldChange = false;
     }
 
     // Ensure we have a persistent, GI-owned audio component for the new track.
@@ -441,11 +460,9 @@ void USOTS_MMSSSubsystem::HandleLoadedSound(
 
     // Resume playback from the last known time only when we are effectively
     // recreating the same sound (e.g., across a world change).
-    if (bWasPlayingBeforeWorldChange &&
-        LastPlaybackTimeSeconds > 0.0f &&
-        PreviousSound == LoadedSound)
+    if (bResumeWithStoredTime)
     {
-        NewComponent->Play(LastPlaybackTimeSeconds);
+        NewComponent->Play(StoredPlaybackTime);
 
         if (DebugMode != ESOTS_MusicDebugMode::Off)
         {
@@ -469,6 +486,7 @@ void USOTS_MMSSSubsystem::HandleLoadedSound(
 
     // Reset resume flag after we've applied it.
     bWasPlayingBeforeWorldChange = false;
+    LastPlaybackTimeSeconds = 0.0f;
 
     if (DebugMode != ESOTS_MusicDebugMode::Off)
     {

@@ -14,7 +14,7 @@
 
 ## 4. Pooling & overflow behavior
 - [AcquireNiagaraComponent](Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXManagerSubsystem.cpp#L1571) and [AcquireAudioComponent](Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXManagerSubsystem.cpp#L1690) guard against exceeding `MaxActivePerCue` and enforce the per-pool `MaxPooledNiagaraComponents`/`MaxPooledAudioComponents` caps before handing off a component to `ExecuteCue`.
-- Rejections set `bOutRejectedByPolicy`, skip spawning, and trigger [LogPoolOverflow](Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXManagerSubsystem.cpp#L1818) (active only in non-shipping builds) so engineers can correlate the warning with the tag, component type, and cap that blocked the request.
+- Rejections set `bOutRejectedByPolicy`, skip spawning, and trigger [LogPoolOverflow](Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXManagerSubsystem.cpp#L1818) (active only in non-shipping builds) so engineers can correlate the warning with the tag, component type, and cap that blocked the request; overflow logs are throttled by `OverflowLogCooldownSeconds` to avoid spam.
 
 ## 5. Logging contract
 - All `[SOTS_FX]` logs now use the single, shared category declared at [LogSOTS_FX declaration](Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Public/SOTS_FXManagerSubsystem.h#L13) and defined near the top of the CPP file [here](Plugins/SOTS_FX_Plugin/Source/SOTS_FX_Plugin/Private/SOTS_FXManagerSubsystem.cpp#L23).

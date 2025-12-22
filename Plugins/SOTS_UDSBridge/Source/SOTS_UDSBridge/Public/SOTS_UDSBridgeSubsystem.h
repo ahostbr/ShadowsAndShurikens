@@ -11,6 +11,21 @@ class IConsoleObject;
 class ASOTS_TrailBreadcrumb;
 
 USTRUCT(BlueprintType)
+struct FSOTS_UDSBreadcrumb
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	double TimestampSeconds = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "SOTS|UDSBridge|Breadcrumbs")
+	FName WorldName = NAME_None;
+};
+
+USTRUCT(BlueprintType)
 struct FSOTS_UDSObservedState
 {
 	GENERATED_BODY()
@@ -64,6 +79,17 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="SOTS|UDSBridge|State")
 	FOnUDSStateChanged OnUDSStateChanged;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBreadcrumbAdded, const FSOTS_UDSBreadcrumb&, Breadcrumb);
+
+	UPROPERTY(BlueprintAssignable, Category="SOTS|UDSBridge|Breadcrumbs")
+	FOnBreadcrumbAdded OnBreadcrumbAdded;
+
+	UFUNCTION(BlueprintCallable, Category="SOTS|UDSBridge|Breadcrumbs")
+	void GetRecentBreadcrumbs(int32 MaxCount, TArray<FSOTS_UDSBreadcrumb>& OutBreadcrumbs) const;
+
+	UFUNCTION(BlueprintCallable, Category="SOTS|UDSBridge|Breadcrumbs")
+	int32 GetBreadcrumbCount() const { return BreadcrumbHistory.Num(); }
 
 	void ForceRefreshAndApply();
 
@@ -174,6 +200,9 @@ private:
 	bool CallDLWE_SettingsFunction(UObject* DLWEComp, FName FuncName, UObject* SettingsObj) const;
 	bool IsSingleBoolParamFunction(UFunction* Fn) const;
 	bool IsSingleObjectParamFunction(UFunction* Fn) const;
+	void EmitBreadcrumbIfNeeded();
+	void AppendBreadcrumbSample(const FVector& Location, double TimestampSeconds, FName WorldName);
+	void ResetBreadcrumbs();
 
 	// Breadcrumb chain state
 	TWeakObjectPtr<ASOTS_TrailBreadcrumb> BreadcrumbTail;
@@ -182,4 +211,7 @@ private:
 	double LastBreadcrumbSpawnTime = 0.0;
 	int32 AliveBreadcrumbCount = 0;
 	double NextBreadcrumbDebugDrawTimeSeconds = 0.0;
+	double NextBreadcrumbEmitTimeSeconds = 0.0;
+	TWeakObjectPtr<UWorld> BreadcrumbWorldContext;
+	TArray<FSOTS_UDSBreadcrumb> BreadcrumbHistory;
 };

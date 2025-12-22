@@ -43,6 +43,9 @@ void USOTS_UDSBridgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		FConsoleCommandDelegate::CreateUObject(this, &USOTS_UDSBridgeSubsystem::Console_ForceRefresh),
 		ECVF_Default);
 
+	BreadcrumbWorldContext = GetWorld();
+	NextBreadcrumbEmitTimeSeconds = 0.0;
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(UpdateTimerHandle, this, &USOTS_UDSBridgeSubsystem::TickBridge, GetJitteredInterval(), true);
@@ -61,6 +64,8 @@ void USOTS_UDSBridgeSubsystem::Deinitialize()
 		IConsoleManager::Get().UnregisterConsoleObject(ForceRefreshConsoleCmd);
 		ForceRefreshConsoleCmd = nullptr;
 	}
+
+	ResetBreadcrumbs();
 
 	CachedUDSActor = nullptr;
 	CachedPlayerPawn = nullptr;
@@ -95,6 +100,7 @@ void USOTS_UDSBridgeSubsystem::TickBridge()
 	LastState = State;
 
 	PollObservedState();
+	EmitBreadcrumbIfNeeded();
 
 	PushSunDirToGSM(State);
 	ApplyDLWEPolicy(State);
@@ -133,6 +139,7 @@ void USOTS_UDSBridgeSubsystem::RefreshCachedRefs(bool bForce)
 		CachedPlayerPawn = Pawn;
 		CachedDLWEComponent = nullptr;
 		bValidatedDLWEFunctions = false;
+		ResetBreadcrumbs();
 	}
 
 	if (!CachedDLWEComponent.IsValid() && Pawn)
@@ -1183,6 +1190,122 @@ bool USOTS_UDSBridgeSubsystem::IsSingleObjectParamFunction(UFunction* Fn) const
 	}
 
 	return ParamCount == 1;
+}
+
+void USOTS_UDSBridgeSubsystem::GetRecentBreadcrumbs(int32 MaxCount, TArray<FSOTS_UDSBreadcrumb>& OutBreadcrumbs) const
+{
+	OutBreadcrumbs.Reset();
+
+	if (!Config || !Config->bEnableBreadcrumbHistory)
+	{
+		return;
+	}
+
+	if (MaxCount <= 0 || BreadcrumbHistory.Num() == 0)
+	{
+		return;
+	}
+
+	const int32 Count = FMath::Clamp(MaxCount, 1, BreadcrumbHistory.Num());
+	for (int32 Index = BreadcrumbHistory.Num() - 1; Index >= BreadcrumbHistory.Num() - Count; --Index)
+	{
+		OutBreadcrumbs.Add(BreadcrumbHistory[Index]);
+	}
+}
+
+void USOTS_UDSBridgeSubsystem::EmitBreadcrumbIfNeeded()
+{
+	if (!Config || !Config->bEnableBreadcrumbHistory)
+	{
+		return;
+	}
+
+	if (!IsUDSBridgeActive())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (!BreadcrumbWorldContext.IsValid() || BreadcrumbWorldContext.Get() != World)
+	{
+		BreadcrumbWorldContext = World;
+		BreadcrumbHistory.Reset();
+		NextBreadcrumbEmitTimeSeconds = 0.0;
+	}
+
+	APawn* Pawn = CachedPlayerPawn.IsValid() ? CachedPlayerPawn.Get() : GetPlayerPawn();
+	if (!Pawn)
+	{
+		return;
+	}
+
+	const double Now = World->GetTimeSeconds();
+	if (NextBreadcrumbEmitTimeSeconds <= 0.0)
+	{
+		const FName WorldName = FName(*World->GetMapName());
+		AppendBreadcrumbSample(Pawn->GetActorLocation(), Now, WorldName);
+		NextBreadcrumbEmitTimeSeconds = Now + Config->BreadcrumbEmitIntervalSeconds;
+		return;
+	}
+
+	if (Now + KINDA_SMALL_NUMBER < NextBreadcrumbEmitTimeSeconds)
+	{
+		return;
+	}
+
+	const FName WorldName = FName(*World->GetMapName());
+	AppendBreadcrumbSample(Pawn->GetActorLocation(), Now, WorldName);
+	NextBreadcrumbEmitTimeSeconds = Now + Config->BreadcrumbEmitIntervalSeconds;
+}
+
+void USOTS_UDSBridgeSubsystem::AppendBreadcrumbSample(const FVector& Location, double TimestampSeconds, FName WorldName)
+{
+	if (!Config || !Config->bEnableBreadcrumbHistory)
+	{
+		return;
+	}
+
+	FSOTS_UDSBreadcrumb Entry;
+	Entry.Location = Location;
+	Entry.TimestampSeconds = TimestampSeconds;
+	Entry.WorldName = WorldName;
+
+	BreadcrumbHistory.Add(Entry);
+
+	const int32 MaxHistory = FMath::Max(1, Config->BreadcrumbMaxHistory);
+	while (BreadcrumbHistory.Num() > MaxHistory)
+	{
+		BreadcrumbHistory.RemoveAt(0);
+	}
+
+	OnBreadcrumbAdded.Broadcast(Entry);
+}
+
+void USOTS_UDSBridgeSubsystem::ResetBreadcrumbs()
+{
+	BreadcrumbHistory.Reset();
+	NextBreadcrumbEmitTimeSeconds = 0.0;
+	BreadcrumbWorldContext = nullptr;
+
+	ASOTS_TrailBreadcrumb* Node = BreadcrumbHead.Get();
+	while (Node)
+	{
+		ASOTS_TrailBreadcrumb* Next = Node->Next.Get();
+		Node->Destroy();
+		Node = Next;
+	}
+
+	BreadcrumbHead = nullptr;
+	BreadcrumbTail = nullptr;
+	AliveBreadcrumbCount = 0;
+	LastBreadcrumbSpawnTime = 0.0;
+	LastBreadcrumbLocation = FVector::ZeroVector;
+	NextBreadcrumbDebugDrawTimeSeconds = 0.0;
 }
 
 void USOTS_UDSBridgeSubsystem::TrySpawnTrailBreadcrumb(const FSOTS_UDSBridgeState& State)

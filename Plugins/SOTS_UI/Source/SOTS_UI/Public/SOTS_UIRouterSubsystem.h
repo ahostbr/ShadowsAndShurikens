@@ -46,6 +46,9 @@ struct FSOTS_ActiveWidgetEntry
 
 	UPROPERTY()
 	bool bCloseOnEscape = true;
+
+	UPROPERTY()
+	bool bExternalMenu = false;
 };
 
 USTRUCT()
@@ -176,6 +179,7 @@ public:
 	// Modal result channel
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnModalResult, const F_SOTS_UIModalResult&, Result);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSOTS_OnReturnToMainMenuRequested);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnExternalMenuEvent, FGameplayTag, MenuIdTag);
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
 	FGuid MakeRequestId() const { return FGuid::NewGuid(); }
@@ -185,6 +189,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Modal")
 	bool ShowConfirmDialog(const F_SOTS_UIConfirmDialogPayload& Payload);
+
+	// External menu lifecycle (InvSP, etc.)
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|External")
+	void NotifyExternalMenuOpened(FGameplayTag MenuIdTag);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|External")
+	void NotifyExternalMenuClosed(FGameplayTag MenuIdTag);
 
 	// Interaction intents (payload via FInstancedStruct)
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Interaction")
@@ -243,6 +254,7 @@ private:
 	bool DispatchInteractionMarkerIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload);
 	bool HandleReturnToMainMenuAction();
 	F_SOTS_UIConfirmDialogPayload BuildReturnToMainMenuPayload(const FText& MessageOverride) const;
+	bool IsExternalMenuTag(const FGameplayTag& MenuIdTag) const;
 
 private:
 	UPROPERTY()
@@ -272,7 +284,16 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "SOTS|UI|System")
 	FSOTS_OnReturnToMainMenuRequested OnReturnToMainMenuRequested;
 
+	UPROPERTY(BlueprintAssignable, Category = "SOTS|UI|External")
+	FSOTS_OnExternalMenuEvent OnExternalMenuOpened;
+
+	UPROPERTY(BlueprintAssignable, Category = "SOTS|UI|External")
+	FSOTS_OnExternalMenuEvent OnExternalMenuClosed;
+
 private:
 	bool bGamePausedForUI = false;
 	bool bUINavLayerActive = false;
+
+	UPROPERTY()
+	TSet<FGameplayTag> ActiveExternalMenus;
 };

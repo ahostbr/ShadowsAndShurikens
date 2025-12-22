@@ -115,6 +115,29 @@ enum class ESOTS_KEMExecutionOutcome : uint8
     Failed_InternalError UMETA(DisplayName="Failed Internal Error")
 };
 
+UENUM(BlueprintType)
+enum class ESOTS_KEMQTEOutcome : uint8
+{
+    None   UMETA(DisplayName="None"),
+    Pending UMETA(DisplayName="Pending"),
+    Passed UMETA(DisplayName="Passed"),
+    Failed UMETA(DisplayName="Failed")
+};
+
+UENUM(BlueprintType)
+enum class ESOTS_KEMStartGateFailReason : uint8
+{
+    None UMETA(DisplayName="None"),
+    InstigatorInvalid UMETA(DisplayName="Instigator Invalid"),
+    TargetInvalid UMETA(DisplayName="Target Invalid"),
+    AlreadyExecuting UMETA(DisplayName="Already Executing"),
+    PlayerDetected UMETA(DisplayName="Player Detected"),
+    TargetAlerted UMETA(DisplayName="Target Alerted"),
+    MissingRequiredTags UMETA(DisplayName="Missing Required Tags"),
+    BlockedByTags UMETA(DisplayName="Blocked By Tags"),
+    InvalidContext UMETA(DisplayName="Invalid Context")
+};
+
 USTRUCT(BlueprintType)
 struct FSOTS_ExecutionContext
 {
@@ -128,6 +151,14 @@ struct FSOTS_ExecutionContext
 
     UPROPERTY(BlueprintReadOnly)
     FGameplayTagContainer ContextTags;
+
+    // Union of owned, loose, and scoped tags for the instigator.
+    UPROPERTY(BlueprintReadOnly)
+    FGameplayTagContainer InstigatorTags;
+
+    // Union of owned, loose, and scoped tags for the target.
+    UPROPERTY(BlueprintReadOnly)
+    FGameplayTagContainer TargetTags;
 
     UPROPERTY(BlueprintReadOnly)
     FVector InstigatorLocation = FVector::ZeroVector;
@@ -156,6 +187,24 @@ struct FSOTS_ExecutionContext
 };
 
 USTRUCT(BlueprintType)
+struct FSOTS_KEMStartGateResult
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    bool bPassed = true;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    ESOTS_KEMStartGateFailReason FailReason = ESOTS_KEMStartGateFailReason::None;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FString FailureReason;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FGameplayTagContainer BlockingTags;
+};
+
+USTRUCT(BlueprintType)
 struct FSOTS_KEM_ExecutionEvent
 {
     GENERATED_BODY()
@@ -175,6 +224,45 @@ struct FSOTS_KEM_ExecutionEvent
     // Non-persistent pointer to the definition used for this execution.
     UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
     TWeakObjectPtr<const USOTS_KEM_ExecutionDefinition> Definition;
+};
+
+USTRUCT(BlueprintType)
+struct FSOTS_KEMCompletionPayload
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    ESOTS_KEM_ExecutionResult Result = ESOTS_KEM_ExecutionResult::Started;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    ESOTS_KEMExecutionOutcome Outcome = ESOTS_KEMExecutionOutcome::Failed_InternalError;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    ESOTS_KEMQTEOutcome QTEOutcome = ESOTS_KEMQTEOutcome::None;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    bool bWitnessed = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    TWeakObjectPtr<AActor> Instigator;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    TWeakObjectPtr<AActor> Target;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FGameplayTag ExecutionTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FGameplayTag ExecutionFamilyTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FGameplayTag ExecutionPositionTag;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FGameplayTagContainer ContextTags;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|KEM")
+    FString SourceLabel;
 };
 
 /**
@@ -590,6 +678,14 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Selection")
     FGameplayTagContainer BlockedContextTags;
 
+    // Optional tag blocks evaluated against the instigator's union tag view.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Selection")
+    FGameplayTagContainer BlockedInstigatorTags;
+
+    // Optional tag blocks evaluated against the target's union tag view.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Selection")
+    FGameplayTagContainer BlockedTargetTags;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Selection")
     FGameplayTag ExecutionFamilyTag;
 
@@ -661,6 +757,13 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|KEM|FX")
     FGameplayTag FXTag_OnExecutionFailed;
+
+    // Optional camera sequence tags for cinematic camera routing.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera")
+    FGameplayTag CameraTrackTag_Primary;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera")
+    FGameplayTag CameraTrackTag_Secondary;
 
     // SpawnActor backend config (used when BackendType == SpawnActor)
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Backend|SpawnActor")

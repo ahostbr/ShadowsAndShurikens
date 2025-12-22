@@ -240,6 +240,9 @@ struct FSOTS_InteractionActionRequest
     FGameplayTag VerbTag;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
+    FGameplayTag ExecutionTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")
     int32 OptionIndex = INDEX_NONE;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SOTS|Interaction|Action")

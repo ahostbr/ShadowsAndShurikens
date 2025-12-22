@@ -544,15 +544,41 @@ struct FSOTS_MissionRewards
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Rewards")
     FGameplayTagContainer GrantedAbilityTags;
 
-    // Optional skill tree nodes to unlock as rewards. These are authored as
-    // (TreeId, NodeId) pairs so the skill tree subsystem can process them.
+    // Optional skill tree ids to receive reward skill points.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Rewards")
     TArray<FName> RewardSkillTreeIds;
+
+    // Optional global skill point delta applied via SkillTree subsystem.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Rewards", meta=(ClampMin="0"))
+    int32 SkillPointDelta = 0;
+
+    // Optional stat deltas applied via StatsLibrary on reward dispatch.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Rewards")
+    TMap<FGameplayTag, float> StatDeltas;
 
     // Optional FX tag that can be used for reward-specific FX (distinct from
     // the mission completed FX tag). Mapped via the FX manager.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|Mission|Rewards")
     FGameplayTag FXTag_OnRewardsGranted;
+};
+
+// Runtime reward intent emitted by MissionDirector when rewards are dispatched.
+USTRUCT(BlueprintType)
+struct FSOTS_MissionRewardIntent
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Rewards")
+    int32 Version = 1;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Rewards")
+    FSOTS_MissionId MissionId;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Rewards")
+    FSOTS_MissionRewards Rewards;
+
+    UPROPERTY(BlueprintReadOnly, Category="SOTS|Mission|Rewards")
+    double TimestampSeconds = 0.0;
 };
 
 // Stable delegate payloads (Prompt 2)
@@ -619,6 +645,7 @@ struct FSOTS_RouteActivatedPayload
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnMissionStateChanged, const FSOTS_MissionStateChangedPayload&, Payload);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnObjectiveStateChanged, const FSOTS_ObjectiveStateChangedPayload&, Payload);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnRouteActivated, const FSOTS_RouteActivatedPayload&, Payload);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnMissionRewardIntent, const FSOTS_MissionRewardIntent&, Payload);
 /**
  * DataAsset describing mission-level rules, objectives, and stealth constraints.
  */

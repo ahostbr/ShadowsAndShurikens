@@ -273,6 +273,10 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Debug")
     bool bLogPoolActions = false;
 
+    /** Dev-only: throttle overflow warnings (seconds). */
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Debug")
+    float OverflowLogCooldownSeconds = 1.0f;
+
     /** Dev-only: dump pool stats to log when explicitly triggered. */
     UPROPERTY(EditAnywhere, Config, Category="SOTS|FX|Debug")
     bool bDebugDumpPoolStats = false;
@@ -414,4 +418,6 @@ private:
     TMap<FGameplayTag, int32> ActiveAudioCounts;
     int32 TotalPooledNiagara = 0;
     int32 TotalPooledAudio = 0;
+
+    mutable TMap<FName, double> LastOverflowLogTimes;
 };

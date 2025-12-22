@@ -191,7 +191,7 @@ protected:
     bool HasSufficientCharges(const F_SOTS_AbilityDefinition& Def) const;
     void ConsumeChargesOnActivation(const F_SOTS_AbilityDefinition& Def);
 
-    int32 QueryInventoryItemCount(const FGameplayTagContainer& Tags) const;
+    int32 QueryInventoryItemCount(const FGameplayTagContainer& Tags, E_SOTS_AbilityInventoryTagMatchMode MatchMode) const;
 
     float GetWorldTime() const;
 

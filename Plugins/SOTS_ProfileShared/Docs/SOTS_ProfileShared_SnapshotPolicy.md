@@ -11,6 +11,7 @@
 ## Provider arbitration
 - Providers register via `RegisterProvider` and supply a `Priority`. The registry sorts by `Priority` (higher first) and then by registration `Sequence`, so build/apply ordering is deterministic even when priorities tie.
 - Each provider implements `ISOTS_ProfileSnapshotProvider` and receives every snapshot both during `BuildSnapshotFromWorld` (after gathering player data) and `ApplySnapshotToWorld` (after the pawn transform/stat restore), so hooks can decide whether to mutate or read the snapshot.
+- Provider arbitration caches the highest-priority provider and emits a one-time verbose log when multiple providers are registered and the winner changes.
 
 ## Transform restore policy
 - `ApplySnapshotToWorld` always honors the saved transform when it is valid: the code now guards `Transform.ContainsNaN()` and logs if a corrupt transform arrives.
@@ -18,6 +19,10 @@
 
 ## Total play seconds ownership
 - This plugin records `FSOTS_ProfileMetadata.TotalPlaySeconds` but does not increment it. The mission director owns `TotalPlaySeconds` (see the mission dedication rules in `SOTS_Suite_ExtendedMemory_LAWs.txt`), so ProfileShared never mutates it.
+- `BuildSnapshotFromWorld` queries `USOTS_MissionDirectorSubsystem::GetTotalPlaySeconds` (if available) and writes the result into `Meta.TotalPlaySeconds`.
+
+## Restore sequencing
+- `ApplySnapshotToWorld` order: transform restore, stats restore, provider apply (MissionDirector, SkillTree, etc.), then `OnProfileRestored` broadcast.
 
 ## Expected behavior matrix
 | Operation | Contract |

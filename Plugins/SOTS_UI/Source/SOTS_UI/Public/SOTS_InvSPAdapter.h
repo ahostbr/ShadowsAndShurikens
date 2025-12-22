@@ -44,4 +44,11 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, Category = "SOTS|UI|InvSP")
 	void CloseContainer();
+
+	// External menu lifecycle notifications (InvSP self-closes should call these).
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void NotifyExternalMenuOpened(FGameplayTag MenuIdTag);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
+	void NotifyExternalMenuClosed(FGameplayTag MenuIdTag);
 };

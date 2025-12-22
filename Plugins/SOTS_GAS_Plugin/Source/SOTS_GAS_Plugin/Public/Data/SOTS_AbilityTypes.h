@@ -28,6 +28,13 @@ enum class E_SOTS_AbilityInventoryMode : uint8
 };
 
 UENUM(BlueprintType)
+enum class E_SOTS_AbilityInventoryTagMatchMode : uint8
+{
+    AnyOf,
+    AllOf
+};
+
+UENUM(BlueprintType)
 enum class E_SOTS_AbilityChargeMode : uint8
 {
     InternalOnly,
@@ -260,6 +267,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability")
     FGameplayTagContainer RequiredInventoryTags;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability")
+    E_SOTS_AbilityInventoryTagMatchMode InventoryTagMatchMode = E_SOTS_AbilityInventoryTagMatchMode::AnyOf;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability")
     TArray<FGameplayTag> RequiredSkillTags;

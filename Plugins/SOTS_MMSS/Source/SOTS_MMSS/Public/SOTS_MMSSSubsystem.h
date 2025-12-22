@@ -123,7 +123,7 @@ protected:
     UPROPERTY(Transient)
     float LastPlaybackTimeSeconds = 0.0f;
 
-    // Was the music playing when we last sampled?
+    // Flag to indicate a stored resume time (LastPlaybackTimeSeconds) should be honored on the next load.
     UPROPERTY(Transient)
     bool bWasPlayingBeforeWorldChange = false;
 

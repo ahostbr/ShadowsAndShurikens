@@ -1,7 +1,6 @@
 #include "SOTS_InventoryFacadeLibrary.h"
 
 #include "SOTS_InventoryBridgeSubsystem.h"
-#include "Interfaces/SOTS_InventoryProvider.h"
 #include "Interfaces/SOTS_InventoryProviderInterface.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/PlayerController.h"
@@ -74,6 +73,66 @@ namespace
         Close,
         Toggle
     };
+
+    FGameplayTag ResolveInventoryMenuTag()
+    {
+        static const FName InventoryNames[] = {
+            FName(TEXT("UI.Menu.Inventory")),
+            FName(TEXT("SAS.UI.InvSP.InventoryMenu"))
+        };
+
+        for (const FName& Name : InventoryNames)
+        {
+            const FGameplayTag Tag = FGameplayTag::RequestGameplayTag(Name, false);
+            if (Tag.IsValid())
+            {
+                return Tag;
+            }
+        }
+
+        return FGameplayTag();
+    }
+
+    void NotifyExternalMenu(UObject* Router, const FGameplayTag& MenuIdTag, const FName FuncName)
+    {
+        if (!Router || !MenuIdTag.IsValid())
+        {
+            return;
+        }
+
+        struct FExternalMenuParams
+        {
+            FGameplayTag MenuIdTag;
+        };
+
+        FExternalMenuParams Params;
+        Params.MenuIdTag = MenuIdTag;
+        FacadeCallRouterWithParams(Router, FuncName, Params);
+    }
+
+    void DispatchInventoryUIAction(UObject* Router, ESOTS_UIHelperAction Action)
+    {
+        if (!Router)
+        {
+            return;
+        }
+
+        const FGameplayTag MenuTag = ResolveInventoryMenuTag();
+        switch (Action)
+        {
+        case ESOTS_UIHelperAction::Open:
+            FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_OpenInventory"));
+            NotifyExternalMenu(Router, MenuTag, TEXT("NotifyExternalMenuOpened"));
+            break;
+        case ESOTS_UIHelperAction::Close:
+            FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_CloseInventory"));
+            NotifyExternalMenu(Router, MenuTag, TEXT("NotifyExternalMenuClosed"));
+            break;
+        case ESOTS_UIHelperAction::Toggle:
+            FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_ToggleInventory"));
+            break;
+        }
+    }
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     void MaybeLogFacadeFailure(bool bEnableLog, const TCHAR* HelperName, const FSOTS_InventoryOpReport& Report)
@@ -198,45 +257,15 @@ static FSOTS_InventoryOpReport RunUIHelper(const UObject* WorldContextObject, co
 
     if (USOTS_InventoryBridgeSubsystem* Bridge = GetBridge(WorldContextObject))
     {
-        if (UObject* ProviderObj = Bridge->GetResolvedProvider_ForUI(nullptr))
+        if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
         {
-            if (ISOTS_InventoryProvider* Provider = Cast<ISOTS_InventoryProvider>(ProviderObj))
-            {
-                if (!Provider->IsInventoryReady())
-                {
-                    Report.Result = ESOTS_InventoryOpResult::ProviderNotReady;
-                    Report.DebugReason = FString::Printf(TEXT("%s failed (provider not ready)"), HelperName);
-                    return Report;
-                }
-
-                const bool bSuccess = [Action, Provider]()
-                {
-                    switch (Action)
-                    {
-                        case ESOTS_UIHelperAction::Open:
-                            return Provider->OpenInventoryUI();
-                        case ESOTS_UIHelperAction::Close:
-                            return Provider->CloseInventoryUI();
-                        case ESOTS_UIHelperAction::Toggle:
-                            return Provider->ToggleInventoryUI();
-                    }
-                    return false;
-                }();
-
-                Report.Result = bSuccess ? ESOTS_InventoryOpResult::Success : ESOTS_InventoryOpResult::InternalError;
-                Report.DebugReason = bSuccess
-                    ? FString()
-                    : FString::Printf(TEXT("%s failed (provider returned false)"), HelperName);
-                Report.OwnerActor = Cast<AActor>(Provider->GetProviderObject());
-                return Report;
-            }
-
-            Report.Result = ESOTS_InventoryOpResult::InternalError;
-            Report.DebugReason = FString::Printf(TEXT("%s failed (resolved provider lacks ISOTS_InventoryProvider)"), HelperName);
+            DispatchInventoryUIAction(Router, Action);
+            Report.Result = ESOTS_InventoryOpResult::Success;
+            Report.DebugReason = FString();
             return Report;
         }
 
-        Report.DebugReason = FString::Printf(TEXT("%s failed (inventory provider unresolved)"), HelperName);
+        Report.DebugReason = FString::Printf(TEXT("%s failed (UI router missing)"), HelperName);
         return Report;
     }
 
@@ -284,7 +313,7 @@ void USOTS_InventoryFacadeLibrary::RequestOpenInventoryUI(const UObject* WorldCo
 {
     if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_OpenInventory"));
+        DispatchInventoryUIAction(Router, ESOTS_UIHelperAction::Open);
     }
 }
 
@@ -292,7 +321,7 @@ void USOTS_InventoryFacadeLibrary::RequestCloseInventoryUI(const UObject* WorldC
 {
     if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_CloseInventory"));
+        DispatchInventoryUIAction(Router, ESOTS_UIHelperAction::Close);
     }
 }
 
@@ -300,7 +329,7 @@ void USOTS_InventoryFacadeLibrary::RequestToggleInventoryUI(const UObject* World
 {
     if (UObject* Router = FacadeResolveUIRouter(WorldContextObject))
     {
-        FacadeCallRouterNoParams(Router, TEXT("RequestInvSP_ToggleInventory"));
+        DispatchInventoryUIAction(Router, ESOTS_UIHelperAction::Toggle);
     }
 }
 

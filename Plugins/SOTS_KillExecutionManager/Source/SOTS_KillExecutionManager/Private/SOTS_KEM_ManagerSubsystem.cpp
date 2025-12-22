@@ -17,6 +17,7 @@
 #include "SOTS_FXManagerSubsystem.h"
 #include "SOTS_GAS_AbilityRequirementLibrary.h"
 #include "SOTS_GAS_AbilityRequirementLibraryAsset.h"
+#include "SOTS_TagLibrary.h"
 #include "ContextualAnimSceneAsset.h"
 #include "MotionWarpingComponent.h"
 #include "EngineUtils.h"
@@ -61,6 +62,7 @@ namespace
     static const FName KEMTag_Vertical(TEXT("SOTS.KEM.Position.Vertical"));
     static const FName KEMTag_VerticalAbove(TEXT("SOTS.KEM.Position.Vertical.Above"));
     static const FName KEMTag_VerticalBelow(TEXT("SOTS.KEM.Position.Vertical.Below"));
+    static const FName KEMTag_TargetAlerted(TEXT("SAS.AI.Alert.Alerted"));
     static const TArray<FName> KEMPositionTagNames = {
         KEMTag_GroundRear, KEMTag_GroundFront, KEMTag_GroundLeft, KEMTag_GroundRight,
         KEMTag_LegacyRear, KEMTag_LegacyFront, KEMTag_LegacyLeft, KEMTag_LegacyRight,
@@ -473,6 +475,12 @@ void USOTS_KEMManagerSubsystem::GetLastKEMCandidates(TArray<FString>& OutCandida
 
 void USOTS_KEMManagerSubsystem::NotifyExecutionEnded(bool bSuccess)
 {
+    if (ActiveExecutionDefinition.IsValid())
+    {
+        NotifyExecutionEnded(ActiveExecutionContext, ActiveExecutionDefinition.Get(), bSuccess);
+        return;
+    }
+
     EnterCooldownState(bSuccess);
 }
 
@@ -484,6 +492,10 @@ void USOTS_KEMManagerSubsystem::NotifyExecutionEnded(
     const ESOTS_KEM_ExecutionResult Result =
         bWasSuccessful ? ESOTS_KEM_ExecutionResult::Succeeded
                        : ESOTS_KEM_ExecutionResult::Failed;
+
+    const ESOTS_KEMExecutionOutcome CompletionOutcome = bWasSuccessful
+        ? ESOTS_KEMExecutionOutcome::Success
+        : ESOTS_KEMExecutionOutcome::Failed_InternalError;
 
     BroadcastExecutionEvent(Result, Context, Def);
     TriggerExecutionFX(Result, Context, Def);
@@ -513,9 +525,7 @@ void USOTS_KEMManagerSubsystem::NotifyExecutionEnded(
 
     if (bHasPendingExecutionTelemetry)
     {
-        PendingExecutionTelemetry.Outcome = bWasSuccessful
-            ? ESOTS_KEMExecutionOutcome::Success
-            : ESOTS_KEMExecutionOutcome::Failed_InternalError;
+        PendingExecutionTelemetry.Outcome = CompletionOutcome;
         BroadcastExecutionTelemetry(PendingExecutionTelemetry);
         ResetPendingTelemetry();
     }
@@ -537,6 +547,18 @@ void USOTS_KEMManagerSubsystem::NotifyExecutionEnded(
         BroadcastExecutionTelemetry(FallbackTelemetry);
     }
 
+    BroadcastExecutionCompleted(Context, Def, Result, CompletionOutcome);
+    BroadcastCompletionTag(Context);
+    BroadcastCameraRelease();
+    SetSaveBlocked(false);
+
+    ActiveExecutionContext = FSOTS_ExecutionContext();
+    ActiveExecutionDefinition = nullptr;
+    ActiveExecutionTag = FGameplayTag();
+    ActiveWitnessActor.Reset();
+    ActiveQTEOutcome = ESOTS_KEMQTEOutcome::None;
+    bExecutionWitnessed = false;
+
     EnterCooldownState(bWasSuccessful);
 }
 
@@ -547,7 +569,60 @@ void USOTS_KEMManagerSubsystem::ForceResetState()
         World->GetTimerManager().ClearTimer(CooldownTimerHandle);
     }
 
+    BroadcastCameraRelease();
+    SetSaveBlocked(false);
+    ActiveExecutionContext = FSOTS_ExecutionContext();
+    ActiveExecutionDefinition = nullptr;
+    ActiveExecutionTag = FGameplayTag();
+    ActiveWitnessActor.Reset();
+    ActiveQTEOutcome = ESOTS_KEMQTEOutcome::None;
+    bExecutionWitnessed = false;
+
     CurrentState = ESOTS_KEMState::Ready;
+}
+
+void USOTS_KEMManagerSubsystem::NotifyExecutionWitnessed(AActor* WitnessActor)
+{
+    if (CurrentState != ESOTS_KEMState::Executing || !ActiveExecutionDefinition.IsValid())
+    {
+        return;
+    }
+
+    if (ActiveQTEOutcome == ESOTS_KEMQTEOutcome::Pending)
+    {
+        return;
+    }
+
+    bExecutionWitnessed = true;
+    ActiveWitnessActor = WitnessActor;
+    ActiveQTEOutcome = ESOTS_KEMQTEOutcome::Pending;
+
+    OnExecutionQTERequested.Broadcast(
+        ActiveExecutionTag,
+        ActiveExecutionContext.Instigator.Get(),
+        ActiveExecutionContext.Target.Get(),
+        WitnessActor);
+}
+
+void USOTS_KEMManagerSubsystem::NotifyExecutionQTEResult(bool bSuccess)
+{
+    if (CurrentState != ESOTS_KEMState::Executing || !ActiveExecutionDefinition.IsValid())
+    {
+        return;
+    }
+
+    if (ActiveQTEOutcome != ESOTS_KEMQTEOutcome::Pending)
+    {
+        return;
+    }
+
+    ActiveQTEOutcome = bSuccess ? ESOTS_KEMQTEOutcome::Passed : ESOTS_KEMQTEOutcome::Failed;
+
+    OnExecutionQTEResolved.Broadcast(
+        ActiveExecutionTag,
+        ActiveExecutionContext.Instigator.Get(),
+        ActiveExecutionContext.Target.Get(),
+        ActiveQTEOutcome);
 }
 
 void USOTS_KEMManagerSubsystem::BroadcastExecutionEvent(
@@ -563,6 +638,134 @@ void USOTS_KEMManagerSubsystem::BroadcastExecutionEvent(
     Event.Definition   = Def;
 
     OnExecutionEvent.Broadcast(Event);
+}
+
+void USOTS_KEMManagerSubsystem::BroadcastExecutionCompleted(
+    const FSOTS_ExecutionContext& Context,
+    const USOTS_KEM_ExecutionDefinition* Def,
+    ESOTS_KEM_ExecutionResult Result,
+    ESOTS_KEMExecutionOutcome Outcome)
+{
+    FSOTS_KEMCompletionPayload Payload;
+    Payload.Result = Result;
+    Payload.Outcome = Outcome;
+    Payload.QTEOutcome = ActiveQTEOutcome;
+    Payload.bWitnessed = bExecutionWitnessed;
+    Payload.Instigator = Context.Instigator;
+    Payload.Target = Context.Target;
+    Payload.ExecutionTag = Def ? Def->ExecutionTag : FGameplayTag();
+    Payload.ExecutionFamilyTag = Def ? Def->ExecutionFamilyTag : FGameplayTag();
+    Payload.ExecutionPositionTag = DetermineEffectivePositionTag(Def);
+    Payload.ContextTags = Context.ContextTags;
+    Payload.SourceLabel = LastDecisionSnapshot.SourceLabel.IsEmpty()
+        ? TEXT("Unknown")
+        : LastDecisionSnapshot.SourceLabel;
+
+    OnExecutionCompleted.Broadcast(Payload);
+}
+
+void USOTS_KEMManagerSubsystem::BroadcastCompletionTag(const FSOTS_ExecutionContext& Context)
+{
+    AActor* InstigatorActor = Context.Instigator.Get();
+    if (!InstigatorActor || KEMFinishedEventTagName.IsNone())
+    {
+        return;
+    }
+
+    const FGameplayTag CompletionTag = USOTS_TagLibrary::GetTagByName(this, KEMFinishedEventTagName);
+    if (!CompletionTag.IsValid())
+    {
+        if (!bLoggedMissingCompletionTagOnce)
+        {
+            bLoggedMissingCompletionTagOnce = true;
+            UE_LOG(LogSOTSKEM, Warning,
+                TEXT("[KEM] Completion tag '%s' is not registered; completion broadcast skipped."),
+                *KEMFinishedEventTagName.ToString());
+        }
+        return;
+    }
+
+    const FSOTS_LooseTagHandle Handle = USOTS_TagLibrary::AddScopedTagToActor(this, InstigatorActor, CompletionTag);
+    if (!Handle.IsValid())
+    {
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        USOTS_TagLibrary::RemoveScopedTagByHandle(this, Handle);
+        return;
+    }
+
+    const float HoldSeconds = FMath::Max(0.f, KEMFinishedEventTagHoldSeconds);
+    if (HoldSeconds <= 0.f)
+    {
+        USOTS_TagLibrary::RemoveScopedTagByHandle(this, Handle);
+        return;
+    }
+
+    FTimerDelegate Delegate;
+    Delegate.BindUObject(this, &USOTS_KEMManagerSubsystem::ClearCompletionEventTag, Handle);
+    World->GetTimerManager().SetTimer(CompletionTagTimerHandle, Delegate, HoldSeconds, false);
+}
+
+void USOTS_KEMManagerSubsystem::ClearCompletionEventTag(FSOTS_LooseTagHandle Handle)
+{
+    if (!Handle.IsValid())
+    {
+        return;
+    }
+
+    USOTS_TagLibrary::RemoveScopedTagByHandle(this, Handle);
+}
+
+void USOTS_KEMManagerSubsystem::BroadcastCameraRequest(
+    const FSOTS_ExecutionContext& Context,
+    const USOTS_KEM_ExecutionDefinition* Def)
+{
+    ActiveCameraPrimaryTag = Def ? Def->CameraTrackTag_Primary : FGameplayTag();
+    ActiveCameraSecondaryTag = Def ? Def->CameraTrackTag_Secondary : FGameplayTag();
+    bCameraRequested = ActiveCameraPrimaryTag.IsValid() || ActiveCameraSecondaryTag.IsValid();
+
+    if (!bCameraRequested)
+    {
+        return;
+    }
+
+    const FGameplayTag ExecTag = Def ? Def->ExecutionTag : FGameplayTag();
+    OnExecutionCameraRequested.Broadcast(
+        ExecTag,
+        Context.Instigator.Get(),
+        Context.Target.Get(),
+        ActiveCameraPrimaryTag,
+        ActiveCameraSecondaryTag);
+}
+
+void USOTS_KEMManagerSubsystem::BroadcastCameraRelease()
+{
+    if (!bCameraRequested)
+    {
+        ActiveCameraPrimaryTag = FGameplayTag();
+        ActiveCameraSecondaryTag = FGameplayTag();
+        return;
+    }
+
+    OnExecutionCameraReleased.Broadcast(
+        ActiveExecutionTag,
+        ActiveExecutionContext.Instigator.Get(),
+        ActiveExecutionContext.Target.Get(),
+        ActiveCameraPrimaryTag,
+        ActiveCameraSecondaryTag);
+
+    ActiveCameraPrimaryTag = FGameplayTag();
+    ActiveCameraSecondaryTag = FGameplayTag();
+    bCameraRequested = false;
+}
+
+void USOTS_KEMManagerSubsystem::SetSaveBlocked(bool bBlocked)
+{
+    bSaveBlocked = bBlocked;
 }
 
 FSOTS_OnKEMExecutionTelemetry& USOTS_KEMManagerSubsystem::GetTelemetryDelegate()
@@ -703,6 +906,8 @@ void USOTS_KEMManagerSubsystem::BuildExecutionContext(
     OutContext.Instigator = Instigator;
     OutContext.Target = Target;
     OutContext.ContextTags = ContextTags;
+    OutContext.InstigatorTags = USOTS_TagLibrary::GetActorTags(this, Instigator);
+    OutContext.TargetTags = USOTS_TagLibrary::GetActorTags(this, Target);
 
     OutContext.InstigatorLocation = Instigator->GetActorLocation();
     OutContext.TargetLocation = Target->GetActorLocation();
@@ -1134,6 +1339,118 @@ bool USOTS_KEMManagerSubsystem::EvaluateAbilityRequirementsForExecution(
     return OutResult.bMeetsAllRequirements;
 }
 
+bool USOTS_KEMManagerSubsystem::EvaluateStartGateInternal(
+    const UObject* WorldContextObject,
+    AActor* Instigator,
+    AActor* Target,
+    const FGameplayTagContainer& ContextTags,
+    FSOTS_KEMStartGateResult& OutResult) const
+{
+    OutResult = FSOTS_KEMStartGateResult();
+    OutResult.bPassed = false;
+
+    if (!IsValid(Instigator))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::InstigatorInvalid;
+        OutResult.FailureReason = TEXT("Instigator invalid");
+        return false;
+    }
+
+    if (!IsValid(Target))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::TargetInvalid;
+        OutResult.FailureReason = TEXT("Target invalid");
+        return false;
+    }
+
+    if (Instigator == Target)
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::InvalidContext;
+        OutResult.FailureReason = TEXT("Instigator and Target are the same actor");
+        return false;
+    }
+
+    if (CurrentState != ESOTS_KEMState::Ready)
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::AlreadyExecuting;
+        OutResult.FailureReason = TEXT("KEM not in Ready state");
+        return false;
+    }
+
+    if (!StartGate_RequiredContextTags.IsEmpty() && !ContextTags.HasAll(StartGate_RequiredContextTags))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::MissingRequiredTags;
+        OutResult.FailureReason = TEXT("Missing required start-gate context tags");
+        OutResult.BlockingTags = StartGate_RequiredContextTags;
+        return false;
+    }
+
+    if (!StartGate_BlockedContextTags.IsEmpty() && ContextTags.HasAny(StartGate_BlockedContextTags))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::BlockedByTags;
+        OutResult.FailureReason = TEXT("Blocked by start-gate context tags");
+        OutResult.BlockingTags = StartGate_BlockedContextTags;
+        return false;
+    }
+
+    const UObject* ContextObject = WorldContextObject ? WorldContextObject : this;
+
+    if (!StartGate_BlockingTags_Instigator.IsEmpty() &&
+        USOTS_TagLibrary::ActorHasAnyTag(ContextObject, Instigator, StartGate_BlockingTags_Instigator))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::BlockedByTags;
+        OutResult.FailureReason = TEXT("Blocked by instigator tags");
+        OutResult.BlockingTags = StartGate_BlockingTags_Instigator;
+        return false;
+    }
+
+    if (!StartGate_BlockingTags_Target.IsEmpty() &&
+        USOTS_TagLibrary::ActorHasAnyTag(ContextObject, Target, StartGate_BlockingTags_Target))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::BlockedByTags;
+        OutResult.FailureReason = TEXT("Blocked by target tags");
+        OutResult.BlockingTags = StartGate_BlockingTags_Target;
+        return false;
+    }
+
+    if (USOTS_GlobalStealthManagerSubsystem* GSM = USOTS_GlobalStealthManagerSubsystem::Get(Instigator))
+    {
+        const FSOTS_PlayerStealthState& StealthState = GSM->GetStealthState();
+        const bool bDetected = GSM->IsPlayerDetected() ||
+            GSM->GetCurrentStealthLevel() != ESOTSStealthLevel::Undetected ||
+            StealthState.StealthTier != ESOTS_StealthTier::Hidden;
+
+        if (bDetected)
+        {
+            OutResult.FailReason = ESOTS_KEMStartGateFailReason::PlayerDetected;
+            OutResult.FailureReason = TEXT("Player not fully undetected");
+            return false;
+        }
+    }
+
+    FGameplayTagContainer AlertedTags = StartGate_TargetAlertedTags;
+    if (AlertedTags.IsEmpty())
+    {
+        const FGameplayTag DefaultAlertedTag = USOTS_TagLibrary::GetTagByName(ContextObject, KEMTag_TargetAlerted);
+        if (DefaultAlertedTag.IsValid())
+        {
+            AlertedTags.AddTag(DefaultAlertedTag);
+        }
+    }
+
+    if (!AlertedTags.IsEmpty() && USOTS_TagLibrary::ActorHasAnyTag(ContextObject, Target, AlertedTags))
+    {
+        OutResult.FailReason = ESOTS_KEMStartGateFailReason::TargetAlerted;
+        OutResult.FailureReason = TEXT("Target is alerted");
+        OutResult.BlockingTags = AlertedTags;
+        return false;
+    }
+
+    OutResult.bPassed = true;
+    OutResult.FailReason = ESOTS_KEMStartGateFailReason::None;
+    return true;
+}
+
 
 FSOTS_KEMValidationResult USOTS_KEMManagerSubsystem::ValidateExecutionDefinition(
     const USOTS_KEM_ExecutionDefinition* Def) const
@@ -1163,6 +1480,17 @@ FSOTS_KEMValidationResult USOTS_KEMManagerSubsystem::ValidateExecutionDefinition
         Result.AddWarning(TEXT("PositionTag is set but ExecutionFamily is Unknown."));
     }
 
+    return Result;
+}
+
+FSOTS_KEMStartGateResult USOTS_KEMManagerSubsystem::EvaluateStartGate(
+    const UObject* WorldContextObject,
+    AActor* Instigator,
+    AActor* Target,
+    const FGameplayTagContainer& ContextTags) const
+{
+    FSOTS_KEMStartGateResult Result;
+    EvaluateStartGateInternal(WorldContextObject, Instigator, Target, ContextTags, Result);
     return Result;
 }
 
@@ -1839,6 +2167,22 @@ bool USOTS_KEMManagerSubsystem::EvaluateDefinition(
         return false;
     }
 
+    if (!Def->BlockedInstigatorTags.IsEmpty() && Context.InstigatorTags.HasAny(Def->BlockedInstigatorTags))
+    {
+        OutRejectReason = ESOTS_KEMRejectReason::MissionTagMismatch;
+        OutFailReason = TEXT("Blocked by instigator tags");
+        LogDebugForDefinition(Def, Context, false, OutFailReason);
+        return false;
+    }
+
+    if (!Def->BlockedTargetTags.IsEmpty() && Context.TargetTags.HasAny(Def->BlockedTargetTags))
+    {
+        OutRejectReason = ESOTS_KEMRejectReason::MissionTagMismatch;
+        OutFailReason = TEXT("Blocked by target tags");
+        LogDebugForDefinition(Def, Context, false, OutFailReason);
+        return false;
+    }
+
     switch (Def->BackendType)
     {
     case ESOTS_KEM_BackendType::CAS:
@@ -1947,6 +2291,25 @@ bool USOTS_KEMManagerSubsystem::RequestExecution(
                                     true);
 }
 
+bool USOTS_KEMManagerSubsystem::RequestExecution_WithResult(
+    const UObject* WorldContextObject,
+    AActor* Instigator,
+    AActor* Target,
+    const FGameplayTagContainer& ContextTags,
+    const USOTS_KEM_ExecutionDefinition* ExecutionOverride,
+    const FString& SourceLabel,
+    FSOTS_KEMStartGateResult& OutGateResult)
+{
+    return RequestExecutionInternal(WorldContextObject ? WorldContextObject : this,
+                                    Instigator,
+                                    Target,
+                                    ContextTags,
+                                    ExecutionOverride,
+                                    SourceLabel,
+                                    true,
+                                    &OutGateResult);
+}
+
 bool USOTS_KEMManagerSubsystem::RequestExecution_Blessed(UObject* WorldContextObject,
                                                          AActor* InstigatorActor,
                                                          AActor* TargetActor,
@@ -2048,23 +2411,41 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
     const FGameplayTagContainer& ContextTags,
     const USOTS_KEM_ExecutionDefinition* ExecutionOverride,
     const FString& SourceLabel,
-    bool bAllowFallback)
+    bool bAllowFallback,
+    FSOTS_KEMStartGateResult* OutGateResult)
 {
     ResetPendingTelemetry();
 
-    if (!Instigator || !Target)
-    {
-        UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: Instigator or Target is null."));
-        return false;
-    }
-
-    if (CurrentState != ESOTS_KEMState::Ready)
-    {
-        UE_LOG(LogSOTSKEM, Verbose, TEXT("RequestExecution: KEM not in Ready state."));
-        return false;
-    }
-
     const UObject* ContextObject = WorldContextObject ? WorldContextObject : this;
+    FSOTS_KEMStartGateResult GateResult;
+    if (!EvaluateStartGateInternal(ContextObject, Instigator, Target, ContextTags, GateResult))
+    {
+        LastStartGateResult = GateResult;
+        if (OutGateResult)
+        {
+            *OutGateResult = GateResult;
+        }
+
+        if (OnStartGateFailed.IsBound())
+        {
+            OnStartGateFailed.Broadcast(GateResult);
+        }
+
+        if (IsDebugAtLeast(EKEMDebugVerbosity::Basic))
+        {
+            UE_LOG(LogSOTSKEM, Log,
+                TEXT("RequestExecution: Start gate failed (Reason=%d Detail=%s)"),
+                static_cast<int32>(GateResult.FailReason),
+                *GateResult.FailureReason);
+        }
+        return false;
+    }
+
+    LastStartGateResult = GateResult;
+    if (OutGateResult)
+    {
+        *OutGateResult = GateResult;
+    }
 
     // Reset per-request debug state.
     LastCandidateDebug.Empty();
@@ -2087,6 +2468,16 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
     {
         RecentDebugRecords.SetNum(KEM_MaxDebugRecords);
     }
+
+    ActiveQTEOutcome = ESOTS_KEMQTEOutcome::None;
+    bExecutionWitnessed = false;
+    ActiveWitnessActor.Reset();
+    ActiveExecutionContext = FSOTS_ExecutionContext();
+    ActiveExecutionDefinition = nullptr;
+    ActiveExecutionTag = FGameplayTag();
+    ActiveCameraPrimaryTag = FGameplayTag();
+    ActiveCameraSecondaryTag = FGameplayTag();
+    bCameraRequested = false;
 
     FSOTS_ExecutionContext ExecContext;
     BuildExecutionContext(Instigator, Target, ContextTags, ExecContext);
@@ -2133,6 +2524,12 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
         }
 
         CandidateDefinitions.Add(Def);
+    }
+
+    if (CandidateDefinitions.IsEmpty() && !bLoggedMissingDefinitionsOnce)
+    {
+        bLoggedMissingDefinitionsOnce = true;
+        UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: No execution definitions configured."));
     }
 
     TArray<FSOTS_KEMCandidateDebugRecord> CandidateRecords;
@@ -2298,11 +2695,22 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
                 CandidateRecords.Num());
         }
 
-        if (bAllowFallback && bWithinFallbackDistance && Instigator && TryPlayFallbackMontage(Instigator))
+        if (bAllowFallback && bWithinFallbackDistance && Instigator)
         {
-            UE_LOG(LogSOTSKEM, Log,
-                TEXT("KEM: Fallback montage triggered for Instigator=%s"),
-                *Instigator->GetName());
+            if (!FallbackMontage)
+            {
+                if (!bLoggedMissingFallbackOnce)
+                {
+                    bLoggedMissingFallbackOnce = true;
+                    UE_LOG(LogSOTSKEM, Warning, TEXT("KEM: Fallback montage is not configured."));
+                }
+            }
+            else if (TryPlayFallbackMontage(Instigator))
+            {
+                UE_LOG(LogSOTSKEM, Log,
+                    TEXT("KEM: Fallback montage triggered for Instigator=%s"),
+                    *Instigator->GetName());
+            }
         }
 
         if (IsDebugAtLeast(EKEMDebugVerbosity::Verbose) && CandidateRecords.Num() > 0)
@@ -2373,9 +2781,27 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
         BestAnchor,
         bUsedOmniTraceForExec);
 
+    ActiveExecutionContext = ExecContext;
+    ActiveExecutionDefinition = BestDef;
+    ActiveExecutionTag = BestDef->ExecutionTag;
+    SetSaveBlocked(true);
+    BroadcastCameraRequest(ExecContext, BestDef);
+
     // Lifecycle + FX: execution has been chosen.
     BroadcastExecutionEvent(ESOTS_KEM_ExecutionResult::Started, ExecContext, BestDef);
     TriggerExecutionFX(ESOTS_KEM_ExecutionResult::Started, ExecContext, BestDef);
+
+    auto HandleStartFailure = [&]()
+    {
+        BroadcastCameraRelease();
+        SetSaveBlocked(false);
+        ActiveExecutionContext = FSOTS_ExecutionContext();
+        ActiveExecutionDefinition = nullptr;
+        ActiveExecutionTag = FGameplayTag();
+        ActiveWitnessActor.Reset();
+        ActiveQTEOutcome = ESOTS_KEMQTEOutcome::None;
+        bExecutionWitnessed = false;
+    };
 
     switch (BestDef->BackendType)
     {
@@ -2406,6 +2832,7 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             if (!ExecuteSpawnActorBackend(const_cast<USOTS_KEM_ExecutionDefinition*>(BestDef), ExecContext, BestAnchor))
             {
                 UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: ExecuteSpawnActorBackend failed."));
+                HandleStartFailure();
                 return false;
             }
             break;
@@ -2419,6 +2846,7 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
             if (!bStarted)
             {
                 UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: LevelSequence backend failed to start for '%s'."), *BestDef->ExecutionTag.ToString());
+                HandleStartFailure();
                 return false;
             }
 
@@ -2435,12 +2863,14 @@ bool USOTS_KEMManagerSubsystem::RequestExecutionInternal(
         {
             UE_LOG(LogSOTSKEM, Warning, TEXT("RequestExecution: AIS backend is retired; execution '%s' aborted."),
                 *BestDef->ExecutionTag.ToString());
+            HandleStartFailure();
             return false;
         }
     default:
         {
             UE_LOG(LogSOTSKEM, Log, TEXT("RequestExecution: Selected backend %d is not implemented."),
                 static_cast<int32>(BestDef->BackendType));
+            HandleStartFailure();
             return false;
         }
     }

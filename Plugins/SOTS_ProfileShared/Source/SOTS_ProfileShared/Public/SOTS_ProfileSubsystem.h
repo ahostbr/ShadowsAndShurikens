@@ -10,6 +10,8 @@ class AActor;
 class APawn;
 class UActorComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_ProfileRestoredSignature, const FSOTS_ProfileSnapshot&, Snapshot);
+
 USTRUCT()
 struct FSOTS_ProfileProviderEntry
 {
@@ -49,6 +51,10 @@ public:
     UFUNCTION(exec)
     void SOTS_DumpCurrentPlayerStatsSnapshot();
 
+    // Fires after ApplySnapshotToWorld completes all provider restores.
+    UPROPERTY(BlueprintAssignable, Category = "SOTS|Profile")
+    FSOTS_ProfileRestoredSignature OnProfileRestored;
+
 protected:
     FString GetSlotNameForProfile(const FSOTS_ProfileId& ProfileId) const;
 
@@ -61,6 +67,7 @@ protected:
     void InvokeProviderApply(const FSOTS_ProfileSnapshot& Snapshot);
     void PruneInvalidProviders();
     void SortProviders();
+    void UpdateProviderResolutionCache();
     UActorComponent* FindStatsComponent(AActor* Actor) const;
     bool TryGetPlayerPawn(APawn*& OutPawn) const;
 
@@ -70,4 +77,9 @@ private:
 
     UPROPERTY()
     uint64 NextProviderSequence = 1;
+
+    FString CachedPrimaryProviderName;
+    int32 CachedPrimaryProviderPriority = 0;
+    int32 CachedProviderCount = 0;
+    bool bLoggedMissingProvidersOnce = false;
 };

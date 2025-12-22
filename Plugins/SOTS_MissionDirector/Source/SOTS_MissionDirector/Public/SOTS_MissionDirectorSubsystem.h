@@ -124,6 +124,10 @@ public:
     UFUNCTION(BlueprintPure, Category="Mission")
     bool IsMissionActive() const { return bMissionActive; }
 
+    // Total play seconds accumulated by MissionDirector (authoritative).
+    UFUNCTION(BlueprintPure, Category="Mission")
+    float GetTotalPlaySeconds() const;
+
     // --- Mission definition / objective tracking API ---
 
     /** Starts a mission based on a USOTS_MissionDefinition (objectives + stealth rules). */
@@ -138,6 +142,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
     void FailMission(const FGameplayTag& FailReasonTag);
 
+    /** Explicitly aborts the current mission (e.g., back-out flow). */
+    UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
+    void AbortMission(const FGameplayTag& AbortReasonTag);
+
     /** Returns the high-level mission state driven by the mission definition. */
     UFUNCTION(BlueprintPure, Category="SOTS|Mission")
     ESOTS_MissionState GetMissionState() const { return MissionState; }
@@ -151,9 +159,8 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="SOTS|Mission")
     bool IsObjectiveCompleted(FName ObjectiveId) const;
 
-    // Generic mission event hook. Currently this forwards to CompleteObjectiveByTag
-    // so that objectives can be completed by broadcasting tags rather than
-    // calling the subsystem directly.
+    // Generic mission event hook. Routes through the progress intake and legacy
+    // completion-by-tag so objectives can react without direct subsystem calls.
     UFUNCTION(BlueprintCallable, Category="SOTS|Mission")
     void NotifyMissionEvent(const FGameplayTag& EventTag);
 
@@ -212,6 +219,11 @@ private:
     float GetTimeSinceStart(const UObject* WorldContextObject) const;
     void AppendEventInternal(const FSOTS_MissionEventLogEntry& Entry);
     FName EvaluateRankFromScore(float FinalScore) const;
+    bool SetMissionState(ESOTS_MissionState NewState, double TimestampSeconds);
+    void DispatchMissionRewards(const FSOTS_MissionRewards& Rewards, double TimestampSeconds);
+    void StartTotalPlaySecondsTimer();
+    void StopTotalPlaySecondsTimer();
+    void HandleTotalPlaySecondsTick();
 
     // Mission-definition-driven helpers.
     void EvaluateMissionCompletion();
@@ -355,6 +367,12 @@ private:
     UPROPERTY()
     bool bLastMissionFailedForProfile = false;
 
+    float TotalPlaySeconds = 0.0f;
+    double LastPlaySecondsSampleTime = 0.0;
+    FTimerHandle TotalPlaySecondsTimerHandle;
+    bool bMissionRunEnded = false;
+    bool bRewardsDispatched = false;
+
 public:
     // Mission events (separate from scoring/debrief).
     UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
@@ -367,5 +385,20 @@ public:
     FSOTS_MissionSimpleEventSignature OnMissionFailed;
 
     UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
+    FSOTS_MissionSimpleEventSignature OnMissionAborted;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
     FSOTS_OnObjectiveUpdatedSignature OnObjectiveUpdated;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
+    FSOTS_OnMissionStateChanged OnMissionStateChanged;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
+    FSOTS_OnObjectiveStateChanged OnObjectiveStateChanged;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
+    FSOTS_OnRouteActivated OnRouteActivated;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|Mission")
+    FSOTS_OnMissionRewardIntent OnMissionRewardIntent;
 };

@@ -38,6 +38,7 @@ void USOTS_FXManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     ActiveAudioCounts.Reset();
     TotalPooledNiagara = 0;
     TotalPooledAudio = 0;
+    LastOverflowLogTimes.Reset();
     RegisteredLibraries.Reset();
     SortedLibraries.Reset();
     RegisteredLibraryDefinitions.Reset();
@@ -75,6 +76,7 @@ void USOTS_FXManagerSubsystem::Deinitialize()
     ActiveAudioCounts.Reset();
     TotalPooledNiagara = 0;
     TotalPooledAudio = 0;
+    LastOverflowLogTimes.Reset();
     CueMap.Reset();
     NextRegistrationOrder = 0;
 
@@ -1818,6 +1820,21 @@ void USOTS_FXManagerSubsystem::LogPoolEvent(const FString& Message) const
 void USOTS_FXManagerSubsystem::LogPoolOverflow(const FGameplayTag& CueTag, const TCHAR* ComponentType, const FString& Detail) const
 {
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (OverflowLogCooldownSeconds > 0.0f)
+    {
+        const double NowSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+        const FString TagStr = CueTag.IsValid() ? CueTag.ToString() : TEXT("<none>");
+        const FName Key(*FString::Printf(TEXT("%s|%s"), *TagStr, ComponentType));
+        if (const double* LastTime = LastOverflowLogTimes.Find(Key))
+        {
+            if (NowSeconds > 0.0 && (NowSeconds - *LastTime) < OverflowLogCooldownSeconds)
+            {
+                return;
+            }
+        }
+        LastOverflowLogTimes.Add(Key, NowSeconds);
+    }
+
     const FString TagStr = CueTag.IsValid() ? CueTag.ToString() : TEXT("<none>");
     UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] %s pool overflow for %s: %s"), ComponentType, *TagStr, *Detail);
 #else

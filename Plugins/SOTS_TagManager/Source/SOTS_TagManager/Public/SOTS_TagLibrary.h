@@ -17,6 +17,8 @@ class USOTS_GameplayTagManagerSubsystem;
  * and central routing for loose actor gameplay tags. Prefer the
  * functions in this library instead of manipulating tag containers or
  * local plugin-level tag maps directly.
+ * Boundary actor-state tags (Player/Dragon/Guards/Pickups observed across plugins)
+ * must use these union-aware helpers; internal/local tags may remain direct.
  */
 UCLASS()
 class SOTS_TAGMANAGER_API USOTS_TagLibrary : public UBlueprintFunctionLibrary

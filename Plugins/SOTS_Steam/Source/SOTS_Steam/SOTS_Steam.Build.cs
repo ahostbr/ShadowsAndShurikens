@@ -21,7 +21,8 @@ public class SOTS_Steam : ModuleRules
             {
                 "DeveloperSettings",
                 "GameplayTags",
-                "OnlineSubsystemUtils"
+                "OnlineSubsystemUtils",
+                "SOTS_MissionDirector"
             }
         );
 

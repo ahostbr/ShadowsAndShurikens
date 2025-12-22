@@ -1,9 +1,9 @@
 # SOTS_Interaction SPINE4 – Cross-Plugin Action Seam
 
 ## Overview
-- Adds a canonical action request seam at the subsystem level to route select interaction verbs to other plugins without direct dependencies.
+- Adds a canonical action request seam at the subsystem level to route select interaction verbs to other plugins via their public entrypoints.
 - Short-circuits execution before interactable interface/component calls when a canonical verb is detected.
-- No UI creation changes and no direct calls to SOTS_INV / KEM / BodyDrag.
+- Routes canonical verbs to their owning subsystems (SOTS_INV, SOTS_KillExecutionManager, SOTS_BodyDrag) via public entrypoints; UI remains intent-only.
 
 ## Canonical Verbs
 - Interaction.Verb.Pickup
@@ -15,6 +15,7 @@
 - `USOTS_InteractionSubsystem::ExecuteInteractionInternal`
   - After option validation (range/LOS/block), if `OptionTag` matches a canonical verb:
     - Build `FSOTS_InteractionActionRequest`
+    - Route to the owning subsystem (pickup -> INV, execute -> KEM, drag -> BodyDrag)
     - Broadcast `OnInteractionActionRequested`
     - Return success without invoking the interactable
 
@@ -22,10 +23,11 @@
 - InstigatorActor (player pawn or controller)
 - TargetActor
 - VerbTag (option tag)
+- ExecutionTag (optional; populated from InteractionTypeTag for Execute verbs when available)
 - OptionIndex (or -1)
-- ItemTag (best-effort; currently unused)
-- Quantity (default 1)
-- ContextTags (includes InteractionTypeTag when available)
+- ItemTag (best-effort; optional)
+- Quantity (default 1; optional)
+- ContextTags (includes InteractionTypeTag and option MetaTags when available)
 - bHadLineOfSight (true if LOS check passed/was not required)
 - Distance
 
@@ -33,9 +35,8 @@
 - `USOTS_InteractionDriverComponent` forwards subsystem action requests via `OnActionRequestForwarded` for BP consumers.
 
 ## Pickup ItemTag/Quantity
-- Best-effort only; no pickup metadata is currently surfaced on interaction options/components.
-- Downstream adapters should tolerate missing ItemTag/Quantity until a pickup payload source is added.
+Best-effort only. ItemTag/Quantity are filled from the target's InteractableComponent when present; otherwise the action handler skips routing.
 
 ## Constraints
-- Additive changes only; no new plugin dependencies or UI creation.
+- Additive changes only; no UI creation.
 - Tags added to DefaultGameplayTags.ini for the canonical verbs.

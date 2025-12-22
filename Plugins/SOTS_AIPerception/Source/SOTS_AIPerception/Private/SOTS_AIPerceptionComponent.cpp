@@ -1058,6 +1058,12 @@ void USOTS_AIPerceptionComponent::UpdatePerception()
     if (WatchedActors.Num() == 0)
     {
         CurrentSuspicion = FMath::Max(0.0f, CurrentSuspicion - PerceptionConfig->SuspicionDecayPerSecond * DeltaSeconds);
+        if (GuardConfig)
+        {
+            const FSOTS_AIGuardPerceptionConfig& Cfg = GuardConfig->Config;
+            const FGameplayTag ReasonTag = Cfg.ReasonTag_Generic.IsValid() ? Cfg.ReasonTag_Generic : FGameplayTag();
+            ReportSuspicionToGSM(GetCurrentSuspicion01(), ReasonTag, nullptr, /*bForceReport=*/false, nullptr);
+        }
         return;
     }
 

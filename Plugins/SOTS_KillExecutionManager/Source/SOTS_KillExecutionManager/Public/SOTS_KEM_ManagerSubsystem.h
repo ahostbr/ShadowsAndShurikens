@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "SOTS_KEM_Types.h"
+#include "SOTS_LooseTagHandle.h"
 #include "SOTS_KEM_OmniTraceTuning.h"
 #include "SOTS_OmniTraceKEMPresetLibrary.h"
 #include "TimerManager.h"
@@ -57,6 +58,28 @@ enum class EKEMDebugVerbosity : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnExecutionEvent, const FSOTS_KEM_ExecutionEvent&, Event);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnKEMExecutionCompleted, const FSOTS_KEMCompletionPayload&, Payload);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FSOTS_OnKEMCameraRequest,
+                                              FGameplayTag, ExecutionTag,
+                                              AActor*, Instigator,
+                                              AActor*, Target,
+                                              FGameplayTag, PrimaryCameraTag,
+                                              FGameplayTag, SecondaryCameraTag);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FSOTS_OnKEMQTERequested,
+                                              FGameplayTag, ExecutionTag,
+                                              AActor*, Instigator,
+                                              AActor*, Target,
+                                              AActor*, Witness);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FSOTS_OnKEMQTEResolved,
+                                              FGameplayTag, ExecutionTag,
+                                              AActor*, Instigator,
+                                              AActor*, Target,
+                                              ESOTS_KEMQTEOutcome, Outcome);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnKEMStartGateFailed, const FSOTS_KEMStartGateResult&, Result);
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_EightParams(FSOTS_KEM_CASExecutionChosenSignature,
@@ -111,6 +134,15 @@ public:
                           const USOTS_KEM_ExecutionDefinition* ExecutionOverride = nullptr,
                           const FString& SourceLabel = TEXT("Blueprint"));
 
+    UFUNCTION(BlueprintCallable, Category="SOTS|KEM", meta=(WorldContext="WorldContextObject"))
+    bool RequestExecution_WithResult(const UObject* WorldContextObject,
+                                     AActor* Instigator,
+                                     AActor* Target,
+                                     const FGameplayTagContainer& ContextTags,
+                                     const USOTS_KEM_ExecutionDefinition* ExecutionOverride,
+                                     const FString& SourceLabel,
+                                     FSOTS_KEMStartGateResult& OutGateResult);
+
     /** Unified, blessed entrypoint for executions from player/dragon/cutscene/Sequencer. */
     UFUNCTION(BlueprintCallable, Category="SOTS|KEM", meta=(WorldContext="WorldContextObject"))
     bool RequestExecution_Blessed(UObject* WorldContextObject,
@@ -141,6 +173,12 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|KEM|Validation")
     FSOTS_KEMValidationResult ValidateExecutionDefinition(const USOTS_KEM_ExecutionDefinition* Def) const;
 
+    UFUNCTION(BlueprintCallable, Category="SOTS|KEM", meta=(WorldContext="WorldContextObject"))
+    FSOTS_KEMStartGateResult EvaluateStartGate(const UObject* WorldContextObject,
+                                               AActor* Instigator,
+                                               AActor* Target,
+                                               const FGameplayTagContainer& ContextTags) const;
+
     UFUNCTION(Exec)
     void KEM_SelfTest();
 
@@ -160,6 +198,9 @@ public:
 
     UFUNCTION(BlueprintPure, Category="KEM")
     ESOTS_KEMState GetCurrentState() const { return CurrentState; }
+
+    UFUNCTION(BlueprintPure, Category="KEM")
+    bool IsSaveBlocked() const { return bSaveBlocked; }
 
     // Returns a copy of the recent debug records (most recent first).
     UFUNCTION(BlueprintCallable, BlueprintPure, Category="KEM|Debug")
@@ -183,6 +224,12 @@ public:
     // This drives the SuccessCooldown / FailureCooldown state before returning to Ready.
     UFUNCTION(BlueprintCallable, Category="KEM", meta=(BlueprintInternalUseOnly="true"))
     void NotifyExecutionEnded(bool bSuccess);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|KEM")
+    void NotifyExecutionWitnessed(AActor* WitnessActor);
+
+    UFUNCTION(BlueprintCallable, Category="SOTS|KEM")
+    void NotifyExecutionQTEResult(bool bSuccess);
 
     // Backend-agnostic lifecycle hook that includes the execution context
     // and definition so listeners can react (FX, analytics, etc.).
@@ -208,6 +255,26 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SOTS|KEM|Gameplay")
     FGameplayTagContainer CinematicContextTags;
+
+    // Global start gate: required tags that must be present on the request context.
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Gate")
+    FGameplayTagContainer StartGate_RequiredContextTags;
+
+    // Global start gate: tags that hard-block the request context.
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Gate")
+    FGameplayTagContainer StartGate_BlockedContextTags;
+
+    // Global start gate: tag blocks evaluated on the instigator's union tag view.
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Gate")
+    FGameplayTagContainer StartGate_BlockingTags_Instigator;
+
+    // Global start gate: tag blocks evaluated on the target's union tag view.
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Gate")
+    FGameplayTagContainer StartGate_BlockingTags_Target;
+
+    // Optional override: tags that indicate the target is alerted (execution hard-block).
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Gate")
+    FGameplayTagContainer StartGate_TargetAlertedTags;
 
 public:
     // Execution definitions to evaluate. Soft so they can live in Content.
@@ -243,6 +310,14 @@ public:
     /** Optional dev-only log for height rejections. Default OFF. */
     UPROPERTY(EditAnywhere, Config, Category="KEM|Debug")
     bool bDebugLogHeightRejections = false;
+
+    // Tag broadcast when a KEM execution completes; emitted via TagManager.
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Events")
+    FName KEMFinishedEventTagName = TEXT("SAS.MissionEvent.KEM.Execution");
+
+    // Duration to hold the completion tag before auto-removing it.
+    UPROPERTY(EditAnywhere, Config, Category="SOTS|KEM|Events", meta=(ClampMin="0.0"))
+    float KEMFinishedEventTagHoldSeconds = 0.1f;
 
     UPROPERTY(EditAnywhere, Config, Category="KEM|Debug", meta=(ClampMin="0.0"))
     float AnchorSearchRadius = 600.f;
@@ -311,6 +386,18 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="KEM")
     ESOTS_KEMState CurrentState = ESOTS_KEMState::Ready;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="SOTS|KEM")
+    FSOTS_KEMStartGateResult LastStartGateResult;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="SOTS|KEM")
+    ESOTS_KEMQTEOutcome ActiveQTEOutcome = ESOTS_KEMQTEOutcome::None;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="SOTS|KEM")
+    bool bExecutionWitnessed = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="SOTS|KEM")
+    bool bSaveBlocked = false;
+
     // Rolling history of recent executions for debug HUD (most recent first).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="KEM|Debug")
     TArray<FSOTS_KEMDebugRecord> RecentDebugRecords;
@@ -351,6 +438,28 @@ public:
     // Unified lifecycle event surface for executions (started / succeeded / failed).
     UPROPERTY(BlueprintAssignable, Category="SOTS|KEM")
     FSOTS_OnExecutionEvent OnExecutionEvent;
+
+    // Structured outcome payload for suite consumption (MissionDirector/Stats/SkillTree/etc).
+    UPROPERTY(BlueprintAssignable, Category="SOTS|KEM")
+    FSOTS_OnKEMExecutionCompleted OnExecutionCompleted;
+
+    // Camera request/cleanup surface (no UI ownership).
+    UPROPERTY(BlueprintAssignable, Category="SOTS|KEM|Camera")
+    FSOTS_OnKEMCameraRequest OnExecutionCameraRequested;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|KEM|Camera")
+    FSOTS_OnKEMCameraRequest OnExecutionCameraReleased;
+
+    // Witness escalation + QTE request surface.
+    UPROPERTY(BlueprintAssignable, Category="SOTS|KEM|QTE")
+    FSOTS_OnKEMQTERequested OnExecutionQTERequested;
+
+    UPROPERTY(BlueprintAssignable, Category="SOTS|KEM|QTE")
+    FSOTS_OnKEMQTEResolved OnExecutionQTEResolved;
+
+    // Start gate feedback surface for callers that want structured failure info.
+    UPROPERTY(BlueprintAssignable, Category="SOTS|KEM|Gate")
+    FSOTS_OnKEMStartGateFailed OnStartGateFailed;
 
     UPROPERTY(BlueprintAssignable, Category="SOTS|KEM|Telemetry")
     FSOTS_OnKEMExecutionTelemetryBP OnExecutionTelemetryBP;
@@ -400,13 +509,20 @@ protected:
                                                  const USOTS_KEM_ExecutionDefinition* ExecutionDef,
                                                  FSOTS_AbilityRequirementCheckResult& OutResult) const;
 
+    bool EvaluateStartGateInternal(const UObject* WorldContextObject,
+                                   AActor* Instigator,
+                                   AActor* Target,
+                                   const FGameplayTagContainer& ContextTags,
+                                   FSOTS_KEMStartGateResult& OutResult) const;
+
     bool RequestExecutionInternal(const UObject* WorldContextObject,
                                   AActor* Instigator,
                                   AActor* Target,
                                   const FGameplayTagContainer& ContextTags,
                                   const USOTS_KEM_ExecutionDefinition* ExecutionOverride,
                                   const FString& SourceLabel,
-                                  bool bAllowFallback = true);
+                                  bool bAllowFallback = true,
+                                  FSOTS_KEMStartGateResult* OutGateResult = nullptr);
 
 
     void FindNearbyExecutionAnchors(AActor* Instigator,
@@ -470,6 +586,20 @@ public:
                                  const FSOTS_ExecutionContext& Context,
                                  const USOTS_KEM_ExecutionDefinition* Def) const;
 
+    void BroadcastExecutionCompleted(const FSOTS_ExecutionContext& Context,
+                                     const USOTS_KEM_ExecutionDefinition* Def,
+                                     ESOTS_KEM_ExecutionResult Result,
+                                     ESOTS_KEMExecutionOutcome Outcome);
+
+    void BroadcastCompletionTag(const FSOTS_ExecutionContext& Context);
+    void ClearCompletionEventTag(FSOTS_LooseTagHandle Handle);
+
+    void BroadcastCameraRequest(const FSOTS_ExecutionContext& Context,
+                                const USOTS_KEM_ExecutionDefinition* Def);
+    void BroadcastCameraRelease();
+
+    void SetSaveBlocked(bool bBlocked);
+
     FSOTS_OnKEMExecutionTelemetry& GetTelemetryDelegate();
     void BroadcastExecutionTelemetry(const FSOTS_KEMExecutionTelemetry& Telemetry);
 
@@ -517,6 +647,18 @@ private:
     FSOTS_OnKEMExecutionTelemetry OnExecutionTelemetry;
     FSOTS_KEMExecutionTelemetry PendingExecutionTelemetry;
     bool bHasPendingExecutionTelemetry = false;
+
+    FSOTS_ExecutionContext ActiveExecutionContext;
+    TWeakObjectPtr<const USOTS_KEM_ExecutionDefinition> ActiveExecutionDefinition;
+    FGameplayTag ActiveExecutionTag;
+    FGameplayTag ActiveCameraPrimaryTag;
+    FGameplayTag ActiveCameraSecondaryTag;
+    TWeakObjectPtr<AActor> ActiveWitnessActor;
+    bool bCameraRequested = false;
+    bool bLoggedMissingCompletionTagOnce = false;
+    bool bLoggedMissingDefinitionsOnce = false;
+    bool bLoggedMissingFallbackOnce = false;
+    FTimerHandle CompletionTagTimerHandle;
 
     void ComputeAndInjectPositionTags(AActor* Instigator,
                                       AActor* Target,
