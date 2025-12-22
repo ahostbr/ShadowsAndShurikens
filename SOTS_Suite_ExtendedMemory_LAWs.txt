@@ -1,7 +1,7 @@
 SOTS_Suite_ExtendedMemory_LAWs
 Kuroryuu Buddy Architect Edition
 VERSION: V01.420.69 (Get It Done Edition)
-LAST_UPDATED: 2025-12-20 11:11PM
+LAST_UPDATED: 2025-12-21 8:37PM
 
 ============================================================
 
@@ -962,443 +962,256 @@ SUITE-05: Tag authority preference for gating (clarified)
 
 21.3.1 SOTS_TagManager (LOCKED)
 
-TM-00: Scope of TagManager usage (clarified)
-- TagManager is a decoupling/boundary tool, not a “route every tag operation” rule.
-- MUST use TagManager when:
-  - a plugin sets/clears a tag on a shared actor (Player/Dragon/Guard/Pickup) AND
-  - another plugin is expected to react/gate based on that tag.
-- OK to bypass TagManager when:
-  - tag usage is local/internal to a single plugin and not part of a cross-plugin contract,
-  - tag is asset/config metadata only.
+TM-00: Scope of TagManager authority
+- Locked: YES — TagManager is the single source of truth for cross-plugin boundary runtime actor-state tags (Player/Dragon/Guards/Pickups) that are intended to be observed by other plugins.
+- Internal/local tag usage within a single plugin can bypass TagManager.
 
-TM-01: Which core actors MUST implement IGameplayTagAssetInterface in SOTS v1?
-- Locked: Player, Dragon, Guards, and future pickup actors (pickups mostly handled via SOTS_INV but must expose tags).
+TM-01: No bypass for shared runtime state tags
+- Locked: YES — any shared runtime actor-state tag that other plugins consume must be written/read via TagManager (subsystem + TagLibrary) to preserve union semantics.
 
-TM-02: Are ANY systems allowed to bypass TagManager for tag reads/writes (direct container mutation, legacy tag mgr)?
-- Locked: For boundary/shared runtime actor-state tags (Player/Dragon/Guards/Pickups that other plugins observe), NO bypass — use TagManager/TagLibrary.
-- Allowed: For internal/local tags that never cross plugin boundaries, bypass is OK (see SUITE-05 + TM-00).
+TM-02: Reactive tag-change events
+- Locked: YES — TagManager must provide tag-added/removed (or change) notifications for its loose/scoped tags, suitable for BP and C++ consumers.
 
+TM-03: Handle-based scoped loose tags + EndPlay cleanup
+- Locked: YES — scoped loose tags must be reference-counted by handle (or equivalent) and auto-cleaned when the owning actor ends play.
 
-TM-03: Reactive tag-change events (OnTagAdded/Removed) part of TagManager’s contract?
-- Locked: YES.
+TM-04: Union-view API is canonical for reads across plugin boundaries
+- Locked: YES — canonical cross-plugin read path is the union view (IGameplayTagAssetInterface owned + TagManager loose + scoped counts), exposed as GetActorTags (subsystem + TagLibrary helper).
 
-TM-04: Prune/cleanup API for transient actors (projectiles, spawned props, short-lived AI)?
-- Locked: YES — Option 2 (handle-based scoped tags)
-  - AddLooseTag returns a handle
-  - RemoveLooseTag(handle) removes exactly what was added
-  - Handles must be invalidated/cleaned automatically on EndPlay as a safety backstop
-  - Bulk “clear by prefix/source” tools are NOT required at this stage
-
-TM-05: Canonical “union tag view” helper (asset + loose + scoped)
-- Locked: Use TagManager’s union query surface when a system needs the authoritative “what tags does this actor have right now?” view across:
-  - IGameplayTagAssetInterface tags (ability/system tags on the actor),
-  - loose tags,
-  - scoped/handle tags.
-- Canonical API:
-  - USOTS_GameplayTagManagerSubsystem::GetActorTags(...)
-  - USOTS_TagLibrary::GetActorTags(...)
-- Notes:
-  - Prefer this for debug dumps, gating checks that must include transient/scoped tags, and any cross-plugin boundary inspection.
-  - This does NOT change TM-00: TagManager is still only REQUIRED at cross-plugin boundaries; internal/local tag usage can remain direct.
-
-# (Optional) cross-reference note under SUITE-05 (no behavior change)
-- “If you need the full union tag set for boundary actors, use GetActorTags rather than mixing direct container reads.”
-
-# -------------------------------
-# NEW DOC PAGE
-# Save as: Plugins/SOTS_TagManager/Docs/TagBoundary.md
-# -------------------------------
-
-# TagBoundary (SOTS_TagManager)
-
-## Purpose
-TagManager is a **decoupling boundary tool**: it exists so plugins can communicate via shared runtime actor-state tags without hard references.
-
-This page defines when TagManager is REQUIRED vs optional.
-
-## Decision Rule (Locked)
-Use TagManager/TagLibrary when reading or writing **shared runtime actor-state tags** on:
-- Player
-- Dragon
-- Guards
-- Pickups (and other shared “world actors” intended to be observed)
-
-…**IF** another plugin is expected to observe/react/gate based on that tag.
-
-If the tag is purely internal to one plugin (private containers, local-only state, asset metadata), you can use direct tag containers.
-
-(Authoritative lock reference: SUITE-05 + TM-00)
-
-## What Counts as a “Boundary Tag”?
-A boundary tag is any tag that:
-1) is written to one of the shared actors above, AND  
-2) is meant to be consumed by code in a different plugin.
-
-Typical examples:
-- Stealth state/tier tags written to Player by stealth systems and consumed by UI/AI/Abilities.
-- “InCover / Detected” type tags used as gates across plugins.
-- Inventory/pickup state tags observed by UI/Abilities/Interaction.
-
-## Canonical APIs
-### Writes (boundary tags)
-- Use TagManager mutation functions (and any “UpdateTagPresence” style helper used by the owning system) to set/clear boundary tags.
-- Prefer scoped/handle-based tags for transient state where appropriate (TM-04).
-
-### Reads (boundary tags)
-- Use TagLibrary/TagManager query helpers for boundary reads.
-- If you need the **full union view** (asset + loose + scoped) use:
-  - USOTS_GameplayTagManagerSubsystem::GetActorTags(...)
-  - USOTS_TagLibrary::GetActorTags(...)
-
-## Example: Stealth Boundary Tags
-Boundary tags seen in practice include stealth tiers and stealth state flags written on Player and consumed by other plugins (stealth/UI/AI/ability gates).
-(Exact tag names are governed by DefaultGameplayTags.ini; this doc stays conceptual.)
-
-## Non-goals (Intentional)
-- TagManager is NOT meant to route every single gameplay tag read/write in the entire codebase.
-- Internal/local tags do not need TagManager unless they become part of a cross-plugin contract.
-
-## “When in doubt” rule of thumb
-- If changing this tag could break another plugin’s behavior, it’s a boundary tag → use TagManager.
-- If nobody outside your plugin can see/care about it, it’s local → direct is fine.
 
 21.3.2 SOTS_ProfileShared (LOCKED)
-PS-01: Profile identity scheme (slot key safety)
-- Locked: Sanitize via UI name entry rules (widget blocks invalid characters).
 
-PS-02: Long-term persistence authority
-- Locked: (B) Profile folders are canonical (profile folder + central metadata save).
+PS-00: Profile folders are canonical
+- Locked: YES — profile folder structure is the canonical save root; all profile-scoped artifacts live under it.
 
-PS-03: Who owns TotalPlaySeconds accumulation?
-- Locked: SOTS_MissionDirector.
+PS-01: Snapshot versioning + provider priority table
+- Locked: YES — snapshots must carry a version; restore uses a provider-priority table.
 
-PS-04: Snapshot providers allowed to be no-op for now?
-- Locked: None (no intentional no-op providers at this stage).
+PS-02: Transform restore policy
+- Locked: YES — always attempt to restore transform; if transform is invalid (NaN/inf/unreasonable), skip apply and log (do not crash; do not apply corrupt transforms).
 
-PS-05: Provider ordering priority table locked now?
-- Locked: YES (explicit priority ordering is required).
-
-PS-06: Snapshot versioning (add SnapshotVersion now)?
-- Locked: YES.
-
-PS-07: Transform restore policy
-- Locked: (A) Always set transform.
+PS-03: MissionDirector owns TotalPlaySeconds
+- Locked: YES — ProfileShared stores it, MissionDirector is authoritative for accumulation/updates.
 
 
 21.3.3 SOTS_Input (LOCKED)
-IN-01: Dragon control layer in v1?
-- Locked: NO (still needed later; CGF BEP export contains example dragon controls).
 
-IN-02: Canonical attachment point for input ownership
-- Locked: PlayerController.
+IN-00: Ownership
+- Locked: YES — SOTS_Input is the runtime-only Enhanced Input routing spine. UI focus/InputMode changes stay in SOTS_UI.
 
-IN-03: Montage buffer windows (Input.Buffer.Channel.Execution) — categories that open a buffer window
-- Locked: MINIMAL
-  - Buffer windows supported ONLY for:
-    - Execution montages
-    - Vanish/QTE-style montages
-  - Buffer rules:
-    - Queue size = 1
-    - Latest input wins
-    - Auto-clear on montage end / cancel / abort
+IN-01: Dragon control layer in v1
+- Locked: YES — input-layer seam exists (Input.Layer.Dragon.Control) with push/pop helpers; gameplay usage can expand later without breaking the layer model.
 
-IN-04: OnInputDeviceChanged consumer (cursor hiding, prompts, etc.) — who owns the behavior?
-- Locked: PlayerController > SOTS_UI.
+IN-02: Minimal montage buffer windows
+- Locked: YES — buffer windows exist only for Execution/Vanish/QTE, opened/closed via AnimNotifyState, with a small buffer and a queue size of 1 (latest-wins).
+
+IN-03: Auto-clear backstop
+- Locked: YES — buffered intents must auto-clear on montage end/cancel/abort via AnimInstance delegates to prevent stuck inputs.
+
+IN-04: Device-change seam
+- Locked: YES — input device tracking exposes IsGamepadActive and an OnInputDeviceChanged event (BP + C++ friendly).
 
 
 21.3.4 SOTS_UI (LOCKED)
-UI-01: Back/Escape close policy owner
-- Locked: Router enforces close behavior (Input → Router → Router closes widget).
 
-UI-02: ReturnToMainMenu flow owner (the thing that actually performs the flow)
-- Locked: Input → Router.
+UI-00: UI ownership
+- Locked: YES — SOTS_UI is the single UI hub/router and the only system allowed to create/push/pop/focus widgets.
 
-UI-03: UI Intent/Action tag policy
-- Locked: YES — standardize a single tag namespace; ensure all are authored in DefaultGameplayTags.ini (ADD-ONLY).
+UI-01: Back/Escape close policy
+- Locked: YES — router enforces Back/Escape closes the top UI layer/modal and routes ReturnToMainMenu via an intent flow.
 
-RYAN NOTES (LOCKED) — InvSP exception rule
-- InvSP is an exclusion:
-  - InvSP BP UI is too heavy to convert right now.
-  - InvSP UI will ONLY be pushed/popped via SOTS_UI.
-  - InvSP handles internal navigation itself.
-  - Ryan will do small edits to core InvSP widgets (inventory menu, etc.) to integrate push/pop via SOTS_UI.
+UI-02: Input policy owner
+- Locked: YES — router owns UI input mode/pause/focus decisions. Other systems request via UI intents.
 
+UI-03: Third-party UI integration policy
+- Locked: YES — third-party UIs are only accessed via SOTS_UI adapters/presenters; widgets referenced by IDs/tags through a registry.
 
-21.3.5 SOTS_Interaction (LOCKED)
-IX-01: Interactable data policy
-- Locked: (C) Hybrid.
+UI-04: Adapter surface minimums (locked)
+- ProHUDV2 adapter: HUD lifecycle (EnsureHUDCreated/Show/Hide optional), notifications (PushNotification), world markers/waypoints (AddOrUpdate, Remove, optional RemoveAll). Legacy optional support: HitFeedback/Recoil/SwitchTask/V1_* only via router.
+- InvSP adapter: Open/Close/Toggle inventory, shortcut menu visibility, pickup/first-time notifications; internally maps to InvSP inventory component functions. Router owns input mode/pause.
+- InteractionEssentials adapter: Subsystem wrapper that isolates IE specifics; router never calls IE nodes directly.
 
-IX-02: LOS + collision semantics
-- Locked: Tunable (not fixed to ECC_Visibility only).
-
-IX-03: Cross-plugin Interaction “Action Request” seam (verbs → other plugins)
-- Locked: SOTS_InteractionSubsystem emits an action-request event for canonical verbs so downstream systems stay decoupled.
-  - Payload: FSOTS_InteractionActionRequest
-  - Event: OnInteractionActionRequested (Subsystem multicast)
-  - Driver may forward for BP consumers (driver-level forwarding event is allowed).
-- Locked canonical verb tags:
-  - Interaction.Verb.Pickup
-  - Interaction.Verb.Execute
-  - Interaction.Verb.DragStart
-  - Interaction.Verb.DragStop
-- Locked routing (initial):
-  - Pickup should route into SOTS_INV (inventory facade pickup request).
-  - Execute should route into SOTS_KillExecutionManager (later wiring allowed).
-  - DragStart/DragStop should route into SOTS_BodyDrag (later wiring allowed).
-- Note: Until pickup metadata is fully surfaced, ItemTag/Quantity may be unset; listeners must tolerate missing values.
-
-21.3.6 SOTS_MMSS (LOCKED)
-MMSS-01: MissionId == None behavior
-- Locked: (A) Still respect TrackId if provided.
-
-MMSS-02: Resume fidelity expectation
-- Locked: (A) “Close enough” timer-based.
-
-MMSS-03: Layering
-- Locked: (B) Plan for multi-layer (stingers/overlay/boss phases).
+UI-05: Interaction verb short-circuit policy
+- Locked: YES — UI may short-circuit canonical Interaction.Verb.* actions (e.g., Pickup/Execute/DragStart/DragStop) by dispatching intents to the owning subsystem instead of calling the interactable’s interface directly. This is for cross-plugin consistency + future-proofing; it must remain tolerant of missing metadata during bring-up.
 
 
-21.3.7 SOTS_Stats (LOCKED)
-ST-01: v1 non-negotiable stat tags (initial set)
-- Locked:
-  - SAS.Player.Stats.Health
-  - SAS.Player.Stats.Sneak
-  - SAS.Player.Stats.Tooling
-  - SAS.Player.Stats.DragonPowerLevel
-  - SAS.Player.Stats.PoisioningSkill
-  - SAS.Player.Stats.OverallSkillTreeLevel
-- Note:
-  - These are tightly tied to SkillTree and should be managed/created together.
+21.3.5 SOTS_MissionDirector (LOCKED)
 
-ST-02: StatsComponent placement
-- Locked: (B) Separate components per pawn.
+MD-00: Objective model
+- Locked: YES — v1 objective system is event-driven and supports multiple objective types; rewards chain is MD > SkillTree > Stats > UI.
 
-ST-03: Stat authority model
-- Locked: (A) Snapshot is authoritative.
-
-ST-04: Difficulty-dependent stats exist (can’t store raw)?
-- Locked: NO (difficulty currently affects saving + AI only).
+MD-01: Travel/mission flow authority
+- Locked: YES — travel chain is ProfileShared > UI > MissionDirector; MD is authoritative for mission lifecycle events.
 
 
-21.3.8 SOTS_GlobalStealthManager (LOCKED)
-GSM-01: Authoritative producers list (who feeds LightExposure/Noise/InCover/etc. into GSM)
-- Locked: LightProbe + PlayerStealthComponent.
+21.3.6 SOTS_GlobalStealthManager (LOCKED)
 
-GSM-02: Dragon-as-meter behavior
-- Locked: YES — dragon reacts to stealth state transitions; canonical stealth meter.
+GSM-00: Ownership and producers
+- Locked: YES — LightProbe + PlayerStealthComponent produce perception inputs; GSM consumes and owns detection tier/state evaluation.
 
-GSM-03: Suspicion reporting granularity
-- Locked: (A) Continuous updates into GSM.
+GSM-01: “Dragon is stealth meter”
+- Locked: YES — dragon visibility/FX is the diegetic stealth meter; it binds to GSM tier/state outputs, not to ad-hoc per-system logic.
 
-
-21.3.9 SOTS_AIPerception (LOCKED)
-AIP-01: FX trigger consumer
-- Locked: (A) AIPerception calls FXManager directly.
-
-AIP-02: Noise/reporting expectation (must call ReportNoise/ReportDamage)
-- Locked: PlayerStealthComponent, AI perception component, Interaction component for thrown items/distractions, etc.
-
-AIP-03: AIP → GSM integration
-- Locked: Every update (not transitions-only).
+GSM-02: Update cadence
+- Locked: YES — GSM evaluation/decay is timer/event driven (not per-frame tick). Alertness decay and tier reconciliation occur on a fixed cadence; producers push updates on change.
 
 
-21.3.10 SOTS_GAS_Plugin (LOCKED)
-GAS-01: Owner tag gating reads from
-- Locked: (A) TagManager.
+21.3.7 SOTS_AIPerception (LOCKED)
 
-GAS-02: RequiredOwnerTags / BlockedOwnerTags semantics
-- Locked: YES (Required=HasAll, Blocked=HasAny).
+AIP-00: Role
+- Locked: YES — AIPerception is the perception/stimulus ingestion layer (UAIPerception + noise/damage hooks) that must always report detection/suspicion outputs into GSM.
 
-GAS-03: RequiredInventoryTags semantics
-- Locked: Option C — both “any-of” and “all-of” must be supported.
+AIP-01: FX responsibility
+- Locked: YES — AIPerception triggers one-shot FX directly via FXManager (no UI dependency).
 
-GAS-04: Restore ranks + cooldown remaining on load?
-- Locked: RANK RESTORE ONLY.
-  - Cooldown remaining restore is NOT locked / deferred.
+AIP-02: Stimulus categories
+- Locked: YES — must support sight/hearing/damage/noise events and map them into GSM-friendly “report” calls (including location + instigator as available).
 
 
-21.3.11 SOTS_SkillTree (LOCKED)
-SK-01: Tree registration “one place” — who registers trees and when?
-- Locked: Must support all three:
-  - startup (first play and beyond),
-  - safehouse init (mid-missions),
-  - mission init (first play + direct loads).
+21.3.8 SOTS_GAS_Plugin (LOCKED)
 
-SK-02: Skill points model
-- Locked: (A) Global pool.
+GAS-00: Tag gating authority
+- Locked: YES — TagManager is authoritative for boundary tag reads for gating decisions.
 
-SK-03: Unlock persistence identity
-- Locked: (C) Hybrid.
+GAS-01: Owner requirements semantics
+- Locked: YES — RequiredOwner = HasAll, BlockedOwner = HasAny. Inventory tag gating supports any-of and all-of.
 
-SK-04: FX on unlock owner
-- Locked: (B) Broadcast event + FX listens.
-
-RYAN NOTES (LOCKED)
-- SkillTree is one of the last systems to fully flesh out.
-- Only default paths must exist early for testing; it will evolve over time.
+GAS-02: Rank restore policy
+- Locked: YES — restore ranks deterministically; do not “best-effort” partially apply ranks without logging.
 
 
-21.3.12 SOTS_MissionDirector (LOCKED)
-MD-01: Mission travel owner
-- Locked: Use SUITE-01 chain.
+21.3.9 SOTS_SkillTree (LOCKED)
 
-MD-02: Objective evaluation policy
-- Locked: (A) Event-driven only (no tick).
+SK-00: Registration timing
+- Locked: YES — skill definitions register in startup/safehouse/mission init; system is ready before first player interaction that can unlock.
 
-MD-03: v1 objective type list (canonical set)
-- Locked:
-  - Kill
-  - Non Lethal
-  - Steal
-  - Locate
-  - Sabotage
-  - Question/Interogate
+SK-01: Global points pool
+- Locked: YES — global skill points pool; unlock cost draws from global pool, not per-tree pools.
 
-MD-04: Reward application owner
-- Locked chain: MissionDirector > SkillTree > SOTS_Stats > SOTS_UI.
+SK-02: Hybrid unlock identity
+- Locked: YES — unlock identity supports both explicit IDs and tag-based identities (hybrid). Tag mirror for cross-plugin visibility uses TagManager.
+
+SK-03: Unlock broadcast
+- Locked: YES — unlock must broadcast an event (delegate/message). FX and UI listen; SkillTree does not call UI directly.
+
+
+21.3.10 SOTS_Stats (LOCKED)
+
+ST-00: Separate components per pawn
+- Locked: YES — stats are per-pawn components; avoid monolithic god-components.
+
+ST-01: Snapshot authority
+- Locked: YES — snapshots are authoritative for restore. Live changes must be reconciled back into snapshot model deterministically.
+
+
+21.3.11 OmniTrace (LOCKED)
+
+OT-00: Scope
+- Locked: YES — OmniTrace is debug/diagnostics; it must expose BP-callable debug draw and a stable log category.
+
+
+21.3.12 SOTS_Interaction (LOCKED)
+
+INT-00: Cross-plugin action request seam
+- Locked: YES — canonical verbs emit action request payloads; listeners tolerate missing fields until wired.
+
+INT-01: Hybrid data policy
+- Locked: YES — interaction data is hybrid and tunable (LOS, distance, metadata presence); no hard dependency on a single provider.
 
 
 21.3.13 SOTS_INV (LOCKED)
-INV-01: Item identity convention
-- Locked: YES — ItemId == ItemTag.GetTagName() (must be fleshed out / consistent).
 
-INV-02: Provider seam decision (canonical provider in v1)
-- Locked: BP provider is canonical in v1.
+INV-00: Canonical identity
+- Locked: YES — ItemId == ItemTag name. Providers must map consistently.
+
+INV-01: Provider authority
+- Locked: YES — BP provider is canonical for inventory item definition data; keep providers deterministic.
+
+INV-02: InvSP access policy
+- Locked: YES — InvSP is accessed only via SOTS_UI adapter/presenter surfaces (no direct UI calls from gameplay systems).
 
 INV-03: Inventory UI ownership
-- Locked: (B) Inventory provider owns opening/closing inventory UI.
-
-RYAN NOTES (LOCKED) — InvSP FULL UI EXCEPTION (v2)  (supersedes the prior InvSP exception note)
-- InvSP is a sealed third-party UI “black box”; do not refactor its internal UI stack/navigation/back-close into SOTS_UI.
-- This is an explicit exception to Law 18.1/18.2 (UI composition root) for InvSP ONLY.
-
-- SOTS_UI may drive InvSP ONLY via USOTS_InvSPAdapter entrypoints:
-  - Open / Close / Toggle / Refresh (Inventory + Container menus)
-
-- InvSP owns ALL UI composition and interaction for its menus:
-  - CreateWidget / AddToViewport / RemoveFromParent
-  - SetInputMode* / cursor / focus
-  - Internal navigation
-  - Back/Escape close behavior
-
-- SOTS_UI Router must NOT enforce Back/Escape close while InvSP is active.
-
-- Lifecycle awareness (so the rest of the suite can react cleanly):
-  - SOTS_UI exposes delegates for ExternalMenuOpened / ExternalMenuClosed (MenuId tag).
-  - InvSP adapter (Blueprint glue) broadcasts these on open/close, including self-close via Back/Escape.
-
-- Blueprint-first policy:
-  - Keep this integration in Blueprint for maximum control right now; once the behavior is locked, it may be BEP-exported and converted to C++.
+- Locked: YES — SOTS_UI owns opening/closing inventory UI and input mode/pause policy. Inventory providers/components never set input mode or push/pop widgets directly.
 
 
 21.3.14 SOTS_FX_Plugin (LOCKED)
-FX-01: Canonical FX trigger pattern
-- Locked: (A) Direct FXManager calls.
 
-FX-02: Pool overflow policy preference
-- Locked: (B) Reject new and log.
+FX-00: Contract
+- Locked: YES — systems trigger FX via FXManager one-shots (data-driven). No system should directly spawn/manage persistent FX without going through the FX manager pattern.
 
-RYAN NOTES (LOCKED)
-- FX is ever-evolving; only a small amount is locked right now.
-- Default authored FX will be created later via DataAssets by Ryan.
+FX-01: Pool overflow behavior
+- Locked: YES — overflow rejects the request and logs (throttled as needed). Do not silently drop without a log.
 
-
-21.3.15 SOTS_Steam (LOCKED scope)
-STEAM-01: Lock v1 feature scope
-- Locked: Leaderboards (priority #1) + Achievements (secondary).
-- No other Steam features in v1.
+FX-02: No UI ownership
+- Locked: YES — FX has no dependency on UI. UI may request FX, but FX must not require UI.
 
 
-21.3.16 OmniTrace (LOCKED)
-OT-01: Debug surface scope
-- Locked: OmniTrace debug is important across many systems (not just KEM).
+21.3.15 SOTS_Steam (LOCKED)
 
-OT-02: Blueprint-callable debug draw function too (for debug widgets)?
-- Locked: YES.
+STEAM-00: v1 scope
+- Locked: YES — leaderboards first, achievements second. Keep scope narrow.
 
-OT-03: EOmniTraceGridPattern future
-- Locked: (A) planned feature → keep and implement later.
-- Note: any “remove” intent referenced earlier was for SOTS_Parkour, not OmniTrace.
+
+21.3.16 SOTS_Debug (LOCKED)
+
+DBG-00: Log + one-button debug
+- Locked: YES — Debug owns a stable log category and one-button debug flow triggered via SOTS_Input.
 
 
 21.3.17 LightProbePlugin (LOCKED)
-LP-01: Stealth pipeline contract
-- Locked: Set-only — LightProbe sets PlayerStealthComponent light level;
-  PlayerStealthComponent pushes into GSM (LightProbe does NOT push into GSM directly).
 
-LP-02: Visual artifact policy
-- Locked: YES — probe cube must never cast visible shadows (enforce via component settings).
+LP-00: Probe cube visibility/shadows
+- Locked: YES — probe cube never casts visible shadows. Any debug visualization must be opt-in and non-gameplay affecting.
 
+LP-01: PlayerStealthComponent integration
+- Locked: YES — LightProbePlugin only sets/feeds into PlayerStealthComponent; it does not own stealth state.
 
-21.3.18 SOTS_Debug (LOCKED)
-DBG-01: Log category
-- Locked: YES — promote LogTemp → LogSOTS_Debug (or similar).
-
-DBG-02: “One-button debug” owner
-- Locked: YES — SOTS_Input binds a dev-only shortcut to toggle debug widgets/cvars.
+LP-02: Capture policy (on-demand)
+- Locked: YES — captures are on-demand (no CaptureEveryFrame / no CaptureOnMovement). CaptureScene is invoked immediately before readback, and timer/capture loop only runs when a valid render target exists.
 
 
-21.3.19 SOTS_UDSBridge (LOCKED)
-UDS-01: Breadcrumbs used in v1 gameplay (not just debug)?
-- Locked: YES.
+21.3.18 SOTS_UDSBridge (LOCKED)
 
-UDS-02: Trail length model
-- Locked: (C) Hybrid:
-  - valid for 30 seconds
-  - max count 30
-
-UDS-03: Breadcrumb metadata tags in v1?
-- Locked: NO — just direction to next breadcrumb.
-
-UDS-04: Expected consumer of breadcrumbs
-- Locked: SOTS_AIPerception > AIBT.
+UDS-00: Breadcrumb policy
+- Locked: YES — breadcrumbs used; 30s/30 count default; AIPerception > AIBT consumes.
 
 
-21.3.20 SOTS_BodyDrag (LOCKED)
-BD-01: Component placement
-- Locked: Player ONLY.
+21.3.19 SOTS_BodyDrag (LOCKED)
 
-BD-02: Drag blocking rules
-- Locked: YES to all via tags.
+BD-00: Player-only and tag blocking
+- Locked: YES — body drag is player-only; tag-based blocking; physics defaults Dead=true KO=false.
 
-BD-03: Physics drop defaults
-- Locked: YES — Dead=true, KO=false.
-
-BD-04: Flow owner
-- Locked: SOTS_Input > SOTS_Interaction > SOTS_BodyDrag.
+BD-01: Flow ownership
+- Locked: YES — flow is Input > Interaction > BodyDrag; no alternate entrypoints.
 
 
-21.3.21 SOTS_EdUtil (Editor-only) (LOCKED)
-EDU-00: Plugin state
-- Locked: Plugin is finished for now until Ryan requests more features (no changes needed currently).
+21.3.20 SOTS_MMSS (LOCKED)
 
-EDU-01: Scope lock
-- Locked: (A) small general editor helpers only.
+MMSS-00: TrackId/MissionId resume
+- Locked: YES — respect TrackId when MissionId is None; resume uses “close enough” time matching (tolerant), not exact.
 
-EDU-02: Schema governance
-- Locked: Unknown / not locked (plugin frozen for now).
-
-EDU-03: File IO policy
-- Locked: Project-only.
-
-EDU-04: Guardrails requirement
-- Locked: YES — destructive operations require dry-run/report-only modes by contract.
+MMSS-01: Multi-layer later
+- Locked: YES — plan multi-layer support later; v1 keeps behavior stable and simple.
 
 
-21.3.22 BlueprintCommentLinks (Editor-only) (LOCKED)
-- Locked: Not applicable / done plugin. No current changes needed.
+21.3.21 SOTS_EdUtil (LOCKED)
+
+ED-00: Status
+- Locked: YES — finished/no changes unless Ryan requests.
 
 
-21.3.23 BEP (Blueprint Exporter Plugin) (LOCKED)
-BEP-01: “Live update mode” for default exports (watch & re-export changed files)
-- Locked: Later (not now).
+21.3.22 BlueprintCommentLinks (LOCKED)
 
-BEP-02: Tag relevance / tag reporting
-- Locked: NO — keep BEP strictly export-only (no automatic per-plugin tag-usage reporting).
+BCL-00: Status
+- Locked: YES — skip work on BlueprintCommentLinks until Ryan explicitly asks otherwise.
 
-# LAWFILE_STAMPS (add-only)
-# 2025-12-17 — GPT-5.2 Thinking — “ChatGPT was here.”
 
-============================================================
-END OF SOTS_Suite_ExtendedMemory_LAWs (Kuroryuu Buddy Architect Edition)
+21.3.23 BEP (LOCKED)
+
+BEP-00: Reporting policy
+- Locked: YES — no tag reporting in BEP.
+
+BEP-01: Guardrails requirement
+- Locked: YES — destructive operations require explicit guardrails and confirmation; add-only patches are the default.
+
 ============================================================
