@@ -20,6 +20,8 @@
 #include "GameFramework/Actor.h"
 #include "Particles/ParticleSystemComponent.h"
 
+DEFINE_LOG_CATEGORY(LogSOTS_FX);
+
 TWeakObjectPtr<USOTS_FXManagerSubsystem> USOTS_FXManagerSubsystem::SingletonInstance = nullptr;
 
 void USOTS_FXManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -152,7 +154,7 @@ bool USOTS_FXManagerSubsystem::RegisterLibraryInternal(USOTS_FXDefinitionLibrary
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
         if (bLogLibraryRegistration)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Rejecting library registration (null or pending kill)."));
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Rejecting library registration (null or pending kill)."));
         }
 #endif
         return false;
@@ -173,7 +175,7 @@ bool USOTS_FXManagerSubsystem::RegisterLibraryInternal(USOTS_FXDefinitionLibrary
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
             if (bLogLibraryRegistration)
             {
-                UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Updated library %s priority to %d (order %d)."), *Library->GetName(), EffectivePriority, Existing->RegistrationOrder);
+                UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX] Updated library %s priority to %d (order %d)."), *Library->GetName(), EffectivePriority, Existing->RegistrationOrder);
             }
 #endif
         }
@@ -189,7 +191,7 @@ bool USOTS_FXManagerSubsystem::RegisterLibraryInternal(USOTS_FXDefinitionLibrary
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
         if (bLogLibraryRegistration)
         {
-            UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Registered library %s (Priority=%d, Order=%d)."), *Library->GetName(), EffectivePriority, NewEntry.RegistrationOrder);
+            UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX] Registered library %s (Priority=%d, Order=%d)."), *Library->GetName(), EffectivePriority, NewEntry.RegistrationOrder);
         }
 #endif
     }
@@ -209,7 +211,7 @@ bool USOTS_FXManagerSubsystem::RegisterSoftLibraryInternal(const FSOTS_FXSoftLib
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
         if (bLogLibraryRegistration)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Soft library entry is empty; skipping."));
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Soft library entry is empty; skipping."));
         }
 #endif
         return false;
@@ -221,7 +223,7 @@ bool USOTS_FXManagerSubsystem::RegisterSoftLibraryInternal(const FSOTS_FXSoftLib
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
         if (bLogLibraryRegistration)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Soft library %s failed to load."), *Entry.Library.ToString());
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Soft library %s failed to load."), *Entry.Library.ToString());
         }
 #endif
         return false;
@@ -266,7 +268,7 @@ void USOTS_FXManagerSubsystem::RebuildSortedLibraries()
         if (bInvalid && bLogLibraryRegistration)
         {
             const FString Name = Entry.Library ? Entry.Library->GetName() : TEXT("<null>");
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Dropping invalid library entry %s."), *Name);
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Dropping invalid library entry %s."), *Name);
         }
 #endif
         return bInvalid;
@@ -286,7 +288,7 @@ void USOTS_FXManagerSubsystem::RebuildSortedLibraries()
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bDebugLogCueResolution)
     {
-        UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Library order => %s"), *BuildLibraryOrderDebugString());
+        UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX] Library order => %s"), *BuildLibraryOrderDebugString());
     }
 #endif
 }
@@ -327,7 +329,7 @@ void USOTS_FXManagerSubsystem::LogLibraryOrderDebug() const
         return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Library order => %s"), *BuildLibraryOrderDebugString());
+    UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX] Library order => %s"), *BuildLibraryOrderDebugString());
 }
 #endif
 
@@ -355,7 +357,7 @@ void USOTS_FXManagerSubsystem::BuildRegistryFromLibraries()
                 if (bWarnOnDuplicateFXTags)
                 {
                     const FString FirstLib = Existing->SourceLibrary ? Existing->SourceLibrary->GetName() : TEXT("<unknown>");
-                    UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s; keeping %s (P=%d,Order=%d), skipping %s."), *Def.FXTag.ToString(), *FirstLib, Existing->Priority, Existing->RegistrationOrder, *Entry.Library->GetName());
+                    UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s; keeping %s (P=%d,Order=%d), skipping %s."), *Def.FXTag.ToString(), *FirstLib, Existing->Priority, Existing->RegistrationOrder, *Entry.Library->GetName());
                 }
 #endif
                 continue;
@@ -384,7 +386,7 @@ bool USOTS_FXManagerSubsystem::EnsureRegistryReady() const
         if (!bWarned)
         {
             bWarned = true;
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Registry not ready; trigger ignored."));
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Registry not ready; trigger ignored."));
         }
     }
 #endif
@@ -528,7 +530,7 @@ void USOTS_FXManagerSubsystem::DumpPoolStatsToLog() const
     }
 
     FSOTS_FXPoolStats Stats = GetPoolStats();
-    UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Pool Stats => Niagara Total=%d Active=%d Free=%d | Audio Total=%d Active=%d Free=%d"),
+    UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX] Pool Stats => Niagara Total=%d Active=%d Free=%d | Audio Total=%d Active=%d Free=%d"),
         Stats.TotalPooledNiagara, Stats.ActiveNiagara, Stats.FreeNiagara,
         Stats.TotalPooledAudio, Stats.ActiveAudio, Stats.FreeAudio);
 
@@ -538,14 +540,14 @@ void USOTS_FXManagerSubsystem::DumpPoolStatsToLog() const
         const int32 AudioActive = ActiveAudioCounts.Contains(Pair.Key) ? ActiveAudioCounts[Pair.Key] : 0;
         if (Pair.Value > 0 || AudioActive > 0)
         {
-            UE_LOG(LogTemp, Log, TEXT("[SOTS_FX]   Tag %s => NiagaraActive=%d AudioActive=%d"), *Pair.Key.ToString(), Pair.Value, AudioActive);
+            UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX]   Tag %s => NiagaraActive=%d AudioActive=%d"), *Pair.Key.ToString(), Pair.Value, AudioActive);
         }
     }
     for (const TPair<FGameplayTag, int32>& Pair : ActiveAudioCounts)
     {
         if (!ActiveNiagaraCounts.Contains(Pair.Key) && Pair.Value > 0)
         {
-            UE_LOG(LogTemp, Log, TEXT("[SOTS_FX]   Tag %s => NiagaraActive=0 AudioActive=%d"), *Pair.Key.ToString(), Pair.Value);
+            UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX]   Tag %s => NiagaraActive=0 AudioActive=%d"), *Pair.Key.ToString(), Pair.Value);
         }
     }
 }
@@ -886,7 +888,7 @@ void USOTS_FXManagerSubsystem::MaybeLogFXFailure(const FSOTS_FXRequestReport& Re
     const FString StatusStr = StaticEnum<ESOTS_FXRequestResult>()->GetNameStringByValue(static_cast<int64>(Report.Result));
     const FString TagStr = Report.RequestedCueTag.IsValid() ? Report.RequestedCueTag.ToString() : TEXT("None");
     const FString Debug = Report.DebugMessage.IsEmpty() ? TEXT("") : Report.DebugMessage;
-    UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] FX request failed (%s): Tag=%s Result=%s %s"), Reason, *TagStr, *StatusStr, *Debug);
+    UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] FX request failed (%s): Tag=%s Result=%s %s"), Reason, *TagStr, *StatusStr, *Debug);
 #endif
 }
 
@@ -1003,7 +1005,7 @@ ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag
         if (bDebugLogCueResolution)
         {
             const FString LibName = Entry->SourceLibrary ? Entry->SourceLibrary->GetName() : TEXT("<unknown>");
-            UE_LOG(LogTemp, Log, TEXT("[SOTS_FX] Resolved %s via %s (P=%d,Order=%d)."), *FXTag.ToString(), *LibName, Entry->Priority, Entry->RegistrationOrder);
+            UE_LOG(LogSOTS_FX, Log, TEXT("[SOTS_FX] Resolved %s via %s (P=%d,Order=%d)."), *FXTag.ToString(), *LibName, Entry->Priority, Entry->RegistrationOrder);
         }
 #endif
         OutDefinition = &Entry->Definition;
@@ -1015,7 +1017,7 @@ ESOTS_FXRequestResult USOTS_FXManagerSubsystem::TryResolveCue(FGameplayTag FXTag
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bDebugLogCueResolution)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Failed to resolve %s after searching %d libraries. Order: %s"), *FXTag.ToString(), LibraryCount, *BuildLibraryOrderDebugString());
+        UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Failed to resolve %s after searching %d libraries. Order: %s"), *FXTag.ToString(), LibraryCount, *BuildLibraryOrderDebugString());
     }
 #endif
     return ESOTS_FXRequestResult::NotFound;
@@ -1321,7 +1323,7 @@ FSOTS_FXRequestReport USOTS_FXManagerSubsystem::ExecuteCue(const FSOTS_FXExecuti
         Report.DebugMessage = TEXT("No FX assets spawned.");
         if (bLogFXRequestFailures)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Failed to spawn FX for %s (no assets)."), *Params.RequestedTag.ToString());
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Failed to spawn FX for %s (no assets)."), *Params.RequestedTag.ToString());
         }
 #endif
     }
@@ -1597,6 +1599,7 @@ UNiagaraComponent* USOTS_FXManagerSubsystem::AcquireNiagaraComponent(const FSOTS
         {
             case ESOTS_FXPoolOverflowPolicy::RejectNew:
                 bOutRejectedByPolicy = true;
+                LogPoolOverflow(Params.ResolvedTag, TEXT("Niagara"), FString::Printf(TEXT("Active limit (%d/%d) reached"), ActiveCount, MaxActivePerCue));
                 return nullptr;
             case ESOTS_FXPoolOverflowPolicy::DestroyOldest:
                 ReclaimOldestActiveEntry(Pool.NiagaraEntries, true);
@@ -1632,6 +1635,7 @@ UNiagaraComponent* USOTS_FXManagerSubsystem::AcquireNiagaraComponent(const FSOTS
     if (TotalPooledNiagara >= MaxPooledNiagaraComponents)
     {
         bOutRejectedByPolicy = true;
+        LogPoolOverflow(Params.ResolvedTag, TEXT("Niagara"), FString::Printf(TEXT("Total pooled limit (%d/%d) reached"), TotalPooledNiagara, MaxPooledNiagaraComponents));
         return nullptr;
     }
 
@@ -1713,6 +1717,7 @@ UAudioComponent* USOTS_FXManagerSubsystem::AcquireAudioComponent(const FSOTS_FXD
         {
             case ESOTS_FXPoolOverflowPolicy::RejectNew:
                 bOutRejectedByPolicy = true;
+                LogPoolOverflow(Params.ResolvedTag, TEXT("Audio"), FString::Printf(TEXT("Active limit (%d/%d) reached"), ActiveCount, MaxActivePerCue));
                 return nullptr;
             case ESOTS_FXPoolOverflowPolicy::DestroyOldest:
                 ReclaimOldestActiveEntry(Pool.AudioEntries, true);
@@ -1747,6 +1752,7 @@ UAudioComponent* USOTS_FXManagerSubsystem::AcquireAudioComponent(const FSOTS_FXD
     if (TotalPooledAudio >= MaxPooledAudioComponents)
     {
         bOutRejectedByPolicy = true;
+        LogPoolOverflow(Params.ResolvedTag, TEXT("Audio"), FString::Printf(TEXT("Total pooled limit (%d/%d) reached"), TotalPooledAudio, MaxPooledAudioComponents));
         return nullptr;
     }
 
@@ -1802,10 +1808,22 @@ void USOTS_FXManagerSubsystem::LogPoolEvent(const FString& Message) const
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bLogPoolActions)
     {
-        UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
+        UE_LOG(LogSOTS_FX, Log, TEXT("%s"), *Message);
     }
 #else
     (void)Message;
+#endif
+}
+
+void USOTS_FXManagerSubsystem::LogPoolOverflow(const FGameplayTag& CueTag, const TCHAR* ComponentType, const FString& Detail) const
+{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const FString TagStr = CueTag.IsValid() ? CueTag.ToString() : TEXT("<none>");
+    UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] %s pool overflow for %s: %s"), ComponentType, *TagStr, *Detail);
+#else
+    (void)CueTag;
+    (void)ComponentType;
+    (void)Detail;
 #endif
 }
 
@@ -1990,7 +2008,7 @@ void USOTS_FXManagerSubsystem::ValidateCueDefinition(const FSOTS_FXDefinition& D
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
         if (bWarnOnDuplicateFXTags)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s detected during validation; first definition wins."), *Def.FXTag.ToString());
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Duplicate FX tag %s detected during validation; first definition wins."), *Def.FXTag.ToString());
         }
 #endif
         return;
@@ -2003,7 +2021,7 @@ void USOTS_FXManagerSubsystem::ValidateCueDefinition(const FSOTS_FXDefinition& D
     const bool bMissingSound = !Def.Sound.IsValid() && !Def.Sound.ToSoftObjectPath().IsValid();
     if (bWarnOnMissingFXAssets && bMissingNiagara && bMissingSound)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] FX tag %s has no Niagara or Sound asset set."), *Def.FXTag.ToString());
+        UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] FX tag %s has no Niagara or Sound asset set."), *Def.FXTag.ToString());
     }
 #endif
 }
@@ -2022,7 +2040,7 @@ void USOTS_FXManagerSubsystem::ValidateLibraryDefinitions() const
     {
         if (!Entry.Library && bWarnOnMissingFXAssets)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[SOTS_FX] Validation skipped null library reference."));
+            UE_LOG(LogSOTS_FX, Warning, TEXT("[SOTS_FX] Validation skipped null library reference."));
         }
     }
 #endif

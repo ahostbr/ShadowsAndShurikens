@@ -6,8 +6,11 @@
 #include "SOTS_ProfileSnapshotProvider.h"
 #include "SOTS_ProfileTypes.h"
 #include "SOTSFXTypes.h"
+#include "Logging/LogMacros.h"
 #include "UObject/SoftObjectPtr.h"
 #include "SOTS_FXManagerSubsystem.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogSOTS_FX, Log, All);
 
 class USOTS_FXCueDefinition;
 class UNiagaraComponent;
@@ -354,6 +357,7 @@ private:
     FSOTS_FXPoolEntry* ReclaimOldestActiveEntry(TArray<FSOTS_FXPoolEntry>& Entries, bool bDestroyOldest);
     void PruneExcessPoolEntries();
     void LogPoolEvent(const FString& Message) const;
+    void LogPoolOverflow(const FGameplayTag& CueTag, const TCHAR* ComponentType, const FString& Detail) const;
 
     // New helper path for gameplay-tag-driven FX jobs.
     const FSOTS_FXDefinition* FindDefinition(FGameplayTag FXTag) const;
