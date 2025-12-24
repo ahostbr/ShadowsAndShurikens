@@ -43,11 +43,7 @@ inside this file (see Section 0.3).
     - The plugin-suite “canonical set” is defined by the currently designated
       plugin snapshot artifact (see Section 2).
     - As of the designated snapshot `SOTS_PluginSourceBundle_20251220_201916.zip`,
-      the suite contains these 24 plugins (by .uplugin):
-        1.2 The plugin suite (canonical snapshot-defined set):
-    - The plugin-suite “canonical set” is defined by the full Plugins/ list that Ryan
-      marks as in-scope for SOTS (the highlighted set).
-    - As of the current in-scope suite, the canonical set contains these 26 plugins:
+      the canonical set contains these 26 plugins (by .uplugin):
         - BEP
         - BlueprintCommentLinks
         - LightProbePlugin
@@ -69,8 +65,8 @@ inside this file (see Section 0.3).
         - SOTS_MMSS
         - SOTS_ProfileShared
         - SOTS_SkillTree
-        - SOTS_Stats
         - SOTS_Steam
+        - SOTS_Stats
         - SOTS_TagManager
         - SOTS_UDSBridge
         - SOTS_UI
@@ -1039,6 +1035,38 @@ BUFFER WINDOW CONTRACT (minimal + strict)
 - Queue size = 1 (latest-wins)
 - Auto-clear backstop: clear on montage end/cancel/abort (AnimInstance delegates) to prevent stuck inputs
 
+21.3.3.1 SOTS_Input — CGF_Parkour Integration Contract (LOCKED)
+
+Owner
+- SOTS_Input owns the Enhanced Input plumbing and forwarding policy into CGF_Parkour.
+- CGF_Parkour remains authoritative for parkour behavior; SOTS_Input only feeds inputs and gates routing.
+
+Parkour feed seam (canonical)
+- Forwarding happens in PlayerController.
+- The only supported feed mechanism is calling the player ParkourComponent’s AddInput intake API.
+- Forwarded inputs:
+  - Move axis (Triggered)
+  - Look axis (Triggered)
+  - Jump (Pressed/Released)
+  - Crouch/Drop/Descend (Pressed/Released), treated as the same key while ParkourState != NotBusy
+- When UI input mode is active: do not forward any parkour inputs.
+
+Routing/gating while Parkour is active
+- BodyDrag start: hard-block.
+- Inventory open: hard-block.
+- KEM start: NOT hard-blocked.
+  - Parkour context is a primary KEM entrypoint (ledge kill execution path) and requires dedicated routing/handling.
+
+Dragon layer routing
+- Input.Layer.Dragon.Control is authoritative.
+- When dragon control layer is active: never forward parkour inputs.
+
+Buffer-window interaction (Execution/Vanish/QTE)
+- During montage buffer windows: parkour input is hard-blocked.
+- Transition handling during these windows is done via sequences or motion-warp / move-component calls (with smoke FX), not via live parkour input.
+
+Debug surfaces
+- Must expose: active device, active layer, parkour-forwarding enabled, last forwarded IA+value, and block reason.
 
 21.3.4 SOTS_UI — Only UI Router / Stack Owner
 OWNER
@@ -1153,13 +1181,22 @@ SEAMS
 - No gameplay authority
 
 
-21.3.12 SOTS_Interaction — Canonical Action Request Seam
-OWNER
-- Owns: cross-plugin interaction action request payload emission for canonical verbs
+21.3.12.1 Interaction verb consumers (LOCKED: emitter/subscriber; no cycles)
+OWNER / DIRECTION
+- SOTS_Interaction is the EMITTER only for canonical action requests.
+- Verb consumers SUBSCRIBE and act:
+  - SOTS_BodyDrag consumes Interaction.Verb.DragStart / DragStop
+  - SOTS_KillExecutionManager consumes Interaction.Verb.Execute
 
-SEAMS
-- Canonical verbs emit ActionRequest payloads (listeners tolerate missing fields until fully wired)
-- Hybrid interaction data policy: tunable (LOS, distance, metadata presence) and must not hard-depend on a single provider
+HARD RULES
+- Interaction MUST NOT include/call into BodyDrag or KEM (no direct routing; no module/plugin deps).
+- Consumers MAY depend on Interaction (one-way) to bind the event and read the payload.
+- If a consumer receives incomplete payload data, it must fall back internally (do not force Interaction to hard-couple):
+  - KEM may resolve missing ExecutionTag via its own selection/gates and proceed via blessed entrypoints.
+
+TAGMANAGER RELATION (clarification; non-contradicting)
+- TagManager remains the boundary authority for shared runtime actor-state tags.
+- ActionRequest routing is NOT replaced by TagManager; it is a separate seam used for verb/payload delivery.
 
 
 21.3.13 SOTS_INV — Inventory Identity + Provider Policy + UI Routing

@@ -4,11 +4,13 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SOTS_ProfileSnapshotProvider.h"
 #include "SOTS_ProfileTypes.h"
+#include "TimerManager.h"
 #include "SOTS_ProfileSubsystem.generated.h"
 
 class AActor;
 class APawn;
 class UActorComponent;
+class UWorld;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_ProfileRestoredSignature, const FSOTS_ProfileSnapshot&, Snapshot);
 
@@ -55,7 +57,20 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "SOTS|Profile")
     FSOTS_ProfileRestoredSignature OnProfileRestored;
 
+    // High-level helpers (autosave/checkpoint/UI save entrypoints)
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Profile")
+    bool RequestSaveCurrentProfile(FText& OutFailureReason);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Profile")
+    bool RequestCheckpointSave(const FSOTS_ProfileId& ProfileId, FText& OutFailureReason);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Profile")
+    void SetActiveProfile(const FSOTS_ProfileId& ProfileId);
+
 protected:
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Deinitialize() override;
+
     FString GetSlotNameForProfile(const FSOTS_ProfileId& ProfileId) const;
 
     void GatherPlayerSnapshot(FSOTS_ProfileSnapshot& OutSnapshot) const;
@@ -70,6 +85,8 @@ protected:
     void UpdateProviderResolutionCache();
     UActorComponent* FindStatsComponent(AActor* Actor) const;
     bool TryGetPlayerPawn(APawn*& OutPawn) const;
+    bool IsSaveBlockedByKEM() const;
+    bool IsSaveBlockedForUI(FText& OutReason) const;
 
 private:
     UPROPERTY()
@@ -82,4 +99,15 @@ private:
     int32 CachedPrimaryProviderPriority = 0;
     int32 CachedProviderCount = 0;
     bool bLoggedMissingProvidersOnce = false;
+
+    UPROPERTY()
+    FSOTS_ProfileId ActiveProfileId;
+
+    float AutosaveIntervalSeconds = 300.0f;
+    bool bEnableAutosave = true;
+    FTimerHandle AutosaveTimerHandle;
+
+    void StartAutosaveTimer();
+    void StopAutosaveTimer();
+    void HandleAutosave();
 };

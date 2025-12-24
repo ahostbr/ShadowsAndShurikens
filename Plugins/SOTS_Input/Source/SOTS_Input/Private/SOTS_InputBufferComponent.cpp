@@ -17,8 +17,12 @@ bool USOTS_InputBufferComponent::IsChannelAllowedForWindow(const FGameplayTag& C
 {
     static const FGameplayTag ExecutionTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.Execution"), false);
     static const FGameplayTag VanishTag = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.Vanish"), false);
+    static const FGameplayTag QTAGETag = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.QTE"), false);
 
-    return ChannelTag.IsValid() && (ChannelTag.MatchesTagExact(ExecutionTag) || ChannelTag.MatchesTagExact(VanishTag));
+    return ChannelTag.IsValid() && (
+        ChannelTag.MatchesTagExact(ExecutionTag) ||
+        ChannelTag.MatchesTagExact(VanishTag) ||
+        ChannelTag.MatchesTagExact(QTAGETag));
 }
 
 void USOTS_InputBufferComponent::OpenChannel(FGameplayTag Channel)

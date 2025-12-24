@@ -92,6 +92,15 @@ void USOTS_StatsComponent::SetAllStats(const TMap<FGameplayTag, float>& NewStats
     }
 }
 
+void USOTS_StatsComponent::ApplyCharacterStateData_Quiet(const FSOTS_CharacterStateData& InState)
+{
+    StatValues = InState.StatValues;
+    for (auto& Entry : StatValues)
+    {
+        Entry.Value = ClampToBounds(Entry.Key, Entry.Value);
+    }
+}
+
 void USOTS_StatsComponent::WriteToCharacterState(FSOTS_CharacterStateData& InOutState) const
 {
     InOutState.StatValues = StatValues;
@@ -99,7 +108,12 @@ void USOTS_StatsComponent::WriteToCharacterState(FSOTS_CharacterStateData& InOut
 
 void USOTS_StatsComponent::ReadFromCharacterState(const FSOTS_CharacterStateData& InState)
 {
-    StatValues = InState.StatValues;
+    StatValues.Reset();
+    for (const TPair<FGameplayTag, float>& Pair : InState.StatValues)
+    {
+        // Broadcast per stat so listeners see the authoritative restore.
+        InternalSetStat(Pair.Key, Pair.Value, true);
+    }
 }
 
 void USOTS_StatsComponent::SetStatBounds(FGameplayTag StatTag, float MinValue, float MaxValue)
@@ -125,10 +139,9 @@ void USOTS_StatsComponent::BuildCharacterStateData(FSOTS_CharacterStateData& Out
 
 void USOTS_StatsComponent::ApplyCharacterStateData(const FSOTS_CharacterStateData& InState)
 {
-    StatValues = InState.StatValues;
-
-    for (auto& Entry : StatValues)
+    StatValues.Reset();
+    for (const TPair<FGameplayTag, float>& Pair : InState.StatValues)
     {
-        Entry.Value = ClampToBounds(Entry.Key, Entry.Value);
+        InternalSetStat(Pair.Key, Pair.Value, true);
     }
 }

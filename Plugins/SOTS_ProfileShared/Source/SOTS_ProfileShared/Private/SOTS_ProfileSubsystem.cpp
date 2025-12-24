@@ -10,6 +10,7 @@
 #include "Math/Transform.h"
 #include "SOTS_ProfileSaveGame.h"
 #include "UObject/SoftObjectPath.h"
+#include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTSProfileShared, Log, All);
 
@@ -65,8 +66,26 @@ FString USOTS_ProfileSubsystem::GetSlotNameForProfile(const FSOTS_ProfileId& Pro
         *ProfileId.ProfileName.ToString());
 }
 
+void USOTS_ProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    Super::Initialize(Collection);
+    StartAutosaveTimer();
+}
+
+void USOTS_ProfileSubsystem::Deinitialize()
+{
+    StopAutosaveTimer();
+    Super::Deinitialize();
+}
+
 bool USOTS_ProfileSubsystem::SaveProfile(const FSOTS_ProfileId& ProfileId, const FSOTS_ProfileSnapshot& Snapshot)
 {
+    if (IsSaveBlockedByKEM())
+    {
+        UE_LOG(LogSOTSProfileShared, Warning, TEXT("[ProfileSubsystem] SaveProfile blocked: KEM active."));
+        return false;
+    }
+
     const FString SlotName = GetSlotNameForProfile(ProfileId);
     constexpr int32 UserIndex = 0;
 
@@ -84,6 +103,7 @@ bool USOTS_ProfileSubsystem::SaveProfile(const FSOTS_ProfileId& ProfileId, const
         SaveGame->Snapshot = SnapshotToSave;
         if (UGameplayStatics::SaveGameToSlot(SaveGame, SlotName, UserIndex))
         {
+            ActiveProfileId = ProfileId;
             return true;
         }
     }
@@ -109,6 +129,7 @@ bool USOTS_ProfileSubsystem::LoadProfile(const FSOTS_ProfileId& ProfileId, FSOTS
         {
             OutSnapshot = ProfileSave->Snapshot;
             OutSnapshot.Meta.Id = ProfileId;
+            ActiveProfileId = ProfileId;
             if (OutSnapshot.Meta.DisplayName.IsEmpty())
             {
                 OutSnapshot.Meta.DisplayName = ProfileId.ProfileName.ToString();
@@ -436,4 +457,138 @@ bool USOTS_ProfileSubsystem::TryGetPlayerPawn(APawn*& OutPawn) const
         }
     }
     return OutPawn != nullptr;
+}
+
+bool USOTS_ProfileSubsystem::IsSaveBlockedByKEM() const
+{
+    const UWorld* World = GetWorld();
+    if (!World)
+    {
+        return false;
+    }
+
+    const UGameInstance* GameInstance = World->GetGameInstance();
+    if (!GameInstance)
+    {
+        return false;
+    }
+
+    static const FSoftClassPath KEMPath(TEXT("/Script/SOTS_KillExecutionManager.SOTS_KEMManagerSubsystem"));
+    UClass* KEMClass = KEMPath.ResolveClass();
+    if (!KEMClass)
+    {
+        KEMClass = KEMPath.TryLoadClass<UClass>();
+    }
+
+    if (!KEMClass)
+    {
+        return false;
+    }
+
+    if (UObject* KEM = GameInstance->GetSubsystemBase(KEMClass))
+    {
+        static const FName IsSaveBlockedName(TEXT("IsSaveBlocked"));
+        if (UFunction* Func = KEM->FindFunction(IsSaveBlockedName))
+        {
+            struct FParams
+            {
+                bool ReturnValue = false;
+            };
+
+            FParams Params;
+            KEM->ProcessEvent(Func, &Params);
+            return Params.ReturnValue;
+        }
+    }
+
+    return false;
+}
+
+bool USOTS_ProfileSubsystem::IsSaveBlockedForUI(FText& OutReason) const
+{
+    if (IsSaveBlockedByKEM())
+    {
+        OutReason = FText::FromString(TEXT("Cannot save during execution."));
+        return true;
+    }
+
+    OutReason = FText::GetEmpty();
+    return false;
+}
+
+bool USOTS_ProfileSubsystem::RequestSaveCurrentProfile(FText& OutFailureReason)
+{
+    if (ActiveProfileId.ProfileName.IsNone())
+    {
+        OutFailureReason = FText::FromString(TEXT("No active profile to save."));
+        return false;
+    }
+
+    if (IsSaveBlockedForUI(OutFailureReason))
+    {
+        return false;
+    }
+
+    FSOTS_ProfileSnapshot Snapshot;
+    BuildSnapshotFromWorld(Snapshot);
+    const bool bSaved = SaveProfile(ActiveProfileId, Snapshot);
+    if (!bSaved && OutFailureReason.IsEmpty())
+    {
+        OutFailureReason = FText::FromString(TEXT("Save failed."));
+    }
+    return bSaved;
+}
+
+bool USOTS_ProfileSubsystem::RequestCheckpointSave(const FSOTS_ProfileId& ProfileId, FText& OutFailureReason)
+{
+    if (IsSaveBlockedForUI(OutFailureReason))
+    {
+        return false;
+    }
+
+    FSOTS_ProfileSnapshot Snapshot;
+    BuildSnapshotFromWorld(Snapshot);
+    const bool bSaved = SaveProfile(ProfileId, Snapshot);
+    if (!bSaved && OutFailureReason.IsEmpty())
+    {
+        OutFailureReason = FText::FromString(TEXT("Save failed."));
+    }
+    return bSaved;
+}
+
+void USOTS_ProfileSubsystem::SetActiveProfile(const FSOTS_ProfileId& ProfileId)
+{
+    ActiveProfileId = ProfileId;
+}
+
+void USOTS_ProfileSubsystem::StartAutosaveTimer()
+{
+    if (!bEnableAutosave || AutosaveIntervalSeconds <= 0.0f)
+    {
+        return;
+    }
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().SetTimer(AutosaveTimerHandle, this, &USOTS_ProfileSubsystem::HandleAutosave, AutosaveIntervalSeconds, true);
+    }
+}
+
+void USOTS_ProfileSubsystem::StopAutosaveTimer()
+{
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(AutosaveTimerHandle);
+    }
+}
+
+void USOTS_ProfileSubsystem::HandleAutosave()
+{
+    if (ActiveProfileId.ProfileName.IsNone())
+    {
+        return;
+    }
+
+    FText Reason;
+    RequestSaveCurrentProfile(Reason);
 }

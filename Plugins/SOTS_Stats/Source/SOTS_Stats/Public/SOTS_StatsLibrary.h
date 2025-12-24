@@ -30,6 +30,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SOTS|Stats", meta = (WorldContext = "WorldContextObject"))
     static void ApplySnapshotToActor(AActor* Target, const FSOTS_CharacterStateData& Snapshot);
 
+    /** Resolve-or-create stats component on the actor (per-actor isolation) and return it. */
+    UFUNCTION(BlueprintCallable, Category = "SOTS|Stats", meta = (WorldContext = "WorldContextObject"))
+    static USOTS_StatsComponent* ResolveStatsComponentForActor(AActor* Target);
+
     UFUNCTION(BlueprintCallable, Category = "SOTS|Stats", meta = (WorldContext = "WorldContextObject"))
     static void SOTS_BuildCharacterStateFromStats(const UObject* WorldContextObject, AActor* Target, FSOTS_CharacterStateData& OutState);
 

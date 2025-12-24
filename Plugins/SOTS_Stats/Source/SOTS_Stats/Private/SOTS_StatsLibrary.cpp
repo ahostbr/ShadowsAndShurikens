@@ -4,6 +4,9 @@
 #include "SOTS_ProfileTypes.h"
 #include "SOTS_StatsComponent.h"
 
+static USOTS_StatsComponent* FindStatsComponent(AActor* Target);
+static USOTS_StatsComponent* ResolveOrAddStatsComponent(AActor* TargetActor);
+
 float USOTS_StatsLibrary::GetActorStatValue(const UObject* /*WorldContextObject*/, AActor* Target, FGameplayTag StatTag, float DefaultValue)
 {
     if (!Target || !StatTag.IsValid())
@@ -26,9 +29,15 @@ void USOTS_StatsLibrary::AddToActorStat(const UObject* /*WorldContextObject*/, A
         return;
     }
 
-    if (USOTS_StatsComponent* StatsComp = Target->FindComponentByClass<USOTS_StatsComponent>())
+    if (USOTS_StatsComponent* StatsComp = FindStatsComponent(Target))
     {
         StatsComp->AddToStat(StatTag, Delta);
+        return;
+    }
+
+    if (USOTS_StatsComponent* NewComp = ResolveOrAddStatsComponent(Target))
+    {
+        NewComp->AddToStat(StatTag, Delta);
     }
 }
 
@@ -39,17 +48,15 @@ void USOTS_StatsLibrary::SetActorStatValue(const UObject* /*WorldContextObject*/
         return;
     }
 
-    if (USOTS_StatsComponent* StatsComp = Target->FindComponentByClass<USOTS_StatsComponent>())
+    if (USOTS_StatsComponent* StatsComp = FindStatsComponent(Target))
     {
         StatsComp->SetStatValue(StatTag, NewValue);
+        return;
     }
-}
 
-namespace
-{
-    USOTS_StatsComponent* FindStatsComponent(AActor* Target)
+    if (USOTS_StatsComponent* NewComp = ResolveOrAddStatsComponent(Target))
     {
-        return Target ? Target->FindComponentByClass<USOTS_StatsComponent>() : nullptr;
+        NewComp->SetStatValue(StatTag, NewValue);
     }
 }
 
@@ -67,7 +74,18 @@ void USOTS_StatsLibrary::ApplySnapshotToActor(AActor* Target, const FSOTS_Charac
     if (USOTS_StatsComponent* StatsComp = FindStatsComponent(Target))
     {
         StatsComp->ApplyCharacterStateData(Snapshot);
+        return;
     }
+
+    if (USOTS_StatsComponent* NewComp = ResolveOrAddStatsComponent(Target))
+    {
+        NewComp->ApplyCharacterStateData(Snapshot);
+    }
+}
+
+USOTS_StatsComponent* USOTS_StatsLibrary::ResolveStatsComponentForActor(AActor* Target)
+{
+    return ResolveOrAddStatsComponent(Target);
 }
 
 void USOTS_StatsLibrary::SOTS_BuildCharacterStateFromStats(const UObject* /*WorldContextObject*/, AActor* Target, FSOTS_CharacterStateData& OutState)
@@ -104,4 +122,24 @@ FString USOTS_StatsLibrary::SOTS_DumpStatsToString(const UObject* /*WorldContext
     }
 
     return TEXT("Stats: component missing");
+}
+
+static USOTS_StatsComponent* FindStatsComponent(AActor* Target)
+{
+    return Target ? Target->FindComponentByClass<USOTS_StatsComponent>() : nullptr;
+}
+
+static USOTS_StatsComponent* ResolveOrAddStatsComponent(AActor* TargetActor)
+{
+    if (!TargetActor)
+    {
+        return nullptr;
+    }
+
+    if (USOTS_StatsComponent* Existing = TargetActor->FindComponentByClass<USOTS_StatsComponent>())
+    {
+        return Existing;
+    }
+
+    return NewObject<USOTS_StatsComponent>(TargetActor, USOTS_StatsComponent::StaticClass(), NAME_None, RF_Transactional);
 }

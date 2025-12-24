@@ -776,6 +776,52 @@ struct FSOTS_BPGenNodeDiscoveryResult
 };
 
 /**
+ * Property override planned for data asset creation.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenAssetProperty
+{
+	GENERATED_BODY()
+
+	/** JSON: "name" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "name"))
+	FString Name;
+
+	/** JSON: "value" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "value"))
+	FString Value;
+};
+
+/**
+ * Definition for creating or updating a data asset.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenDataAssetDef
+{
+	GENERATED_BODY()
+
+	/** JSON: "asset_path" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "asset_path"))
+	FString AssetPath;
+
+	/** JSON: "asset_class_path" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "asset_class_path"))
+	FString AssetClassPath;
+
+	/** JSON: "create_if_missing" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "create_if_missing"))
+	bool bCreateIfMissing = true;
+
+	/** JSON: "update_if_exists" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "update_if_exists"))
+	bool bUpdateIfExists = true;
+
+	/** JSON: "properties" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Asset", meta = (JsonKey = "properties"))
+	TArray<FSOTS_BPGenAssetProperty> Properties;
+};
+
+/**
  * Result for asset-creation operations (structs, enums).
  */
 USTRUCT(BlueprintType)

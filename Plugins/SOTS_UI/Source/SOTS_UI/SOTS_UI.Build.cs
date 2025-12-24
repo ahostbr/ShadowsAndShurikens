@@ -26,7 +26,8 @@ public class SOTS_UI : ModuleRules
 				"DeveloperSettings",
 				"InputCore",
 				"SOTS_Input",
-				"SOTS_Interaction"
+				"SOTS_Interaction",
+				"SOTS_ProfileShared"
 			}
 		);
 

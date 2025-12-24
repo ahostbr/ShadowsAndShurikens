@@ -48,6 +48,9 @@ public:
     void BuildCharacterStateData(struct FSOTS_CharacterStateData& OutState) const;
     void ApplyCharacterStateData(const struct FSOTS_CharacterStateData& InState);
 
+    /** Fast authority restore: clears and applies payload without per-stat broadcasts (use ApplyCharacterStateData for eventing). */
+    void ApplyCharacterStateData_Quiet(const struct FSOTS_CharacterStateData& InState);
+
     UFUNCTION(BlueprintCallable, Category = "SOTS|Stats")
     void SetStatBounds(FGameplayTag StatTag, float MinValue, float MaxValue);
 

@@ -53,7 +53,7 @@ public:
     void ClearChannel(FGameplayTag ChannelTag);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Buffer")
-    int32 MaxBufferedEventsPerChannel = 16;
+    int32 MaxBufferedEventsPerChannel = 1;
 
     bool GetTopOpenChannel(FGameplayTag& OutChannel) const;
     void GetOpenChannels(TArray<FGameplayTag>& OutChannels) const;

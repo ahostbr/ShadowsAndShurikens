@@ -15,10 +15,12 @@ void USOTS_InputHandler_IntentTag::HandleInput_Implementation(USOTS_InputRouterC
     {
         static const FGameplayTag ExecutionChannel = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.Execution"), false);
         static const FGameplayTag VanishChannel = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.Vanish"), false);
+        static const FGameplayTag QTEChannel = FGameplayTag::RequestGameplayTag(TEXT("Input.Buffer.Channel.QTE"), false);
 
         bool bBuffered = false;
         Buffer->TryBufferIntent(ExecutionChannel, IntentTag, bBuffered);
         Buffer->TryBufferIntent(VanishChannel, IntentTag, bBuffered);
+        Buffer->TryBufferIntent(QTEChannel, IntentTag, bBuffered);
     }
 
     Router->BroadcastIntent(IntentTag, TriggerEvent, Instance.GetValue());

@@ -36,11 +36,20 @@
 #include "Kismet2/StructureEditorUtils.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/PackageName.h"
 #include "HAL/IConsoleManager.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "UObject/SavePackage.h"
 #include "UserDefinedStructure/UserDefinedStructEditorData.h"
+#include "GameplayTagContainer.h"
+#include "UObject/Class.h"
+#include "UObject/ObjectPtr.h"
+#include "Containers/StringConv.h"
+#include "UObject/SoftObjectPtr.h"
+#include "UObject/SoftObjectPath.h"
+#include "UObject/UnrealType.h"
+#include <cstdlib>
 
 // Global mutex defined here (declared in SOTS_BPGenEditGuard.h).
 FCriticalSection GSOTS_BPGenEditMutex;
@@ -372,7 +381,6 @@ static void TryAssignDefaultObject(UEdGraphPin* Pin, const FString& DefaultValue
 static bool FillPinTypeFromBPGen(const FSOTS_BPGenPin& PinDef, FEdGraphPinType& OutPinType)
 {
 	OutPinType = FEdGraphPinType();
-
 	if (PinDef.Category.IsNone())
 	{
 		return false;
@@ -618,7 +626,8 @@ static bool TryResolvePinAlias(const FSOTS_BPGenGraphNode& NodeSpec, FName& InOu
 
 			if (Canonical.Equals(Requested, ESearchCase::IgnoreCase))
 			{
-				return false;
+				OutCanonical = Canonical;
+				return true;
 			}
 
 			for (const FString& Alias : Pair.Value)
@@ -3133,6 +3142,282 @@ static FName GetSafeObjectName(const FName& ProvidedName, const FString& Package
 	return FName(*FPackageName::GetLongPackageAssetName(PackageName));
 }
 
+static bool TrySetDataAssetProperty(UObject* Asset, const FSOTS_BPGenAssetProperty& PropertyDef, TArray<FString>& OutErrors);
+
+static bool TryParseBoolFromString(const FString& Text, bool& OutValue)
+{
+	const FString Trimmed = Text.TrimStartAndEnd();
+	if (Trimmed.IsEmpty())
+	{
+		return false;
+	}
+
+	const FString Lower = Trimmed.ToLower();
+	if (Lower == TEXT("true") || Lower == TEXT("1") || Lower == TEXT("yes") || Lower == TEXT("on"))
+	{
+		OutValue = true;
+		return true;
+	}
+
+	if (Lower == TEXT("false") || Lower == TEXT("0") || Lower == TEXT("no") || Lower == TEXT("off"))
+	{
+		OutValue = false;
+		return true;
+	}
+
+	return false;
+}
+
+static bool TryParseFloatFromString(const FString& Text, float& OutValue)
+{
+	const FString Trimmed = Text.TrimStartAndEnd();
+	if (Trimmed.IsEmpty())
+	{
+		return false;
+	}
+
+	FTCHARToUTF8 Converter(*Trimmed);
+	const ANSICHAR* Start = Converter.Get();
+	char* End = nullptr;
+	const float Parsed = std::strtof(Start, &End);
+	if (End == Start || *End != '\0')
+	{
+		return false;
+	}
+	OutValue = Parsed;
+	return true;
+}
+
+static bool TryParseIntFromString(const FString& Text, int64& OutValue)
+{
+	const FString Trimmed = Text.TrimStartAndEnd();
+	if (Trimmed.IsEmpty())
+	{
+		return false;
+	}
+
+	FTCHARToUTF8 Converter(*Trimmed);
+	const ANSICHAR* Start = Converter.Get();
+	char* End = nullptr;
+	const long long Parsed = std::strtoll(Start, &End, 10);
+	if (End == Start || *End != '\0')
+	{
+		return false;
+	}
+	OutValue = static_cast<int64>(Parsed);
+	return true;
+}
+
+static bool TrySetDataAssetProperty(UObject* Asset, const FSOTS_BPGenAssetProperty& PropertyDef, TArray<FString>& OutErrors)
+{
+	if (!Asset)
+	{
+		OutErrors.Add(TEXT("TrySetDataAssetProperty: Asset context was null."));
+		return false;
+	}
+
+	if (PropertyDef.Name.IsEmpty())
+	{
+		OutErrors.Add(TEXT("TrySetDataAssetProperty: Property name missing."));
+		return false;
+	}
+
+	const FName PropertyName(*PropertyDef.Name);
+	FProperty* Property = Asset->GetClass()->FindPropertyByName(PropertyName);
+	if (!Property)
+	{
+		OutErrors.Add(FString::Printf(TEXT("Property '%s' not found on '%s'."), *PropertyDef.Name, *Asset->GetName()));
+		return false;
+	}
+
+	const FString Value = PropertyDef.Value;
+
+	if (FStrProperty* StrProp = CastField<FStrProperty>(Property))
+	{
+		StrProp->SetPropertyValue_InContainer(Asset, Value);
+		return true;
+	}
+
+	if (FTextProperty* TextProp = CastField<FTextProperty>(Property))
+	{
+		TextProp->SetPropertyValue_InContainer(Asset, FText::FromString(Value));
+		return true;
+	}
+
+	if (FNameProperty* NameProp = CastField<FNameProperty>(Property))
+	{
+		NameProp->SetPropertyValue_InContainer(Asset, FName(*Value));
+		return true;
+	}
+
+	if (FBoolProperty* BoolProp = CastField<FBoolProperty>(Property))
+	{
+		bool BoolValue = false;
+		if (!TryParseBoolFromString(Value, BoolValue))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a boolean value."), *PropertyDef.Name));
+			return false;
+		}
+		BoolProp->SetPropertyValue_InContainer(Asset, BoolValue);
+		return true;
+	}
+
+	if (FFloatProperty* FloatProp = CastField<FFloatProperty>(Property))
+	{
+		float FloatValue = 0.0f;
+		if (!TryParseFloatFromString(Value, FloatValue))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a floating-point value."), *PropertyDef.Name));
+			return false;
+		}
+		FloatProp->SetPropertyValue_InContainer(Asset, FloatValue);
+		return true;
+	}
+
+	if (FDoubleProperty* DoubleProp = CastField<FDoubleProperty>(Property))
+	{
+		double DoubleValue = 0.0;
+		float TempFloat = 0.0f;
+		if (!TryParseFloatFromString(Value, TempFloat))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a floating-point value."), *PropertyDef.Name));
+			return false;
+		}
+		DoubleProp->SetPropertyValue_InContainer(Asset, static_cast<double>(TempFloat));
+		return true;
+	}
+
+	if (FIntProperty* IntProp = CastField<FIntProperty>(Property))
+	{
+		int64 ParsedValue = 0;
+		if (!TryParseIntFromString(Value, ParsedValue))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects an integer value."), *PropertyDef.Name));
+			return false;
+		}
+		IntProp->SetPropertyValue_InContainer(Asset, static_cast<int32>(ParsedValue));
+		return true;
+	}
+
+	if (FInt64Property* Int64Prop = CastField<FInt64Property>(Property))
+	{
+		int64 ParsedValue = 0;
+		if (!TryParseIntFromString(Value, ParsedValue))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects an integer value."), *PropertyDef.Name));
+			return false;
+		}
+		Int64Prop->SetPropertyValue_InContainer(Asset, ParsedValue);
+		return true;
+	}
+
+	if (FByteProperty* ByteProp = CastField<FByteProperty>(Property))
+	{
+		int64 ParsedValue = 0;
+		if (!TryParseIntFromString(Value, ParsedValue))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a byte/integer value."), *PropertyDef.Name));
+			return false;
+		}
+		ByteProp->SetPropertyValue_InContainer(Asset, static_cast<uint8>(ParsedValue & 0xFF));
+		return true;
+	}
+
+	if (FEnumProperty* EnumProp = CastField<FEnumProperty>(Property))
+	{
+		int64 ParsedValue = 0;
+		if (!TryParseIntFromString(Value, ParsedValue))
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects an enum/int value."), *PropertyDef.Name));
+			return false;
+		}
+		FProperty* Underlying = EnumProp->GetUnderlyingProperty();
+		void* EnumValuePtr = Underlying->ContainerPtrToValuePtr<void>(Asset);
+		if (FIntProperty* IntProp = CastField<FIntProperty>(Underlying))
+		{
+			IntProp->SetIntPropertyValue(EnumValuePtr, ParsedValue);
+			return true;
+		}
+		if (FInt64Property* Int64Prop = CastField<FInt64Property>(Underlying))
+		{
+			Int64Prop->SetIntPropertyValue(EnumValuePtr, ParsedValue);
+			return true;
+		}
+		if (FByteProperty* ByteProp = CastField<FByteProperty>(Underlying))
+		{
+			ByteProp->SetIntPropertyValue(EnumValuePtr, ParsedValue);
+			return true;
+		}
+		OutErrors.Add(TEXT("Enum backing property has unsupported numeric type."));
+		return false;
+	}
+
+	if (FObjectPropertyBase* ObjectProp = CastField<FObjectPropertyBase>(Property))
+	{
+		if (Value.IsEmpty())
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects an object path."), *PropertyDef.Name));
+			return false;
+		}
+		UObject* Loaded = StaticLoadObject(ObjectProp->PropertyClass, nullptr, *Value);
+		if (!Loaded)
+		{
+			OutErrors.Add(FString::Printf(TEXT("Failed to load object '%s' for property '%s'."), *Value, *PropertyDef.Name));
+			return false;
+		}
+		ObjectProp->SetObjectPropertyValue_InContainer(Asset, Loaded);
+		return true;
+	}
+
+	if (FSoftObjectProperty* SoftObjProp = CastField<FSoftObjectProperty>(Property))
+	{
+		FSoftObjectPath SoftPath(Value);
+		if (!SoftPath.IsValid())
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a valid soft object path."), *PropertyDef.Name));
+			return false;
+		}
+		SoftObjProp->SetPropertyValue_InContainer(Asset, FSoftObjectPtr(SoftPath));
+		return true;
+	}
+
+	if (FSoftClassProperty* SoftClassProp = CastField<FSoftClassProperty>(Property))
+	{
+		FSoftObjectPath SoftPath(Value);
+		if (!SoftPath.IsValid())
+		{
+			OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a valid soft class path."), *PropertyDef.Name));
+			return false;
+		}
+		SoftClassProp->SetPropertyValue_InContainer(Asset, FSoftObjectPtr(SoftPath));
+		return true;
+	}
+
+	if (FStructProperty* StructProp = CastField<FStructProperty>(Property))
+	{
+		if (StructProp->Struct == TBaseStructure<FGameplayTag>::Get())
+		{
+			if (Value.IsEmpty())
+			{
+				OutErrors.Add(FString::Printf(TEXT("Property '%s' expects a gameplay tag string."), *PropertyDef.Name));
+				return false;
+			}
+			const FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName(*Value), /*bErrorIfNotFound=*/false);
+			if (!Tag.IsValid())
+			{
+				OutErrors.Add(FString::Printf(TEXT("Failed to resolve gameplay tag '%s'."), *Value));
+				return false;
+			}
+			void* StructValue = StructProp->ContainerPtrToValuePtr<void>(Asset);
+			StructProp->CopyCompleteValue(StructValue, &Tag);
+			return true;
+		}
+	}
+
+	OutErrors.Add(FString::Printf(TEXT("Property '%s' has an unsupported type."), *PropertyDef.Name));
+	return false;
+}
+
 FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateStructAssetFromDef(
 	const UObject* WorldContextObject,
 	const FSOTS_BPGenStructDef& StructDef)
@@ -3319,6 +3604,134 @@ FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateEnumAssetFromDef(
 
 	Result.bSuccess = true;
 	Result.Message = FString::Printf(TEXT("Enum '%s' created/updated at '%s'."), *EnumName.ToString(), *PackageName);
+	return Result;
+}
+
+FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateDataAssetFromDef(
+	const UObject* WorldContextObject,
+	const FSOTS_BPGenDataAssetDef& AssetDef)
+{
+	FSOTS_BPGenAssetResult Result;
+	Result.AssetPath = AssetDef.AssetPath;
+
+	if (AssetDef.AssetPath.IsEmpty())
+	{
+		Result.Message = TEXT("DataAsset definition is missing asset_path.");
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	if (AssetDef.AssetClassPath.IsEmpty())
+	{
+		Result.Message = TEXT("DataAsset definition is missing asset_class_path.");
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	const FString PackageName = GetNormalizedPackageName(AssetDef.AssetPath);
+	if (PackageName.IsEmpty())
+	{
+		Result.Message = TEXT("DataAsset asset_path is invalid.");
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	const FString AssetNameString = FPackageName::GetLongPackageAssetName(PackageName);
+	if (AssetNameString.IsEmpty())
+	{
+		Result.Message = TEXT("Could not derive asset name from asset_path.");
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	const FName AssetName(*AssetNameString);
+
+	UClass* AssetClass = StaticLoadClass(UObject::StaticClass(), nullptr, *AssetDef.AssetClassPath);
+	if (!AssetClass)
+	{
+		Result.Message = FString::Printf(TEXT("Failed to resolve class '%s'."), *AssetDef.AssetClassPath);
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	UPackage* Package = CreatePackage(*PackageName);
+	if (!Package)
+	{
+		Result.Message = FString::Printf(TEXT("Could not create package '%s'."), *PackageName);
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	Package->FullyLoad();
+
+	UObject* Asset = FindObject<UObject>(Package, *AssetName.ToString());
+	const bool bAlreadyExists = Asset != nullptr;
+
+	if (Asset)
+	{
+		if (!Asset->GetClass()->IsChildOf(AssetClass))
+		{
+			Result.Message = FString::Printf(TEXT("Existing asset '%s' is not of class '%s'."), *Asset->GetName(), *AssetClass->GetName());
+			Result.ErrorMessage = Result.Message;
+			return Result;
+		}
+
+		if (!AssetDef.bUpdateIfExists)
+		{
+			Result.Message = TEXT("Data asset already exists and update_if_exists is false.");
+			Result.ErrorMessage = Result.Message;
+			return Result;
+		}
+	}
+	else
+	{
+		if (!AssetDef.bCreateIfMissing)
+		{
+			Result.Message = TEXT("Data asset missing and create_if_missing is false.");
+			Result.ErrorMessage = Result.Message;
+			return Result;
+		}
+
+		Asset = NewObject<UObject>(Package, AssetClass, AssetName, RF_Public | RF_Standalone | RF_Transactional);
+		if (!Asset)
+		{
+			Result.Message = TEXT("Failed to create data asset instance.");
+			Result.ErrorMessage = Result.Message;
+			return Result;
+		}
+
+		FAssetRegistryModule::AssetCreated(Asset);
+	}
+
+	TArray<FString> PropertyErrors;
+	for (const FSOTS_BPGenAssetProperty& Property : AssetDef.Properties)
+	{
+		PropertyErrors.Reset();
+		if (!TrySetDataAssetProperty(Asset, Property, PropertyErrors))
+		{
+			Result.ErrorMessage = TEXT("Failed to override data asset property.");
+			Result.Errors.Append(PropertyErrors);
+			return Result;
+		}
+	}
+
+	Asset->PostEditChange();
+	Package->MarkPackageDirty();
+
+	const FString FileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+	SaveArgs.Error = GError;
+	SaveArgs.bWarnOfLongFilename = false;
+	if (!UPackage::SavePackage(Package, Asset, *FileName, SaveArgs))
+	{
+		Result.Message = FString::Printf(TEXT("Failed to save data asset package '%s'."), *FileName);
+		Result.ErrorMessage = Result.Message;
+		return Result;
+	}
+
+	Result.bSuccess = true;
+	Result.Message = FString::Printf(TEXT("Data asset '%s' created/updated at '%s'."), *AssetName.ToString(), *PackageName);
 	return Result;
 }
 

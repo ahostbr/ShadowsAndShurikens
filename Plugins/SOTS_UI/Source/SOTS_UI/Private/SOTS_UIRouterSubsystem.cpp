@@ -20,6 +20,7 @@
 #include "SOTS_UISettings.h"
 #include "SOTS_InputAPI.h"
 #include "SOTS_InteractionSubsystem.h"
+#include "SOTS_ProfileSubsystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UIRouter, Log, All);
 
@@ -1422,5 +1423,60 @@ bool USOTS_UIRouterSubsystem::IsExternalMenuTag(const FGameplayTag& MenuIdTag) c
 		return MenuIdTag.ToString().StartsWith(TEXT("SAS.UI.InvSP"));
 	}
 
+	return false;
+}
+
+bool USOTS_UIRouterSubsystem::RequestSaveGame(const FSOTS_ProfileId& ProfileId)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			if (USOTS_ProfileSubsystem* ProfileSubsystem = GameInstance->GetSubsystem<USOTS_ProfileSubsystem>())
+			{
+				FText FailureReason;
+				ProfileSubsystem->SetActiveProfile(ProfileId);
+				const bool bSaved = ProfileSubsystem->RequestSaveCurrentProfile(FailureReason);
+				if (!bSaved && !FailureReason.IsEmpty())
+				{
+					ShowNotification(FailureReason.ToString(), 2.0f, FGameplayTag());
+				}
+				else if (bSaved)
+				{
+					ShowNotification(TEXT("Game saved."), 2.0f, FGameplayTag());
+				}
+				return bSaved;
+			}
+		}
+	}
+
+	ShowNotification(TEXT("Save unavailable."), 2.0f, FGameplayTag());
+	return false;
+}
+
+bool USOTS_UIRouterSubsystem::RequestCheckpointSave(const FSOTS_ProfileId& ProfileId)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			if (USOTS_ProfileSubsystem* ProfileSubsystem = GameInstance->GetSubsystem<USOTS_ProfileSubsystem>())
+			{
+				FText FailureReason;
+				const bool bSaved = ProfileSubsystem->RequestCheckpointSave(ProfileId, FailureReason);
+				if (!bSaved && !FailureReason.IsEmpty())
+				{
+					ShowNotification(FailureReason.ToString(), 2.0f, FGameplayTag());
+				}
+				else if (bSaved)
+				{
+					ShowNotification(TEXT("Checkpoint saved."), 2.0f, FGameplayTag());
+				}
+				return bSaved;
+			}
+		}
+	}
+
+	ShowNotification(TEXT("Checkpoint save unavailable."), 2.0f, FGameplayTag());
 	return false;
 }

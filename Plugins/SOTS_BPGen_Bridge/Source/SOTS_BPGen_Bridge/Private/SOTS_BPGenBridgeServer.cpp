@@ -2627,6 +2627,67 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		return;
 	}
 
+		if (Action.Equals(TEXT("create_data_asset"), ESearchCase::IgnoreCase))
+		{
+			FSOTS_BPGenDataAssetDef AssetDef;
+			if (Params.IsValid())
+			{
+				Params->TryGetStringField(TEXT("asset_path"), AssetDef.AssetPath);
+				Params->TryGetStringField(TEXT("asset_class_path"), AssetDef.AssetClassPath);
+				Params->TryGetBoolField(TEXT("create_if_missing"), AssetDef.bCreateIfMissing);
+				Params->TryGetBoolField(TEXT("update_if_exists"), AssetDef.bUpdateIfExists);
+				if (Params->HasTypedField<EJson::Array>(TEXT("properties")))
+				{
+					const TArray<TSharedPtr<FJsonValue>> PropertyArray = Params->GetArrayField(TEXT("properties"));
+					for (const TSharedPtr<FJsonValue>& Entry : PropertyArray)
+					{
+						if (!Entry.IsValid() || Entry->Type != EJson::Object)
+						{
+							continue;
+						}
+						FSOTS_BPGenAssetProperty Property;
+						FJsonObjectConverter::JsonObjectToUStruct(Entry->AsObject().ToSharedRef(), FSOTS_BPGenAssetProperty::StaticStruct(), &Property, 0, 0);
+						AssetDef.Properties.Add(MoveTemp(Property));
+					}
+				}
+			}
+
+			if (AssetDef.AssetPath.IsEmpty() || AssetDef.AssetClassPath.IsEmpty())
+			{
+				OutResult.bOk = false;
+				OutResult.Errors.Add(TEXT("create_data_asset requires asset_path and asset_class_path."));
+				return;
+			}
+
+			if (bDryRun)
+			{
+				FSOTS_BPGenAssetResult DryResult;
+				DryResult.bSuccess = true;
+				DryResult.AssetPath = AssetDef.AssetPath;
+				DryResult.Message = TEXT("Dry run: create_data_asset skipped.");
+				TSharedPtr<FJsonObject> DryJson = MakeShared<FJsonObject>();
+				FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenAssetResult::StaticStruct(), &DryResult, DryJson.ToSharedRef(), 0, 0);
+				DryJson->SetBoolField(TEXT("dry_run"), true);
+				OutResult.bOk = true;
+				OutResult.Result = DryJson;
+				OutResult.Warnings.Append(DryResult.Warnings);
+				return;
+			}
+
+			const FSOTS_BPGenAssetResult AssetResult = USOTS_BPGenBuilder::CreateDataAssetFromDef(nullptr, AssetDef);
+			TSharedPtr<FJsonObject> ResultJsonAsset = MakeShared<FJsonObject>();
+			FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenAssetResult::StaticStruct(), &AssetResult, ResultJsonAsset.ToSharedRef(), 0, 0);
+			OutResult.bOk = AssetResult.bSuccess;
+			OutResult.Result = ResultJsonAsset;
+			OutResult.Errors.Append(AssetResult.Errors);
+			if (!AssetResult.ErrorMessage.IsEmpty())
+			{
+				OutResult.Errors.Add(AssetResult.ErrorMessage);
+			}
+			OutResult.Warnings.Append(AssetResult.Warnings);
+			return;
+		}
+
 	if (Action.Equals(TEXT("ensure_widget"), ESearchCase::IgnoreCase))
 	{
 		FSOTS_BPGenWidgetSpec Spec;

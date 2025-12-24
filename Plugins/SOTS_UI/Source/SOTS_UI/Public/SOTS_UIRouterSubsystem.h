@@ -8,6 +8,7 @@
 #include "SOTS_UIModalResultTypes.h"
 #include "SOTS_InteractionViewTypes.h"
 #include "SOTS_InteractionTypes.h"
+#include "SOTS_ProfileTypes.h"
 #include "SOTS_UIRouterSubsystem.generated.h"
 
 class USOTS_WidgetRegistryDataAsset;
@@ -175,6 +176,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
 	void RequestInvSP_NotifyFirstTimePickup(FGameplayTag ItemTag);
+
+	// Save / checkpoint entrypoints (UI-initiated)
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Save")
+	bool RequestSaveGame(const FSOTS_ProfileId& ProfileId);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Save")
+	bool RequestCheckpointSave(const FSOTS_ProfileId& ProfileId);
 
 	// Modal result channel
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnModalResult, const F_SOTS_UIModalResult&, Result);
