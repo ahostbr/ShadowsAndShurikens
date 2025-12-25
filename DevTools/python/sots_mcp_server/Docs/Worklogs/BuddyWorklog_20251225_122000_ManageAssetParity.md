@@ -1,0 +1,18 @@
+# Buddy Worklog
+- goal: implement VibeUE-compatible `manage_asset` tool by wiring it to the new BPGen bridge `asset_*` actions
+- what changed:
+  - expanded BPGen read-only allowlist so `asset_search`/`asset_export_texture`/`asset_list_references` can run when `SOTS_ALLOW_BPGEN_APPLY=0`
+  - replaced the `manage_asset` stub with action routing for: `search`, `open_in_editor`, `duplicate`, `delete`, `import_texture`, `export_texture`
+  - implemented `svg_to_png` as Python-local (requires `cairosvg`, not added to requirements)
+- files changed:
+  - DevTools/python/sots_mcp_server/server.py
+- notes + risks/unknowns:
+  - `delete` always sends `dangerous_ok=true`; bridge still enforces safe-mode + dangerous gating, but callers should treat this tool as destructive
+  - `open_in_editor` is gated the same way as other non-read-only BPGen actions (may be stricter than upstream expectations)
+  - `svg_to_png` requires optional dependency `cairosvg`; currently errors with an install hint if missing
+- verification status:
+  - VERIFIED: `python -m py_compile` on the updated server.py
+  - UNVERIFIED: runtime behavior against a live UE editor + SOTS_BPGen_Bridge
+- follow-ups / next steps:
+  - Ryan: in-editor, call `manage_asset(action="search", search_term="...")` and confirm results; then validate `import_texture` and `export_texture`
+  - Ryan: confirm `asset_delete` is blocked in safe mode and allowed only when safe mode is disabled

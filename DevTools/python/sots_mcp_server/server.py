@@ -74,6 +74,14 @@ def _sots_err(error: str, data: Any = None, warnings: Optional[List[str]] = None
     return {"ok": False, "data": data, "error": error, "warnings": warnings or [], "meta": meta or {}}
 
 
+def _not_implemented(tool: str, action: str, hint: str, req_id: str) -> Dict[str, Any]:
+    return _sots_err(
+        f"{tool}.{action}: not implemented in BPGen parity layer yet",
+        data={"tool": tool, "action": action, "hint": hint},
+        meta={"request_id": req_id},
+    )
+
+
 @dataclass(frozen=True)
 class SotsPaths:
     project_root: Path
@@ -121,6 +129,1592 @@ TOOL_ALIASES = {
     "bpgen_call": "manage_bpgen",
     "bpgen_ping": "bpgen_ping",
 }
+
+
+# -----------------------------------------------------------------------------
+# MCP server definition (FastMCP)
+#
+# IMPORTANT:
+# `mcp` MUST be defined before any `@mcp.tool(...)` decorators run at import time.
+# -----------------------------------------------------------------------------
+
+mcp = FastMCP(
+    "SOTS DevTools (unified)",
+    # json_response=True helps some clients interpret dict outputs consistently.
+    json_response=True,
+)
+
+
+# -----------------------------------------------------------------------------
+# VibeUE upstream compatibility layer (initial scaffold)
+#
+# Upstream VibeUE exposes 13 multi-action tools. This unified server adds tools
+# with matching names to ease prompt-pack reuse. Only a BPGen-expressible subset
+# is implemented initially.
+# -----------------------------------------------------------------------------
+
+
+def _vibeue_action_str(value: str) -> str:
+    return (value or "").strip().lower()
+
+
+def _vibeue_build_asset_path(blueprint_name: str, destination_path: str, name: str) -> str:
+    bp = (blueprint_name or "").strip()
+    if bp:
+        return bp
+    dst = (destination_path or "/Game").strip() or "/Game"
+    nm = (name or "").strip()
+    if not nm:
+        raise ValueError("Missing blueprint name (provide blueprint_name or name)")
+    if dst.endswith("/"):
+        dst = dst[:-1]
+    return f"{dst}/{nm}"
+
+
+def _vibeue_new_guid_str() -> str:
+    # VibeUE upstream treats NodeId as a GUID string.
+    return str(uuid.uuid4())
+
+
+def _bpgen_vec2(pos: Optional[Sequence[int]]) -> Dict[str, int]:
+    if not pos or len(pos) != 2:
+        return {"X": 0, "Y": 0}
+    try:
+        return {"X": int(pos[0]), "Y": int(pos[1])}
+    except Exception:
+        return {"X": 0, "Y": 0}
+
+
+def _bpgen_literal(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, str):
+        return value
+    # For lists/dicts/other objects, roundtrip as JSON.
+    try:
+        return json.dumps(value, ensure_ascii=False)
+    except Exception:
+        return str(value)
+
+
+def _bpgen_target_for_scope(scope: str, function_name: str) -> Dict[str, Any]:
+    s = _vibeue_action_str(scope) or "event"
+    if s == "function":
+        return {"target_type": "Function", "name": (function_name or "").strip()}
+    # VibeUE "event" scope means the Blueprint's EventGraph.
+    if s == "event":
+        return {"target_type": "EventGraph", "name": ""}
+    # Unknown scope: best effort to avoid mutations in the wrong graph.
+    raise ValueError(f"Unsupported graph_scope '{scope}'")
+
+
+def _umg_class_path(component_type: str) -> str:
+    ct = (component_type or "").strip()
+    if not ct:
+        return ""
+    if "/" in ct:
+        return ct
+    # Common UMG widget class paths are /Script/UMG.<ClassName>
+    return f"/Script/UMG.{ct}"
+
+
+def _umg_import_text(value: Any) -> str:
+    """Best-effort conversion to UE ImportText strings.
+
+    BPGen UMG property setters use FProperty::ImportText_Direct, so the value must be
+    in UE's ImportText format. This helper covers a few common cases and otherwise
+    accepts caller-provided strings.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    if isinstance(value, (int, float)):
+        return str(value)
+
+    if isinstance(value, (list, tuple)):
+        nums: List[float] = []
+        for v in value:
+            if isinstance(v, (int, float)):
+                nums.append(float(v))
+            else:
+                nums = []
+                break
+        if len(nums) == 2:
+            return f"(X={nums[0]},Y={nums[1]})"
+        if len(nums) == 3:
+            return f"(X={nums[0]},Y={nums[1]},Z={nums[2]})"
+        if len(nums) == 4:
+            return f"(R={nums[0]},G={nums[1]},B={nums[2]},A={nums[3]})"
+
+    if isinstance(value, dict):
+        # Common struct shapes
+        keys = {str(k) for k in value.keys()}
+        if keys.issuperset({"Left", "Top", "Right", "Bottom"}):
+            return f"(Left={value.get('Left')},Top={value.get('Top')},Right={value.get('Right')},Bottom={value.get('Bottom')})"
+
+        # Generic struct-ish formatting
+        parts: List[str] = []
+        for k, v in value.items():
+            parts.append(f"{k}={_umg_import_text(v)}")
+        return f"({','.join(parts)})"
+
+    return str(value)
+
+
+def _ue_import_text(value: Any) -> str:
+    # Actor-component property setters also use UE ImportText parsing.
+    return _umg_import_text(value)
+
+
+def _umg_split_props(props: Optional[Dict[str, Any]]) -> Tuple[Dict[str, str], Dict[str, str]]:
+    """Split properties into widget props and slot props.
+
+    ensure_widget takes slot_properties without the "Slot." prefix.
+    """
+    widget_props: Dict[str, str] = {}
+    slot_props: Dict[str, str] = {}
+    if not props:
+        return widget_props, slot_props
+    for k, v in props.items():
+        key = (k or "").strip()
+        if not key:
+            continue
+        val = _umg_import_text(v)
+        if key.lower().startswith("slot."):
+            slot_props[key[5:]] = val
+        else:
+            widget_props[key] = val
+    return widget_props, slot_props
+
+
+@mcp.tool(
+    name="manage_blueprint",
+    description="VibeUE-compatible Blueprint lifecycle tool (subset implemented via BPGen).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_blueprint"},
+)
+def manage_blueprint(
+    action: str,
+    blueprint_name: str = "",
+    name: str = "",
+    destination_path: str = "/Game",
+    parent_class_path: str = "",
+    property_name: str = "",
+    property_value: Any = None,
+    new_parent_class: str = "",
+    include_class_defaults: bool = True,
+    max_nodes: int = 200,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    try:
+        if act == "create":
+            asset_path = _vibeue_build_asset_path(blueprint_name, destination_path, name)
+            res = bpgen_create_blueprint(asset_path=asset_path, parent_class_path=parent_class_path or None)
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+        if act == "compile":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.compile requires blueprint_name", meta={"request_id": req_id})
+            res = bpgen_compile(blueprint_asset_path=blueprint_name)
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "get_info":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.get_info requires blueprint_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_blueprint_get_info",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "include_class_defaults": bool(include_class_defaults),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "get_property":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.get_property requires blueprint_name", meta={"request_id": req_id})
+            if not property_name:
+                return _sots_err("manage_blueprint.get_property requires property_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_blueprint_get_property",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "property_name": (property_name or "").strip(),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "set_property":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.set_property requires blueprint_name", meta={"request_id": req_id})
+            if not property_name:
+                return _sots_err("manage_blueprint.set_property requires property_name", meta={"request_id": req_id})
+
+            action_name = "bp_blueprint_set_property"
+            guard = _bpgen_guard_mutation(action_name)
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                action_name,
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "property_name": (property_name or "").strip(),
+                    "property_value": _ue_import_text(property_value),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "reparent":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.reparent requires blueprint_name", meta={"request_id": req_id})
+            if not new_parent_class:
+                return _sots_err("manage_blueprint.reparent requires new_parent_class", meta={"request_id": req_id})
+
+            action_name = "bp_blueprint_reparent"
+            guard = _bpgen_guard_mutation(action_name)
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                action_name,
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "new_parent_class": (new_parent_class or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "list_custom_events":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.list_custom_events requires blueprint_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_blueprint_list_custom_events",
+                {"blueprint_name": (blueprint_name or "").strip()},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "summarize_event_graph":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint.summarize_event_graph requires blueprint_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_blueprint_summarize_event_graph",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "max_nodes": int(max_nodes),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        return _not_implemented(
+            "manage_blueprint",
+            act or "(empty)",
+            "Implemented: create (via bpgen_create_blueprint), compile (via bpgen_compile), get_info/get_property/set_property/reparent/list_custom_events/summarize_event_graph (via bp_blueprint_* bridge ops).",
+            req_id,
+        )
+    except Exception as exc:
+        out = _sots_err(f"manage_blueprint failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_blueprint", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_blueprint_function",
+    description="VibeUE-compatible Blueprint function tool (subset implemented via BPGen ensure_function).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_blueprint_function"},
+)
+def manage_blueprint_function(
+    action: str,
+    blueprint_name: str = "",
+    function_name: str = "",
+    signature: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    try:
+        if act == "create":
+            if not blueprint_name or not function_name:
+                return _sots_err("manage_blueprint_function.create requires blueprint_name and function_name", meta={"request_id": req_id})
+            res = bpgen_ensure_function(
+                blueprint_asset_path=blueprint_name,
+                function_name=function_name,
+                signature=signature or {},
+                create_if_missing=True,
+                update_if_exists=True,
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+        return _not_implemented(
+            "manage_blueprint_function",
+            act or "(empty)",
+            "Implemented: create (mapped to bpgen_ensure_function). Param/local management requires signature mapping work.",
+            req_id,
+        )
+    except Exception as exc:
+        out = _sots_err(f"manage_blueprint_function failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_blueprint_variable",
+    description="VibeUE-compatible Blueprint variable tool (subset implemented via BPGen ensure_variable).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_blueprint_variable"},
+)
+def manage_blueprint_variable(
+    action: str,
+    blueprint_name: str = "",
+    variable_name: str = "",
+    pin_type: Optional[Dict[str, Any]] = None,
+    default_value: Optional[Any] = None,
+    instance_editable: bool = True,
+    expose_on_spawn: bool = False,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    try:
+        if act == "create":
+            if not blueprint_name or not variable_name:
+                return _sots_err("manage_blueprint_variable.create requires blueprint_name and variable_name", meta={"request_id": req_id})
+            if not isinstance(pin_type, dict) or not pin_type:
+                return _sots_err(
+                    "manage_blueprint_variable.create requires pin_type (BPGen pin_type dict)",
+                    data={"example": {"pin_type": {"PinCategory": "real"}}},
+                    meta={"request_id": req_id},
+                )
+            res = bpgen_ensure_variable(
+                blueprint_asset_path=blueprint_name,
+                variable_name=variable_name,
+                pin_type=pin_type,
+                default_value=default_value,
+                instance_editable=instance_editable,
+                expose_on_spawn=expose_on_spawn,
+                create_if_missing=True,
+                update_if_exists=True,
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+        return _not_implemented(
+            "manage_blueprint_variable",
+            act or "(empty)",
+            "Implemented: create (mapped to bpgen_ensure_variable). List/get/set need BPGen extensions or spec-driven reads.",
+            req_id,
+        )
+    except Exception as exc:
+        out = _sots_err(f"manage_blueprint_variable failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_blueprint_node",
+    description="VibeUE-compatible Blueprint node tool (subset implemented via BPGen discover/list/describe + edit wrappers).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_blueprint_node"},
+)
+def manage_blueprint_node(
+    action: str,
+    blueprint_name: str = "",
+    graph_scope: str = "event",
+    function_name: str = "",
+    node_id: str = "",
+    node_identifier: str = "",
+    node_type: Optional[str] = None,
+    node_params: Optional[Dict[str, Any]] = None,
+    node_config: Optional[Dict[str, Any]] = None,
+    position: Optional[List[int]] = None,
+    node_position: Optional[List[int]] = None,
+    source_node_id: Optional[str] = None,
+    source_pin: Optional[str] = None,
+    target_node_id: Optional[str] = None,
+    target_pin: Optional[str] = None,
+    property_name: Optional[str] = None,
+    property_value: Any = None,
+    search_term: str = "",
+    max_results: int = 200,
+    include_pins: bool = False,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    scope = _vibeue_action_str(graph_scope) or "event"
+    node_params = node_params or {}
+    node_config = node_config or {}
+    extra = extra or {}
+    try:
+        is_function_scope = scope == "function"
+        is_event_scope = scope == "event"
+
+        if act == "discover":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_node.discover requires blueprint_name", meta={"request_id": req_id})
+            res = bpgen_discover(
+                blueprint_asset_path=blueprint_name,
+                search_text=search_term,
+                max_results=max_results,
+                include_pins=include_pins,
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+        if act == "list":
+            if not blueprint_name or not function_name:
+                return _sots_err("manage_blueprint_node.list requires blueprint_name and function_name", meta={"request_id": req_id})
+            res = bpgen_list(blueprint_asset_path=blueprint_name, function_name=function_name, include_pins=include_pins)
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+        if act == "describe":
+            if not blueprint_name or not function_name or not node_id:
+                return _sots_err("manage_blueprint_node.describe requires blueprint_name, function_name, node_id", meta={"request_id": req_id})
+            res = bpgen_describe(blueprint_asset_path=blueprint_name, function_name=function_name, node_id=node_id, include_pins=True)
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+        if act == "delete":
+            if not blueprint_name or not function_name or not node_id:
+                return _sots_err("manage_blueprint_node.delete requires blueprint_name, function_name, node_id", meta={"request_id": req_id})
+            res = bpgen_delete_node(blueprint_asset_path=blueprint_name, function_name=function_name, node_id=node_id)
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "create":
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_node.create requires blueprint_name", meta={"request_id": req_id})
+            if is_function_scope and not function_name:
+                return _sots_err("manage_blueprint_node.create requires function_name when graph_scope='function'", meta={"request_id": req_id})
+            if not (is_function_scope or is_event_scope):
+                return _not_implemented(
+                    "manage_blueprint_node",
+                    f"{act}:{scope}",
+                    "Only graph_scope='function' and graph_scope='event' are supported by the BPGen parity layer today.",
+                    req_id,
+                )
+
+            # Prefer caller-provided node_id; otherwise generate a GUID-like id.
+            node_id_out = (node_id or node_identifier or "").strip() or _vibeue_new_guid_str()
+
+            # BPGen expects GraphSpec node fields; we primarily support spawner-based nodes.
+            spawner_key = (node_params.get("spawner_key") or node_params.get("SpawnerKey") or "").strip()
+            function_path = (node_params.get("function_path") or node_params.get("FunctionPath") or "").strip()
+
+            # Allow node_type itself to be a spawner key for convenience.
+            if not spawner_key and isinstance(node_type, str):
+                nt = node_type.strip()
+                if nt.startswith("/Script/") or ":" in nt:
+                    spawner_key = nt
+            if not function_path and spawner_key and (spawner_key.startswith("/Script/") or ":" in spawner_key):
+                function_path = spawner_key
+
+            # Synthetic nodes allowed without spawner keys.
+            synthetic_allowed = {
+                "K2NODE_FUNCTIONENTRY",
+                "K2NODE_FUNCTIONRESULT",
+                "K2NODE_KNOT",
+                "K2NODE_SELECT",
+                "K2NODE_DYNAMICCAST",
+            }
+            node_type_str = (node_type or "").strip()
+            node_type_norm = node_type_str.upper()
+
+            if not spawner_key and node_type_norm not in synthetic_allowed:
+                return _sots_err(
+                    "manage_blueprint_node.create requires node_params.spawner_key (preferred) or a supported synthetic NodeType",
+                    data={
+                        "hint": "Use discover to obtain spawner_key, then create with node_params={spawner_key: ...}",
+                        "synthetic_node_types": sorted(synthetic_allowed),
+                    },
+                    meta={"request_id": req_id},
+                )
+
+            pos = node_position or position
+            graph_node: Dict[str, Any] = {
+                "Id": node_id_out,
+                "NodeId": node_id_out,
+                "NodePosition": _bpgen_vec2(pos),
+            }
+            if spawner_key:
+                graph_node["SpawnerKey"] = spawner_key
+            if function_path:
+                graph_node["FunctionPath"] = function_path
+            if node_type_norm in synthetic_allowed:
+                # Preserve exact case for BPGen synthetic set.
+                graph_node["NodeType"] = node_type_str
+
+            # Carry across any literal defaults provided as extra_data.
+            extra_data_raw = node_params.get("extra_data") or node_params.get("ExtraData") or {}
+            if isinstance(extra_data_raw, dict) and extra_data_raw:
+                graph_node["ExtraData"] = {str(k): _bpgen_literal(v) for k, v in extra_data_raw.items()}
+
+            if is_function_scope:
+                # Ensure function exists before applying nodes.
+                bpgen_ensure_function(
+                    blueprint_asset_path=blueprint_name,
+                    function_name=function_name,
+                    signature={},
+                    create_if_missing=True,
+                    update_if_exists=False,
+                )
+
+                res = bpgen_apply(
+                    blueprint_asset_path=blueprint_name,
+                    function_name=function_name,
+                    graph_spec={"Nodes": [graph_node], "Links": []},
+                    dry_run=False,
+                )
+            else:
+                target = _bpgen_target_for_scope(scope, function_name)
+                graph_spec = {
+                    "target": {"blueprint_asset_path": blueprint_name, **target},
+                    "Nodes": [graph_node],
+                    "Links": [],
+                }
+                res = bpgen_apply_to_target(graph_spec=graph_spec, dry_run=False)
+
+            # Best-effort: find the underlying node guid for convenience.
+            node_guid: Optional[str] = None
+            try:
+                listed = bpgen_list(blueprint_asset_path=blueprint_name, function_name=function_name, include_pins=False)
+                nodes = (((listed or {}).get("result") or {}).get("result") or {}).get("nodes")  # defensive
+                if isinstance(nodes, list):
+                    for n in nodes:
+                        if isinstance(n, dict) and (n.get("node_id") == node_id_out or n.get("NodeId") == node_id_out):
+                            node_guid = n.get("node_guid") or n.get("NodeGuid")
+                            break
+            except Exception:
+                node_guid = None
+
+            out = _sots_ok({"node_id": node_id_out, "node_guid": node_guid, "bpgen": res, "graph_scope": scope}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"connect", "connect_pins"}:
+            if not blueprint_name:
+                return _sots_err(f"manage_blueprint_node.{act} requires blueprint_name", meta={"request_id": req_id})
+            if is_function_scope and not function_name:
+                return _sots_err(f"manage_blueprint_node.{act} requires function_name when graph_scope='function'", meta={"request_id": req_id})
+            if not (is_function_scope or is_event_scope):
+                return _not_implemented(
+                    "manage_blueprint_node",
+                    f"{act}:{scope}",
+                    "Only graph_scope='function' and graph_scope='event' are supported by the BPGen parity layer today.",
+                    req_id,
+                )
+
+            connections: List[Dict[str, Any]] = []
+            if act == "connect":
+                if not (source_node_id and source_pin and target_node_id and target_pin):
+                    return _sots_err("manage_blueprint_node.connect requires source_node_id/source_pin/target_node_id/target_pin", meta={"request_id": req_id})
+                connections = [
+                    {
+                        "source_node_id": source_node_id,
+                        "source_pin_name": source_pin,
+                        "target_node_id": target_node_id,
+                        "target_pin_name": target_pin,
+                    }
+                ]
+            else:
+                connections_raw = extra.get("connections")
+                if not isinstance(connections_raw, list) or not connections_raw:
+                    return _sots_err("manage_blueprint_node.connect_pins requires extra.connections[]", meta={"request_id": req_id})
+                connections = [c for c in connections_raw if isinstance(c, dict)]
+
+            # Build a minimal GraphSpec that references existing nodes by NodeId.
+            node_ref_ids: Dict[str, str] = {}
+            nodes_spec: List[Dict[str, Any]] = []
+            links_spec: List[Dict[str, Any]] = []
+
+            def _ref_spec_id(nid: str) -> str:
+                nid = (nid or "").strip()
+                if nid not in node_ref_ids:
+                    spec_id = f"N{len(node_ref_ids)}"
+                    node_ref_ids[nid] = spec_id
+                    nodes_spec.append({"Id": spec_id, "NodeId": nid, "allow_create": False, "allow_update": True})
+                return node_ref_ids[nid]
+
+            for c in connections:
+                sn = (c.get("source_node_id") or "").strip()
+                sp = (c.get("source_pin_name") or c.get("source_pin") or "").strip()
+                tn = (c.get("target_node_id") or "").strip()
+                tp = (c.get("target_pin_name") or c.get("target_pin") or "").strip()
+                if not (sn and sp and tn and tp):
+                    return _sots_err("Invalid connection entry; requires source_node_id/source_pin_name/target_node_id/target_pin_name", data={"bad_connection": c}, meta={"request_id": req_id})
+                links_spec.append(
+                    {
+                        "FromNodeId": _ref_spec_id(sn),
+                        "FromPinName": sp,
+                        "ToNodeId": _ref_spec_id(tn),
+                        "ToPinName": tp,
+                    }
+                )
+
+            if is_function_scope:
+                res = bpgen_apply(
+                    blueprint_asset_path=blueprint_name,
+                    function_name=function_name,
+                    graph_spec={"Nodes": nodes_spec, "Links": links_spec},
+                    dry_run=False,
+                )
+            else:
+                target = _bpgen_target_for_scope(scope, function_name)
+                graph_spec = {
+                    "target": {"blueprint_asset_path": blueprint_name, **target},
+                    "Nodes": nodes_spec,
+                    "Links": links_spec,
+                }
+                res = bpgen_apply_to_target(graph_spec=graph_spec, dry_run=False)
+            out = _sots_ok({"bpgen": res, "connections": connections}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "configure":
+            if not blueprint_name or not node_id:
+                return _sots_err("manage_blueprint_node.configure requires blueprint_name and node_id", meta={"request_id": req_id})
+            if is_function_scope and not function_name:
+                return _sots_err("manage_blueprint_node.configure requires function_name when graph_scope='function'", meta={"request_id": req_id})
+            if not (is_function_scope or is_event_scope):
+                return _not_implemented(
+                    "manage_blueprint_node",
+                    f"{act}:{scope}",
+                    "Only graph_scope='function' and graph_scope='event' are supported by the BPGen parity layer today.",
+                    req_id,
+                )
+            if not property_name:
+                return _sots_err("manage_blueprint_node.configure requires property_name", meta={"request_id": req_id})
+
+            graph_node = {
+                "Id": "N0",
+                "NodeId": node_id,
+                "allow_create": False,
+                "allow_update": True,
+                "ExtraData": {str(property_name): _bpgen_literal(property_value)},
+            }
+            if is_function_scope:
+                res = bpgen_apply(
+                    blueprint_asset_path=blueprint_name,
+                    function_name=function_name,
+                    graph_spec={"Nodes": [graph_node], "Links": []},
+                    dry_run=False,
+                )
+            else:
+                target = _bpgen_target_for_scope(scope, function_name)
+                graph_spec = {
+                    "target": {"blueprint_asset_path": blueprint_name, **target},
+                    "Nodes": [graph_node],
+                    "Links": [],
+                }
+                res = bpgen_apply_to_target(graph_spec=graph_spec, dry_run=False)
+            out = _sots_ok({"bpgen": res, "node_id": node_id, "property_name": property_name}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act == "move":
+            if not blueprint_name or not node_id:
+                return _sots_err("manage_blueprint_node.move requires blueprint_name and node_id", meta={"request_id": req_id})
+            if is_function_scope and not function_name:
+                return _sots_err("manage_blueprint_node.move requires function_name when graph_scope='function'", meta={"request_id": req_id})
+            if not (is_function_scope or is_event_scope):
+                return _not_implemented(
+                    "manage_blueprint_node",
+                    f"{act}:{scope}",
+                    "Only graph_scope='function' and graph_scope='event' are supported by the BPGen parity layer today.",
+                    req_id,
+                )
+            pos = node_position or position
+            graph_node = {
+                "Id": "N0",
+                "NodeId": node_id,
+                "allow_create": False,
+                "allow_update": True,
+                "NodePosition": _bpgen_vec2(pos),
+            }
+            if is_function_scope:
+                res = bpgen_apply(
+                    blueprint_asset_path=blueprint_name,
+                    function_name=function_name,
+                    graph_spec={"Nodes": [graph_node], "Links": []},
+                    dry_run=False,
+                )
+            else:
+                target = _bpgen_target_for_scope(scope, function_name)
+                graph_spec = {
+                    "target": {"blueprint_asset_path": blueprint_name, **target},
+                    "Nodes": [graph_node],
+                    "Links": [],
+                }
+                res = bpgen_apply_to_target(graph_spec=graph_spec, dry_run=False)
+            out = _sots_ok({"bpgen": res, "node_id": node_id, "position": graph_node["NodePosition"]}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"disconnect", "disconnect_pins"}:
+            if not blueprint_name or not function_name:
+                return _sots_err(f"manage_blueprint_node.{act} requires blueprint_name and function_name", meta={"request_id": req_id})
+
+            connections_raw = extra.get("connections")
+            if act == "disconnect":
+                if not (source_node_id and source_pin and target_node_id and target_pin):
+                    return _sots_err("manage_blueprint_node.disconnect requires source_node_id/source_pin/target_node_id/target_pin", meta={"request_id": req_id})
+                connections_raw = [
+                    {
+                        "source_node_id": source_node_id,
+                        "source_pin_name": source_pin,
+                        "target_node_id": target_node_id,
+                        "target_pin_name": target_pin,
+                    }
+                ]
+
+            if not isinstance(connections_raw, list) or not connections_raw:
+                return _sots_err("manage_blueprint_node.disconnect_pins requires extra.connections[]", meta={"request_id": req_id})
+
+            results: List[Dict[str, Any]] = []
+            for c in connections_raw:
+                if not isinstance(c, dict):
+                    continue
+                sn = (c.get("source_node_id") or "").strip()
+                sp = (c.get("source_pin_name") or c.get("source_pin") or "").strip()
+                tn = (c.get("target_node_id") or "").strip()
+                tp = (c.get("target_pin_name") or c.get("target_pin") or "").strip()
+                if not (sn and sp and tn and tp):
+                    results.append({"ok": False, "error": "invalid connection", "connection": c})
+                    continue
+                r = bpgen_delete_link(
+                    blueprint_asset_path=blueprint_name,
+                    function_name=function_name,
+                    from_node_id=sn,
+                    from_pin=sp,
+                    to_node_id=tn,
+                    to_pin=tp,
+                    compile=True,
+                    dry_run=False,
+                )
+                results.append({"ok": True, "result": r, "connection": {"from": sn, "from_pin": sp, "to": tn, "to_pin": tp}})
+
+            out = _sots_ok({"results": results}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        return _not_implemented(
+            "manage_blueprint_node",
+            act or "(empty)",
+            "Implemented: discover/list/describe/delete/create/connect(_pins)/configure/move/disconnect(_pins) for function graphs via BPGen apply_graph_spec + delete_link; plus create/connect/configure/move for event graphs via apply_graph_spec_to_target.",
+            req_id,
+        )
+    except Exception as exc:
+        out = _sots_err(f"manage_blueprint_node failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_node", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_asset",
+    description="VibeUE-compatible asset tool (partial; backed by BPGen bridge asset_* actions).",
+    annotations={"readOnlyHint": not ALLOW_BPGEN_APPLY, "title": "VibeUE Compat: manage_asset"},
+)
+def manage_asset(
+    action: str,
+    search_term: str = "",
+    asset_type: str = "",
+    path: str = "/Game",
+    case_sensitive: bool = False,
+    include_engine_content: bool = False,
+    max_results: int = 100,
+    file_path: str = "",
+    destination_path: str = "/Game/Textures/Imported",
+    texture_name: Optional[str] = None,
+    compression_settings: str = "TC_Default",
+    generate_mipmaps: bool = True,
+    validate_format: bool = True,
+    auto_optimize: bool = True,
+    convert_if_needed: bool = False,
+    raster_size: Optional[List[int]] = None,
+    auto_convert_svg: bool = True,
+    asset_path: str = "",
+    export_format: str = "PNG",
+    max_size: Optional[List[int]] = None,
+    temp_folder: str = "",
+    force_open: bool = False,
+    force_delete: bool = False,
+    show_confirmation: bool = True,
+    svg_path: str = "",
+    output_path: Optional[str] = None,
+    size: Optional[List[int]] = None,
+    scale: float = 1,
+    background: Optional[str] = None,
+    new_name: str = "",
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    try:
+        if act in {"search"}:
+            guard = _bpgen_guard_mutation("asset_search")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            params = {
+                "search_term": (search_term or "").strip(),
+                "asset_type": (asset_type or "").strip(),
+                "path": (path or "/Game").strip() or "/Game",
+                "case_sensitive": bool(case_sensitive),
+                "include_engine_content": bool(include_engine_content),
+                "max_results": int(max_results),
+            }
+            res = _bpgen_call("asset_search", params)
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"open_in_editor"}:
+            if not asset_path:
+                return _sots_err("manage_asset.open_in_editor requires asset_path", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("asset_open_in_editor")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "asset_open_in_editor",
+                {"asset_path": asset_path, "force_open": bool(force_open)},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"duplicate"}:
+            if not asset_path:
+                return _sots_err("manage_asset.duplicate requires asset_path", meta={"request_id": req_id})
+            if not destination_path:
+                return _sots_err("manage_asset.duplicate requires destination_path", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("asset_duplicate")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "asset_duplicate",
+                {
+                    "asset_path": asset_path,
+                    "destination_path": destination_path,
+                    "new_name": (new_name or "").strip(),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"delete"}:
+            if not asset_path:
+                return _sots_err("manage_asset.delete requires asset_path", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("asset_delete")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            # Bridge enforces dangerous_ok + safe-mode rules.
+            res = _bpgen_call(
+                "asset_delete",
+                {
+                    "asset_path": asset_path,
+                    "force_delete": bool(force_delete),
+                    "show_confirmation": bool(show_confirmation),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"import_texture"}:
+            if not file_path:
+                return _sots_err("manage_asset.import_texture requires file_path", meta={"request_id": req_id})
+            if not destination_path:
+                return _sots_err("manage_asset.import_texture requires destination_path", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("asset_import_texture")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "asset_import_texture",
+                {
+                    "file_path": file_path,
+                    "destination_path": destination_path,
+                    "texture_name": texture_name,
+                    "compression_settings": compression_settings,
+                    "generate_mipmaps": bool(generate_mipmaps),
+                    "validate_format": bool(validate_format),
+                    "auto_optimize": bool(auto_optimize),
+                    "convert_if_needed": bool(convert_if_needed),
+                    "raster_size": raster_size,
+                    "auto_convert_svg": bool(auto_convert_svg),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"export_texture"}:
+            if not asset_path:
+                return _sots_err("manage_asset.export_texture requires asset_path", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("asset_export_texture")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "asset_export_texture",
+                {
+                    "asset_path": asset_path,
+                    "export_format": export_format,
+                    "max_size": max_size,
+                    "temp_folder": temp_folder,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"svg_to_png"}:
+            if not svg_path:
+                return _sots_err("manage_asset.svg_to_png requires svg_path", meta={"request_id": req_id})
+
+            try:
+                import cairosvg  # type: ignore
+            except Exception as exc:
+                return _sots_err(
+                    f"svg_to_png requires cairosvg (not installed): {exc}",
+                    meta={"request_id": req_id, "hint": "pip install cairosvg"},
+                )
+
+            out_path = output_path or ""
+            if not out_path:
+                return _sots_err("manage_asset.svg_to_png requires output_path", meta={"request_id": req_id})
+
+            w = h = None
+            if isinstance(size, list) and len(size) == 2:
+                try:
+                    w = int(size[0])
+                    h = int(size[1])
+                except Exception:
+                    w = h = None
+
+            try:
+                cairosvg.svg2png(
+                    url=svg_path,
+                    write_to=out_path,
+                    output_width=w,
+                    output_height=h,
+                    scale=float(scale) if scale else 1.0,
+                    background_color=background,
+                )
+                out = _sots_ok({"output_path": out_path}, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+            except Exception as exc:
+                out = _sots_err(f"svg_to_png failed: {exc}", meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+        hint = (
+            "Implemented: search/open_in_editor/duplicate/delete/import_texture/export_texture. "
+            "svg_to_png is Python-local and requires cairosvg. "
+            "Note: delete is dangerous and will be blocked if BPGen safe mode is enabled."
+        )
+        return _not_implemented("manage_asset", act or "(empty)", hint, req_id)
+    except Exception as exc:
+        out = _sots_err(f"manage_asset failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_blueprint_component",
+    description="VibeUE-compatible Blueprint component tool (partial; backed by BPGen bridge component ops).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_blueprint_component"},
+)
+def manage_blueprint_component(
+    action: str,
+    blueprint_name: str = "",
+    component_name: str = "",
+    component_type: str = "",
+    parent_name: str = "root",
+    property_name: str = "",
+    property_value: Any = None,
+    properties: Optional[Dict[str, Any]] = None,
+    location: Optional[List[float]] = None,
+    rotation: Optional[List[float]] = None,
+    scale: Optional[List[float]] = None,
+    remove_children: bool = True,
+    include_property_values: bool = False,
+    include_inherited: bool = True,
+    category: str = "",
+    search_text: str = "",
+    base_class: str = "",
+    include_abstract: bool = False,
+    include_deprecated: bool = False,
+    component_order: Optional[List[str]] = None,
+    options: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    try:
+        if act in {"search_types"}:
+            res = _bpgen_call(
+                "bp_component_search_types",
+                {
+                    "category": (category or "").strip(),
+                    "search_text": (search_text or "").strip(),
+                    "base_class": (base_class or "").strip(),
+                    "include_abstract": bool(include_abstract),
+                    "include_deprecated": bool(include_deprecated),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"get_info"}:
+            if not component_type:
+                return _sots_err("manage_blueprint_component.get_info requires component_type", meta={"request_id": req_id})
+
+            res = _bpgen_call(
+                "bp_component_get_info",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_type": (component_type or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "include_property_values": bool(include_property_values),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"list"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.list requires blueprint_name", meta={"request_id": req_id})
+
+            res = _bpgen_call("bp_component_list", {"blueprint_name": (blueprint_name or "").strip()})
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"get_property"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.get_property requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.get_property requires component_name", meta={"request_id": req_id})
+            if not property_name:
+                return _sots_err("manage_blueprint_component.get_property requires property_name", meta={"request_id": req_id})
+
+            res = _bpgen_call(
+                "bp_component_get_property",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "property_name": (property_name or "").strip(),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"set_property", "set"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.set_property requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.set_property requires component_name", meta={"request_id": req_id})
+            if not property_name:
+                return _sots_err("manage_blueprint_component.set_property requires property_name", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("bp_component_set_property")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "bp_component_set_property",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "property_name": (property_name or "").strip(),
+                    "property_value": _ue_import_text(property_value),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"get_all_properties"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.get_all_properties requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.get_all_properties requires component_name", meta={"request_id": req_id})
+
+            res = _bpgen_call(
+                "bp_component_get_all_properties",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "include_inherited": bool(include_inherited),
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"compare_properties"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.compare_properties requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.compare_properties requires component_name", meta={"request_id": req_id})
+
+            opts = options or {}
+            other_bp = (opts.get("compare_to_blueprint") or "").strip()
+            other_comp = (opts.get("compare_to_component") or "").strip()
+            if not other_bp or not other_comp:
+                return _sots_err(
+                    "compare_properties requires options.compare_to_blueprint and options.compare_to_component",
+                    meta={"request_id": req_id},
+                )
+
+            src = _bpgen_call(
+                "bp_component_get_all_properties",
+                {"blueprint_name": blueprint_name, "component_name": component_name, "include_inherited": bool(include_inherited)},
+            )
+            dst = _bpgen_call(
+                "bp_component_get_all_properties",
+                {"blueprint_name": other_bp, "component_name": other_comp, "include_inherited": bool(include_inherited)},
+            )
+
+            if not src.get("ok", False):
+                out = _sots_err("compare_properties source get_all_properties failed", data={"bpgen": src}, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+            if not dst.get("ok", False):
+                out = _sots_err("compare_properties target get_all_properties failed", data={"bpgen": dst}, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            src_props = (src.get("result") or {}).get("properties") or {}
+            dst_props = (dst.get("result") or {}).get("properties") or {}
+
+            def _norm(v: Any) -> str:
+                if isinstance(v, (dict, list)):
+                    try:
+                        return json.dumps(v, sort_keys=True, ensure_ascii=False)
+                    except Exception:
+                        return str(v)
+                return str(v)
+
+            diffs: List[Dict[str, Any]] = []
+            matching = 0
+            for key in sorted(set(src_props.keys()) | set(dst_props.keys())):
+                sv = src_props.get(key, None)
+                tv = dst_props.get(key, None)
+                if _norm(sv) == _norm(tv):
+                    matching += 1
+                else:
+                    diffs.append({"property": key, "source_value": sv, "target_value": tv})
+
+            result = {
+                "matches": len(diffs) == 0,
+                "matching_count": matching,
+                "difference_count": len(diffs),
+                "differences": diffs,
+                "source": {"blueprint": blueprint_name, "component": component_name},
+                "target": {"blueprint": other_bp, "component": other_comp},
+            }
+
+            out = _sots_ok(result, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"create"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.create requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.create requires component_name", meta={"request_id": req_id})
+            if not component_type:
+                return _sots_err("manage_blueprint_component.create requires component_type", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("bp_component_create")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            init_props: Dict[str, str] = {}
+            if properties:
+                for k, v in properties.items():
+                    key = (k or "").strip()
+                    if not key:
+                        continue
+                    init_props[key] = _ue_import_text(v)
+
+            parent = (parent_name or "").strip()
+            res = _bpgen_call(
+                "bp_component_create",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "component_type": (component_type or "").strip(),
+                    "parent_name": parent,
+                    "location": location,
+                    "rotation": rotation,
+                    "scale": scale,
+                    "properties": init_props,
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"delete"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.delete requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.delete requires component_name", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("bp_component_delete")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "bp_component_delete",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "remove_children": bool(remove_children),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"reparent"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.reparent requires blueprint_name", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_blueprint_component.reparent requires component_name", meta={"request_id": req_id})
+            if not parent_name:
+                return _sots_err("manage_blueprint_component.reparent requires parent_name", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("bp_component_reparent")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "bp_component_reparent",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_name": (component_name or "").strip(),
+                    "parent_name": (parent_name or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"reorder"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_component.reorder requires blueprint_name", meta={"request_id": req_id})
+            if not component_order:
+                return _sots_err("manage_blueprint_component.reorder requires component_order", meta={"request_id": req_id})
+
+            guard = _bpgen_guard_mutation("bp_component_reorder")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "bp_component_reorder",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "component_order": component_order,
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"get_property_metadata"}:
+            if not component_type:
+                return _sots_err("manage_blueprint_component.get_property_metadata requires component_type", meta={"request_id": req_id})
+            if not property_name:
+                return _sots_err("manage_blueprint_component.get_property_metadata requires property_name", meta={"request_id": req_id})
+
+            res = _bpgen_call(
+                "bp_component_get_property_metadata",
+                {"component_type": (component_type or "").strip(), "property_name": (property_name or "").strip()},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        hint = (
+            "Implemented: search_types/get_info/list/get_property/set_property/get_all_properties/compare_properties/"
+            "create/delete/reparent/reorder/get_property_metadata. "
+            "Note: reorder is currently a no-op in the bridge (warning returned)."
+        )
+        out = _not_implemented("manage_blueprint_component", act or "(empty)", hint, req_id)
+        _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    except Exception as exc:
+        out = _sots_err(f"manage_blueprint_component failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_component", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_umg_widget",
+    description="VibeUE-compatible UMG widget tool (partial; backed by BPGen UMG ensure/set actions).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_umg_widget"},
+)
+def manage_umg_widget(
+    action: str,
+    widget_name: str = "",
+    component_name: str = "",
+    component_type: str = "",
+    parent_name: str = "root",
+    property_name: str = "",
+    property_value: Any = None,
+    property_type: str = "auto",
+    is_variable: bool = True,
+    properties: Optional[Dict[str, Any]] = None,
+    remove_children: bool = True,
+    remove_from_variables: bool = True,
+    category: str = "",
+    search_text: str = "",
+    include_custom: bool = True,
+    include_engine: bool = True,
+    parent_compatibility: str = "",
+    include_inherited: bool = True,
+    category_filter: str = "",
+    input_events: Optional[Dict[str, str]] = None,
+    options: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    try:
+        if act in {"add_component", "add"}:
+            if not widget_name:
+                return _sots_err("manage_umg_widget.add_component requires widget_name (WidgetBlueprint asset path)", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_umg_widget.add_component requires component_name", meta={"request_id": req_id})
+            if not component_type:
+                return _sots_err("manage_umg_widget.add_component requires component_type", meta={"request_id": req_id})
+
+            widget_class_path = _umg_class_path(component_type)
+            if not widget_class_path:
+                return _sots_err("Invalid component_type", meta={"request_id": req_id})
+
+            opts = options or {}
+            insert_index = int(opts.get("insert_index", -1)) if isinstance(opts.get("insert_index", -1), (int, float, str)) else -1
+
+            widget_props, slot_props = _umg_split_props(properties)
+
+            parent = (parent_name or "").strip()
+            if parent.lower() == "root":
+                parent = ""
+
+            res = bpgen_ensure_widget(
+                blueprint_asset_path=widget_name,
+                widget_class_path=widget_class_path,
+                widget_name=component_name,
+                parent_name=parent,
+                insert_index=insert_index,
+                is_variable=is_variable,
+                create_if_missing=bool(opts.get("create_if_missing", True)),
+                update_if_exists=bool(opts.get("update_if_exists", True)),
+                reparent_if_mismatch=bool(opts.get("reparent_if_mismatch", True)),
+                properties=widget_props,
+                slot_properties=slot_props,
+                dry_run=bool(opts.get("dry_run", False)),
+            )
+            out = _sots_ok({"bpgen": res, "widget_name": widget_name, "component_name": component_name}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_umg_widget", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"set_property", "set"}:
+            if not widget_name:
+                return _sots_err("manage_umg_widget.set_property requires widget_name (WidgetBlueprint asset path)", meta={"request_id": req_id})
+            if not component_name:
+                return _sots_err("manage_umg_widget.set_property requires component_name", meta={"request_id": req_id})
+            if not property_name:
+                return _sots_err("manage_umg_widget.set_property requires property_name", meta={"request_id": req_id})
+
+            # NOTE: property_type is currently advisory only. ImportText parsing is performed
+            # by UE on the other end; for complex types, callers may need to pass an ImportText string.
+            _ = property_type
+
+            opts = options or {}
+            props_map = {property_name: _umg_import_text(property_value)}
+            res = bpgen_set_widget_properties(
+                blueprint_asset_path=widget_name,
+                widget_name=component_name,
+                properties=props_map,
+                fail_if_missing=bool(opts.get("fail_if_missing", True)),
+                dry_run=bool(opts.get("dry_run", False)),
+            )
+            out = _sots_ok({"bpgen": res, "widget_name": widget_name, "component_name": component_name, "property": property_name}, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_umg_widget", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        hint = (
+            "Implemented: add_component (ensure_widget), set_property (set_widget_properties). "
+            "Not yet implemented: list_components/get_property/get_component_properties/remove_component/validate/search_types/get_available_events/bind_events/list_properties. "
+            "Note: BPGen supports property bindings via bpgen_ensure_binding, but VibeUE bind_events targets input delegates and is not mapped yet."
+        )
+        return _not_implemented("manage_umg_widget", act or "(empty)", hint, req_id)
+    except Exception as exc:
+        out = _sots_err(f"manage_umg_widget failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "manage_umg_widget", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="manage_enhanced_input",
+    description="VibeUE-compatible Enhanced Input tool (not implemented in BPGen parity layer yet).",
+    annotations={"readOnlyHint": True, "title": "VibeUE Compat: manage_enhanced_input"},
+)
+def manage_enhanced_input(action: str) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    return _not_implemented("manage_enhanced_input", act or "(empty)", "Enhanced Input ops require new Unreal-side editor services.", req_id)
+
+
+@mcp.tool(
+    name="manage_level_actors",
+    description="VibeUE-compatible Level Actors tool (not implemented in BPGen parity layer yet).",
+    annotations={"readOnlyHint": True, "title": "VibeUE Compat: manage_level_actors"},
+)
+def manage_level_actors(action: str) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    return _not_implemented("manage_level_actors", act or "(empty)", "Level actor ops are not part of BPGen today; requires new editor service + gate decisions.", req_id)
+
+
+@mcp.tool(
+    name="manage_material",
+    description="VibeUE-compatible Material tool (not implemented in BPGen parity layer yet).",
+    annotations={"readOnlyHint": True, "title": "VibeUE Compat: manage_material"},
+)
+def manage_material(action: str) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    return _not_implemented("manage_material", act or "(empty)", "Material ops require new Unreal-side editor services.", req_id)
+
+
+@mcp.tool(
+    name="manage_material_node",
+    description="VibeUE-compatible Material Node tool (not implemented in BPGen parity layer yet).",
+    annotations={"readOnlyHint": True, "title": "VibeUE Compat: manage_material_node"},
+)
+def manage_material_node(action: str) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    act = _vibeue_action_str(action)
+    return _not_implemented("manage_material_node", act or "(empty)", "Material graph ops require new Unreal-side editor services.", req_id)
+
+
+@mcp.tool(
+    name="check_unreal_connection",
+    description="VibeUE-compatible connection check (implemented as BPGen bridge ping + unified server info).",
+    annotations={"readOnlyHint": True, "title": "VibeUE Compat: check_unreal_connection"},
+)
+def check_unreal_connection() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    try:
+        ping = bpgen_ping_tool()
+        info = server_info()
+        ok = bool(ping.get("ok"))
+        data = {
+            "success": ok,
+            "connection_status": "Connected" if ok else "Not Connected",
+            "plugin_status": "BPGenBridge" if ok else "Unknown",
+            "bpgen_ping": ping,
+            "server_info": info,
+            "troubleshooting": [
+                "Ensure Unreal Editor is running.",
+                "Ensure SOTS_BPGen_Bridge is running and reachable (SOTS_BPGEN_HOST/PORT).",
+                "Check DevTools/python/logs/sots_mcp_server.log and the UE bridge logs.",
+            ] if not ok else [],
+        }
+        out = _sots_ok(data, meta={"request_id": req_id})
+        out["ok"] = ok
+        _jsonl_log({"ts": time.time(), "tool": "check_unreal_connection", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    except Exception as exc:
+        out = _sots_err(f"check_unreal_connection failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "check_unreal_connection", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+
+@mcp.tool(
+    name="get_help",
+    description="VibeUE-compatible help entrypoint (maps to sots_help for now).",
+    annotations={"readOnlyHint": True, "title": "VibeUE Compat: get_help"},
+)
+def get_help(topic: str = "overview") -> Dict[str, Any]:
+    req_id = _new_request_id()
+    # For now, return the unified server index; topic routing can be added later.
+    data = sots_help()
+    out = _sots_ok({"topic": topic, "help": data}, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "get_help", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
 
 # File-safe logging (never stdout)
 _SERVER_LOGGER: Optional[logging.Logger] = None
@@ -241,6 +1835,18 @@ BPGEN_READ_ONLY_ACTIONS = {
     "canonicalize_spec",
     "list_nodes",
     "describe_node",
+    # Asset ops that are effectively read-only at the project level.
+    "asset_search",
+    "asset_export_texture",
+    "asset_list_references",
+
+    # Blueprint component ops (read-only)
+    "bp_component_search_types",
+    "bp_component_get_info",
+    "bp_component_list",
+    "bp_component_get_property",
+    "bp_component_get_all_properties",
+    "bp_component_get_property_metadata",
 }
 
 BPGEN_CFG = {
@@ -262,6 +1868,13 @@ BPGEN_MUTATION_ACTIONS = {
     "replace_node",
     "ensure_function",
     "ensure_variable",
+
+    # Blueprint component ops (mutations)
+    "bp_component_create",
+    "bp_component_delete",
+    "bp_component_reparent",
+    "bp_component_reorder",
+    "bp_component_set_property",
 }
 
 
@@ -282,179 +1895,6 @@ def _bpgen_guard_mutation(action: str) -> Optional[Dict[str, Any]]:
         _get_server_logger().warning("Blocked bpgen mutation action=%s (SOTS_ALLOW_BPGEN_APPLY=0)", action)
         return _sots_err("Blocked by SOTS_ALLOW_BPGEN_APPLY=0", meta={"action": action})
     return None
-
-
-_BPGEN_MANAGE_NODE_PARAM_MAP: Dict[str, str] = {
-    "id": "Id",
-    "node_id": "Id",
-    "node_type": "NodeType",
-    "spawner_key": "SpawnerKey",
-    "prefer_spawner_key": "bPreferSpawnerKey",
-    "function_path": "FunctionPath",
-    "struct_path": "StructPath",
-    "variable_name": "VariableName",
-    "create_or_update": "bCreateOrUpdate",
-    "allow_create": "bAllowCreate",
-    "allow_update": "bAllowUpdate",
-    "extra_data": "ExtraData",
-    "extra": "ExtraData",
-    "position": "NodePosition",
-    "node_position": "NodePosition",
-}
-
-
-def _bpgen_normalize_position(value: Sequence[float]) -> Optional[List[float]]:
-    if not value:
-        return None
-
-    try:
-        return [float(value[0]), float(value[1])]
-    except (TypeError, IndexError, ValueError):
-        return None
-
-
-def _bpgen_normalize_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "on"}
-    if isinstance(value, (int, float)):
-        return value != 0
-    return False
-
-
-def _bpgen_build_manage_node_target(blueprint_asset_path: str, function_name: str) -> Dict[str, Any]:
-    return {
-        "blueprint_asset_path": blueprint_asset_path,
-        "target_type": "Function",
-        "name": function_name,
-    }
-
-
-def _bpgen_build_graph_spec(target: Dict[str, Any], nodes: Optional[List[Dict[str, Any]]] = None, links: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-    return {
-        "target": target,
-        "Nodes": nodes or [],
-        "Links": links or [],
-    }
-
-
-def _bpgen_collect_extra_data(*dicts: Optional[Dict[str, Any]]) -> Dict[str, str]:
-    collected: Dict[str, str] = {}
-    for data in dicts:
-        if not data:
-            continue
-        for key, value in data.items():
-            if value is None:
-                continue
-            if isinstance(value, (dict, list)):
-                collected[key] = json.dumps(value, ensure_ascii=False)
-            else:
-                collected[key] = str(value)
-    return collected
-
-
-def _bpgen_build_node_spec(
-    node_id: Optional[str],
-    node_type: Optional[str],
-    node_params: Optional[Dict[str, Any]],
-    position: Optional[Sequence[float]],
-    extra: Optional[Dict[str, Any]],
-    property_name: Optional[str],
-    property_value: Optional[Any],
-) -> Dict[str, Any]:
-    spec: Dict[str, Any] = {}
-    node_params = node_params or {}
-
-    positional_value: Optional[Sequence[float]] = None
-    extra_candidates: List[Dict[str, Any]] = []
-
-    for raw_key, value in node_params.items():
-        lower_key = raw_key.lower()
-        mapped = _BPGEN_MANAGE_NODE_PARAM_MAP.get(lower_key)
-        if not mapped:
-            spec[raw_key] = value
-            continue
-
-        if mapped == "ExtraData":
-            if isinstance(value, dict):
-                extra_candidates.append(value)
-            continue
-
-        if mapped == "NodePosition":
-            if isinstance(value, Sequence):
-                positional_value = value
-            continue
-
-        spec[mapped] = value
-
-    if node_type:
-        spec.setdefault("NodeType", node_type)
-
-    position_to_use = position or positional_value
-    normalized_position = _bpgen_normalize_position(position_to_use) if position_to_use else None
-    if normalized_position:
-        spec["NodePosition"] = normalized_position
-
-    assigned_id = node_id or spec.get("Id")
-    if not assigned_id:
-        assigned_id = uuid.uuid4().hex
-    spec["Id"] = assigned_id
-
-    if extra:
-        extra_candidates.append(extra)
-    if property_name and property_value is not None:
-        extra_candidates.append({property_name: property_value})
-
-    merged_extra = _bpgen_collect_extra_data(*extra_candidates)
-    if merged_extra:
-        spec["ExtraData"] = merged_extra
-
-    return spec
-
-
-def _bpgen_extract_connection_value(conn: Dict[str, Any], *keys: str) -> Optional[str]:
-    for key in keys:
-        value = conn.get(key)
-        if value:
-            return str(value)
-    return None
-
-
-def _bpgen_build_links(connections: Optional[List[Dict[str, Any]]]) -> Tuple[List[Dict[str, Any]], List[str]]:
-    links: List[Dict[str, Any]] = []
-    warnings: List[str] = []
-    if not connections:
-        return links, warnings
-
-    for index, conn in enumerate(connections, start=1):
-        if not isinstance(conn, dict):
-            warnings.append(f"Connection #{index} is not a dictionary.")
-            continue
-
-        from_node = _bpgen_extract_connection_value(conn, "source_node_id", "from_node_id")
-        to_node = _bpgen_extract_connection_value(conn, "target_node_id", "to_node_id")
-        from_pin = _bpgen_extract_connection_value(conn, "source_pin_name", "source_pin", "from_pin")
-        to_pin = _bpgen_extract_connection_value(conn, "target_pin_name", "target_pin", "to_pin")
-
-        if not from_node or not to_node or not from_pin or not to_pin:
-            warnings.append(f"Connection #{index} is missing required ids or pins.")
-            continue
-
-        link: Dict[str, Any] = {
-            "FromNodeId": from_node,
-            "ToNodeId": to_node,
-            "FromPinName": from_pin,
-            "ToPinName": to_pin,
-            "bBreakExistingFrom": _bpgen_normalize_bool(conn.get("break_existing_from", conn.get("break_from"))),
-            "bBreakExistingTo": _bpgen_normalize_bool(conn.get("break_existing_to", conn.get("break_to"))),
-            "bUseSchema": _bpgen_normalize_bool(conn.get("use_schema", True)),
-            "bAllowHeuristicPinMatch": _bpgen_normalize_bool(conn.get("allow_heuristic_pin_match")),
-        }
-
-        links.append(link)
-
-    return links, warnings
 
 # Allowlist of executable scripts (read-only operations)
 ALLOWED_SCRIPTS: Dict[str, Path] = {
@@ -788,11 +2228,8 @@ def _search_files(
 # MCP server definition (FastMCP)
 # -----------------------------------------------------------------------------
 
-mcp = FastMCP(
-    "SOTS DevTools (unified)",
-    # json_response=True helps some clients interpret dict outputs consistently.
-    json_response=True,
-)
+# NOTE: `mcp` is defined near the top of the file so that tool decorators can
+# register correctly. Do not reassign it here.
 
 @mcp.tool(
     name="sots_run_devtool",
@@ -1314,6 +2751,30 @@ def bpgen_apply(blueprint_asset_path: str, function_name: str, graph_spec: Dict[
 
 
 @mcp.tool(
+    name="bpgen_apply_to_target",
+    description="Apply a BPGen graph spec to a non-function target (mutating; gated). Supports dry_run.",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: apply to target"},
+)
+def bpgen_apply_to_target(graph_spec: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    action = "apply_graph_spec_to_target"
+    guard = _bpgen_guard_mutation(action)
+    if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_apply_to_target", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+        return guard
+    payload = {"graph_spec": graph_spec}
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_apply_to_target", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_apply_to_target", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
+
+
+@mcp.tool(
     name="bpgen_create_blueprint",
     description="Create a Blueprint asset (mutating; gated by SOTS_ALLOW_APPLY).",
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: create blueprint"},
@@ -1458,302 +2919,6 @@ def bpgen_replace_node(
 
 
 @mcp.tool(
-    name="bpgen_manage_blueprint_node",
-    description="High-level VibeUE-style manage_blueprint_node wrapper for BPGen actions.",
-    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: manage node"},
-)
-def bpgen_manage_blueprint_node(
-    action: str,
-    blueprint_name: str = "",
-    blueprint_asset_path: str = "",
-    function_name: str = "",
-    graph_scope: str = "function",
-    node_params: Optional[Dict[str, Any]] = None,
-    node_id: Optional[str] = None,
-    node_type: Optional[str] = None,
-    position: Optional[Sequence[float]] = None,
-    connections: Optional[List[Dict[str, Any]]] = None,
-    extra: Optional[Dict[str, Any]] = None,
-    property_name: Optional[str] = None,
-    property_value: Optional[Any] = None,
-    include_pins: bool = False,
-    compile: bool = True,
-    dry_run: bool = False,
-) -> Dict[str, Any]:
-    req_id = _new_request_id()
-    action_name = (action or "").strip().lower()
-    blueprint_path = (blueprint_asset_path or blueprint_name or "").strip()
-
-    def _log_ok(data: Any, warnings: Optional[List[str]] = None) -> Dict[str, Any]:
-        out = _sots_ok(data, warnings=warnings or [], meta={"request_id": req_id})
-        _jsonl_log({
-            "ts": time.time(),
-            "tool": "bpgen_manage_blueprint_node",
-            "ok": out["ok"],
-            "error": out["error"],
-            "request_id": req_id,
-            "action": action_name,
-        })
-        return out
-
-    def _log_err(message: str) -> Dict[str, Any]:
-        out = _sots_err(message, meta={"request_id": req_id})
-        _jsonl_log({
-            "ts": time.time(),
-            "tool": "bpgen_manage_blueprint_node",
-            "ok": out["ok"],
-            "error": out["error"],
-            "request_id": req_id,
-            "action": action_name,
-        })
-        return out
-
-    if not blueprint_path:
-        return _log_err("blueprint_asset_path or blueprint_name is required.")
-
-    if not action_name:
-        return _log_err("action is required for manage_blueprint_node.")
-
-    if graph_scope and graph_scope.strip().lower() not in {"", "function"}:
-        return _log_err(f"Unsupported graph_scope '{graph_scope}'. Only 'function' is supported.")
-
-    function_name_str = (function_name or "").strip()
-    def _require_function() -> bool:
-        return bool(function_name_str)
-
-    if action_name in {"list", "describe", "get_details", "create", "move", "connect_pins", "disconnect_pins", "configure", "delete"}:
-        if not _require_function():
-            return _log_err("function_name is required for manage_blueprint_node actions.")
-
-    if action_name == "list":
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "include_pins": include_pins,
-        }
-        return _log_ok(_bpgen_call("list_nodes", payload))
-
-    if action_name == "describe" or action_name == "get_details":
-        resolved_node_id = node_id or (node_params or {}).get("node_id")
-        if not resolved_node_id:
-            return _log_err("node_id is required for describe/get_details actions.")
-
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "node_id": resolved_node_id,
-            "include_pins": True if action_name == "get_details" else include_pins,
-        }
-        return _log_ok(_bpgen_call("describe_node", payload))
-
-    if action_name == "create":
-        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
-        node_spec = _bpgen_build_node_spec(node_id, node_type, node_params, position, extra, property_name, property_value)
-        links, warnings = _bpgen_build_links(connections)
-        graph_spec = _bpgen_build_graph_spec(target, [node_spec], links)
-
-        guard = _bpgen_guard_mutation("apply_graph_spec")
-        if guard:
-            guard.setdefault("meta", {})["request_id"] = req_id
-            guard["meta"]["action"] = action_name
-            _jsonl_log({
-                "ts": time.time(),
-                "tool": "bpgen_manage_blueprint_node",
-                "ok": guard["ok"],
-                "error": guard["error"],
-                "request_id": req_id,
-                "action": action_name,
-            })
-            return guard
-
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "graph_spec": graph_spec,
-        }
-
-        if dry_run:
-            return _log_ok({"action": "create", "params": payload}, warnings=warnings)
-
-        result = _bpgen_call("apply_graph_spec", payload)
-        return _log_ok(result, warnings=warnings)
-
-    if action_name == "delete":
-        resolved_node_id = node_id or (node_params or {}).get("node_id")
-        if not resolved_node_id:
-            return _log_err("node_id is required to delete a node.")
-
-        guard = _bpgen_guard_mutation("delete_node_by_id")
-        if guard:
-            guard.setdefault("meta", {})["request_id"] = req_id
-            guard["meta"]["action"] = action_name
-            _jsonl_log({
-                "ts": time.time(),
-                "tool": "bpgen_manage_blueprint_node",
-                "ok": guard["ok"],
-                "error": guard["error"],
-                "request_id": req_id,
-                "action": action_name,
-            })
-            return guard
-
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "node_id": resolved_node_id,
-            "compile": compile,
-            "dry_run": dry_run,
-        }
-
-        if dry_run:
-            return _log_ok({"action": "delete", "params": payload})
-
-        result = _bpgen_call("delete_node_by_id", payload)
-        return _log_ok(result)
-
-    if action_name == "move":
-        resolved_node_id = node_id or (node_params or {}).get("node_id")
-        if not resolved_node_id or not position:
-            return _log_err("node_id and position are required to move a node.")
-
-        guard = _bpgen_guard_mutation("apply_graph_spec")
-        if guard:
-            guard.setdefault("meta", {})["request_id"] = req_id
-            guard["meta"]["action"] = action_name
-            _jsonl_log({
-                "ts": time.time(),
-                "tool": "bpgen_manage_blueprint_node",
-                "ok": guard["ok"],
-                "error": guard["error"],
-                "request_id": req_id,
-                "action": action_name,
-            })
-            return guard
-
-        node_spec = _bpgen_build_node_spec(resolved_node_id, node_type, node_params, position, extra, property_name, property_value)
-        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
-        graph_spec = _bpgen_build_graph_spec(target, [node_spec])
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "graph_spec": graph_spec,
-        }
-
-        if dry_run:
-            return _log_ok({"action": "move", "params": payload})
-
-        result = _bpgen_call("apply_graph_spec", payload)
-        return _log_ok(result)
-
-    if action_name == "connect_pins":
-        guard = _bpgen_guard_mutation("apply_graph_spec")
-        if guard:
-            guard.setdefault("meta", {})["request_id"] = req_id
-            guard["meta"]["action"] = action_name
-            _jsonl_log({
-                "ts": time.time(),
-                "tool": "bpgen_manage_blueprint_node",
-                "ok": guard["ok"],
-                "error": guard["error"],
-                "request_id": req_id,
-                "action": action_name,
-            })
-            return guard
-
-        links, warnings = _bpgen_build_links(connections)
-        if not links:
-            return _log_err("At least one valid connection is required to connect pins.")
-
-        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
-        graph_spec = _bpgen_build_graph_spec(target, links=links)
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "graph_spec": graph_spec,
-        }
-
-        if dry_run:
-            return _log_ok({"action": "connect_pins", "params": payload}, warnings=warnings)
-
-        result = _bpgen_call("apply_graph_spec", payload)
-        return _log_ok(result, warnings=warnings)
-
-    if action_name == "disconnect_pins":
-        guard = _bpgen_guard_mutation("delete_link")
-        if guard:
-            guard.setdefault("meta", {})["request_id"] = req_id
-            guard["meta"]["action"] = action_name
-            _jsonl_log({
-                "ts": time.time(),
-                "tool": "bpgen_manage_blueprint_node",
-                "ok": guard["ok"],
-                "error": guard["error"],
-                "request_id": req_id,
-                "action": action_name,
-            })
-            return guard
-
-        links, warnings = _bpgen_build_links(connections)
-        if not links:
-            return _log_err("At least one valid connection is required to disconnect pins.")
-
-        if dry_run:
-            return _log_ok({"action": "disconnect_pins", "params": {"connections": links}}, warnings=warnings)
-
-        results = []
-        for link in links:
-            payload = {
-                "blueprint_asset_path": blueprint_path,
-                "function_name": function_name_str,
-                "from_node_id": link["FromNodeId"],
-                "from_pin": link["FromPinName"],
-                "to_node_id": link["ToNodeId"],
-                "to_pin": link["ToPinName"],
-                "compile": compile,
-                "dry_run": False,
-            }
-            results.append(_bpgen_call("delete_link", payload))
-
-        return _log_ok({"results": results}, warnings=warnings)
-
-    if action_name == "configure":
-        resolved_node_id = node_id or (node_params or {}).get("node_id")
-        has_node_param_extra = bool((node_params or {}).get("extra") or (node_params or {}).get("extra_data"))
-        if not resolved_node_id or (not property_name and not extra and not has_node_param_extra):
-            return _log_err("node_id and at least one property/extra entry are required for configure.")
-
-        guard = _bpgen_guard_mutation("apply_graph_spec")
-        if guard:
-            guard.setdefault("meta", {})["request_id"] = req_id
-            guard["meta"]["action"] = action_name
-            _jsonl_log({
-                "ts": time.time(),
-                "tool": "bpgen_manage_blueprint_node",
-                "ok": guard["ok"],
-                "error": guard["error"],
-                "request_id": req_id,
-                "action": action_name,
-            })
-            return guard
-
-        node_spec = _bpgen_build_node_spec(resolved_node_id, node_type, node_params, position, extra, property_name, property_value)
-        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
-        graph_spec = _bpgen_build_graph_spec(target, [node_spec])
-        payload = {
-            "blueprint_asset_path": blueprint_path,
-            "function_name": function_name_str,
-            "graph_spec": graph_spec,
-        }
-
-        if dry_run:
-            return _log_ok({"action": "configure", "params": payload})
-
-        result = _bpgen_call("apply_graph_spec", payload)
-        return _log_ok(result)
-
-    return _log_err(f"Unknown manage_blueprint_node action: {action_name}")
-
-@mcp.tool(
     name="bpgen_ensure_function",
     description="Ensure a function exists (mutating; gated). Supports dry_run.",
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: ensure function"},
@@ -1823,6 +2988,145 @@ def bpgen_ensure_variable(
     res = _bpgen_call(action, payload)
     out = _sots_ok(res, meta={"request_id": req_id})
     _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_variable", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
+
+
+@mcp.tool(
+    name="bpgen_ensure_widget",
+    description="Ensure a widget component exists in a WidgetBlueprint (mutating; gated).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: ensure widget"},
+)
+def bpgen_ensure_widget(
+    blueprint_asset_path: str,
+    widget_class_path: str,
+    widget_name: str,
+    parent_name: str = "",
+    insert_index: int = -1,
+    is_variable: bool = True,
+    create_if_missing: bool = True,
+    update_if_exists: bool = True,
+    reparent_if_mismatch: bool = True,
+    properties: Optional[Dict[str, str]] = None,
+    slot_properties: Optional[Dict[str, str]] = None,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    action = "ensure_widget"
+    guard = _bpgen_guard_mutation(action)
+    if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_widget", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+        return guard
+
+    payload: Dict[str, Any] = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "widget_class_path": widget_class_path,
+        "widget_name": widget_name,
+        "parent_name": parent_name,
+        "insert_index": insert_index,
+        "is_variable": is_variable,
+        "create_if_missing": create_if_missing,
+        "update_if_exists": update_if_exists,
+        "reparent_if_mismatch": reparent_if_mismatch,
+        "properties": properties or {},
+        "slot_properties": slot_properties or {},
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_widget", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_widget", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
+
+
+@mcp.tool(
+    name="bpgen_set_widget_properties",
+    description="Set widget properties by ImportText paths (mutating; gated).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: set widget properties"},
+)
+def bpgen_set_widget_properties(
+    blueprint_asset_path: str,
+    widget_name: str,
+    properties: Dict[str, str],
+    fail_if_missing: bool = True,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    action = "set_widget_properties"
+    guard = _bpgen_guard_mutation(action)
+    if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_set_widget_properties", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+        return guard
+
+    payload: Dict[str, Any] = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "widget_name": widget_name,
+        "properties": properties,
+        "fail_if_missing": fail_if_missing,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_set_widget_properties", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_set_widget_properties", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
+
+
+@mcp.tool(
+    name="bpgen_ensure_binding",
+    description="Ensure a widget property binding exists (mutating; gated).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: ensure binding"},
+)
+def bpgen_ensure_binding(
+    blueprint_asset_path: str,
+    widget_name: str,
+    property_name: str,
+    function_name: str,
+    signature: Optional[Dict[str, Any]] = None,
+    graph_spec: Optional[Dict[str, Any]] = None,
+    apply_graph: bool = False,
+    create_binding: bool = True,
+    update_binding: bool = True,
+    create_function: bool = True,
+    update_function: bool = True,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    action = "ensure_binding"
+    guard = _bpgen_guard_mutation(action)
+    if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_binding", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+        return guard
+
+    payload: Dict[str, Any] = {
+        "blueprint_asset_path": blueprint_asset_path,
+        "widget_name": widget_name,
+        "property_name": property_name,
+        "function_name": function_name,
+        "signature": signature or {},
+        "graph_spec": graph_spec or {},
+        "apply_graph": apply_graph,
+        "create_binding": create_binding,
+        "update_binding": update_binding,
+        "create_function": create_function,
+        "update_function": update_function,
+    }
+    if dry_run:
+        out = _sots_ok({"action": action, "params": payload, "dry_run": True}, meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_binding", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+
+    res = _bpgen_call(action, payload)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_ensure_binding", "ok": out["ok"], "error": out["error"], "request_id": req_id})
     return out
 
 
@@ -1980,6 +3284,20 @@ def server_info() -> Dict[str, Any]:
 def sots_help() -> Dict[str, Any]:
     req_id = _new_request_id()
     canonical_tools = [
+        # VibeUE upstream compatibility (initial scaffold)
+        "manage_asset",
+        "manage_blueprint",
+        "manage_blueprint_component",
+        "manage_blueprint_node",
+        "manage_blueprint_function",
+        "manage_blueprint_variable",
+        "manage_umg_widget",
+        "manage_enhanced_input",
+        "manage_level_actors",
+        "manage_material",
+        "manage_material_node",
+        "check_unreal_connection",
+        "get_help",
         "sots_list_dir",
         "sots_read_file",
         "sots_search_workspace",
@@ -2005,11 +3323,15 @@ def sots_help() -> Dict[str, Any]:
         "bpgen_compile",
         "bpgen_save",
         "bpgen_apply",
+        "bpgen_apply_to_target",
         "bpgen_delete_node",
         "bpgen_delete_link",
         "bpgen_replace_node",
         "bpgen_ensure_function",
         "bpgen_ensure_variable",
+        "bpgen_ensure_widget",
+        "bpgen_set_widget_properties",
+        "bpgen_ensure_binding",
         "bpgen_get_spec_schema",
         "bpgen_canonicalize_spec",
         "sots_server_info",

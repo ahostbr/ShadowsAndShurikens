@@ -5,6 +5,9 @@
 #include "SOTS_BPGenEnsure.h"
 #include "SOTS_BPGenInspector.h"
 #include "SOTS_BPGenSpawnerRegistry.h"
+#include "SOTS_BPGenBridgeAssetOps.h"
+#include "SOTS_BPGenBridgeBlueprintOps.h"
+#include "SOTS_BPGenBridgeComponentOps.h"
 #include "JsonObjectConverter.h"
 #include "Engine/Blueprint.h"
 #include "Containers/StringConv.h"
@@ -39,6 +42,8 @@ static TSharedPtr<FJsonObject> BuildFeatureFlags(bool bSupportsDryRun, bool bHas
 	Features->SetBoolField(TEXT("ensure_function"), true);
 	Features->SetBoolField(TEXT("ensure_variable"), true);
 	Features->SetBoolField(TEXT("umg"), true);
+	Features->SetBoolField(TEXT("assets"), true);
+	Features->SetBoolField(TEXT("components"), true);
 	Features->SetBoolField(TEXT("describe_node_links"), true);
 	Features->SetBoolField(TEXT("error_codes"), true);
 	Features->SetBoolField(TEXT("graph_edits"), true);
@@ -239,6 +244,14 @@ static bool IsDangerousActionName(const FString& Action)
 		|| Action.Equals(TEXT("delete_node_by_id"), ESearchCase::IgnoreCase)
 		|| Action.Equals(TEXT("delete_link"), ESearchCase::IgnoreCase)
 		|| Action.Equals(TEXT("replace_node"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_component_create"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_component_delete"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_component_reparent"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_component_reorder"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_component_set_property"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_blueprint_set_property"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("bp_blueprint_reparent"), ESearchCase::IgnoreCase)
+		|| Action.Equals(TEXT("asset_delete"), ESearchCase::IgnoreCase)
 		|| Action.Equals(TEXT("save_blueprint"), ESearchCase::IgnoreCase)
 		|| Action.Equals(TEXT("batch"), ESearchCase::IgnoreCase)
 		|| Action.Equals(TEXT("session_batch"), ESearchCase::IgnoreCase);
@@ -1946,6 +1959,292 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		ResultObj->SetArrayField(TEXT("requests"), RecentValues);
 		OutResult.bOk = true;
 		OutResult.Result = ResultObj;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_search"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::Search(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_open_in_editor"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::OpenInEditor(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_duplicate"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::Duplicate(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_delete"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::Delete(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_import_texture"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::ImportTexture(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_export_texture"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::ExportTexture(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_save"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::Save(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_save_all"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::SaveAll(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("asset_list_references"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeAssetOpResult Op = SOTS_BPGenBridgeAssetOps::ListReferences(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_search_types"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::SearchTypes(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_get_info"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::GetInfo(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_list"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::List(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_get_property"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::GetProperty(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_set_property"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::SetProperty(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_get_all_properties"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::GetAllProperties(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_create"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::Create(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_delete"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::Delete(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_reparent"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::Reparent(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_reorder"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::Reorder(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_component_get_property_metadata"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeComponentOpResult Op = SOTS_BPGenBridgeComponentOps::GetPropertyMetadata(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_blueprint_get_info"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeBlueprintOpResult Op = SOTS_BPGenBridgeBlueprintOps::GetInfo(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_blueprint_get_property"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeBlueprintOpResult Op = SOTS_BPGenBridgeBlueprintOps::GetProperty(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_blueprint_set_property"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeBlueprintOpResult Op = SOTS_BPGenBridgeBlueprintOps::SetProperty(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_blueprint_reparent"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeBlueprintOpResult Op = SOTS_BPGenBridgeBlueprintOps::Reparent(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_blueprint_list_custom_events"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeBlueprintOpResult Op = SOTS_BPGenBridgeBlueprintOps::ListCustomEvents(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
+		return;
+	}
+
+	if (Action.Equals(TEXT("bp_blueprint_summarize_event_graph"), ESearchCase::IgnoreCase))
+	{
+		const FSOTS_BPGenBridgeBlueprintOpResult Op = SOTS_BPGenBridgeBlueprintOps::SummarizeEventGraph(Params);
+		OutResult.bOk = Op.bOk;
+		OutResult.Result = Op.Result;
+		OutResult.Errors.Append(Op.Errors);
+		OutResult.Warnings.Append(Op.Warnings);
+		OutResult.ErrorCode = Op.ErrorCode;
 		return;
 	}
 

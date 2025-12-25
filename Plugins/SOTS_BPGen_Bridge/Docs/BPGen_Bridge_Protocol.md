@@ -12,7 +12,7 @@ Local-only TCP NDJSON bridge for BPGen.
 ```json
 {
   "tool": "bpgen",
-  "action": "ping" | "discover_nodes" | "apply_graph_spec" | "apply_graph_spec_to_target" | "canonicalize_spec" | "get_spec_schema" | "ensure_function" | "ensure_variable" | "ensure_widget" | "set_widget_properties" | "ensure_binding" | "list_nodes" | "describe_node" | "compile_blueprint" | "save_blueprint" | "refresh_nodes" | "batch" | "begin_session" | "end_session" | "session_batch" | "prime_cache" | "clear_cache" | "set_limits" | "get_recent_requests" | "server_info" | "health" | "set_safe_mode" | "emergency_stop" | "shutdown",
+  "action": "ping" | "discover_nodes" | "apply_graph_spec" | "apply_graph_spec_to_target" | "canonicalize_spec" | "get_spec_schema" | "ensure_function" | "ensure_variable" | "ensure_widget" | "set_widget_properties" | "ensure_binding" | "list_nodes" | "describe_node" | "compile_blueprint" | "save_blueprint" | "refresh_nodes" | "asset_search" | "asset_open_in_editor" | "asset_duplicate" | "asset_delete" | "asset_import_texture" | "asset_export_texture" | "asset_save" | "asset_save_all" | "asset_list_references" | "batch" | "begin_session" | "end_session" | "session_batch" | "prime_cache" | "clear_cache" | "set_limits" | "get_recent_requests" | "server_info" | "health" | "set_safe_mode" | "emergency_stop" | "shutdown",
   "request_id": "any string",
   "params": { "...": "action-specific" }
 }
@@ -30,7 +30,7 @@ Local-only TCP NDJSON bridge for BPGen.
   "server.plugin": "SOTS_BPGen_Bridge",
   "server.version": "0.1",
   "server.protocol_version": "1.0",
-  "server.features": { "targets": true, "ensure_function": true, "ensure_variable": true, "umg": true, "describe_node_links": true, "error_codes": true, "graph_edits": true, "auto_fix": true, "recipes": true, "batch": true, "sessions": true, "cache_controls": true, "limits": true, "recent_requests": true, "server_info": true, "spec_schema": true, "canonicalize_spec": true, "health": true, "safety": true, "audit": true, "dry_run": true, "auth_token": false, "rate_limit": true },
+  "server.features": { "targets": true, "ensure_function": true, "ensure_variable": true, "umg": true, "assets": true, "describe_node_links": true, "error_codes": true, "graph_edits": true, "auto_fix": true, "recipes": true, "batch": true, "sessions": true, "cache_controls": true, "limits": true, "recent_requests": true, "server_info": true, "spec_schema": true, "canonicalize_spec": true, "health": true, "safety": true, "audit": true, "dry_run": true, "auth_token": false, "rate_limit": true },
   "server.port": 55557,
   "server.request_ms": 142.4,
   "server.dispatch_ms": 120.2,
@@ -69,6 +69,16 @@ Local-only TCP NDJSON bridge for BPGen.
 - `compile_blueprint`: params `blueprint_asset_path`. Returns `FSOTS_BPGenMaintenanceResult`.
 - `save_blueprint`: params `blueprint_asset_path`. Returns `FSOTS_BPGenMaintenanceResult`.
 - `refresh_nodes`: params `blueprint_asset_path`, `function_name`, `include_pins` (bool). Returns `FSOTS_BPGenMaintenanceResult`.
+- Asset operations (Editor-only):
+  - `asset_search`: params `{search_term, asset_type, path, case_sensitive, include_engine_content, max_results}`. Returns an `assets` array + `count`.
+  - `asset_open_in_editor`: params `{asset_path, force_open}`.
+  - `asset_duplicate`: params `{asset_path, destination_path, new_name}`.
+  - `asset_delete`: params `{asset_path, force_delete, show_confirmation}`. **Dangerous**: requires `params.dangerous_ok=true` and safe mode must be disabled.
+  - `asset_import_texture`: params `{file_path, destination_path, texture_name, compression_settings, generate_mipmaps, ...}`.
+  - `asset_export_texture`: params `{asset_path, export_format, max_size, temp_folder}`.
+  - `asset_save`: params `{asset_path}`.
+  - `asset_save_all`: params `{prompt_user}`.
+  - `asset_list_references`: params `{asset_path, include_dependencies}`.
 - `batch`: params `batch_id` (optional), `atomic` (bool, default true), `stop_on_error` (bool, default true), `commands` array of `{action, params}`. Returns per-step results and summary.
 - `begin_session`: params optional `blueprint_asset_path`. Returns `session_id`, `idle_seconds`, `started_utc`.
 - `end_session`: params `session_id`. Returns `{session_id, status}`.
