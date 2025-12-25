@@ -252,6 +252,7 @@ BPGEN_CFG = {
 }
 
 BPGEN_MUTATION_ACTIONS = {
+    "create_blueprint_asset",
     "apply_graph_spec",
     "compile_blueprint",
     "save_blueprint",
@@ -1136,6 +1137,37 @@ def bpgen_apply(blueprint_asset_path: str, function_name: str, graph_spec: Dict[
     res = _bpgen_call(action, payload)
     out = _sots_ok(res, meta={"request_id": req_id})
     _jsonl_log({"ts": time.time(), "tool": "bpgen_apply", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+    return out
+
+
+@mcp.tool(
+    name="bpgen_create_blueprint",
+    description="Create a Blueprint asset (mutating; gated by SOTS_ALLOW_APPLY).",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: create blueprint"},
+)
+def bpgen_create_blueprint(asset_path: str, parent_class_path: Optional[str] = None) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    action = "create_blueprint_asset"
+    guard = _bpgen_guard_mutation(action)
+    if guard:
+        guard["meta"]["request_id"] = req_id
+        _jsonl_log({"ts": time.time(), "tool": "bpgen_create_blueprint", "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+        return guard
+
+    params: Dict[str, Any] = {
+        "asset_path": asset_path,
+        "AssetPath": asset_path,
+    }
+    if parent_class_path:
+        params.update(
+            {
+                "parent_class_path": parent_class_path,
+                "ParentClassPath": parent_class_path,
+            }
+        )
+    res = _bpgen_call(action, params)
+    out = _sots_ok(res, meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "bpgen_create_blueprint", "ok": out["ok"], "error": out["error"], "request_id": req_id})
     return out
 
 

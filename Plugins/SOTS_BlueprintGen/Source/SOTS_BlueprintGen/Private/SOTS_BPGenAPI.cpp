@@ -256,6 +256,19 @@ FSOTS_BPGenAPIEnvelope ExecuteSingle(const UObject* WorldContextObject, const FS
         return Env;
     }
 
+    if (Action == TEXT("create_blueprint_asset"))
+    {
+        FSOTS_BPGenBlueprintDef Def;
+        if (!DeserializeJson(ParamsJson, Def, ParseError))
+        {
+            AddError(Env, ParseError);
+            return Env;
+        }
+        const FSOTS_BPGenBlueprintResult Result = USOTS_BPGenBuilder::CreateBlueprintAssetFromDef(WorldContextObject, Def);
+        ToResultJson(Result);
+        return Env;
+    }
+
     if (Action == TEXT("debug_annotate"))
     {
         TSharedPtr<FJsonObject> Root;

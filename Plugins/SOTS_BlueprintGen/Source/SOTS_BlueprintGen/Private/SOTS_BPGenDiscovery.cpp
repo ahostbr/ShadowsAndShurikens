@@ -4,12 +4,10 @@
 #include "BlueprintNodeSpawner.h"
 #include "BlueprintFunctionNodeSpawner.h"
 #include "BlueprintVariableNodeSpawner.h"
-#include "BlueprintNodeBinder.h"
+#include "Commands/BlueprintReflection.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
-#include "Kismet2/BlueprintEditorUtils.h"
-#include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
 
 namespace
@@ -23,52 +21,6 @@ namespace
 		case EPinContainerType::Map:   return TEXT("Map");
 		default: return TEXT("None");
 		}
-	}
-
-	static FSOTS_BPGenDiscoveredPinDescriptor MakePinDescriptor(const UEdGraphPin* Pin)
-	{
-		FSOTS_BPGenDiscoveredPinDescriptor Desc;
-		if (!Pin)
-		{
-			return Desc;
-		}
-
-		Desc.PinName = Pin->PinName;
-		Desc.Direction = (Pin->Direction == EGPD_Output) ? ESOTS_BPGenPinDirection::Output : ESOTS_BPGenPinDirection::Input;
-		Desc.PinCategory = Pin->PinType.PinCategory;
-		Desc.PinSubCategory = Pin->PinType.PinSubCategory;
-		Desc.SubObjectPath = Pin->PinType.PinSubCategoryObject.IsValid() ? Pin->PinType.PinSubCategoryObject->GetPathName() : FString();
-		Desc.ContainerType = ContainerTypeToString(Pin->PinType);
-		Desc.DefaultValue = Pin->DefaultValue;
-		Desc.bIsHidden = Pin->bHidden;
-		Desc.bIsAdvanced = Pin->bAdvancedView;
-		Desc.Tooltip = Pin->PinFriendlyName.IsEmpty() ? Pin->PinName.ToString() : Pin->PinFriendlyName.ToString();
-		return Desc;
-	}
-
-	static void AddPinDescriptorsFromSpawner(UBlueprintNodeSpawner* Spawner, TArray<FSOTS_BPGenDiscoveredPinDescriptor>& OutPins)
-	{
-		if (!Spawner)
-		{
-			return;
-		}
-
-		UEdGraph* TempGraph = NewObject<UEdGraph>(GetTransientPackage(), TEXT("BPGenDiscoveryTempGraph"));
-		TempGraph->Schema = UEdGraphSchema_K2::StaticClass();
-
-		UEdGraphNode* NewNode = Spawner->Invoke(TempGraph, IBlueprintNodeBinder::FBindingSet(), FVector2D::ZeroVector);
-		if (!NewNode)
-		{
-			return;
-		}
-
-		for (UEdGraphPin* Pin : NewNode->Pins)
-		{
-			OutPins.Add(MakePinDescriptor(Pin));
-		}
-
-		NewNode->MarkAsGarbage();
-		TempGraph->MarkAsGarbage();
 	}
 
 	static void PopulateBaseDescriptor(UBlueprintNodeSpawner* Spawner, FSOTS_BPGenNodeSpawnerDescriptor& OutDesc)
@@ -157,7 +109,7 @@ namespace
 		}
 	}
 
-	static FSOTS_BPGenNodeSpawnerDescriptor MakeDescriptor(UBlueprintNodeSpawner* Spawner, UBlueprint* ContextBP, bool bIncludePins)
+	static FSOTS_BPGenNodeSpawnerDescriptor MakeDescriptor(UBlueprintNodeSpawner* Spawner)
 	{
 		FSOTS_BPGenNodeSpawnerDescriptor Desc;
 		PopulateBaseDescriptor(Spawner, Desc);
@@ -181,13 +133,122 @@ namespace
 			Desc.SpawnerKey = Desc.NodeClassPath;
 		}
 
+		return Desc;
+	}
+
+	static bool ContainsKeywordIgnoreCase(const FString& Value, const TCHAR* Keyword)
+	{
+		return !Value.IsEmpty() && Value.Contains(Keyword, ESearchCase::IgnoreCase);
+	}
+
+	static bool HasContainerFlag(const FBlueprintReflection::FNodeSpawnerDescriptor& Source, const TCHAR* Keyword)
+	{
+		return ContainsKeywordIgnoreCase(Source.VariableTypePath, Keyword)
+			|| ContainsKeywordIgnoreCase(Source.VariableType, Keyword);
+	}
+
+	static FString DeriveVariableContainerType(const FBlueprintReflection::FNodeSpawnerDescriptor& Source)
+	{
+		if (HasContainerFlag(Source, TEXT("ArrayProperty")) || HasContainerFlag(Source, TEXT("TArray")))
+		{
+			return TEXT("Array");
+		}
+
+		if (HasContainerFlag(Source, TEXT("SetProperty")) || HasContainerFlag(Source, TEXT("TSet")))
+		{
+			return TEXT("Set");
+		}
+
+		if (HasContainerFlag(Source, TEXT("MapProperty")) || HasContainerFlag(Source, TEXT("TMap")))
+		{
+			return TEXT("Map");
+		}
+
+		return TEXT("None");
+	}
+
+	static FSOTS_BPGenDiscoveredPinDescriptor ConvertReflectionPin(const FBlueprintReflection::FPinDescriptor& Source)
+	{
+		FSOTS_BPGenDiscoveredPinDescriptor Desc;
+
+		if (!Source.Name.IsEmpty())
+		{
+			Desc.PinName = FName(*Source.Name);
+		}
+
+		Desc.Direction = Source.Direction.Equals(TEXT("output"), ESearchCase::IgnoreCase)
+			? ESOTS_BPGenPinDirection::Output
+			: ESOTS_BPGenPinDirection::Input;
+
+		const FString CategoryName = Source.Category.IsEmpty() ? Source.Type : Source.Category;
+		if (!CategoryName.IsEmpty())
+		{
+			Desc.PinCategory = FName(*CategoryName);
+		}
+
+		if (!Source.TypePath.IsEmpty())
+		{
+			Desc.PinSubCategory = FName(*Source.TypePath);
+			Desc.SubObjectPath = Source.TypePath;
+		}
+
+		Desc.ContainerType = Source.bIsArray ? TEXT("Array") : TEXT("None");
+		Desc.DefaultValue = Source.DefaultValue;
+		Desc.bIsHidden = Source.bIsHidden;
+		Desc.bIsAdvanced = Source.bIsAdvanced;
+		Desc.Tooltip = Source.Tooltip;
+
+		return Desc;
+	}
+
+	static FSOTS_BPGenNodeSpawnerDescriptor ConvertReflectionDescriptor(
+		const FBlueprintReflection::FNodeSpawnerDescriptor& Source,
+		bool bIncludePins)
+	{
+		FSOTS_BPGenNodeSpawnerDescriptor Desc;
+		Desc.SpawnerKey = Source.SpawnerKey;
+		Desc.DisplayName = Source.DisplayName;
+		Desc.Category = Source.Category;
+		Desc.Keywords = Source.Keywords;
+		Desc.Tooltip = Source.Tooltip;
+		Desc.NodeClassName = Source.NodeClassName;
+		Desc.NodeClassPath = Source.NodeClassPath;
+		Desc.NodeType = Source.NodeType;
+
+		if (!Source.FunctionClassPath.IsEmpty() && !Source.FunctionName.IsEmpty())
+		{
+			Desc.FunctionPath = FString::Printf(TEXT("%s:%s"), *Source.FunctionClassPath, *Source.FunctionName);
+		}
+		else if (!Source.FunctionName.IsEmpty())
+		{
+			Desc.FunctionPath = Source.FunctionName;
+		}
+
+		if (!Source.VariableName.IsEmpty())
+		{
+			Desc.VariableName = FName(*Source.VariableName);
+		}
+
+		Desc.VariableOwnerClassPath = Source.OwnerClassPath;
+		Desc.VariablePinCategory = Source.VariableType;
+		Desc.VariablePinSubCategory = Source.VariableTypePath;
+		Desc.VariablePinSubObjectPath = Source.VariableTypePath;
+		Desc.VariablePinContainerType = DeriveVariableContainerType(Source);
+		Desc.TargetClassPath = Source.TargetClassPath;
+		Desc.bIsSynthetic = Source.bIsSynthetic;
+
 		if (bIncludePins)
 		{
-			AddPinDescriptorsFromSpawner(Spawner, Desc.Pins);
+			Desc.Pins.Reserve(Source.Pins.Num());
+			for (const FBlueprintReflection::FPinDescriptor& Pin : Source.Pins)
+			{
+				Desc.Pins.Add(ConvertReflectionPin(Pin));
+			}
 		}
 
 		return Desc;
 	}
+
 }
 
 FSOTS_BPGenNodeDiscoveryResult USOTS_BPGenDiscovery::DiscoverNodesWithDescriptors(
@@ -213,44 +274,64 @@ FSOTS_BPGenNodeDiscoveryResult USOTS_BPGenDiscovery::DiscoverNodesWithDescriptor
 		}
 	}
 
-	FBlueprintActionDatabase& ActionDB = FBlueprintActionDatabase::Get();
-	const FBlueprintActionDatabase::FActionRegistry& Registry = ActionDB.GetAllActions();
-
 	int32 AddedCount = 0;
-	for (const TPair<FObjectKey, FBlueprintActionDatabase::FActionList>& Entry : Registry)
+
+	if (ContextBlueprint)
 	{
-		if (AddedCount >= MaxResults)
+		TArray<FBlueprintReflection::FNodeSpawnerDescriptor> ReflectionDescriptors =
+			FBlueprintReflection::DiscoverNodesWithDescriptors(ContextBlueprint, SearchText, TEXT(""), TEXT(""), MaxResults);
+
+		for (const FBlueprintReflection::FNodeSpawnerDescriptor& ReflectionDesc : ReflectionDescriptors)
 		{
-			break;
-		}
-
-		for (UBlueprintNodeSpawner* Spawner : Entry.Value)
-		{
-			if (!Spawner)
-			{
-				continue;
-			}
-
-			FSOTS_BPGenNodeSpawnerDescriptor Desc = MakeDescriptor(Spawner, ContextBlueprint, bIncludePins);
-
-			bool bPassesSearch = SearchText.IsEmpty()
-				|| Desc.DisplayName.Contains(SearchText, ESearchCase::IgnoreCase)
-				|| Desc.SpawnerKey.Contains(SearchText, ESearchCase::IgnoreCase)
-				|| Desc.Category.Contains(SearchText, ESearchCase::IgnoreCase)
-				|| Desc.Tooltip.Contains(SearchText, ESearchCase::IgnoreCase)
-				|| Desc.FunctionPath.Contains(SearchText, ESearchCase::IgnoreCase);
-
-			if (!bPassesSearch)
-			{
-				continue;
-			}
-
-			Result.Descriptors.Add(Desc);
-			AddedCount++;
-
 			if (AddedCount >= MaxResults)
 			{
 				break;
+			}
+
+			Result.Descriptors.Add(ConvertReflectionDescriptor(ReflectionDesc, bIncludePins));
+			AddedCount++;
+		}
+	}
+	else
+	{
+		FBlueprintActionDatabase& ActionDB = FBlueprintActionDatabase::Get();
+		const FBlueprintActionDatabase::FActionRegistry& Registry = ActionDB.GetAllActions();
+
+		for (const TPair<FObjectKey, FBlueprintActionDatabase::FActionList>& Entry : Registry)
+		{
+			if (AddedCount >= MaxResults)
+			{
+				break;
+			}
+
+			for (UBlueprintNodeSpawner* Spawner : Entry.Value)
+			{
+				if (!Spawner)
+				{
+					continue;
+				}
+
+				FSOTS_BPGenNodeSpawnerDescriptor Desc = MakeDescriptor(Spawner);
+
+				bool bPassesSearch = SearchText.IsEmpty()
+					|| Desc.DisplayName.Contains(SearchText, ESearchCase::IgnoreCase)
+					|| Desc.SpawnerKey.Contains(SearchText, ESearchCase::IgnoreCase)
+					|| Desc.Category.Contains(SearchText, ESearchCase::IgnoreCase)
+					|| Desc.Tooltip.Contains(SearchText, ESearchCase::IgnoreCase)
+					|| Desc.FunctionPath.Contains(SearchText, ESearchCase::IgnoreCase);
+
+				if (!bPassesSearch)
+				{
+					continue;
+				}
+
+				Result.Descriptors.Add(Desc);
+				AddedCount++;
+
+				if (AddedCount >= MaxResults)
+				{
+					break;
+				}
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 #include "SOTS_BPGenInspector.h"
 
+#include "SOTS_BPGenGraphResolver.h"
 #include "SOTS_BlueprintGen.h"
 
 #include "EdGraph/EdGraph.h"
@@ -201,6 +202,25 @@ namespace
 			{
 				return Graph;
 			}
+		}
+
+		if (FunctionName.IsNone())
+		{
+			return nullptr;
+		}
+
+		FString ResolveError;
+		FString ResolveErrorCode;
+		FSOTS_BPGenGraphTarget EventTarget;
+		EventTarget.BlueprintAssetPath = Blueprint->GetPathName();
+		EventTarget.TargetType = TEXT("EventGraph");
+		EventTarget.Name = FunctionName.ToString();
+		EventTarget.bCreateIfMissing = false;
+		UBlueprint* ResolverBlueprint = nullptr;
+		UEdGraph* EventGraph = nullptr;
+		if (USOTS_BPGenGraphResolver::ResolveTargetGraph(ResolverBlueprint, EventGraph, EventTarget, ResolveError, ResolveErrorCode))
+		{
+			return EventGraph;
 		}
 
 		return nullptr;

@@ -822,6 +822,23 @@ struct FSOTS_BPGenDataAssetDef
 };
 
 /**
+ * Definition for creating a Blueprint asset from BPGen.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenBlueprintDef
+{
+	GENERATED_BODY()
+
+	/** JSON: "asset_path" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Blueprint", meta = (JsonKey = "asset_path"))
+	FString AssetPath;
+
+	/** JSON: "parent_class_path" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Blueprint", meta = (JsonKey = "parent_class_path"))
+	FString ParentClassPath;
+};
+
+/**
  * Result for asset-creation operations (structs, enums).
  */
 USTRUCT(BlueprintType)
@@ -852,6 +869,47 @@ struct FSOTS_BPGenAssetResult
 	/** JSON: "Warnings" (output only). Non-fatal warnings. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result")
 	TArray<FString> Warnings;
+};
+
+/**
+ * Result payload returned after attempting to create a Blueprint asset.
+ */
+USTRUCT(BlueprintType)
+struct FSOTS_BPGenBlueprintResult
+{
+	GENERATED_BODY()
+
+	/** JSON: "bSuccess" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "bSuccess"))
+	bool bSuccess = false;
+
+	/** JSON: "AssetPath" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "AssetPath"))
+	FString AssetPath;
+
+	/** JSON: "ParentClassPath" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "ParentClassPath"))
+	FString ParentClassPath;
+
+	/** JSON: "Message" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "Message"))
+	FString Message;
+
+	/** JSON: "ErrorMessage" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "ErrorMessage"))
+	FString ErrorMessage;
+
+	/** JSON: "Errors" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "Errors"))
+	TArray<FString> Errors;
+
+	/** JSON: "Warnings" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "Warnings"))
+	TArray<FString> Warnings;
+
+	/** JSON: "bAlreadyExisted" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BPGen|Result", meta = (JsonKey = "bAlreadyExisted"))
+	bool bAlreadyExisted = false;
 };
 
 /**

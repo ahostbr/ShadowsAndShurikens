@@ -2,6 +2,7 @@
 
 - **HelloWorld**: Function prints a greeting when executed; nodes are linked Entry → PrintString → Result.
 - **AdvancedDoor**: Actor graphs create auto-close behavior; verify nodes match spec and compile cleanly.
+- **BeginPlayNotification**: BeginPlay→Delay (3s)→ShowNotification delivers "Merry Christmas Ryan !" via the SOTS UI router and its ProHUD adapter, mirroring the request.
 
 If results differ:
 1. Run `canonicalize_graph_spec` before apply.

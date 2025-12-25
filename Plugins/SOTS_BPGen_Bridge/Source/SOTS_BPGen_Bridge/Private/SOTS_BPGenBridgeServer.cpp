@@ -1949,6 +1949,66 @@ void FSOTS_BPGenBridgeServer::RouteBpgenAction(const FString& Action, const TSha
 		return;
 	}
 
+	if (Action.Equals(TEXT("create_blueprint_asset"), ESearchCase::IgnoreCase))
+	{
+		FSOTS_BPGenBlueprintDef BlueprintDef;
+
+		if (Params.IsValid())
+		{
+			if (Params->HasTypedField<EJson::Object>(TEXT("blueprint_def")))
+			{
+				const TSharedPtr<FJsonObject> BlueprintObj = Params->GetObjectField(TEXT("blueprint_def"));
+				FJsonObjectConverter::JsonObjectToUStruct(BlueprintObj.ToSharedRef(), FSOTS_BPGenBlueprintDef::StaticStruct(), &BlueprintDef, 0, 0);
+			}
+			else
+			{
+				FJsonObjectConverter::JsonObjectToUStruct(Params.ToSharedRef(), FSOTS_BPGenBlueprintDef::StaticStruct(), &BlueprintDef, 0, 0);
+			}
+		}
+
+		const FSOTS_BPGenBlueprintResult BlueprintResult = USOTS_BPGenBuilder::CreateBlueprintAssetFromDef(nullptr, BlueprintDef);
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenBlueprintResult::StaticStruct(), &BlueprintResult, ResultObj.ToSharedRef(), 0, 0);
+
+		OutResult.bOk = BlueprintResult.bSuccess;
+		OutResult.Result = ResultObj;
+		OutResult.Warnings.Append(BlueprintResult.Warnings);
+		if (!BlueprintResult.ErrorMessage.IsEmpty())
+		{
+			OutResult.Errors.Add(BlueprintResult.ErrorMessage);
+		}
+		OutResult.Errors.Append(BlueprintResult.Errors);
+
+		return;
+	}
+
+	if (Action.Equals(TEXT("apply_function_skeleton"), ESearchCase::IgnoreCase))
+	{
+		FSOTS_BPGenFunctionDef FunctionDef;
+
+		if (Params.IsValid())
+		{
+			FJsonObjectConverter::JsonObjectToUStruct(Params.ToSharedRef(), FSOTS_BPGenFunctionDef::StaticStruct(), &FunctionDef, 0, 0);
+		}
+
+		const FSOTS_BPGenApplyResult SkeletonResult = USOTS_BPGenBuilder::ApplyFunctionSkeleton(nullptr, FunctionDef);
+
+		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+		FJsonObjectConverter::UStructToJsonObject(FSOTS_BPGenApplyResult::StaticStruct(), &SkeletonResult, ResultObj.ToSharedRef(), 0, 0);
+
+		OutResult.bOk = SkeletonResult.bSuccess;
+		OutResult.Result = ResultObj;
+		OutResult.Warnings.Append(SkeletonResult.Warnings);
+		if (!SkeletonResult.ErrorMessage.IsEmpty())
+		{
+			OutResult.Errors.Add(SkeletonResult.ErrorMessage);
+		}
+		OutResult.Errors.Append(SkeletonResult.Errors);
+
+		return;
+	}
+
 	if (Action.Equals(TEXT("apply_graph_spec"), ESearchCase::IgnoreCase))
 	{
 		FSOTS_BPGenFunctionDef FunctionDef;

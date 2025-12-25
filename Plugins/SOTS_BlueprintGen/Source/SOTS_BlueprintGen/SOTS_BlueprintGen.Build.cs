@@ -31,6 +31,8 @@ public class SOTS_BlueprintGen : ModuleRules
             }
         );
 
+        PublicDependencyModuleNames.Add("VibeUE");
+
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {

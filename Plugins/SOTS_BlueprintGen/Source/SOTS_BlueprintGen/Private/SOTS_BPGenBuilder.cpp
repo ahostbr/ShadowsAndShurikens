@@ -6,6 +6,12 @@
 #include "SOTS_BPGenGraphResolver.h"
 #include "SOTS_BPGenEditGuard.h"
 
+#include "Factories/BlueprintFactory.h"
+#include "GameFramework/Actor.h"
+#include "Misc/App.h"
+#include "UObject/Package.h"
+#include "UObject/UObjectGlobals.h"
+
 #include "BlueprintGraphModule.h"
 #include "Modules/ModuleManager.h"
 
@@ -86,6 +92,7 @@ static UEdGraph* FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName);
 static UScriptStruct* LoadStructFromPath(const FString& TypePath);
 static FString GetNormalizedPackageName(const FString& InAssetPath);
 static FName GetSafeObjectName(const FName& ProvidedName, const FString& PackageName);
+static UClass* ResolveBlueprintParentClass(const FString& ClassDescriptor);
 
 static const int32 GSpecCurrentVersion = 1;
 static const FString GSpecCurrentSchema(TEXT("SOTS_BPGen_GraphSpec"));
@@ -3142,6 +3149,51 @@ static FName GetSafeObjectName(const FName& ProvidedName, const FString& Package
 	return FName(*FPackageName::GetLongPackageAssetName(PackageName));
 }
 
+static UClass* ResolveBlueprintParentClass(const FString& ClassDescriptor)
+{
+	if (ClassDescriptor.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	FString Normalized = ClassDescriptor;
+	Normalized.TrimStartAndEndInline();
+	Normalized.ReplaceInline(TEXT("\\"), TEXT("/"));
+
+	if (UClass* Loaded = LoadObject<UClass>(nullptr, *Normalized))
+	{
+		return Loaded;
+	}
+
+	static const TArray<FString> ModuleHints = {
+		TEXT("Engine"),
+		TEXT("Game"),
+		FApp::GetProjectName()
+	};
+
+	TArray<FString> Permutations;
+	Permutations.Add(Normalized);
+	if (!Normalized.StartsWith(TEXT("A")) && !Normalized.StartsWith(TEXT("U")))
+	{
+		Permutations.Add(TEXT("A") + Normalized);
+		Permutations.Add(TEXT("U") + Normalized);
+	}
+
+	for (const FString& Variant : Permutations)
+	{
+		for (const FString& ModuleName : ModuleHints)
+		{
+			const FString Candidate = FString::Printf(TEXT("/Script/%s.%s"), *ModuleName, *Variant);
+			if (UClass* LoadedVariant = LoadObject<UClass>(nullptr, *Candidate))
+			{
+				return LoadedVariant;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 static bool TrySetDataAssetProperty(UObject* Asset, const FSOTS_BPGenAssetProperty& PropertyDef, TArray<FString>& OutErrors);
 
 static bool TryParseBoolFromString(const FString& Text, bool& OutValue)
@@ -3732,6 +3784,120 @@ FSOTS_BPGenAssetResult USOTS_BPGenBuilder::CreateDataAssetFromDef(
 
 	Result.bSuccess = true;
 	Result.Message = FString::Printf(TEXT("Data asset '%s' created/updated at '%s'."), *AssetName.ToString(), *PackageName);
+	return Result;
+}
+
+FSOTS_BPGenBlueprintResult USOTS_BPGenBuilder::CreateBlueprintAssetFromDef(
+	const UObject* WorldContextObject,
+	const FSOTS_BPGenBlueprintDef& BlueprintDef)
+{
+	FSOTS_BPGenBlueprintResult Result;
+	Result.AssetPath = BlueprintDef.AssetPath;
+	Result.ParentClassPath = BlueprintDef.ParentClassPath;
+
+	if (BlueprintDef.AssetPath.IsEmpty())
+	{
+		Result.ErrorMessage = TEXT("Blueprint asset path is required.");
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		return Result;
+	}
+
+	const FString PackageName = GetNormalizedPackageName(BlueprintDef.AssetPath);
+	if (PackageName.IsEmpty())
+	{
+		Result.ErrorMessage = TEXT("Blueprint asset path could not be normalized.");
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		return Result;
+	}
+
+	const FString BlueprintName = FPackageName::GetLongPackageAssetName(PackageName);
+	if (BlueprintName.IsEmpty())
+	{
+		Result.ErrorMessage = TEXT("Blueprint name could not be derived from the path.");
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		return Result;
+	}
+
+	FString DesiredParent = BlueprintDef.ParentClassPath;
+	DesiredParent.TrimStartAndEndInline();
+	UClass* ParentClass = ResolveBlueprintParentClass(DesiredParent);
+	if (!ParentClass)
+	{
+		ParentClass = AActor::StaticClass();
+		Result.Warnings.Add(TEXT("Parent class not specified or not found; defaulting to Actor."));
+		Result.ParentClassPath = ParentClass->GetPathName();
+	}
+	else
+	{
+		Result.ParentClassPath = ParentClass->GetPathName();
+	}
+
+	UPackage* Package = CreatePackage(*PackageName);
+	if (!Package)
+	{
+		Result.ErrorMessage = FString::Printf(TEXT("Could not create package '%s'."), *PackageName);
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	Package->FullyLoad();
+
+	UBlueprint* Existing = FindObject<UBlueprint>(Package, *BlueprintName);
+	if (Existing)
+	{
+		Result.bAlreadyExisted = true;
+		Result.ErrorMessage = FString::Printf(TEXT("Blueprint already exists at '%s'."), *PackageName);
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		UE_LOG(LogSOTS_BlueprintGen, Warning, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	UBlueprintFactory* Factory = NewObject<UBlueprintFactory>();
+	Factory->ParentClass = ParentClass;
+	UObject* CreatedObject = Factory->FactoryCreateNew(
+		UBlueprint::StaticClass(),
+		Package,
+		*BlueprintName,
+		RF_Standalone | RF_Public,
+		nullptr,
+		GWarn);
+	UBlueprint* NewBlueprint = Cast<UBlueprint>(CreatedObject);
+	if (!NewBlueprint)
+	{
+		Result.ErrorMessage = FString::Printf(TEXT("Failed to create blueprint '%s'."), *BlueprintName);
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	FAssetRegistryModule::AssetCreated(NewBlueprint);
+	Package->MarkPackageDirty();
+
+	const FString FileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+	SaveArgs.Error = GError;
+	SaveArgs.bWarnOfLongFilename = false;
+
+	if (!UPackage::SavePackage(Package, NewBlueprint, *FileName, SaveArgs))
+	{
+		Result.ErrorMessage = FString::Printf(TEXT("Failed to save blueprint package '%s'."), *FileName);
+		Result.Message = Result.ErrorMessage;
+		Result.Errors.Add(Result.ErrorMessage);
+		UE_LOG(LogSOTS_BlueprintGen, Error, TEXT("%s"), *Result.ErrorMessage);
+		return Result;
+	}
+
+	Result.bSuccess = true;
+	Result.Message = FString::Printf(TEXT("Blueprint '%s' created at '%s'."), *BlueprintName, *PackageName);
+	Result.AssetPath = PackageName;
 	return Result;
 }
 

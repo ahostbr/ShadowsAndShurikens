@@ -21,6 +21,9 @@ public:
     static FSOTS_BPGenAssetResult CreateDataAssetFromDef(const UObject* WorldContextObject, const FSOTS_BPGenDataAssetDef& AssetDef);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
+    static FSOTS_BPGenBlueprintResult CreateBlueprintAssetFromDef(const UObject* WorldContextObject, const FSOTS_BPGenBlueprintDef& BlueprintDef);
+
+    UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
     static FSOTS_BPGenApplyResult ApplyFunctionSkeleton(const UObject* WorldContextObject, const FSOTS_BPGenFunctionDef& FunctionDef);
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|BPGen")
