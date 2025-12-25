@@ -283,6 +283,179 @@ def _bpgen_guard_mutation(action: str) -> Optional[Dict[str, Any]]:
         return _sots_err("Blocked by SOTS_ALLOW_BPGEN_APPLY=0", meta={"action": action})
     return None
 
+
+_BPGEN_MANAGE_NODE_PARAM_MAP: Dict[str, str] = {
+    "id": "Id",
+    "node_id": "Id",
+    "node_type": "NodeType",
+    "spawner_key": "SpawnerKey",
+    "prefer_spawner_key": "bPreferSpawnerKey",
+    "function_path": "FunctionPath",
+    "struct_path": "StructPath",
+    "variable_name": "VariableName",
+    "create_or_update": "bCreateOrUpdate",
+    "allow_create": "bAllowCreate",
+    "allow_update": "bAllowUpdate",
+    "extra_data": "ExtraData",
+    "extra": "ExtraData",
+    "position": "NodePosition",
+    "node_position": "NodePosition",
+}
+
+
+def _bpgen_normalize_position(value: Sequence[float]) -> Optional[List[float]]:
+    if not value:
+        return None
+
+    try:
+        return [float(value[0]), float(value[1])]
+    except (TypeError, IndexError, ValueError):
+        return None
+
+
+def _bpgen_normalize_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    if isinstance(value, (int, float)):
+        return value != 0
+    return False
+
+
+def _bpgen_build_manage_node_target(blueprint_asset_path: str, function_name: str) -> Dict[str, Any]:
+    return {
+        "blueprint_asset_path": blueprint_asset_path,
+        "target_type": "Function",
+        "name": function_name,
+    }
+
+
+def _bpgen_build_graph_spec(target: Dict[str, Any], nodes: Optional[List[Dict[str, Any]]] = None, links: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    return {
+        "target": target,
+        "Nodes": nodes or [],
+        "Links": links or [],
+    }
+
+
+def _bpgen_collect_extra_data(*dicts: Optional[Dict[str, Any]]) -> Dict[str, str]:
+    collected: Dict[str, str] = {}
+    for data in dicts:
+        if not data:
+            continue
+        for key, value in data.items():
+            if value is None:
+                continue
+            if isinstance(value, (dict, list)):
+                collected[key] = json.dumps(value, ensure_ascii=False)
+            else:
+                collected[key] = str(value)
+    return collected
+
+
+def _bpgen_build_node_spec(
+    node_id: Optional[str],
+    node_type: Optional[str],
+    node_params: Optional[Dict[str, Any]],
+    position: Optional[Sequence[float]],
+    extra: Optional[Dict[str, Any]],
+    property_name: Optional[str],
+    property_value: Optional[Any],
+) -> Dict[str, Any]:
+    spec: Dict[str, Any] = {}
+    node_params = node_params or {}
+
+    positional_value: Optional[Sequence[float]] = None
+    extra_candidates: List[Dict[str, Any]] = []
+
+    for raw_key, value in node_params.items():
+        lower_key = raw_key.lower()
+        mapped = _BPGEN_MANAGE_NODE_PARAM_MAP.get(lower_key)
+        if not mapped:
+            spec[raw_key] = value
+            continue
+
+        if mapped == "ExtraData":
+            if isinstance(value, dict):
+                extra_candidates.append(value)
+            continue
+
+        if mapped == "NodePosition":
+            if isinstance(value, Sequence):
+                positional_value = value
+            continue
+
+        spec[mapped] = value
+
+    if node_type:
+        spec.setdefault("NodeType", node_type)
+
+    position_to_use = position or positional_value
+    normalized_position = _bpgen_normalize_position(position_to_use) if position_to_use else None
+    if normalized_position:
+        spec["NodePosition"] = normalized_position
+
+    assigned_id = node_id or spec.get("Id")
+    if not assigned_id:
+        assigned_id = uuid.uuid4().hex
+    spec["Id"] = assigned_id
+
+    if extra:
+        extra_candidates.append(extra)
+    if property_name and property_value is not None:
+        extra_candidates.append({property_name: property_value})
+
+    merged_extra = _bpgen_collect_extra_data(*extra_candidates)
+    if merged_extra:
+        spec["ExtraData"] = merged_extra
+
+    return spec
+
+
+def _bpgen_extract_connection_value(conn: Dict[str, Any], *keys: str) -> Optional[str]:
+    for key in keys:
+        value = conn.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def _bpgen_build_links(connections: Optional[List[Dict[str, Any]]]) -> Tuple[List[Dict[str, Any]], List[str]]:
+    links: List[Dict[str, Any]] = []
+    warnings: List[str] = []
+    if not connections:
+        return links, warnings
+
+    for index, conn in enumerate(connections, start=1):
+        if not isinstance(conn, dict):
+            warnings.append(f"Connection #{index} is not a dictionary.")
+            continue
+
+        from_node = _bpgen_extract_connection_value(conn, "source_node_id", "from_node_id")
+        to_node = _bpgen_extract_connection_value(conn, "target_node_id", "to_node_id")
+        from_pin = _bpgen_extract_connection_value(conn, "source_pin_name", "source_pin", "from_pin")
+        to_pin = _bpgen_extract_connection_value(conn, "target_pin_name", "target_pin", "to_pin")
+
+        if not from_node or not to_node or not from_pin or not to_pin:
+            warnings.append(f"Connection #{index} is missing required ids or pins.")
+            continue
+
+        link: Dict[str, Any] = {
+            "FromNodeId": from_node,
+            "ToNodeId": to_node,
+            "FromPinName": from_pin,
+            "ToPinName": to_pin,
+            "bBreakExistingFrom": _bpgen_normalize_bool(conn.get("break_existing_from", conn.get("break_from"))),
+            "bBreakExistingTo": _bpgen_normalize_bool(conn.get("break_existing_to", conn.get("break_to"))),
+            "bUseSchema": _bpgen_normalize_bool(conn.get("use_schema", True)),
+            "bAllowHeuristicPinMatch": _bpgen_normalize_bool(conn.get("allow_heuristic_pin_match")),
+        }
+
+        links.append(link)
+
+    return links, warnings
+
 # Allowlist of executable scripts (read-only operations)
 ALLOWED_SCRIPTS: Dict[str, Path] = {
     "depmap": PATHS.devtools_py / "sots_plugin_depmap.py",
@@ -1283,6 +1456,302 @@ def bpgen_replace_node(
     _jsonl_log({"ts": time.time(), "tool": "bpgen_replace_node", "ok": out["ok"], "error": out["error"], "request_id": req_id})
     return out
 
+
+@mcp.tool(
+    name="bpgen_manage_blueprint_node",
+    description="High-level VibeUE-style manage_blueprint_node wrapper for BPGen actions.",
+    annotations={"readOnlyHint": not ALLOW_APPLY, "title": "BPGen: manage node"},
+)
+def bpgen_manage_blueprint_node(
+    action: str,
+    blueprint_name: str = "",
+    blueprint_asset_path: str = "",
+    function_name: str = "",
+    graph_scope: str = "function",
+    node_params: Optional[Dict[str, Any]] = None,
+    node_id: Optional[str] = None,
+    node_type: Optional[str] = None,
+    position: Optional[Sequence[float]] = None,
+    connections: Optional[List[Dict[str, Any]]] = None,
+    extra: Optional[Dict[str, Any]] = None,
+    property_name: Optional[str] = None,
+    property_value: Optional[Any] = None,
+    include_pins: bool = False,
+    compile: bool = True,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    action_name = (action or "").strip().lower()
+    blueprint_path = (blueprint_asset_path or blueprint_name or "").strip()
+
+    def _log_ok(data: Any, warnings: Optional[List[str]] = None) -> Dict[str, Any]:
+        out = _sots_ok(data, warnings=warnings or [], meta={"request_id": req_id})
+        _jsonl_log({
+            "ts": time.time(),
+            "tool": "bpgen_manage_blueprint_node",
+            "ok": out["ok"],
+            "error": out["error"],
+            "request_id": req_id,
+            "action": action_name,
+        })
+        return out
+
+    def _log_err(message: str) -> Dict[str, Any]:
+        out = _sots_err(message, meta={"request_id": req_id})
+        _jsonl_log({
+            "ts": time.time(),
+            "tool": "bpgen_manage_blueprint_node",
+            "ok": out["ok"],
+            "error": out["error"],
+            "request_id": req_id,
+            "action": action_name,
+        })
+        return out
+
+    if not blueprint_path:
+        return _log_err("blueprint_asset_path or blueprint_name is required.")
+
+    if not action_name:
+        return _log_err("action is required for manage_blueprint_node.")
+
+    if graph_scope and graph_scope.strip().lower() not in {"", "function"}:
+        return _log_err(f"Unsupported graph_scope '{graph_scope}'. Only 'function' is supported.")
+
+    function_name_str = (function_name or "").strip()
+    def _require_function() -> bool:
+        return bool(function_name_str)
+
+    if action_name in {"list", "describe", "get_details", "create", "move", "connect_pins", "disconnect_pins", "configure", "delete"}:
+        if not _require_function():
+            return _log_err("function_name is required for manage_blueprint_node actions.")
+
+    if action_name == "list":
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "include_pins": include_pins,
+        }
+        return _log_ok(_bpgen_call("list_nodes", payload))
+
+    if action_name == "describe" or action_name == "get_details":
+        resolved_node_id = node_id or (node_params or {}).get("node_id")
+        if not resolved_node_id:
+            return _log_err("node_id is required for describe/get_details actions.")
+
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "node_id": resolved_node_id,
+            "include_pins": True if action_name == "get_details" else include_pins,
+        }
+        return _log_ok(_bpgen_call("describe_node", payload))
+
+    if action_name == "create":
+        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
+        node_spec = _bpgen_build_node_spec(node_id, node_type, node_params, position, extra, property_name, property_value)
+        links, warnings = _bpgen_build_links(connections)
+        graph_spec = _bpgen_build_graph_spec(target, [node_spec], links)
+
+        guard = _bpgen_guard_mutation("apply_graph_spec")
+        if guard:
+            guard.setdefault("meta", {})["request_id"] = req_id
+            guard["meta"]["action"] = action_name
+            _jsonl_log({
+                "ts": time.time(),
+                "tool": "bpgen_manage_blueprint_node",
+                "ok": guard["ok"],
+                "error": guard["error"],
+                "request_id": req_id,
+                "action": action_name,
+            })
+            return guard
+
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "graph_spec": graph_spec,
+        }
+
+        if dry_run:
+            return _log_ok({"action": "create", "params": payload}, warnings=warnings)
+
+        result = _bpgen_call("apply_graph_spec", payload)
+        return _log_ok(result, warnings=warnings)
+
+    if action_name == "delete":
+        resolved_node_id = node_id or (node_params or {}).get("node_id")
+        if not resolved_node_id:
+            return _log_err("node_id is required to delete a node.")
+
+        guard = _bpgen_guard_mutation("delete_node_by_id")
+        if guard:
+            guard.setdefault("meta", {})["request_id"] = req_id
+            guard["meta"]["action"] = action_name
+            _jsonl_log({
+                "ts": time.time(),
+                "tool": "bpgen_manage_blueprint_node",
+                "ok": guard["ok"],
+                "error": guard["error"],
+                "request_id": req_id,
+                "action": action_name,
+            })
+            return guard
+
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "node_id": resolved_node_id,
+            "compile": compile,
+            "dry_run": dry_run,
+        }
+
+        if dry_run:
+            return _log_ok({"action": "delete", "params": payload})
+
+        result = _bpgen_call("delete_node_by_id", payload)
+        return _log_ok(result)
+
+    if action_name == "move":
+        resolved_node_id = node_id or (node_params or {}).get("node_id")
+        if not resolved_node_id or not position:
+            return _log_err("node_id and position are required to move a node.")
+
+        guard = _bpgen_guard_mutation("apply_graph_spec")
+        if guard:
+            guard.setdefault("meta", {})["request_id"] = req_id
+            guard["meta"]["action"] = action_name
+            _jsonl_log({
+                "ts": time.time(),
+                "tool": "bpgen_manage_blueprint_node",
+                "ok": guard["ok"],
+                "error": guard["error"],
+                "request_id": req_id,
+                "action": action_name,
+            })
+            return guard
+
+        node_spec = _bpgen_build_node_spec(resolved_node_id, node_type, node_params, position, extra, property_name, property_value)
+        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
+        graph_spec = _bpgen_build_graph_spec(target, [node_spec])
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "graph_spec": graph_spec,
+        }
+
+        if dry_run:
+            return _log_ok({"action": "move", "params": payload})
+
+        result = _bpgen_call("apply_graph_spec", payload)
+        return _log_ok(result)
+
+    if action_name == "connect_pins":
+        guard = _bpgen_guard_mutation("apply_graph_spec")
+        if guard:
+            guard.setdefault("meta", {})["request_id"] = req_id
+            guard["meta"]["action"] = action_name
+            _jsonl_log({
+                "ts": time.time(),
+                "tool": "bpgen_manage_blueprint_node",
+                "ok": guard["ok"],
+                "error": guard["error"],
+                "request_id": req_id,
+                "action": action_name,
+            })
+            return guard
+
+        links, warnings = _bpgen_build_links(connections)
+        if not links:
+            return _log_err("At least one valid connection is required to connect pins.")
+
+        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
+        graph_spec = _bpgen_build_graph_spec(target, links=links)
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "graph_spec": graph_spec,
+        }
+
+        if dry_run:
+            return _log_ok({"action": "connect_pins", "params": payload}, warnings=warnings)
+
+        result = _bpgen_call("apply_graph_spec", payload)
+        return _log_ok(result, warnings=warnings)
+
+    if action_name == "disconnect_pins":
+        guard = _bpgen_guard_mutation("delete_link")
+        if guard:
+            guard.setdefault("meta", {})["request_id"] = req_id
+            guard["meta"]["action"] = action_name
+            _jsonl_log({
+                "ts": time.time(),
+                "tool": "bpgen_manage_blueprint_node",
+                "ok": guard["ok"],
+                "error": guard["error"],
+                "request_id": req_id,
+                "action": action_name,
+            })
+            return guard
+
+        links, warnings = _bpgen_build_links(connections)
+        if not links:
+            return _log_err("At least one valid connection is required to disconnect pins.")
+
+        if dry_run:
+            return _log_ok({"action": "disconnect_pins", "params": {"connections": links}}, warnings=warnings)
+
+        results = []
+        for link in links:
+            payload = {
+                "blueprint_asset_path": blueprint_path,
+                "function_name": function_name_str,
+                "from_node_id": link["FromNodeId"],
+                "from_pin": link["FromPinName"],
+                "to_node_id": link["ToNodeId"],
+                "to_pin": link["ToPinName"],
+                "compile": compile,
+                "dry_run": False,
+            }
+            results.append(_bpgen_call("delete_link", payload))
+
+        return _log_ok({"results": results}, warnings=warnings)
+
+    if action_name == "configure":
+        resolved_node_id = node_id or (node_params or {}).get("node_id")
+        has_node_param_extra = bool((node_params or {}).get("extra") or (node_params or {}).get("extra_data"))
+        if not resolved_node_id or (not property_name and not extra and not has_node_param_extra):
+            return _log_err("node_id and at least one property/extra entry are required for configure.")
+
+        guard = _bpgen_guard_mutation("apply_graph_spec")
+        if guard:
+            guard.setdefault("meta", {})["request_id"] = req_id
+            guard["meta"]["action"] = action_name
+            _jsonl_log({
+                "ts": time.time(),
+                "tool": "bpgen_manage_blueprint_node",
+                "ok": guard["ok"],
+                "error": guard["error"],
+                "request_id": req_id,
+                "action": action_name,
+            })
+            return guard
+
+        node_spec = _bpgen_build_node_spec(resolved_node_id, node_type, node_params, position, extra, property_name, property_value)
+        target = _bpgen_build_manage_node_target(blueprint_path, function_name_str)
+        graph_spec = _bpgen_build_graph_spec(target, [node_spec])
+        payload = {
+            "blueprint_asset_path": blueprint_path,
+            "function_name": function_name_str,
+            "graph_spec": graph_spec,
+        }
+
+        if dry_run:
+            return _log_ok({"action": "configure", "params": payload})
+
+        result = _bpgen_call("apply_graph_spec", payload)
+        return _log_ok(result)
+
+    return _log_err(f"Unknown manage_blueprint_node action: {action_name}")
 
 @mcp.tool(
     name="bpgen_ensure_function",
