@@ -17,6 +17,8 @@ public:
     void SetLastKEMTrace(const FSOTS_OmniTraceKEMDebugRecord& InRecord);
     const FSOTS_OmniTraceKEMDebugRecord& GetLastKEMTrace() const { return LastKEMTrace; }
 
+	void ClearLastKEMTrace() { LastKEMTrace = {}; }
+
     UFUNCTION(Exec)
     void OmniTrace_DrawLastKEMTrace();
 

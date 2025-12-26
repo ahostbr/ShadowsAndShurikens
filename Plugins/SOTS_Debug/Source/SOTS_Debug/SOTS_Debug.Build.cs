@@ -31,7 +31,8 @@ public class SOTS_Debug : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
-            // Keep empty unless additional modules are required (DeveloperSettings, etc.)
+            "DeveloperSettings",
+            "SOTS_Core"
         });
     }
 }

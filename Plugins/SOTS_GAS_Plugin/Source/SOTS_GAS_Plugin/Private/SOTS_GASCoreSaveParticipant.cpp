@@ -97,6 +97,10 @@ bool FGAS_SaveParticipant::BuildSaveFragment(const FSOTS_SaveRequestContext& Ctx
 	USOTS_AbilitySubsystem* AbilitySubsystem = ResolveAbilitySubsystemFromAnyWorld();
 	if (!AbilitySubsystem)
 	{
+		if (ShouldLogVerbose(Settings))
+		{
+			UE_LOG(LogGASSaveBridge, Verbose, TEXT("GAS SaveBridge: BuildSaveFragment could not resolve subsystem. Profile=%s Slot=%s"), *Ctx.ProfileId, *Ctx.SlotId);
+		}
 		return false;
 	}
 
@@ -106,6 +110,10 @@ bool FGAS_SaveParticipant::BuildSaveFragment(const FSOTS_SaveRequestContext& Ctx
 	TArray<uint8> Bytes;
 	if (!SerializeAbilityProfileDataToBytes(ProfileData, Bytes))
 	{
+		if (ShouldLogVerbose(Settings))
+		{
+			UE_LOG(LogGASSaveBridge, Verbose, TEXT("GAS SaveBridge: BuildSaveFragment produced empty payload. Profile=%s Slot=%s"), *Ctx.ProfileId, *Ctx.SlotId);
+		}
 		return false;
 	}
 
@@ -140,18 +148,30 @@ bool FGAS_SaveParticipant::ApplySaveFragment(const FSOTS_SaveRequestContext& Ctx
 
 	if (In.FragmentId != TEXT("GAS.State"))
 	{
+		if (ShouldLogVerbose(Settings))
+		{
+			UE_LOG(LogGASSaveBridge, Verbose, TEXT("GAS SaveBridge: ApplySaveFragment ignored FragmentId=%s"), *In.FragmentId.ToString());
+		}
 		return false;
 	}
 
 	USOTS_AbilitySubsystem* AbilitySubsystem = ResolveAbilitySubsystemFromAnyWorld();
 	if (!AbilitySubsystem)
 	{
+		if (ShouldLogVerbose(Settings))
+		{
+			UE_LOG(LogGASSaveBridge, Verbose, TEXT("GAS SaveBridge: ApplySaveFragment could not resolve subsystem. Profile=%s Slot=%s"), *Ctx.ProfileId, *Ctx.SlotId);
+		}
 		return false;
 	}
 
 	FSOTS_AbilityProfileData ProfileData;
 	if (!DeserializeAbilityProfileDataFromBytes(In.Data, ProfileData))
 	{
+		if (ShouldLogVerbose(Settings))
+		{
+			UE_LOG(LogGASSaveBridge, Verbose, TEXT("GAS SaveBridge: ApplySaveFragment could not deserialize payload. Profile=%s Slot=%s"), *Ctx.ProfileId, *Ctx.SlotId);
+		}
 		return false;
 	}
 

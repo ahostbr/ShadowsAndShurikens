@@ -39,6 +39,8 @@ public class OmniTrace : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"DeveloperSettings",
+				"SOTS_Core",
 				"Slate",
 				"SlateCore",
 				// ... add private dependencies that you statically link with here ...	
