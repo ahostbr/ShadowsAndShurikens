@@ -92,6 +92,16 @@ SOTS_Core provides console commands for quick health checks without introducing 
 - SOTS.Core.DumpListeners: lists registered lifecycle listeners.
 - SOTS.Core.DumpSaveParticipants: lists registered save participants (if enabled).
 - SOTS.Core.Health: prints a concise health report (settings + snapshot + counts).
+- SOTS.Core.BridgeHealth: prints a bridge-focused audit (listeners + save participants + snapshot summary).
+
+### Bridge Health
+`SOTS.Core.BridgeHealth` is intended for verifying BRIDGE1–BRIDGE4 wiring without touching CGF Blueprints.
+It prints:
+- Core version + config schema.
+- Core settings flags relevant to bridges (dispatch, delegate bridges, save participant queries).
+- Registered lifecycle listeners (pointer + best-effort type; origin may be UNKNOWN).
+- Registered save participants (even if queries are disabled, it reports what is registered).
+- A snapshot summary (World/PC/Pawn/HUD/PrimaryReady).
 
 ## SPINE8: Automation tests (compile-only)
 SOTS_Core includes minimal automation tests compiled only when WITH_AUTOMATION_TESTS is enabled.

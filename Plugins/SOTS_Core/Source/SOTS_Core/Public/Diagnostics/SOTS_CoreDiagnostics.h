@@ -11,6 +11,7 @@ public:
     static void DumpLifecycleSnapshot(UWorld* World);
     static void DumpRegisteredLifecycleListeners();
     static void DumpRegisteredSaveParticipants();
+    static void DumpBridgeHealth(UWorld* World);
     static void PrintHealthReport(UWorld* World);
     static void ValidateCoreConfiguration(UWorld* World);
 

@@ -55,7 +55,10 @@ def _sha1_file(path: Path) -> str:
 
 
 def _normalize_rel_path(project_root: Path, path: Path) -> str:
-    return path.resolve().relative_to(project_root).as_posix()
+    try:
+        return path.relative_to(project_root).as_posix()
+    except ValueError:
+        return path.resolve().relative_to(project_root.resolve()).as_posix()
 
 
 def _extract_plugin_name(rel_path: str) -> str:

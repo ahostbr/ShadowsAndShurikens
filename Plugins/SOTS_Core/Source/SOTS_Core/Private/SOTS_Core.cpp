@@ -17,6 +17,7 @@ namespace SOTS::Core::ConsoleCommands
         static TUniquePtr<FAutoConsoleCommandWithWorld> DumpListenersCommand;
         static TUniquePtr<FAutoConsoleCommandWithWorld> DumpSaveParticipantsCommand;
         static TUniquePtr<FAutoConsoleCommandWithWorld> HealthCommand;
+        static TUniquePtr<FAutoConsoleCommandWithWorld> BridgeHealthCommand;
 
         void DumpSettings(UWorld* World)
         {
@@ -44,6 +45,11 @@ namespace SOTS::Core::ConsoleCommands
         void PrintHealth(UWorld* World)
         {
             FSOTS_CoreDiagnostics::PrintHealthReport(World);
+        }
+
+        void DumpBridgeHealth(UWorld* World)
+        {
+            FSOTS_CoreDiagnostics::DumpBridgeHealth(World);
         }
     }
 
@@ -73,6 +79,11 @@ namespace SOTS::Core::ConsoleCommands
             TEXT("SOTS.Core.Health"),
             TEXT("Print a SOTS_Core health report."),
             FConsoleCommandWithWorldDelegate::CreateStatic(&PrintHealth));
+
+        BridgeHealthCommand = MakeUnique<FAutoConsoleCommandWithWorld>(
+            TEXT("SOTS.Core.BridgeHealth"),
+            TEXT("Audit SOTS_Core bridge-related health (listeners/participants/snapshot)."),
+            FConsoleCommandWithWorldDelegate::CreateStatic(&DumpBridgeHealth));
     }
 
     void Unregister()
@@ -82,6 +93,7 @@ namespace SOTS::Core::ConsoleCommands
         DumpListenersCommand.Reset();
         DumpSaveParticipantsCommand.Reset();
         HealthCommand.Reset();
+        BridgeHealthCommand.Reset();
     }
 }
 #endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)

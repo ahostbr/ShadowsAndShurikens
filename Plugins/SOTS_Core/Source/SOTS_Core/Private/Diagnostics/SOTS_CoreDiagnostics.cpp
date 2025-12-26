@@ -13,7 +13,12 @@
 #include "Save/SOTS_CoreSaveParticipant.h"
 #include "Settings/SOTS_CoreSettings.h"
 #include "Subsystems/SOTS_CoreLifecycleSubsystem.h"
+#include "SOTS_CoreVersion.h"
 #include "SOTS_Core.h"
+
+#if PLATFORM_COMPILER_HAS_RTTI
+#include <typeinfo>
+#endif
 
 namespace
 {
@@ -136,6 +141,133 @@ void FSOTS_CoreDiagnostics::DumpRegisteredSaveParticipants()
         const FName Id = Participant ? Participant->GetParticipantId() : NAME_None;
         UE_LOG(LogSOTS_Core, Log, TEXT("  [%d] ParticipantId=%s Ptr=%p"), Index, *Id.ToString(), Participant);
     }
+}
+
+void FSOTS_CoreDiagnostics::DumpBridgeHealth(UWorld* World)
+{
+    const USOTS_CoreSettings* Settings = USOTS_CoreSettings::Get();
+
+    UE_LOG(LogSOTS_Core, Log, TEXT("SOTS_Core Bridge Health:"));
+    UE_LOG(
+        LogSOTS_Core,
+        Log,
+        TEXT("  Version=%d.%d.%d Schema=%d ConfigSchema=%s"),
+        SOTS_CORE_VER_MAJOR,
+        SOTS_CORE_VER_MINOR,
+        SOTS_CORE_VER_PATCH,
+        SOTS_CORE_CONFIG_SCHEMA_VERSION,
+        Settings ? *FString::FromInt(Settings->ConfigSchemaVersion) : TEXT("<missing>"));
+
+    if (!Settings)
+    {
+        UE_LOG(LogSOTS_Core, Log, TEXT("  Settings: <missing>"));
+    }
+    else
+    {
+        UE_LOG(
+            LogSOTS_Core,
+            Log,
+            TEXT("  Flags: LifecycleDispatch=%s WorldDelegateBridge=%s MapTravelBridge=%s SaveParticipantQueries=%s"),
+            Settings->bEnableLifecycleListenerDispatch ? TEXT("true") : TEXT("false"),
+            Settings->bEnableWorldDelegateBridge ? TEXT("true") : TEXT("false"),
+            Settings->bEnableMapTravelBridge ? TEXT("true") : TEXT("false"),
+            Settings->bEnableSaveParticipantQueries ? TEXT("true") : TEXT("false"));
+    }
+
+    {
+        TArray<IModularFeature*> Features = IModularFeatures::Get().GetModularFeatureImplementations<IModularFeature>(
+            SOTS_CoreLifecycleListenerFeatureName);
+
+        UE_LOG(
+            LogSOTS_Core,
+            Log,
+            TEXT("  LifecycleListeners: %d (FeatureName=%s)"),
+            Features.Num(),
+            *SOTS_CoreLifecycleListenerFeatureName.ToString());
+
+        for (int32 Index = 0; Index < Features.Num(); ++Index)
+        {
+            IModularFeature* Feature = Features[Index];
+            FString TypeName = TEXT("UNKNOWN");
+
+#if PLATFORM_COMPILER_HAS_RTTI
+            if (Feature)
+            {
+                TypeName = ANSI_TO_TCHAR(typeid(*Feature).name());
+            }
+#endif
+
+            UE_LOG(
+                LogSOTS_Core,
+                Log,
+                TEXT("    [%d] Ptr=%p Type=%s Origin=%s"),
+                Index,
+                Feature,
+                *TypeName,
+                TEXT("UNKNOWN"));
+        }
+    }
+
+    {
+        TArray<ISOTS_CoreSaveParticipant*> Participants;
+        FSOTS_CoreSaveParticipantRegistry::GetRegisteredSaveParticipants(Participants);
+
+        UE_LOG(
+            LogSOTS_Core,
+            Log,
+            TEXT("  SaveParticipants: %d (FeatureName=%s QueriesEnabled=%s)"),
+            Participants.Num(),
+            *SOTS_CoreSaveParticipantFeatureName.ToString(),
+            (Settings && Settings->bEnableSaveParticipantQueries) ? TEXT("true") : TEXT("false"));
+
+        for (int32 Index = 0; Index < Participants.Num(); ++Index)
+        {
+            ISOTS_CoreSaveParticipant* Participant = Participants[Index];
+            const FName Id = Participant ? Participant->GetParticipantId() : NAME_None;
+
+            FString TypeName = TEXT("UNKNOWN");
+#if PLATFORM_COMPILER_HAS_RTTI
+            if (Participant)
+            {
+                TypeName = ANSI_TO_TCHAR(typeid(*Participant).name());
+            }
+#endif
+
+            UE_LOG(
+                LogSOTS_Core,
+                Log,
+                TEXT("    [%d] ParticipantId=%s Ptr=%p Type=%s"),
+                Index,
+                *Id.ToString(),
+                Participant,
+                *TypeName);
+        }
+    }
+
+    if (!World)
+    {
+        UE_LOG(LogSOTS_Core, Log, TEXT("  Snapshot: <world=null>"));
+        return;
+    }
+
+    USOTS_CoreLifecycleSubsystem* Subsystem = ResolveLifecycleSubsystem(World);
+    if (!Subsystem)
+    {
+        UE_LOG(LogSOTS_Core, Log, TEXT("  Snapshot: <lifecycle-subsystem-missing>"));
+        return;
+    }
+
+    const FSOTS_CoreLifecycleSnapshot Snapshot = Subsystem->GetCurrentSnapshot();
+    UE_LOG(
+        LogSOTS_Core,
+        Log,
+        TEXT("  Snapshot: World=%s Started=%s PC=%s Pawn=%s HUD=%s PrimaryReady=%s"),
+        *GetNameSafe(Snapshot.World.Get()),
+        Snapshot.bWorldStarted ? TEXT("true") : TEXT("false"),
+        *GetNameSafe(Snapshot.PrimaryPC.Get()),
+        *GetNameSafe(Snapshot.PrimaryPawn.Get()),
+        *GetNameSafe(Snapshot.PrimaryHUD.Get()),
+        Subsystem->HasPrimaryPlayerReady() ? TEXT("true") : TEXT("false"));
 }
 
 void FSOTS_CoreDiagnostics::PrintHealthReport(UWorld* World)
