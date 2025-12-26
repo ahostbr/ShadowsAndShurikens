@@ -455,6 +455,13 @@ def manage_blueprint_function(
     action: str,
     blueprint_name: str = "",
     function_name: str = "",
+    param_name: str = "",
+    direction: str = "",
+    type: str = "",
+    new_type: str = "",
+    new_name: str = "",
+    properties: Any = None,
+    extra: Any = None,
     signature: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     req_id = _new_request_id()
@@ -473,10 +480,291 @@ def manage_blueprint_function(
             out = _sots_ok(res, meta={"request_id": req_id})
             _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
             return out
+
+        if act in {"list"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.list requires blueprint_name", meta={"request_id": req_id})
+            res = _bpgen_call("bp_function_list", {"blueprint_name": (blueprint_name or "").strip()})
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"get"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.get requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.get requires function_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_function_get",
+                {"blueprint_name": (blueprint_name or "").strip(), "function_name": (function_name or "").strip()},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"delete"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.delete requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.delete requires function_name", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_delete")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_delete",
+                {"blueprint_name": (blueprint_name or "").strip(), "function_name": (function_name or "").strip(), "dangerous_ok": True},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"list_params"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.list_params requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.list_params requires function_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_function_list_params",
+                {"blueprint_name": (blueprint_name or "").strip(), "function_name": (function_name or "").strip()},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"add_param"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.add_param requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.add_param requires function_name", meta={"request_id": req_id})
+            if not param_name:
+                return _sots_err("manage_blueprint_function.add_param requires param_name", meta={"request_id": req_id})
+            if not direction:
+                return _sots_err("manage_blueprint_function.add_param requires direction ('input' or 'out')", meta={"request_id": req_id})
+            if not type:
+                return _sots_err("manage_blueprint_function.add_param requires type", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_add_param")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_add_param",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "param_name": (param_name or "").strip(),
+                    "direction": (direction or "").strip(),
+                    "type": (type or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"remove_param"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.remove_param requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.remove_param requires function_name", meta={"request_id": req_id})
+            if not param_name:
+                return _sots_err("manage_blueprint_function.remove_param requires param_name", meta={"request_id": req_id})
+            if not direction:
+                return _sots_err("manage_blueprint_function.remove_param requires direction ('input' or 'out')", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_remove_param")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_remove_param",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "param_name": (param_name or "").strip(),
+                    "direction": (direction or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"update_param"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.update_param requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.update_param requires function_name", meta={"request_id": req_id})
+            if not param_name:
+                return _sots_err("manage_blueprint_function.update_param requires param_name", meta={"request_id": req_id})
+            if not direction:
+                return _sots_err("manage_blueprint_function.update_param requires direction ('input' or 'out')", meta={"request_id": req_id})
+            if not new_type and not new_name:
+                return _sots_err("manage_blueprint_function.update_param requires new_type and/or new_name", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_update_param")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_update_param",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "param_name": (param_name or "").strip(),
+                    "direction": (direction or "").strip(),
+                    "new_type": (new_type or "").strip(),
+                    "new_name": (new_name or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"list_locals", "list_local_vars", "locals"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.list_locals requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.list_locals requires function_name", meta={"request_id": req_id})
+            res = _bpgen_call(
+                "bp_function_list_locals",
+                {"blueprint_name": (blueprint_name or "").strip(), "function_name": (function_name or "").strip()},
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"add_local"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.add_local requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.add_local requires function_name", meta={"request_id": req_id})
+            if not param_name:
+                return _sots_err("manage_blueprint_function.add_local requires param_name (local name)", meta={"request_id": req_id})
+            if not type:
+                return _sots_err("manage_blueprint_function.add_local requires type", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_add_local")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_add_local",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "param_name": (param_name or "").strip(),
+                    "type": (type or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"remove_local"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.remove_local requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.remove_local requires function_name", meta={"request_id": req_id})
+            if not param_name:
+                return _sots_err("manage_blueprint_function.remove_local requires param_name (local name)", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_remove_local")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_remove_local",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "param_name": (param_name or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"update_local"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.update_local requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.update_local requires function_name", meta={"request_id": req_id})
+            if not param_name:
+                return _sots_err("manage_blueprint_function.update_local requires param_name (local name)", meta={"request_id": req_id})
+            if not new_type:
+                return _sots_err("manage_blueprint_function.update_local requires new_type", meta={"request_id": req_id})
+            guard = _bpgen_guard_mutation("bp_function_update_local")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+            res = _bpgen_call(
+                "bp_function_update_local",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "param_name": (param_name or "").strip(),
+                    "new_type": (new_type or "").strip(),
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        if act in {"update_properties"}:
+            if not blueprint_name:
+                return _sots_err("manage_blueprint_function.update_properties requires blueprint_name", meta={"request_id": req_id})
+            if not function_name:
+                return _sots_err("manage_blueprint_function.update_properties requires function_name", meta={"request_id": req_id})
+
+            props_obj: Optional[Dict[str, Any]] = None
+            if isinstance(properties, dict):
+                props_obj = properties
+            elif isinstance(properties, str) and properties.strip():
+                try:
+                    parsed = json.loads(properties)
+                    if isinstance(parsed, dict):
+                        props_obj = parsed
+                except Exception:
+                    props_obj = None
+
+            if not props_obj:
+                return _sots_err(
+                    "manage_blueprint_function.update_properties requires properties (dict or JSON dict string)",
+                    meta={"request_id": req_id},
+                )
+
+            guard = _bpgen_guard_mutation("bp_function_update_properties")
+            if guard:
+                guard["meta"]["request_id"] = req_id
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
+                return guard
+
+            res = _bpgen_call(
+                "bp_function_update_properties",
+                {
+                    "blueprint_name": (blueprint_name or "").strip(),
+                    "function_name": (function_name or "").strip(),
+                    "properties": props_obj,
+                    "extra": extra,
+                    "dangerous_ok": True,
+                },
+            )
+            out = _sots_ok(res, meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_function", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
         return _not_implemented(
             "manage_blueprint_function",
             act or "(empty)",
-            "Implemented: create (mapped to bpgen_ensure_function). Param/local management requires signature mapping work.",
+            "Implemented: create (mapped to bpgen_ensure_function) plus list/get/delete/list_params/add_param/remove_param/update_param/list_locals/add_local/remove_local/update_local/update_properties (via bp_function_* bridge ops).",
             req_id,
         )
     except Exception as exc:
@@ -487,17 +775,27 @@ def manage_blueprint_function(
 
 @mcp.tool(
     name="manage_blueprint_variable",
-    description="VibeUE-compatible Blueprint variable tool (subset implemented via BPGen ensure_variable).",
+    description="VibeUE-compatible Blueprint variable tool (7 actions implemented via BPGen + bridge variable ops).",
     annotations={"readOnlyHint": not ALLOW_APPLY, "title": "VibeUE Compat: manage_blueprint_variable"},
 )
 def manage_blueprint_variable(
     action: str,
     blueprint_name: str = "",
     variable_name: str = "",
+    # Back-compat (SOTS legacy): bpgen_ensure_variable pathway
     pin_type: Optional[Dict[str, Any]] = None,
     default_value: Optional[Any] = None,
     instance_editable: bool = True,
     expose_on_spawn: bool = False,
+    # VibeUE contract
+    variable_config: Optional[Dict[str, Any]] = None,
+    property_path: Optional[str] = None,
+    value: Optional[Any] = None,
+    delete_options: Optional[Dict[str, Any]] = None,
+    list_criteria: Optional[Dict[str, Any]] = None,
+    info_options: Optional[Dict[str, Any]] = None,
+    search_criteria: Optional[Dict[str, Any]] = None,
+    options: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     req_id = _new_request_id()
     act = _vibeue_action_str(action)
@@ -997,21 +1295,171 @@ def manage_asset(
             return out
 
         if act in {"open_in_editor"}:
-            if not asset_path:
-                return _sots_err("manage_asset.open_in_editor requires asset_path", meta={"request_id": req_id})
+            if act == "search_types":
+                if not blueprint_name:
+                    return _sots_err("manage_blueprint_variable.search_types requires blueprint_name", meta={"request_id": req_id})
+                res = _bpgen_call(
+                    "bp_variable_search_types",
+                    {
+                        "blueprint_name": (blueprint_name or "").strip(),
+                        "search_criteria": search_criteria or {},
+                        "options": options or {},
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
 
-            guard = _bpgen_guard_mutation("asset_open_in_editor")
-            if guard:
-                guard["meta"]["request_id"] = req_id
-                _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": guard["ok"], "error": guard["error"], "request_id": req_id})
-                return guard
+            if act == "create":
+                if not blueprint_name or not variable_name:
+                    return _sots_err("manage_blueprint_variable.create requires blueprint_name and variable_name", meta={"request_id": req_id})
 
-            res = _bpgen_call(
-                "asset_open_in_editor",
-                {"asset_path": asset_path, "force_open": bool(force_open)},
+                if not _allow_apply_or_err("manage_blueprint_variable.create", req_id):
+                    return _apply_gate_err("manage_blueprint_variable.create", req_id)
+
+                # Preferred: VibeUE-style variable_config with type_path
+                if isinstance(variable_config, dict) and variable_config:
+                    if "type" in variable_config and "type_path" not in variable_config:
+                        return _sots_err(
+                            "CRITICAL: variable_config uses 'type' but should use 'type_path'",
+                            meta={"request_id": req_id, "variable_config": variable_config},
+                        )
+                    if "type_path" not in variable_config:
+                        return _sots_err(
+                            "CRITICAL: variable_config missing required 'type_path'",
+                            meta={"request_id": req_id, "variable_config": variable_config},
+                        )
+
+                    res = _bpgen_call(
+                        "bp_variable_create",
+                        {
+                            "blueprint_name": (blueprint_name or "").strip(),
+                            "variable_name": (variable_name or "").strip(),
+                            "variable_config": variable_config,
+                            "options": options or {},
+                        },
+                    )
+                    out = _sots_ok(res, meta={"request_id": req_id})
+                    _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                    return out
+
+                # Back-compat: bpgen ensure_variable with pin_type dict
+                if not isinstance(pin_type, dict) or not pin_type:
+                    return _sots_err(
+                        "manage_blueprint_variable.create requires variable_config (with type_path) or legacy pin_type (dict)",
+                        meta={"request_id": req_id},
+                    )
+
+                res = _bpgen_call(
+                    "bpgen_ensure_variable",
+                    {
+                        "blueprint_asset_path": (blueprint_name or "").strip(),
+                        "variable_name": (variable_name or "").strip(),
+                        "default_value": default_value,
+                        "create_if_missing": True,
+                        "update_if_exists": True,
+                        "instance_editable": bool(instance_editable),
+                        "expose_on_spawn": bool(expose_on_spawn),
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            if act == "delete":
+                if not blueprint_name or not variable_name:
+                    return _sots_err("manage_blueprint_variable.delete requires blueprint_name and variable_name", meta={"request_id": req_id})
+                if not _allow_apply_or_err("manage_blueprint_variable.delete", req_id):
+                    return _apply_gate_err("manage_blueprint_variable.delete", req_id)
+                res = _bpgen_call(
+                    "bp_variable_delete",
+                    {
+                        "blueprint_name": (blueprint_name or "").strip(),
+                        "variable_name": (variable_name or "").strip(),
+                        "delete_options": delete_options or {},
+                        "options": options or {},
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            if act == "list":
+                if not blueprint_name:
+                    return _sots_err("manage_blueprint_variable.list requires blueprint_name", meta={"request_id": req_id})
+                res = _bpgen_call(
+                    "bp_variable_list",
+                    {
+                        "blueprint_name": (blueprint_name or "").strip(),
+                        "list_criteria": list_criteria or {},
+                        "options": options or {},
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            if act == "get_info":
+                if not blueprint_name or not variable_name:
+                    return _sots_err("manage_blueprint_variable.get_info requires blueprint_name and variable_name", meta={"request_id": req_id})
+                res = _bpgen_call(
+                    "bp_variable_get_info",
+                    {
+                        "blueprint_name": (blueprint_name or "").strip(),
+                        "variable_name": (variable_name or "").strip(),
+                        "info_options": info_options or {},
+                        "options": options or {},
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            if act == "get_property":
+                if not blueprint_name or not variable_name:
+                    return _sots_err("manage_blueprint_variable.get_property requires blueprint_name and variable_name", meta={"request_id": req_id})
+                if not property_path:
+                    return _sots_err("manage_blueprint_variable.get_property requires property_path", meta={"request_id": req_id})
+                res = _bpgen_call(
+                    "bp_variable_get_property",
+                    {
+                        "blueprint_name": (blueprint_name or "").strip(),
+                        "variable_name": (variable_name or "").strip(),
+                        "property_path": (property_path or "").strip(),
+                        "options": options or {},
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            if act == "set_property":
+                if not blueprint_name or not variable_name:
+                    return _sots_err("manage_blueprint_variable.set_property requires blueprint_name and variable_name", meta={"request_id": req_id})
+                if not property_path:
+                    return _sots_err("manage_blueprint_variable.set_property requires property_path", meta={"request_id": req_id})
+                if not _allow_apply_or_err("manage_blueprint_variable.set_property", req_id):
+                    return _apply_gate_err("manage_blueprint_variable.set_property", req_id)
+                res = _bpgen_call(
+                    "bp_variable_set_property",
+                    {
+                        "blueprint_name": (blueprint_name or "").strip(),
+                        "variable_name": (variable_name or "").strip(),
+                        "property_path": (property_path or "").strip(),
+                        "value": value,
+                        "options": options or {},
+                    },
+                )
+                out = _sots_ok(res, meta={"request_id": req_id})
+                _jsonl_log({"ts": time.time(), "tool": "manage_blueprint_variable", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
+                return out
+
+            out = _not_implemented(
+                "manage_blueprint_variable",
+                act or "(empty)",
+                "Implemented: search_types/create/delete/list/get_info/get_property/set_property.",
+                req_id,
             )
-            out = _sots_ok(res, meta={"request_id": req_id})
-            _jsonl_log({"ts": time.time(), "tool": "manage_asset", "action": act, "ok": out["ok"], "error": out["error"], "request_id": req_id})
             return out
 
         if act in {"duplicate"}:
@@ -1705,16 +2153,112 @@ def check_unreal_connection() -> Dict[str, Any]:
 
 @mcp.tool(
     name="get_help",
-    description="VibeUE-compatible help entrypoint (maps to sots_help for now).",
+    description="VibeUE-compatible help entrypoint (topic routing over VibeUE resources + unified server index).",
     annotations={"readOnlyHint": True, "title": "VibeUE Compat: get_help"},
 )
 def get_help(topic: str = "overview") -> Dict[str, Any]:
     req_id = _new_request_id()
-    # For now, return the unified server index; topic routing can be added later.
-    data = sots_help()
-    out = _sots_ok({"topic": topic, "help": data}, meta={"request_id": req_id})
-    _jsonl_log({"ts": time.time(), "tool": "get_help", "ok": out["ok"], "error": out["error"], "request_id": req_id})
-    return out
+    try:
+        def _find_vibeue_resources_root() -> Optional[Path]:
+            candidates = [
+                (PATHS.project_root / "Plugins" / "VibeUE" / "Content" / "Python" / "resources").resolve(),
+                (PATHS.project_root / "WORKING" / "VibeUE-master" / "Content" / "Python" / "resources").resolve(),
+            ]
+            for cand in candidates:
+                if cand.exists() and cand.is_dir():
+                    return cand
+            return None
+
+        def _list_topics(resources_root: Path) -> List[str]:
+            topics_dir = (resources_root / "topics").resolve()
+            if not topics_dir.exists() or not topics_dir.is_dir():
+                return []
+            _ensure_under_root(topics_dir, resources_root)
+            return sorted({p.stem for p in topics_dir.glob("*.md") if p.is_file()})
+
+        def _read_md(p: Path, resources_root: Path) -> str:
+            pp = p.resolve()
+            _ensure_under_root(pp, resources_root)
+            return pp.read_text(encoding="utf-8", errors="replace")
+
+        requested = (topic or "overview").strip()
+        topic_key = requested.lower().replace("_", "-")
+        if not topic_key:
+            topic_key = "overview"
+
+        resources_root = _find_vibeue_resources_root()
+        if not resources_root:
+            out = _sots_err(
+                "VibeUE help resources not found (expected Plugins/VibeUE/Content/Python/resources)",
+                meta={"request_id": req_id},
+            )
+            _jsonl_log({"ts": time.time(), "tool": "get_help", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+            return out
+
+        available_topics = _list_topics(resources_root)
+
+        # Prefer the AI-optimized per-topic markdown under resources/topics/.
+        topics_dir = (resources_root / "topics").resolve()
+        topic_path = (topics_dir / f"{topic_key}.md").resolve()
+        fallback_topics_index = (topics_dir / "topics.md").resolve()
+        fallback_full_help = (resources_root / "help.md").resolve()
+
+        warnings: List[str] = []
+        resolved_topic = topic_key
+        source_path: Optional[Path] = None
+        content_md = ""
+
+        if topic_key in {"help", "index"} and fallback_full_help.exists():
+            resolved_topic = "help"
+            source_path = fallback_full_help
+            content_md = _read_md(source_path, resources_root)
+        elif topic_path.exists():
+            source_path = topic_path
+            content_md = _read_md(source_path, resources_root)
+        elif topic_key == "umg-guide":
+            # Legacy capitalization in some VibeUE bundles; prefer topics/umg-guide.md if present.
+            legacy_umg = (resources_root / "UMG-Guide.md").resolve()
+            if legacy_umg.exists():
+                source_path = legacy_umg
+                content_md = _read_md(source_path, resources_root)
+        
+        if not content_md:
+            warnings.append(f"Unknown help topic '{requested}'. Returning topic index.")
+            resolved_topic = "topics"
+            if fallback_topics_index.exists():
+                source_path = fallback_topics_index
+                content_md = _read_md(source_path, resources_root)
+            elif fallback_full_help.exists():
+                source_path = fallback_full_help
+                content_md = _read_md(source_path, resources_root)
+            else:
+                content_md = "(No help content found on disk.)"
+
+        rel_source = ""
+        if source_path:
+            try:
+                rel_source = str(source_path.resolve().relative_to(PATHS.project_root.resolve())).replace("\\", "/")
+            except Exception:
+                rel_source = str(source_path)
+
+        out = _sots_ok(
+            {
+                "topic": resolved_topic,
+                "requested_topic": requested,
+                "content_markdown": content_md,
+                "source_path": rel_source,
+                "available_topics": available_topics,
+                "server_index": sots_help(),
+            },
+            warnings=warnings,
+            meta={"request_id": req_id},
+        )
+        _jsonl_log({"ts": time.time(), "tool": "get_help", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
+    except Exception as exc:
+        out = _sots_err(f"get_help failed: {exc}", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "get_help", "ok": out["ok"], "error": out["error"], "request_id": req_id})
+        return out
 
 # File-safe logging (never stdout)
 _SERVER_LOGGER: Optional[logging.Logger] = None
@@ -1847,6 +2391,12 @@ BPGEN_READ_ONLY_ACTIONS = {
     "bp_component_get_property",
     "bp_component_get_all_properties",
     "bp_component_get_property_metadata",
+
+    # Blueprint function ops (read-only)
+    "bp_function_list",
+    "bp_function_get",
+    "bp_function_list_params",
+    "bp_function_list_locals",
 }
 
 BPGEN_CFG = {
@@ -1875,6 +2425,16 @@ BPGEN_MUTATION_ACTIONS = {
     "bp_component_reparent",
     "bp_component_reorder",
     "bp_component_set_property",
+
+    # Blueprint function ops (mutations)
+    "bp_function_delete",
+    "bp_function_add_param",
+    "bp_function_remove_param",
+    "bp_function_update_param",
+    "bp_function_add_local",
+    "bp_function_remove_local",
+    "bp_function_update_local",
+    "bp_function_update_properties",
 }
 
 

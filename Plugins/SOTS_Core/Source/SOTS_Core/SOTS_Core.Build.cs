@@ -19,7 +19,8 @@ public class SOTS_Core : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "ModularFeatures"
+                "OnlineSubsystem",
+                "OnlineSubsystemUtils"
             }
         );
     }

@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Settings/SOTS_CoreSettings.h"
 
 namespace
 {
@@ -43,6 +44,32 @@ FSOTS_CoreLifecycleSnapshot USOTS_CoreBlueprintLibrary::GetCoreLifecycleSnapshot
     }
 
     return FSOTS_CoreLifecycleSnapshot();
+}
+
+FSOTS_PrimaryPlayerIdentity USOTS_CoreBlueprintLibrary::GetPrimaryPlayerIdentity(const UObject* WorldContextObject)
+{
+    if (USOTS_CoreLifecycleSubsystem* Subsystem = ResolveLifecycleSubsystem(WorldContextObject))
+    {
+        const USOTS_CoreSettings* Settings = USOTS_CoreSettings::Get();
+        if (Settings && Settings->bEnablePrimaryIdentityCache)
+        {
+            return Subsystem->GetCurrentSnapshot().PrimaryIdentity;
+        }
+
+        return Subsystem->BuildPrimaryIdentity();
+    }
+
+    return FSOTS_PrimaryPlayerIdentity();
+}
+
+bool USOTS_CoreBlueprintLibrary::IsPrimaryPlayerReady(const UObject* WorldContextObject)
+{
+    if (USOTS_CoreLifecycleSubsystem* Subsystem = ResolveLifecycleSubsystem(WorldContextObject))
+    {
+        return Subsystem->HasPrimaryPlayerReady();
+    }
+
+    return false;
 }
 
 APlayerController* USOTS_CoreBlueprintLibrary::GetPrimaryPlayerController(const UObject* WorldContextObject)

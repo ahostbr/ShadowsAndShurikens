@@ -30,14 +30,25 @@ Status: **Partial** (SOTS VibeUE-compat tool exists)
 - summarize_event_graph → **Done** (mapped to BPGen bridge `bp_blueprint_summarize_event_graph`)
 
 ### 2) manage_blueprint_function (13 actions)
-Status: **Partial**
+Status: **Done**
 - create → **Done** (mapped to `bpgen_ensure_function`)
-- list/get/list_params/delete/add_param/remove_param/update_param/locals/update_properties → Stubbed (needs signature/locals contract)
+- list → **Done** (mapped to BPGen bridge `bp_function_list`)
+- get → **Done** (mapped to BPGen bridge `bp_function_get`)
+- list_params → **Done** (mapped to BPGen bridge `bp_function_list_params`)
+- add_param/remove_param/update_param → **Done** (mapped to BPGen bridge `bp_function_*_param`; dangerous + safe-mode gated)
+- list_locals/add_local/remove_local/update_local → **Done** (mapped to BPGen bridge `bp_function_*_local`; dangerous + safe-mode gated)
+- delete → **Done** (mapped to BPGen bridge `bp_function_delete`; dangerous + safe-mode gated)
+- update_properties → **Done** (mapped to BPGen bridge `bp_function_update_properties`; supports `CallInEditor`, `BlueprintPure`, `Category`)
 
 ### 3) manage_blueprint_variable (7 actions)
-Status: **Partial**
-- create → **Done** (mapped to `bpgen_ensure_variable`; requires BPGen `pin_type` dict)
-- list/delete/get_info/get_property/set_property/search_types → Stubbed
+Status: **Done**
+- search_types → **Done** (mapped to BPGen bridge `bp_variable_search_types`)
+- create → **Done** (VibeUE-style `variable_config.type_path` mapped to BPGen ensure_variable via bridge `bp_variable_create`; legacy `pin_type` path preserved)
+- list → **Done** (mapped to BPGen bridge `bp_variable_list`)
+- get_info → **Done** (mapped to BPGen bridge `bp_variable_get_info`)
+- get_property → **Done** (mapped to BPGen bridge `bp_variable_get_property`)
+- set_property → **Done** (mapped to BPGen bridge `bp_variable_set_property`; dangerous + safe-mode gated)
+- delete → **Done** (mapped to BPGen bridge `bp_variable_delete`; dangerous + safe-mode gated)
 
 ### 4) manage_blueprint_node (17 actions)
 Status: **Partial**
@@ -114,8 +125,8 @@ Status: **Done**
 - Implemented as BPGen bridge `ping` + unified server info synthesis.
 
 ### 13) get_help (1 action)
-Status: **Partial**
-- Implemented as a shim returning `sots_help` payload; topic routing not yet implemented.
+Status: **Done**
+- Implemented as a VibeUE-compatible shim that routes `topic` to markdown under `Plugins/VibeUE/Content/Python/resources/topics/*.md` (fallbacks to `topics.md` / `help.md`) and also returns the unified `sots_help` index.
 
 ## Next Implementation Work (ordered)
 1) Finish node-level parity gaps:

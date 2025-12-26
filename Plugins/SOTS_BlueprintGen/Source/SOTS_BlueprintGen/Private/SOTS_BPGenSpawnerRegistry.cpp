@@ -77,17 +77,26 @@ namespace
 				}
 
 				const FString CandidateKey = BuildSpawnerKey(Spawner);
-				if (CandidateKey.IsEmpty())
-				{
-					continue;
-				}
-
-				if (CandidateKey.Equals(SpawnerKey, ESearchCase::CaseSensitive))
+				if (!CandidateKey.IsEmpty() && CandidateKey.Equals(SpawnerKey, ESearchCase::CaseSensitive))
 				{
 					OutResolved.SpawnerKey = SpawnerKey;
 					OutResolved.Spawner = Spawner;
 					OutResolved.DebugName = Spawner->NodeClass ? Spawner->NodeClass->GetName() : SpawnerKey;
 					OutResolved.DebugCategory = TEXT("ActionDatabase");
+					return true;
+				}
+
+				// Fallback: allow resolution by UI menu name.
+				// This supports reflection-style spawner keys like "Event BeginPlay" or
+				// "Get <SubsystemName>" which are not uniquely representable by FunctionPath/NodeClassPath alone.
+				const FBlueprintActionUiSpec UiSpec = Spawner->PrimeDefaultUiSpec();
+				const FString MenuName = UiSpec.MenuName.ToString();
+				if (!MenuName.IsEmpty() && MenuName.Equals(SpawnerKey, ESearchCase::CaseSensitive))
+				{
+					OutResolved.SpawnerKey = SpawnerKey;
+					OutResolved.Spawner = Spawner;
+					OutResolved.DebugName = Spawner->NodeClass ? Spawner->NodeClass->GetName() : SpawnerKey;
+					OutResolved.DebugCategory = TEXT("ActionDatabase.MenuName");
 					return true;
 				}
 			}

@@ -28,11 +28,6 @@ void FSOTS_CoreLifecycleListenerHandle::Register(ISOTS_CoreLifecycleListener* In
 
     Listener = InListener;
 
-    if (!IModularFeatures::IsAvailable())
-    {
-        return;
-    }
-
     IModularFeatures::Get().RegisterModularFeature(SOTS_CoreLifecycleListenerFeatureName, Listener);
     bRegistered = true;
 }
@@ -46,10 +41,7 @@ void FSOTS_CoreLifecycleListenerHandle::Unregister()
         return;
     }
 
-    if (IModularFeatures::IsAvailable())
-    {
-        IModularFeatures::Get().UnregisterModularFeature(SOTS_CoreLifecycleListenerFeatureName, Listener);
-    }
+    IModularFeatures::Get().UnregisterModularFeature(SOTS_CoreLifecycleListenerFeatureName, Listener);
 
     Listener = nullptr;
     bRegistered = false;
@@ -57,7 +49,7 @@ void FSOTS_CoreLifecycleListenerHandle::Unregister()
 
 void FSOTS_CoreLifecycleListenerHandle::RegisterListener(ISOTS_CoreLifecycleListener* InListener)
 {
-    if (!InListener || !IModularFeatures::IsAvailable())
+    if (!InListener)
     {
         return;
     }
@@ -67,7 +59,7 @@ void FSOTS_CoreLifecycleListenerHandle::RegisterListener(ISOTS_CoreLifecycleList
 
 void FSOTS_CoreLifecycleListenerHandle::UnregisterListener(ISOTS_CoreLifecycleListener* InListener)
 {
-    if (!InListener || !IModularFeatures::IsAvailable())
+    if (!InListener)
     {
         return;
     }

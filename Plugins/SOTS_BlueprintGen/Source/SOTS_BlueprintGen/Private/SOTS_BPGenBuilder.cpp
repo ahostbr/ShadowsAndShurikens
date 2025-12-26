@@ -2956,6 +2956,32 @@ static UEdGraph* FindFunctionGraph(UBlueprint* Blueprint, FName FunctionName)
 	return nullptr;
 }
 
+static UEdGraph* FindGraphForEdit(UBlueprint* Blueprint, FName GraphName)
+{
+	if (!Blueprint || GraphName.IsNone())
+	{
+		return nullptr;
+	}
+
+	if (UEdGraph* FunctionGraph = FindFunctionGraph(Blueprint, GraphName))
+	{
+		return FunctionGraph;
+	}
+
+	// Convention: allow "EventGraph" to target the ubergraph for edit ops.
+	// This mirrors how the bridge lists/describes nodes in the EventGraph.
+	static const FName EventGraphName(TEXT("EventGraph"));
+	if (GraphName == EventGraphName)
+	{
+		if (Blueprint->UbergraphPages.Num() > 0 && Blueprint->UbergraphPages[0])
+		{
+			return Blueprint->UbergraphPages[0];
+		}
+	}
+
+	return nullptr;
+}
+
 static bool LoadBlueprintAndGraphForEdit(const FString& BlueprintPath, FName FunctionName, UBlueprint*& OutBlueprint, UEdGraph*& OutGraph, TArray<FString>& OutErrors)
 {
 	OutBlueprint = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr, *BlueprintPath));
@@ -2965,10 +2991,10 @@ static bool LoadBlueprintAndGraphForEdit(const FString& BlueprintPath, FName Fun
 		return false;
 	}
 
-	OutGraph = FindFunctionGraph(OutBlueprint, FunctionName);
+	OutGraph = FindGraphForEdit(OutBlueprint, FunctionName);
 	if (!OutGraph)
 	{
-		OutErrors.Add(FString::Printf(TEXT("Function graph '%s' not found in '%s'."), *FunctionName.ToString(), *BlueprintPath));
+		OutErrors.Add(FString::Printf(TEXT("Graph '%s' not found in '%s'."), *FunctionName.ToString(), *BlueprintPath));
 		return false;
 	}
 

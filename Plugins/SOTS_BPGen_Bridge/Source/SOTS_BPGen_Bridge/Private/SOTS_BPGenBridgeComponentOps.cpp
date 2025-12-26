@@ -14,7 +14,7 @@
 
 namespace
 {
-	static FSOTS_BPGenBridgeComponentOpResult MakeError(const FString& ErrorCode, const FString& ErrorMessage)
+	static FSOTS_BPGenBridgeComponentOpResult MakeComponentOpError(const FString& ErrorCode, const FString& ErrorMessage)
 	{
 		FSOTS_BPGenBridgeComponentOpResult R;
 		R.bOk = false;
@@ -22,6 +22,21 @@ namespace
 		R.Errors.Add(ErrorMessage);
 		R.Result = MakeShared<FJsonObject>();
 		return R;
+	}
+
+	static FSOTS_BPGenBridgeComponentOpResult MakeComponentOpError(const TCHAR* ErrorCode, const TCHAR* ErrorMessage)
+	{
+		return MakeComponentOpError(FString(ErrorCode), FString(ErrorMessage));
+	}
+
+	static FSOTS_BPGenBridgeComponentOpResult MakeComponentOpError(const TCHAR* ErrorCode, const FString& ErrorMessage)
+	{
+		return MakeComponentOpError(FString(ErrorCode), ErrorMessage);
+	}
+
+	static FSOTS_BPGenBridgeComponentOpResult MakeComponentOpError(const FString& ErrorCode, const TCHAR* ErrorMessage)
+	{
+		return MakeComponentOpError(ErrorCode, FString(ErrorMessage));
 	}
 
 	static FString NormalizeLongPackagePath(const FString& InPath)
@@ -72,7 +87,7 @@ namespace
 		OutNormalizedObjectPath = NormalizeAssetObjectPath(BlueprintName);
 		if (OutNormalizedObjectPath.IsEmpty())
 		{
-			OutError = MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing blueprint_name"));
+			OutError = MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing blueprint_name"));
 			return nullptr;
 		}
 
@@ -80,7 +95,7 @@ namespace
 		UBlueprint* BP = Cast<UBlueprint>(Obj);
 		if (!BP)
 		{
-			OutError = MakeError(TEXT("BLUEPRINT_NOT_FOUND"), FString::Printf(TEXT("Failed to load Blueprint: %s"), *OutNormalizedObjectPath));
+			OutError = MakeComponentOpError(TEXT("BLUEPRINT_NOT_FOUND"), FString::Printf(TEXT("Failed to load Blueprint: %s"), *OutNormalizedObjectPath));
 			return nullptr;
 		}
 		return BP;
@@ -397,7 +412,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::List(const TSha
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	TArray<TSharedPtr<FJsonValue>> Components;
@@ -429,7 +444,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::GetProperty(con
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty() || ComponentName.TrimStartAndEnd().IsEmpty() || PropertyName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_property requires blueprint_name, component_name, property_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_property requires blueprint_name, component_name, property_name"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -443,19 +458,19 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::GetProperty(con
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	USCS_Node* Node = FindNodeByComponentName(SCS, ComponentName);
 	if (!Node || !Node->ComponentTemplate)
 	{
-		return MakeError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
 	}
 
 	FProperty* Prop = FindFProperty<FProperty>(Node->ComponentTemplate->GetClass(), *PropertyName);
 	if (!Prop)
 	{
-		return MakeError(TEXT("PROPERTY_NOT_FOUND"), FString::Printf(TEXT("Property not found: %s"), *PropertyName));
+		return MakeComponentOpError(TEXT("PROPERTY_NOT_FOUND"), FString::Printf(TEXT("Property not found: %s"), *PropertyName));
 	}
 
 	const uint8* PropData = Prop->ContainerPtrToValuePtr<uint8>(Node->ComponentTemplate);
@@ -498,7 +513,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::SetProperty(con
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty() || ComponentName.TrimStartAndEnd().IsEmpty() || PropertyName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("set_property requires blueprint_name, component_name, property_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("set_property requires blueprint_name, component_name, property_name"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -512,19 +527,19 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::SetProperty(con
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	USCS_Node* Node = FindNodeByComponentName(SCS, ComponentName);
 	if (!Node || !Node->ComponentTemplate)
 	{
-		return MakeError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
 	}
 
 	FString ErrMsg;
 	if (!SetObjectPropertyByImportText(Node->ComponentTemplate, PropertyName, PropertyValue, ErrMsg))
 	{
-		return MakeError(TEXT("PROPERTY_SET_FAILED"), ErrMsg);
+		return MakeComponentOpError(TEXT("PROPERTY_SET_FAILED"), ErrMsg);
 	}
 
 	Node->ComponentTemplate->PostEditChange();
@@ -556,7 +571,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::GetAllPropertie
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty() || ComponentName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_all_properties requires blueprint_name, component_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_all_properties requires blueprint_name, component_name"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -570,13 +585,13 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::GetAllPropertie
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	USCS_Node* Node = FindNodeByComponentName(SCS, ComponentName);
 	if (!Node || !Node->ComponentTemplate)
 	{
-		return MakeError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
 	}
 
 	TSharedPtr<FJsonObject> Props = MakeShared<FJsonObject>();
@@ -673,7 +688,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Create(const TS
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty() || ComponentName.TrimStartAndEnd().IsEmpty() || ComponentType.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("create requires blueprint_name, component_name, component_type"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("create requires blueprint_name, component_name, component_type"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -687,24 +702,24 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Create(const TS
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	if (FindNodeByComponentName(SCS, ComponentName))
 	{
-		return MakeError(TEXT("COMPONENT_NAME_EXISTS"), FString::Printf(TEXT("Component name already exists: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_NAME_EXISTS"), FString::Printf(TEXT("Component name already exists: %s"), *ComponentName));
 	}
 
 	UClass* ComponentClass = nullptr;
 	if (!ResolveComponentClassByName(ComponentType, false, false, ComponentClass) || !ComponentClass)
 	{
-		return MakeError(TEXT("COMPONENT_TYPE_INVALID"), FString::Printf(TEXT("Invalid component_type: %s"), *ComponentType));
+		return MakeComponentOpError(TEXT("COMPONENT_TYPE_INVALID"), FString::Printf(TEXT("Invalid component_type: %s"), *ComponentType));
 	}
 
 	USCS_Node* NewNode = SCS->CreateNode(ComponentClass, *ComponentName);
 	if (!NewNode)
 	{
-		return MakeError(TEXT("COMPONENT_CREATE_FAILED"), FString::Printf(TEXT("Failed to create component: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_CREATE_FAILED"), FString::Printf(TEXT("Failed to create component: %s"), *ComponentName));
 	}
 
 	ParentName.TrimStartAndEndInline();
@@ -819,7 +834,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Delete(const TS
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty() || ComponentName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("delete requires blueprint_name, component_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("delete requires blueprint_name, component_name"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -833,13 +848,13 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Delete(const TS
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	USCS_Node* Node = FindNodeByComponentName(SCS, ComponentName);
 	if (!Node)
 	{
-		return MakeError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
 	}
 
 	const int32 ChildrenCount = Node->GetChildNodes().Num();
@@ -886,7 +901,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Reparent(const 
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty() || ComponentName.TrimStartAndEnd().IsEmpty() || ParentName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("reparent requires blueprint_name, component_name, parent_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("reparent requires blueprint_name, component_name, parent_name"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -900,24 +915,24 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Reparent(const 
 	USimpleConstructionScript* SCS = BP->SimpleConstructionScript;
 	if (!SCS)
 	{
-		return MakeError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
+		return MakeComponentOpError(TEXT("SCS_NOT_AVAILABLE"), TEXT("Blueprint does not have a SimpleConstructionScript"));
 	}
 
 	USCS_Node* ChildNode = FindNodeByComponentName(SCS, ComponentName);
 	if (!ChildNode)
 	{
-		return MakeError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
+		return MakeComponentOpError(TEXT("COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Component not found: %s"), *ComponentName));
 	}
 
 	USCS_Node* NewParentNode = FindNodeByComponentName(SCS, ParentName);
 	if (!NewParentNode)
 	{
-		return MakeError(TEXT("PARENT_COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Parent component not found: %s"), *ParentName));
+		return MakeComponentOpError(TEXT("PARENT_COMPONENT_NOT_FOUND"), FString::Printf(TEXT("Parent component not found: %s"), *ParentName));
 	}
 
 	if (!NewParentNode->ComponentTemplate || !NewParentNode->ComponentTemplate->IsA<USceneComponent>())
 	{
-		return MakeError(TEXT("PARENT_NOT_SCENE_COMPONENT"), FString::Printf(TEXT("Parent is not a SceneComponent: %s"), *ParentName));
+		return MakeComponentOpError(TEXT("PARENT_NOT_SCENE_COMPONENT"), FString::Printf(TEXT("Parent is not a SceneComponent: %s"), *ParentName));
 	}
 
 	const FString OldParent = ChildNode->ParentComponentOrVariableName.ToString();
@@ -947,7 +962,7 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::Reorder(const T
 
 	if (BlueprintName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("reorder requires blueprint_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("reorder requires blueprint_name"));
 	}
 
 	FSOTS_BPGenBridgeComponentOpResult Err;
@@ -982,19 +997,19 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::GetPropertyMeta
 
 	if (ComponentType.TrimStartAndEnd().IsEmpty() || PropertyName.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_property_metadata requires component_type and property_name"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_property_metadata requires component_type and property_name"));
 	}
 
 	UClass* ComponentClass = nullptr;
 	if (!ResolveComponentClassByName(ComponentType, true, true, ComponentClass) || !ComponentClass)
 	{
-		return MakeError(TEXT("COMPONENT_TYPE_INVALID"), FString::Printf(TEXT("Invalid component_type: %s"), *ComponentType));
+		return MakeComponentOpError(TEXT("COMPONENT_TYPE_INVALID"), FString::Printf(TEXT("Invalid component_type: %s"), *ComponentType));
 	}
 
 	FProperty* Prop = FindFProperty<FProperty>(ComponentClass, *PropertyName);
 	if (!Prop)
 	{
-		return MakeError(TEXT("PROPERTY_NOT_FOUND"), FString::Printf(TEXT("Property not found: %s"), *PropertyName));
+		return MakeComponentOpError(TEXT("PROPERTY_NOT_FOUND"), FString::Printf(TEXT("Property not found: %s"), *PropertyName));
 	}
 
 	TArray<TSharedPtr<FJsonValue>> Meta;
@@ -1025,13 +1040,13 @@ FSOTS_BPGenBridgeComponentOpResult SOTS_BPGenBridgeComponentOps::GetInfo(const T
 
 	if (ComponentType.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_info requires component_type"));
+		return MakeComponentOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("get_info requires component_type"));
 	}
 
 	UClass* ComponentClass = nullptr;
 	if (!ResolveComponentClassByName(ComponentType, true, true, ComponentClass) || !ComponentClass)
 	{
-		return MakeError(TEXT("COMPONENT_TYPE_INVALID"), FString::Printf(TEXT("Invalid component_type: %s"), *ComponentType));
+		return MakeComponentOpError(TEXT("COMPONENT_TYPE_INVALID"), FString::Printf(TEXT("Invalid component_type: %s"), *ComponentType));
 	}
 
 	TArray<TSharedPtr<FJsonValue>> PropertyMeta;

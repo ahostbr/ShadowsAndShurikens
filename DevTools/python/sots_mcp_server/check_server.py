@@ -1,25 +1,48 @@
 
+import os
 import psutil
-import sys
 
-# The presence of this string in the command line is a unique identifier for the server process.
-SERVER_SCRIPT_NAME = "sots_mcp_server"
-python_executable = sys.executable
 
+def _norm(s: str) -> str:
+    return os.path.normcase(os.path.normpath(s))
+
+
+# VS Code launches the MCP server via stdio as:
+#   <python.exe> <...>\DevTools\python\sots_mcp_server\server.py
+SERVER_SCRIPT_BASENAME = "server.py"
+SERVER_PARENT_DIRNAME = "sots_mcp_server"
+
+
+this_pid = os.getpid()
 found = False
-for proc in psutil.process_iter(['cmdline', 'exe']):
+
+for proc in psutil.process_iter(["pid", "cmdline", "exe"]):
     try:
-        # Check if the process executable matches the one running this script
-        # and if the server script name is in its command line arguments.
-        if proc.info['exe'] and proc.info['cmdline'] and SERVER_SCRIPT_NAME in " ".join(proc.info['cmdline']):
-            # To be more certain, let's check if it's a python process from the expected venv
-            if "python.exe" in proc.info['exe']:
-                print(f"ONLINE: Found server process running with command: {' '.join(proc.info['cmdline'])}")
-                found = True
-                break
+        if proc.info.get("pid") == this_pid:
+            continue
+
+        cmdline = proc.info.get("cmdline") or []
+        if not cmdline:
+            continue
+
+        # Heuristic: any python process whose cmdline includes
+        # ...\sots_mcp_server\server.py
+        joined = " ".join(cmdline)
+        if SERVER_SCRIPT_BASENAME not in joined:
+            continue
+        if SERVER_PARENT_DIRNAME not in joined:
+            continue
+
+        exe = proc.info.get("exe") or ""
+        if "python.exe" not in os.path.basename(_norm(exe)):
+            continue
+
+        print(f"ONLINE: Found MCP server process (pid={proc.info['pid']}): {joined}")
+        found = True
+        break
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-        pass
+        continue
 
 if not found:
-    print("OFFLINE: The MCP server process was not found.")
+    print("OFFLINE: The MCP server process (server.py) was not found.")
 

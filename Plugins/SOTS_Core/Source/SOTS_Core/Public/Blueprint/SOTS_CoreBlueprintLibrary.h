@@ -22,6 +22,12 @@ public:
     static FSOTS_CoreLifecycleSnapshot GetCoreLifecycleSnapshot(const UObject* WorldContextObject);
 
     UFUNCTION(BlueprintPure, Category = "SOTS|Core", meta = (WorldContext = "WorldContextObject"))
+    static FSOTS_PrimaryPlayerIdentity GetPrimaryPlayerIdentity(const UObject* WorldContextObject);
+
+    UFUNCTION(BlueprintPure, Category = "SOTS|Core", meta = (WorldContext = "WorldContextObject"))
+    static bool IsPrimaryPlayerReady(const UObject* WorldContextObject);
+
+    UFUNCTION(BlueprintPure, Category = "SOTS|Core", meta = (WorldContext = "WorldContextObject"))
     static APlayerController* GetPrimaryPlayerController(const UObject* WorldContextObject);
 
     UFUNCTION(BlueprintPure, Category = "SOTS|Core", meta = (WorldContext = "WorldContextObject"))

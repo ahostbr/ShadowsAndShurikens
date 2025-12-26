@@ -1,13 +1,11 @@
 #include "SOTS_BPGenBridgeAssetOps.h"
 
-#include "AssetRegistry/AssetRegistryTypes.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "EditorAssetLibrary.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 
 #include "AssetToolsModule.h"
-#include "AssetRenameData.h"
 #include "AutomatedAssetImportData.h"
 #include "IAssetTools.h"
 
@@ -69,7 +67,7 @@ namespace
 		return FString::Printf(TEXT("%s.%s"), *Path, *AssetName);
 	}
 
-	static FSOTS_BPGenBridgeAssetOpResult MakeError(const FString& ErrorCode, const FString& ErrorMessage)
+	static FSOTS_BPGenBridgeAssetOpResult MakeAssetOpError(const FString& ErrorCode, const FString& ErrorMessage)
 	{
 		FSOTS_BPGenBridgeAssetOpResult R;
 		R.bOk = false;
@@ -77,6 +75,21 @@ namespace
 		R.Errors.Add(ErrorMessage);
 		R.Result = MakeShared<FJsonObject>();
 		return R;
+	}
+
+	static FSOTS_BPGenBridgeAssetOpResult MakeAssetOpError(const TCHAR* ErrorCode, const TCHAR* ErrorMessage)
+	{
+		return MakeAssetOpError(FString(ErrorCode), FString(ErrorMessage));
+	}
+
+	static FSOTS_BPGenBridgeAssetOpResult MakeAssetOpError(const TCHAR* ErrorCode, const FString& ErrorMessage)
+	{
+		return MakeAssetOpError(FString(ErrorCode), ErrorMessage);
+	}
+
+	static FSOTS_BPGenBridgeAssetOpResult MakeAssetOpError(const FString& ErrorCode, const TCHAR* ErrorMessage)
+	{
+		return MakeAssetOpError(ErrorCode, FString(ErrorMessage));
 	}
 
 	static void AddStringArray(TSharedPtr<FJsonObject> Obj, const FString& Field, const TArray<FString>& Values)
@@ -143,7 +156,7 @@ namespace
 		Narrow.Append(Bytes.GetData(), static_cast<int32>(Bytes.Num()));
 		if (!FFileHelper::SaveArrayToFile(Narrow, *FilePath))
 		{
-			return MakeError(TEXT("ASSET_EXPORT_FAILED"), FString::Printf(TEXT("Failed to write file: %s"), *FilePath));
+			return MakeAssetOpError(TEXT("ASSET_EXPORT_FAILED"), FString::Printf(TEXT("Failed to write file: %s"), *FilePath));
 		}
 		FSOTS_BPGenBridgeAssetOpResult R;
 		R.bOk = true;
@@ -260,25 +273,25 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::OpenInEditor(const TSha
 
 	if (AssetPath.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("open_in_editor requires asset_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("open_in_editor requires asset_path"));
 	}
 
 	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
 	UObject* Asset = UEditorAssetLibrary::LoadAsset(ObjectPath);
 	if (!Asset)
 	{
-		return MakeError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Failed to load asset: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Failed to load asset: %s"), *ObjectPath));
 	}
 
 	if (!GEditor)
 	{
-		return MakeError(TEXT("INTERNAL_ERROR"), TEXT("GEditor not available"));
+		return MakeAssetOpError(TEXT("INTERNAL_ERROR"), TEXT("GEditor not available"));
 	}
 
 	UAssetEditorSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
 	if (!Subsystem)
 	{
-		return MakeError(TEXT("INTERNAL_ERROR"), TEXT("AssetEditorSubsystem not available"));
+		return MakeAssetOpError(TEXT("INTERNAL_ERROR"), TEXT("AssetEditorSubsystem not available"));
 	}
 
 	if (bForceOpen)
@@ -311,18 +324,18 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Duplicate(const TShared
 
 	if (AssetPath.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("duplicate requires asset_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("duplicate requires asset_path"));
 	}
 	if (DestinationPath.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("duplicate requires destination_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("duplicate requires destination_path"));
 	}
 
 	const FString SourceObjectPath = NormalizeAssetObjectPath(AssetPath);
 	UObject* Source = UEditorAssetLibrary::LoadAsset(SourceObjectPath);
 	if (!Source)
 	{
-		return MakeError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Failed to load asset: %s"), *SourceObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Failed to load asset: %s"), *SourceObjectPath));
 	}
 
 	DestinationPath = NormalizeContentFolderPath(DestinationPath);
@@ -342,7 +355,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Duplicate(const TShared
 	UObject* Duplicated = AssetTools.DuplicateAsset(NewName, DestinationPath, Source);
 	if (!Duplicated)
 	{
-		return MakeError(TEXT("OPERATION_FAILED"), TEXT("DuplicateAsset failed"));
+		return MakeAssetOpError(TEXT("OPERATION_FAILED"), TEXT("DuplicateAsset failed"));
 	}
 
 	FSOTS_BPGenBridgeAssetOpResult R;
@@ -368,18 +381,18 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Delete(const TSharedPtr
 
 	if (AssetPath.TrimStartAndEnd().IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("delete requires asset_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("delete requires asset_path"));
 	}
 
 	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
 	if (ObjectPath.StartsWith(TEXT("/Engine/")))
 	{
-		return MakeError(TEXT("ASSET_READ_ONLY"), FString::Printf(TEXT("Cannot delete engine content: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_READ_ONLY"), FString::Printf(TEXT("Cannot delete engine content: %s"), *ObjectPath));
 	}
 
 	if (!UEditorAssetLibrary::DoesAssetExist(ObjectPath))
 	{
-		return MakeError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
 	}
 
 	const FString PackageName = FPackageName::ObjectPathToPackageName(ObjectPath);
@@ -398,7 +411,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Delete(const TSharedPtr
 		{
 			Refs.Add(Ref.ToString());
 		}
-		FSOTS_BPGenBridgeAssetOpResult R = MakeError(TEXT("ASSET_IN_USE"), FString::Printf(TEXT("Asset has %d referencer(s). Use force_delete=true to override."), Referencers.Num()));
+		FSOTS_BPGenBridgeAssetOpResult R = MakeAssetOpError(TEXT("ASSET_IN_USE"), FString::Printf(TEXT("Asset has %d referencer(s). Use force_delete=true to override."), Referencers.Num()));
 		AddStringArray(R.Result, TEXT("referencers"), Refs);
 		return R;
 	}
@@ -409,14 +422,14 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Delete(const TSharedPtr
 		const EAppReturnType::Type Choice = FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(Msg));
 		if (Choice != EAppReturnType::Yes)
 		{
-			return MakeError(TEXT("OPERATION_CANCELLED"), TEXT("User cancelled deletion"));
+			return MakeAssetOpError(TEXT("OPERATION_CANCELLED"), TEXT("User cancelled deletion"));
 		}
 	}
 
 	const bool bDeleted = UEditorAssetLibrary::DeleteAsset(ObjectPath);
 	if (!bDeleted)
 	{
-		return MakeError(TEXT("ASSET_DELETE_FAILED"), FString::Printf(TEXT("Failed to delete asset: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_DELETE_FAILED"), FString::Printf(TEXT("Failed to delete asset: %s"), *ObjectPath));
 	}
 
 	FSOTS_BPGenBridgeAssetOpResult R;
@@ -448,11 +461,11 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ImportTexture(const TSh
 	FilePath.TrimStartAndEndInline();
 	if (FilePath.IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("import_texture requires file_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("import_texture requires file_path"));
 	}
 	if (!FPaths::FileExists(FilePath))
 	{
-		return MakeError(TEXT("FILE_NOT_FOUND"), FString::Printf(TEXT("File not found: %s"), *FilePath));
+		return MakeAssetOpError(TEXT("FILE_NOT_FOUND"), FString::Printf(TEXT("File not found: %s"), *FilePath));
 	}
 
 	DestinationPath = NormalizeContentFolderPath(DestinationPath);
@@ -472,21 +485,35 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ImportTexture(const TSh
 	TArray<UObject*> ImportedAssets = AssetTools.ImportAssetsAutomated(ImportData);
 	if (ImportedAssets.Num() == 0)
 	{
-		return MakeError(TEXT("TEXTURE_IMPORT_FAILED"), TEXT("No assets imported"));
+		return MakeAssetOpError(TEXT("TEXTURE_IMPORT_FAILED"), TEXT("No assets imported"));
 	}
 
 	UObject* Imported = ImportedAssets[0];
+	bool bRequestedRename = false;
+	bool bRenameOk = true;
+	FString RequestedDestinationAssetPath;
 	if (!TextureName.TrimStartAndEnd().IsEmpty())
 	{
-		TArray<FAssetRenameData> Renames;
-		Renames.Add(FAssetRenameData(Imported, DestinationPath, TextureName));
-		AssetTools.RenameAssets(Renames);
+		bRequestedRename = true;
+		FString DestinationAssetPath = DestinationPath;
+		if (!DestinationAssetPath.EndsWith(TEXT("/")))
+		{
+			DestinationAssetPath += TEXT("/");
+		}
+		DestinationAssetPath += TextureName;
+		RequestedDestinationAssetPath = DestinationAssetPath;
+
+		bRenameOk = UEditorAssetLibrary::RenameLoadedAsset(Imported, DestinationAssetPath);
 	}
 
 	UTexture2D* Texture = Cast<UTexture2D>(Imported);
 	FSOTS_BPGenBridgeAssetOpResult R;
 	R.bOk = true;
 	R.Result = MakeShared<FJsonObject>();
+	if (bRequestedRename && !bRenameOk)
+	{
+		R.Warnings.Add(FString::Printf(TEXT("Rename failed (destination='%s')"), *RequestedDestinationAssetPath));
+	}
 	R.Result->SetStringField(TEXT("asset_path"), Imported->GetPathName());
 	R.Result->SetStringField(TEXT("destination_path"), DestinationPath);
 	R.Result->SetStringField(TEXT("source_file"), FilePath);
@@ -536,7 +563,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ExportTexture(const TSh
 	AssetPath.TrimStartAndEndInline();
 	if (AssetPath.IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("export_texture requires asset_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("export_texture requires asset_path"));
 	}
 
 	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
@@ -544,7 +571,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ExportTexture(const TSh
 	UTexture2D* Texture = Cast<UTexture2D>(Asset);
 	if (!Texture)
 	{
-		return MakeError(TEXT("ASSET_TYPE_INCORRECT"), FString::Printf(TEXT("Asset is not a Texture2D: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_TYPE_INCORRECT"), FString::Printf(TEXT("Asset is not a Texture2D: %s"), *ObjectPath));
 	}
 
 	if (MaxW > 0 || MaxH > 0)
@@ -575,24 +602,39 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ExportTexture(const TSh
 	const ETextureSourceFormat SrcFmt = Texture->Source.GetFormat();
 
 	ERGBFormat RGBFmt = ERGBFormat::BGRA;
-	if (SrcFmt == TSF_RGBA8)
+	int32 BitDepth = 8;
+	if (SrcFmt == TSF_G8)
 	{
-		RGBFmt = ERGBFormat::RGBA;
+		RGBFmt = ERGBFormat::Gray;
+		BitDepth = 8;
 	}
 	else if (SrcFmt == TSF_BGRA8)
 	{
 		RGBFmt = ERGBFormat::BGRA;
+		BitDepth = 8;
+	}
+	else if (SrcFmt == TSF_BGRE8)
+	{
+		RGBFmt = ERGBFormat::BGRE;
+		BitDepth = 8;
+	}
+	else if (SrcFmt == TSF_RGBA8_DEPRECATED)
+	{
+		// UE5.7 keeps this enum value for legacy assets, but converts it on load.
+		// Keep this branch as a defensive fallback.
+		RGBFmt = ERGBFormat::RGBA;
+		BitDepth = 8;
 	}
 	else
 	{
-		return MakeError(TEXT("TEXTURE_FORMAT_UNSUPPORTED"), TEXT("Texture source format unsupported for export"));
+		return MakeAssetOpError(TEXT("TEXTURE_FORMAT_UNSUPPORTED"), TEXT("Texture source format unsupported for export"));
 	}
 
 	IImageWrapperModule& WrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(TEXT("ImageWrapper"));
 	TSharedPtr<IImageWrapper> Wrapper = WrapperModule.CreateImageWrapper(ImageFormat);
-	if (!Wrapper.IsValid() || !Wrapper->SetRaw(Raw.GetData(), Raw.Num(), Width, Height, RGBFmt, 8))
+	if (!Wrapper.IsValid() || !Wrapper->SetRaw(Raw.GetData(), Raw.Num(), Width, Height, RGBFmt, BitDepth))
 	{
-		return MakeError(TEXT("ASSET_EXPORT_FAILED"), TEXT("Failed to encode texture"));
+		return MakeAssetOpError(TEXT("ASSET_EXPORT_FAILED"), TEXT("Failed to encode texture"));
 	}
 
 	const TArray64<uint8>& Compressed = Wrapper->GetCompressed();
@@ -633,19 +675,19 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Save(const TSharedPtr<F
 	AssetPath.TrimStartAndEndInline();
 	if (AssetPath.IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("save requires asset_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("save requires asset_path"));
 	}
 
 	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
 	if (!UEditorAssetLibrary::DoesAssetExist(ObjectPath))
 	{
-		return MakeError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
 	}
 
 	const bool bSaved = UEditorAssetLibrary::SaveAsset(ObjectPath, true);
 	if (!bSaved)
 	{
-		return MakeError(TEXT("OPERATION_FAILED"), FString::Printf(TEXT("Failed to save asset: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("OPERATION_FAILED"), FString::Printf(TEXT("Failed to save asset: %s"), *ObjectPath));
 	}
 
 	FSOTS_BPGenBridgeAssetOpResult R;
@@ -674,7 +716,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::SaveAll(const TSharedPt
 
 	if (!bSuccess)
 	{
-		return MakeError(TEXT("OPERATION_FAILED"), TEXT("SaveDirtyPackages failed"));
+		return MakeAssetOpError(TEXT("OPERATION_FAILED"), TEXT("SaveDirtyPackages failed"));
 	}
 
 	FSOTS_BPGenBridgeAssetOpResult R;
@@ -697,13 +739,13 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ListReferences(const TS
 	AssetPath.TrimStartAndEndInline();
 	if (AssetPath.IsEmpty())
 	{
-		return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("list_references requires asset_path"));
+		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("list_references requires asset_path"));
 	}
 
 	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
 	if (!UEditorAssetLibrary::DoesAssetExist(ObjectPath))
 	{
-		return MakeError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
+		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
 	}
 
 	const FString PackageName = FPackageName::ObjectPathToPackageName(ObjectPath);

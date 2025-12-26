@@ -2,38 +2,14 @@
 
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "Subsystems/SOTS_CoreLifecycleSubsystemUtil.h"
 #include "Subsystems/SOTS_CoreLifecycleSubsystem.h"
-
-namespace
-{
-    USOTS_CoreLifecycleSubsystem* GetLifecycleSubsystem(const UObject* WorldContext)
-    {
-        if (!WorldContext)
-        {
-            return nullptr;
-        }
-
-        UWorld* World = WorldContext->GetWorld();
-        if (!World)
-        {
-            return nullptr;
-        }
-
-        UGameInstance* GameInstance = World->GetGameInstance();
-        if (!GameInstance)
-        {
-            return nullptr;
-        }
-
-        return GameInstance->GetSubsystem<USOTS_CoreLifecycleSubsystem>();
-    }
-}
 
 void ASOTS_HUDBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (USOTS_CoreLifecycleSubsystem* Subsystem = GetLifecycleSubsystem(this))
+    if (USOTS_CoreLifecycleSubsystem* Subsystem = SOTS_Core::Private::GetLifecycleSubsystem(this))
     {
         Subsystem->NotifyHUDReady(this);
     }

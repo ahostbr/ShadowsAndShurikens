@@ -6,6 +6,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 
+#include "EditorAssetLibrary.h"
+
 #include "Engine/Blueprint.h"
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
@@ -17,7 +19,7 @@
 
 namespace
 {
-	static FSOTS_BPGenBridgeBlueprintOpResult MakeError(const FString& ErrorCode, const FString& ErrorMessage)
+	static FSOTS_BPGenBridgeBlueprintOpResult MakeBlueprintOpError(const FString& ErrorCode, const FString& ErrorMessage)
 	{
 		FSOTS_BPGenBridgeBlueprintOpResult R;
 		R.bOk = false;
@@ -25,6 +27,21 @@ namespace
 		R.Errors.Add(ErrorMessage);
 		R.Result = MakeShared<FJsonObject>();
 		return R;
+	}
+
+	static FSOTS_BPGenBridgeBlueprintOpResult MakeBlueprintOpError(const TCHAR* ErrorCode, const TCHAR* ErrorMessage)
+	{
+		return MakeBlueprintOpError(FString(ErrorCode), FString(ErrorMessage));
+	}
+
+	static FSOTS_BPGenBridgeBlueprintOpResult MakeBlueprintOpError(const TCHAR* ErrorCode, const FString& ErrorMessage)
+	{
+		return MakeBlueprintOpError(FString(ErrorCode), ErrorMessage);
+	}
+
+	static FSOTS_BPGenBridgeBlueprintOpResult MakeBlueprintOpError(const FString& ErrorCode, const TCHAR* ErrorMessage)
+	{
+		return MakeBlueprintOpError(ErrorCode, FString(ErrorMessage));
 	}
 
 	static FString NormalizeLongPackagePath(const FString& InPath)
@@ -75,7 +92,7 @@ namespace
 		OutNormalizedObjectPath = NormalizeAssetObjectPath(BlueprintName);
 		if (OutNormalizedObjectPath.IsEmpty())
 		{
-			OutError = MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing blueprint_name"));
+			OutError = MakeBlueprintOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing blueprint_name"));
 			return nullptr;
 		}
 
@@ -83,7 +100,7 @@ namespace
 		UBlueprint* BP = Cast<UBlueprint>(Obj);
 		if (!BP)
 		{
-			OutError = MakeError(TEXT("BLUEPRINT_NOT_FOUND"), FString::Printf(TEXT("Failed to load Blueprint: %s"), *OutNormalizedObjectPath));
+			OutError = MakeBlueprintOpError(TEXT("BLUEPRINT_NOT_FOUND"), FString::Printf(TEXT("Failed to load Blueprint: %s"), *OutNormalizedObjectPath));
 			return nullptr;
 		}
 		return BP;
@@ -376,18 +393,18 @@ namespace SOTS_BPGenBridgeBlueprintOps
 		}
 		if (PropertyName.TrimStartAndEnd().IsEmpty())
 		{
-			return MakeError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing property_name"));
+			return MakeBlueprintOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing property_name"));
 		}
 
 		if (!BP->GeneratedClass)
 		{
-			return MakeError(TEXT("ERR_BLUEPRINT_NO_GENERATED_CLASS"), TEXT("Blueprint has no GeneratedClass"));
+			return MakeBlueprintOpError(TEXT("ERR_BLUEPRINT_NO_GENERATED_CLASS"), TEXT("Blueprint has no GeneratedClass"));
 		}
 
 		UObject* CDO = BP->GeneratedClass->GetDefaultObject();
 		if (!CDO)
 		{
-			return MakeError(TEXT("ERR_BLUEPRINT_NO_CDO"), TEXT("Failed to get class default object"));
+			return MakeBlueprintOpError(TEXT("ERR_BLUEPRINT_NO_CDO"), TEXT("Failed to get class default object"));
 		}
 
 		FString PName = PropertyName;
@@ -395,13 +412,13 @@ namespace SOTS_BPGenBridgeBlueprintOps
 		FProperty* Prop = FindFProperty<FProperty>(CDO->GetClass(), *PName);
 		if (!Prop)
 		{
-			return MakeError(TEXT("PROP_NOT_FOUND"), FString::Printf(TEXT("Property not found: %s"), *PName));
+			return MakeBlueprintOpError(TEXT("PROP_NOT_FOUND"), FString::Printf(TEXT("Property not found: %s"), *PName));
 		}
 
 		void* PropData = Prop->ContainerPtrToValuePtr<void>(CDO);
 		if (!PropData)
 		{
-			return MakeError(TEXT("PROP_DATA_MISSING"), FString::Printf(TEXT("Property data missing: %s"), *PName));
+			return MakeBlueprintOpError(TEXT("PROP_DATA_MISSING"), FString::Printf(TEXT("Property data missing: %s"), *PName));
 		}
 
 		FString Value;
@@ -441,19 +458,19 @@ namespace SOTS_BPGenBridgeBlueprintOps
 
 		if (!BP->GeneratedClass)
 		{
-			return MakeError(TEXT("ERR_BLUEPRINT_NO_GENERATED_CLASS"), TEXT("Blueprint has no GeneratedClass"));
+			return MakeBlueprintOpError(TEXT("ERR_BLUEPRINT_NO_GENERATED_CLASS"), TEXT("Blueprint has no GeneratedClass"));
 		}
 
 		UObject* CDO = BP->GeneratedClass->GetDefaultObject();
 		if (!CDO)
 		{
-			return MakeError(TEXT("ERR_BLUEPRINT_NO_CDO"), TEXT("Failed to get class default object"));
+			return MakeBlueprintOpError(TEXT("ERR_BLUEPRINT_NO_CDO"), TEXT("Failed to get class default object"));
 		}
 
 		FString Error;
 		if (!SetObjectPropertyByImportText(CDO, PropertyName, PropertyValue, Error))
 		{
-			return MakeError(TEXT("PROP_SET_FAILED"), Error);
+			return MakeBlueprintOpError(TEXT("PROP_SET_FAILED"), Error);
 		}
 
 		FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
@@ -490,17 +507,20 @@ namespace SOTS_BPGenBridgeBlueprintOps
 		UClass* Resolved = nullptr;
 		if (!ResolveClassByName(NewParentClass, Resolved) || !Resolved)
 		{
-			return MakeError(TEXT("BLUEPRINT_INVALID_PARENT"), FString::Printf(TEXT("Parent class not found: %s"), *NewParentClass));
+			return MakeBlueprintOpError(TEXT("BLUEPRINT_INVALID_PARENT"), FString::Printf(TEXT("Parent class not found: %s"), *NewParentClass));
 		}
 
 		const FString OldParent = BP->ParentClass ? BP->ParentClass->GetName() : TEXT("");
-		const bool bReparented = FKismetEditorUtilities::ReparentBlueprint(BP, Resolved);
-		if (!bReparented)
-		{
-			return MakeError(TEXT("BLUEPRINT_REPARENT_FAILED"), FString::Printf(TEXT("Failed to reparent Blueprint to: %s"), *Resolved->GetName()));
-		}
 
+		BP->ParentClass = Resolved;
+		FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+		FBlueprintEditorUtils::RefreshAllNodes(BP);
+		FBlueprintEditorUtils::RefreshVariables(BP);
 		FKismetEditorUtilities::CompileBlueprint(BP, EBlueprintCompileOptions::None);
+		if (BP->Status == BS_Error)
+		{
+			return MakeBlueprintOpError(TEXT("BLUEPRINT_REPARENT_FAILED"), FString::Printf(TEXT("Blueprint compile failed after reparenting to: %s"), *Resolved->GetName()));
+		}
 
 		TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
 		ResultObj->SetStringField(TEXT("blueprint_name"), BlueprintName);
@@ -593,7 +613,7 @@ namespace SOTS_BPGenBridgeBlueprintOps
 		}
 		if (!EventGraph)
 		{
-			return MakeError(TEXT("ERR_NO_EVENT_GRAPH"), TEXT("Blueprint has no Event Graph"));
+			return MakeBlueprintOpError(TEXT("ERR_NO_EVENT_GRAPH"), TEXT("Blueprint has no Event Graph"));
 		}
 
 		TMap<FString, int32> TypeCounts;

@@ -1,0 +1,1260 @@
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE1]
+role: Buddy (hands) — bridge SOTS_Input to SOTS_Core lifecycle hooks (no behavior change by default)
+priority: HIGH
+scope: Plugins/SOTS_Input + Plugins/SOTS_Core (small additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default integration so SOTS_Input can receive deterministic engine lifecycle events via SOTS_Core (ISOTS_CoreLifecycleListener + USOTS_CoreLifecycleSubsystem), instead of timing/adapter guessing.
+Must not change current behavior until explicitly enabled.
+
+HARD CONSTRAINTS
+- Add-only. Minimal diffs.
+- Do NOT modify or reparent any Blueprints.
+- Do NOT build/run Unreal.
+- Default behavior must remain inert (integration OFF).
+- After edits: delete Binaries/ and Intermediate/ for EVERY touched plugin (SOTS_Input, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm current SOTS_Input initialization entrypoints (exact symbols + paths).
+- Confirm SOTS_Core lifecycle listener interface exists (ISOTS_CoreLifecycleListener) + feature name constant.
+- Identify if SOTS_Input already has settings/cvars pattern; record evidence.
+Write paths + line refs in worklog. Mark UNKNOWN if missing.
+
+IMPLEMENTATION
+A) Add dependency
+- Update Plugins/SOTS_Input/*.uplugin or Build.cs (whichever is used in this repo) to include SOTS_Core as a dependency (PrivateDependencyModuleNames is fine).
+- Do not create circular deps.
+
+B) Add SOTS_Input settings toggle (default OFF)
+- Add a small UDeveloperSettings in SOTS_Input (or a config-driven bool if SOTS_Input already has one):
+  - bEnableSOTSCoreLifecycleBridge (default false)
+  - bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement a lifecycle listener in SOTS_Input (pure C++)
+- Create a small class (non-UObject), e.g. FSOTS_InputCoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures in SOTS_Input module StartupModule/ShutdownModule.
+- Listener MUST be fast; no heavy work.
+- All callbacks should early-out unless bEnableSOTSCoreLifecycleBridge=true.
+- Implement minimal callbacks:
+  - OnSOTS_PlayerControllerBeginPlay(PC): call an INTERNAL “maybe init” helper in SOTS_Input (or just set a flag).
+  - OnSOTS_PawnPossessed(PC,Pawn): call an INTERNAL “maybe bind pawn” helper in SOTS_Input.
+- Do NOT change input mapping/mode here; only call existing SOTS_Input internal init seams if they already exist.
+- Add duplicate guards (avoid double init on same PC/Pawn).
+
+D) Docs + worklog
+- Add: Plugins/SOTS_Input/Docs/SOTS_Input_SOTSCoreBridge.md
+  - What it does, how to enable, what events it listens to.
+- Worklog: Plugins/SOTS_Input/Docs/Worklogs/BuddyWorklog_20251225_SOTS_Input_BRIDGE1.md
+
+OUTPUT REQUIREMENTS
+- 8–12 bullet summary (no source dumps)
+- List files changed/created with 1-line purpose
+- Explicitly state defaults are OFF and behavior unchanged
+- Confirm Binaries/Intermediate removed for touched plugins
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE1]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE2]
+role: Buddy (hands) — bridge SOTS_ProfileShared to SOTS_Core lifecycle + identity (no behavior change by default)
+priority: HIGH
+scope: Plugins/SOTS_ProfileShared + Plugins/SOTS_Core (small additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default integration so SOTS_ProfileShared can receive deterministic engine lifecycle events (world start, post-login, pawn possessed, map travel events if enabled) and read PrimaryPlayerIdentity snapshot from SOTS_Core—without adapter chains.
+Must not trigger saving/travel automatically; only establishes clean hook points.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits / reparenting.
+- No build/run.
+- Default inert: bridge OFF; no new save/travel behavior.
+- After edits: delete Binaries/Intermediate for every touched plugin (SOTS_ProfileShared, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Locate ProfileShared’s “profile restore/build snapshot” API and any existing delegates it already exposes.
+- Confirm SOTS_Core provides:
+  - lifecycle dispatch (listener interface) and/or lifecycle subsystem snapshot
+  - PrimaryPlayerIdentity (SPINE5) if present; if not, mark UNKNOWN and do not invent it.
+Record evidence in worklog.
+
+IMPLEMENTATION
+A) Add dependency
+- Update ProfileShared Build.cs/.uplugin to depend on SOTS_Core.
+
+B) Add ProfileShared toggle (default OFF)
+- Add ProfileShared settings/cvars:
+  - bEnableSOTSCoreLifecycleBridge (default false)
+  - bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement ProfileShared lifecycle listener (pure C++)
+- Create FSOTS_ProfileSharedCoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register via IModularFeatures in module StartupModule/ShutdownModule.
+- Callbacks must early-out unless bridge enabled.
+- Minimal callbacks:
+  - OnSOTS_WorldStartPlay(World): call a new internal ProfileShared method (e.g., HandleWorldStartPlay) that ONLY updates internal state / fires delegates (no IO).
+  - OnSOTS_PostLogin(GM,PC): mark “player session started” (state only).
+  - OnSOTS_PawnPossessed(PC,Pawn): update “primary player ready” state; fire a new ProfileShared delegate/event (state only).
+  - If SPINE4 travel bridge exists in Core and is enabled, optionally handle PreLoadMap/PostLoadMap events (state only).
+- Add duplicate suppression at ProfileShared side (PC/Pawn pair).
+
+D) Add a clean, public “hook seam” for other plugins (no behavior change)
+- Add a small multicast delegate in ProfileShared, e.g.:
+  - OnPrimaryPlayerReady(APlayerController*, APawn*)
+  - OnWorldStartPlay(UWorld*)
+- Do NOT modify existing save logic.
+
+E) Docs + worklog
+- Add: Plugins/SOTS_ProfileShared/Docs/SOTS_ProfileShared_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_ProfileShared/Docs/Worklogs/BuddyWorklog_20251225_SOTS_ProfileShared_BRIDGE2.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- List changed/created files
+- Explicitly confirm: no new saves/travel are triggered; defaults OFF
+- Confirm cleanup (Binaries/Intermediate removed)
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE2]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE3]
+role: Buddy (hands) — bridge SOTS_UI to SOTS_Core HUDReady + lifecycle snapshot (no behavior change by default)
+priority: HIGH
+scope: Plugins/SOTS_UI + Plugins/SOTS_Core (small additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL bridge so SOTS_UI can receive “HUD is real and ready” via SOTS_Core (AHUD BeginPlay → HUDReady), enabling a deterministic UI host registration path later.
+Must not change current UI behavior by default.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF; do not change viewport creation paths.
+- After edits: delete Binaries/Intermediate for EVERY touched plugin (SOTS_UI, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Find current SOTS_UI router widget mounting path (AddToViewport), and adapter init path (EnsureAdapters).
+- Confirm whether SOTS_UI already tracks any “host” object (PC/HUD).
+Record evidence in worklog.
+
+IMPLEMENTATION
+A) Add dependency
+- Update SOTS_UI Build.cs to depend on SOTS_Core.
+
+B) Add SOTS_UI bridge toggle (default OFF)
+- Add SOTS_UI settings:
+  - bEnableSOTSCoreHUDHostBridge (default false)
+  - bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement a listener in SOTS_UI (pure C++)
+- Create FSOTS_UI_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register via IModularFeatures on module startup/shutdown.
+- OnSOTS_HUDReady(AHUD* HUD):
+  - if !bridge enabled: return
+  - call a NEW Router API: Router->RegisterHUDHost(HUD) (add-only function)
+  - Router stores a weak HUD pointer; does NOT create widgets; does NOT alter stack.
+- Optional: OnSOTS_PlayerControllerBeginPlay(PC) can call Router->RegisterPC(PC) for health reporting only (no behavior).
+
+D) Add “host-aware” health reporting (no behavior change)
+- Add to USOTS_UIRouterSubsystem:
+  - bool HasHUDHost() const;
+  - FString GetHUDHostDebugString() const;
+- Use in existing logs/diagnostics only (no automatic UI creation).
+
+E) Docs + worklog
+- Add: Plugins/SOTS_UI/Docs/SOTS_UI_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_UI/Docs/Worklogs/BuddyWorklog_20251225_SOTS_UI_BRIDGE3.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- List changed/created files
+- Explicitly confirm: bridge OFF by default; no UI behavior changes
+- Confirm cleanup (Binaries/Intermediate removed)
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE3]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE4]
+role: Buddy (hands) — suite wiring: standardize “Core Bridge” toggles + dependency declarations across bridged plugins (no behavior change)
+priority: HIGH
+scope: Plugins/SOTS_Input + Plugins/SOTS_ProfileShared + Plugins/SOTS_UI + Plugins/SOTS_Core docs only; NO BP edits; NO build/run.
+
+GOAL
+Make the Core-Bridge adoption consistent and safe:
+- Ensure each bridged plugin has:
+  - consistent settings names + defaults OFF
+  - consistent docs “how to enable”
+  - correct dependency declaration on SOTS_Core
+- Add a single consolidated “Enablement Order” doc in SOTS_Core describing the golden switch-flip sequence.
+
+HARD CONSTRAINTS
+- Add-only.
+- No BP edits.
+- No build/run.
+- Defaults OFF everywhere.
+- After edits: delete Binaries/Intermediate for every touched plugin.
+
+MANDATORY FIRST STEP (RepoIntel)
+- Confirm settings class names and config file locations used by each plugin (Input/ProfileShared/UI/Core).
+Record evidence.
+
+IMPLEMENTATION
+A) Normalize settings keys (no breaking renames)
+- If any bridge already introduced settings, DO NOT rename them destructively.
+- Instead:
+  - Keep existing keys
+  - Add alias keys if needed (read both), document the preferred key
+
+B) Ensure dependencies are declared
+- Verify Build.cs/.uplugin for each plugin includes SOTS_Core dependency.
+
+C) Consolidated doc in SOTS_Core
+- Create: Plugins/SOTS_Core/Docs/SOTS_Core_Bridge_Enablement_Order.md
+Must include:
+1) Phase A (safe): enable SOTS_Core only; run SOTS.Core diagnostics commands.
+2) Phase B: enable SOTS_Core lifecycle dispatch (Core setting) + enable each plugin’s bridge setting ONE AT A TIME.
+3) What to look for in logs/health report after each step.
+4) Rollback: toggle OFF settings; no BP changes required.
+
+D) Worklog
+- Worklog: Plugins/SOTS_Core/Docs/Worklogs/BuddyWorklog_20251225_SOTS_Core_BRIDGE4.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- File list modified/created
+- Explicitly confirm all defaults remain OFF
+- Confirm cleanup for all touched plugins
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE4]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE5]
+role: Buddy (hands) — add bridge health audit to SOTS_Core diagnostics (detect bridged listeners/participants)
+priority: HIGH
+scope: Plugins/SOTS_Core only; NO BP edits; NO build/run.
+
+GOAL
+Extend SOTS_Core diagnostics so Ryan can instantly see:
+- Are any ISOTS_CoreLifecycleListener implementations registered?
+- Which plugins likely registered them? (best-effort)
+- Is dispatch enabled? Are bridge settings enabled (if detectable)?
+- Is map/travel bridge enabled?
+This should help verify BRIDGE1–4 without touching CGF blueprints.
+
+HARD CONSTRAINTS
+- Add-only.
+- No build/run.
+- No UI widgets.
+- Command-driven only (no spam).
+- After edits: delete SOTS_Core Binaries/Intermediate.
+
+MANDATORY FIRST STEP (RepoIntel)
+- Confirm SOTS_Core diagnostics console commands exist (SPINE7).
+- Confirm lifecycle listener feature name constant exists (SPINE3).
+Record evidence.
+
+IMPLEMENTATION
+A) Add command
+- Add a new console command:
+  - SOTS.Core.BridgeHealth
+Output should include:
+- Core version + schema
+- Settings flags: dispatch enabled? map/travel bridge enabled?
+- Listener count + list:
+  - Print pointer address + (if possible) module name/type name
+  - If type name not available, print “UNKNOWN”
+- Save participants count (if SPINE6 exists)
+- Snapshot summary (World/PC/Pawn/HUD ready)
+
+B) Best-effort “origin identification”
+- Use whatever RTTI/type info is available safely (no crashes).
+- If you can’t reliably identify module/plugin, print UNKNOWN and move on.
+
+C) Docs + worklog
+- Update: Docs/SOTS_Core_Overview.md (Bridge Health section)
+- Worklog: Docs/Worklogs/BuddyWorklog_20251225_SOTS_Core_BRIDGE5.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- File list modified/created
+- Note any UNKNOWN limitations honestly
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE5]
+text
+Copy code
+Send2SOTS
+[CONTEXT_ANCHOR] ts=2025-12-25 America/New_York
+passes_confirmed_done:
+- SPINE4–10 prompt pack delivered for SOTS_Core (travel bridge, identity snapshot, save contracts, diagnostics, tests, versioning, golden-path docs).
+- BRIDGE1–5 prompt pack delivered to connect SOTS_Input, SOTS_ProfileShared, and SOTS_UI to SOTS_Core lifecycle hooks via ModularFeatures, with all bridges disabled-by-default and no BP edits/builds.
+
+planned_next:
+- Run BRIDGE1 (SOTS_Input listener + settings OFF by default).
+- Run BRIDGE2 (ProfileShared listener + state-only delegates, no saves/travel).
+- Run BRIDGE3 (SOTS_UI HUDReady host registration seam, no viewport behavior changes).
+- Run BRIDGE4 (normalize settings/deps/docs + enablement order doc).
+- Run BRIDGE5 (SOTS_Core BridgeHealth diagnostics command).
+
+constraints_locked:
+- Add-only; no BP edits or reparenting until golden paths confirmed.
+- No Unreal build/run; remove Binaries/Intermediate for every touched plugin.
+- Default behavior must remain inert unless settings explicitly enabled.
+
+
+
+
+You said:
+SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE6-10
+
+
+
+ChatGPT said:
+
+Thought for 45s
+
+
+
+
+You said:
+SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE11-15
+
+
+
+ChatGPT said:
+
+Stopped thinking
+You said:
+SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE6-10
+
+
+
+ChatGPT said:
+
+Thought for 17s
+text
+Copy code
+Send2SOTS
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE6]
+role: Buddy (hands) — bridge SOTS_KillExecutionManager (KEM) into SOTS_Core Save Contract (save-block participant)
+priority: HIGH
+scope: Plugins/SOTS_KillExecutionManager + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Register KEM as a SOTS_Core Save Contract participant (ISOTS_CoreSaveParticipant) so ProfileShared/UI can query “can we save right now?” through the Core contract (no adapters, no hard coupling).
+This bridge must be disabled-by-default and must not change runtime behavior unless enabled.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs; touch only these plugins.
+- No BP edits/reparenting.
+- No build/run.
+- Default inert: bridge OFF; no new save gating automatically occurs.
+- Remove Binaries/Intermediate for EVERY touched plugin (SOTS_KillExecutionManager, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Verify SOTS_Core SPINE6 exists (ISOTS_CoreSaveParticipant + types + registry helpers) with paths/line refs.
+- Verify KEM exposes a save-block query (e.g., IsSaveBlocked and/or reason text). Record exact symbol + path + line ref.
+If missing, mark UNKNOWN and STOP before inventing APIs.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_KillExecutionManager Build.cs/.uplugin (private dep is fine).
+
+B) Add settings toggle in KEM (default OFF)
+- Create UDeveloperSettings (or use existing config pattern if KEM already has one):
+  - bEnableSOTSCoreSaveParticipantBridge (default false)
+  - bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement participant
+- Create a small non-UObject class in KEM:
+  - FKEM_SaveParticipant : ISOTS_CoreSaveParticipant
+- Implement:
+  - GetParticipantId() -> "KEM"
+  - QuerySaveStatus(Ctx):
+    - If bridge disabled: return { bCanSave=true } (no gating)
+    - Else: call existing KEM save-block API; if blocked return {false, Reason}
+  - BuildSaveFragment / ApplySaveFragment:
+    - Return false (KEM does not persist payload here)
+
+D) Register/unregister via ModularFeatures
+- In KEM module StartupModule/ShutdownModule:
+  - If bridge setting enabled at startup: register participant with IModularFeatures
+  - Always unregister in ShutdownModule if registered
+- Do NOT hot-reload settings at runtime; keep simple.
+
+E) Docs + worklog
+- Add: Plugins/SOTS_KillExecutionManager/Docs/SOTS_KEM_SOTSCoreSaveContractBridge.md
+- Worklog: Plugins/SOTS_KillExecutionManager/Docs/Worklogs/BuddyWorklog_20251225_SOTS_KEM_BRIDGE6.md
+
+OUTPUT REQUIREMENTS
+- 8–12 bullets summary (no source dumps)
+- List files changed/created
+- Explicitly confirm: default OFF, no new save gating automatically
+- Confirm cleanup (Binaries/Intermediate removed)
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE6]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE7]
+role: Buddy (hands) — bridge SOTS_Stats into SOTS_Core Save Contract (opaque payload fragment)
+priority: HIGH
+scope: Plugins/SOTS_Stats + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Register SOTS_Stats as an optional Save Contract participant that can emit/apply an opaque binary fragment (FSOTS_SavePayloadFragment) representing the current authoritative stats snapshot.
+Disabled-by-default; no IO; no autosave; no travel behavior.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for touched plugins (SOTS_Stats, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel)
+- Confirm SOTS_Core SPINE6 types exist.
+- Locate SOTS_Stats “authoritative snapshot” API (build/apply) already in the plugin (paths/line refs).
+If snapshot APIs are missing, mark UNKNOWN and implement only QuerySaveStatus (return true) + stub payload (return false) — do NOT invent heavy serialization.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_Stats Build.cs/.uplugin.
+
+B) Add settings toggle in Stats (default OFF)
+- bEnableSOTSCoreSaveParticipantBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement participant
+- FStats_SaveParticipant : ISOTS_CoreSaveParticipant
+- GetParticipantId() -> "Stats"
+- QuerySaveStatus:
+  - If bridge OFF: return {true}
+  - Else: return {true} (Stats should rarely block saving)
+- BuildSaveFragment:
+  - If bridge OFF: return false
+  - Else:
+    - Use existing Stats snapshot builder to serialize into bytes (opaque)
+    - Out.FragmentId = "Stats.Snapshot"
+- ApplySaveFragment:
+  - If bridge OFF: return false
+  - Else:
+    - Apply bytes via existing Stats snapshot apply API
+- NOTE: If Stats already uses versioned structs/USaveGame objects, DO NOT re-architect.
+  Just wrap the smallest existing serialization seam into bytes.
+
+D) Register/unregister
+- Register via IModularFeatures in module StartupModule if setting enabled
+- Unregister in ShutdownModule
+
+E) Docs + worklog
+- Add: Plugins/SOTS_Stats/Docs/SOTS_Stats_SOTSCoreSaveContractBridge.md
+- Worklog: Plugins/SOTS_Stats/Docs/Worklogs/BuddyWorklog_20251225_SOTS_Stats_BRIDGE7.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- List files changed/created
+- Confirm defaults OFF, no IO introduced
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE7]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE8]
+role: Buddy (hands) — bridge SOTS_SkillTree into SOTS_Core Save Contract (opaque payload fragment)
+priority: HIGH
+scope: Plugins/SOTS_SkillTree + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Register SOTS_SkillTree as an optional Save Contract participant that emits/applies an opaque fragment representing unlocked skills + spent points + version.
+Disabled-by-default; no IO; no behavior change unless enabled.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for touched plugins (SOTS_SkillTree, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel)
+- Confirm SOTS_Core SPINE6 exists.
+- Locate SkillTree “authoritative unlock state” storage + any snapshot helpers (paths/line refs).
+If no existing serialization seam: mark UNKNOWN and implement only stubs (QuerySaveStatus true; Build/Apply return false) plus docs stating pending wiring.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_SkillTree Build.cs/.uplugin.
+
+B) Add settings (default OFF)
+- bEnableSOTSCoreSaveParticipantBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement participant
+- FSkillTree_SaveParticipant : ISOTS_CoreSaveParticipant
+- GetParticipantId() -> "SkillTree"
+- BuildSaveFragment:
+  - If OFF: false
+  - Else: serialize minimal unlock identity set + points into bytes; Out.FragmentId="SkillTree.State"
+- ApplySaveFragment:
+  - If OFF: false
+  - Else: apply state and emit existing “unlock changed” broadcast (if present) WITHOUT spawning FX directly (keep behavior ownership intact)
+- QuerySaveStatus: generally {true}
+
+D) Register/unregister via ModularFeatures
+
+E) Docs + worklog
+- Add: Plugins/SOTS_SkillTree/Docs/SOTS_SkillTree_SOTSCoreSaveContractBridge.md
+- Worklog: Plugins/SOTS_SkillTree/Docs/Worklogs/BuddyWorklog_20251225_SOTS_SkillTree_BRIDGE8.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- Note UNKNOWN if serialization seam not found
+- Confirm defaults OFF; no IO introduced
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE8]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE9]
+role: Buddy (hands) — bridge SOTS_MissionDirector into SOTS_Core lifecycle/map-travel events (state-only; no travel behavior)
+priority: HIGH
+scope: Plugins/SOTS_MissionDirector + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Let MissionDirector receive deterministic lifecycle/map travel callbacks via SOTS_Core without adapters:
+- WorldStartPlay
+- PreLoadMap/PostLoadMap (if SOTS_Core SPINE4 exists and is enabled)
+- Primary player ready (PC/Pawn possessed)
+This bridge must be disabled-by-default and must NOT initiate travel, objectives, or saving. It only updates internal MD state + fires MD’s own delegates (if any).
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for touched plugins (SOTS_MissionDirector, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel)
+- Confirm SOTS_Core lifecycle listener exists (SPINE3).
+- Confirm whether SOTS_Core map/travel bridge exists (SPINE4). If not provable, do NOT add handlers for those events.
+- Locate MissionDirector lifecycle entrypoints (e.g., Initialize, Warmup, OnMissionStarted) and any existing delegates/events.
+Record paths/line refs.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_MissionDirector Build.cs/.uplugin.
+
+B) Add settings (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener
+- FMissionDirector_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures (StartupModule/ShutdownModule)
+- Callbacks (all early-out if OFF):
+  - OnSOTS_WorldStartPlay(World): call a NEW MD internal method HandleCoreWorldStartPlay(World) that only caches world + emits an MD delegate (state-only)
+  - OnSOTS_PawnPossessed(PC,Pawn): call HandleCorePrimaryPlayerReady(PC,Pawn) (state-only)
+  - If SPINE4 proven: handle PreLoadMap/PostLoadMap similarly (state-only)
+- No travel requests, no objective activation, no saves.
+
+D) Docs + worklog
+- Add: Plugins/SOTS_MissionDirector/Docs/SOTS_MD_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_MissionDirector/Docs/Worklogs/BuddyWorklog_20251225_SOTS_MD_BRIDGE9.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- Note UNKNOWNs (SPINE4 availability) explicitly
+- Confirm defaults OFF; no travel/saving triggered
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE9]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE10]
+role: Buddy (hands) — wire SOTS_UI “Save Intent” to SOTS_Core Save Contract query (no behavior change by default)
+priority: HIGH
+scope: Plugins/SOTS_UI + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL path where SOTS_UI can query SOTS_Core Save Contract participants (KEM/Stats/SkillTree/etc.) to decide whether a Save intent should be blocked and provide a reason.
+This does NOT implement saving. It only surfaces “can save?” and reason text, disabled-by-default.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF; existing UI behavior unchanged.
+- Remove Binaries/Intermediate for touched plugins (SOTS_UI, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel)
+- Confirm SOTS_Core SPINE6 registry helpers exist to enumerate ISOTS_CoreSaveParticipant.
+- Locate SOTS_UI “save intent” handling (if none exists, create a router helper but do not connect it to gameplay yet).
+Record evidence; mark UNKNOWN where appropriate.
+
+IMPLEMENTATION
+A) Add dependency
+- Ensure SOTS_UI depends on SOTS_Core (if BRIDGE3 already did this, reuse).
+
+B) Add settings (default OFF)
+- bEnableSOTSCoreSaveContractBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Add a router helper (no wiring required)
+In USOTS_UIRouterSubsystem:
+- Add a new method:
+  - FSOTS_UIActionResult QueryCanSaveViaCoreContract(const FSOTS_SaveRequestContext& Ctx, FString& OutBlockReason)
+Behavior:
+- If setting OFF: return Success=true, Rendered=false (or a clean “NotApplicable”) and OutBlockReason empty.
+- If ON:
+  - Enumerate registered save participants (from SOTS_Core registry)
+  - For each: QuerySaveStatus(Ctx)
+  - If any blocks: return Success=false + ReasonTag="UI.Save.BlockedByParticipant" + OutBlockReason first reason (or aggregate)
+- Do NOT call ProfileShared save here.
+
+D) Optional: notification-only surface (still OFF by default)
+- If save is blocked and UI has notification system wired, allow Router to emit a notification intent (but only when this bridge setting ON and only when explicitly called by some BP/C++ later).
+- Do NOT automatically hook this into existing flows yet.
+
+E) Docs + worklog
+- Add: Plugins/SOTS_UI/Docs/SOTS_UI_SOTSCoreSaveContractBridge.md
+- Worklog: Plugins/SOTS_UI/Docs/Worklogs/BuddyWorklog_20251225_SOTS_UI_BRIDGE10.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- List files changed/created
+- Confirm defaults OFF and no save logic added
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE10]
+
+
+
+
+You said:
+SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE11-15
+
+
+
+ChatGPT said:
+
+Thought for 20s
+text
+Copy code
+Send2SOTS
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE11]
+role: Buddy (hands) — bridge SOTS_AIPerception to SOTS_Core lifecycle (player-ready + map/travel optional), state-only
+priority: HIGH
+scope: Plugins/SOTS_AIPerception + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so SOTS_AIPerception can receive deterministic lifecycle callbacks from SOTS_Core (WorldStartPlay, PlayerControllerBeginPlay, PawnPossessed; and Map/Travel events if Core SPINE4 exists) to establish “player actor ready” and “world ready” seams without adapter/timing hacks.
+Must not change AI perception behavior unless explicitly enabled (bridge OFF by default and handlers should be state-only).
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits/reparenting.
+- No build/run.
+- Default inert: bridge OFF; callbacks do nothing.
+- Remove Binaries/Intermediate for EVERY touched plugin (SOTS_AIPerception, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Core lifecycle listener dispatch exists (SPINE3) and feature name constant.
+- Locate SOTS_AIPerception’s actual init/attach seams (exact symbols + paths + line refs):
+  - where it binds to UAIPerception / registers player/noise/damage reporting
+  - any existing “SetPlayerActor/SetWorld/Initialize” function(s)
+If no safe seams exist, mark UNKNOWN and implement only “cache pointers + broadcast internal delegates” (no behavior).
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_AIPerception Build.cs/.uplugin (private dep).
+
+B) Add settings toggle in SOTS_AIPerception (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener (pure C++)
+- FSOTS_AIPerception_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures in module StartupModule/ShutdownModule.
+- Early-out unless bridge enabled.
+- Minimal callbacks (state-only):
+  - OnSOTS_WorldStartPlay(World):
+    - cache World pointer in a static/owned bridge object
+    - call an existing “EnsureInitialized” ONLY if it exists and is proven safe (RepoIntel evidence)
+    - otherwise: call a NEW internal SOTS_AIPerception function HandleCoreWorldReady(World) that ONLY caches references / fires a new multicast delegate (no perception changes)
+  - OnSOTS_PawnPossessed(PC,Pawn):
+    - if Pawn is the player pawn: call existing “SetPlayerActor” seam if proven; else call NEW internal HandleCorePlayerReady(PC,Pawn) (cache + delegate only)
+  - If Core SPINE4 is proven (by evidence):
+    - handle PreLoadMap/PostLoadMap by calling NEW internal HandleCoreTravelEvent(...) that only clears cached pointers and fires delegates.
+
+D) Add optional internal delegates in SOTS_AIPerception (state-only)
+- OnCoreWorldReady(UWorld*)
+- OnCorePrimaryPlayerReady(APlayerController*, APawn*)
+- These are for future wiring; do not change perception behavior now.
+
+E) Docs + worklog
+- Add: Plugins/SOTS_AIPerception/Docs/SOTS_AIPerception_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_AIPerception/Docs/Worklogs/BuddyWorklog_20251225_SOTS_AIPerception_BRIDGE11.md
+
+OUTPUT REQUIREMENTS
+- 8–12 bullet summary (no source dumps)
+- List files changed/created
+- Explicitly confirm: bridge OFF by default; state-only; no AI behavior change
+- Confirm cleanup (Binaries/Intermediate removed)
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE11]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE12]
+role: Buddy (hands) — bridge SOTS_GlobalStealthManager to SOTS_Core lifecycle (world + player-ready), state-only
+priority: HIGH
+scope: Plugins/SOTS_GlobalStealthManager + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so GSM can receive deterministic “world ready” and “primary player ready” callbacks via SOTS_Core.
+This creates real C++ hooks for GSM to establish references (player pawn/controller, world) without relying on UI/adapters/timing.
+Must not alter stealth behavior unless enabled (and even then: state-only in this pass).
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits/reparenting.
+- No build/run.
+- Default inert: bridge OFF; no stealth behavior changes.
+- Remove Binaries/Intermediate for EVERY touched plugin (SOTS_GlobalStealthManager, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Core lifecycle listener dispatch exists.
+- Locate GSM’s authoritative init/attach seams (exact symbols + paths + line refs):
+  - where it registers producers (LightProbe/PlayerStealthComponent) or binds to tag manager events
+  - any existing “SetPlayer/Initialize/OnWorldStart” functions
+If no safe seams: mark UNKNOWN; add only cached refs + delegates.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to GSM Build.cs/.uplugin.
+
+B) Add settings in GSM (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener
+- FGSM_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures in module startup/shutdown.
+- Early-out unless enabled.
+- Callbacks (state-only):
+  - OnSOTS_WorldStartPlay(World):
+    - cache World pointer
+    - call NEW internal GSM method HandleCoreWorldReady(World) (cache + delegate only)
+  - OnSOTS_PawnPossessed(PC,Pawn):
+    - cache primary PC/Pawn
+    - call NEW internal GSM method HandleCorePrimaryPlayerReady(PC,Pawn) (cache + delegate only)
+  - Optional: OnSOTS_HUDReady(HUD) — only cache for diagnostics (no behavior)
+
+D) Add internal delegates (state-only)
+- OnCoreWorldReady(UWorld*)
+- OnCorePrimaryPlayerReady(APlayerController*, APawn*)
+These allow later wiring to existing GSM initialization without moving behavior now.
+
+E) Docs + worklog
+- Add: Plugins/SOTS_GlobalStealthManager/Docs/SOTS_GSM_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_GlobalStealthManager/Docs/Worklogs/BuddyWorklog_20251225_SOTS_GSM_BRIDGE12.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- List files changed/created
+- Confirm default OFF; state-only; no stealth behavior changes
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE12]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE13]
+role: Buddy (hands) — bridge SOTS_FX_Plugin (FXManager) to SOTS_Core lifecycle (world ready), no behavior change by default
+priority: HIGH
+scope: Plugins/SOTS_FX_Plugin + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so SOTS_FX_Plugin can receive deterministic “WorldStartPlay” and/or “Primary player ready” events via SOTS_Core to establish safe initialization order.
+This pass must not change FX behavior (no auto-inits if OFF; handlers should be state-only or call only proven-safe existing init seams).
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for EVERY touched plugin (SOTS_FX_Plugin, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm FX plugin’s actual runtime “manager” class and init entrypoints (exact symbols + paths + line refs):
+  - e.g., a subsystem (GI/World) or manager UObject
+  - any existing EnsureInitialized/SafeInit function
+If no safe init seam exists, mark UNKNOWN and implement only cached refs + delegate.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_FX_Plugin Build.cs/.uplugin.
+
+B) Add settings in SOTS_FX_Plugin (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener
+- FFX_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures in module startup/shutdown.
+- Early-out unless enabled.
+- Callbacks:
+  - OnSOTS_WorldStartPlay(World):
+    - If a proven-safe init seam exists: call it (evidence required)
+    - Else: call NEW internal HandleCoreWorldReady(World) that only caches refs / fires delegate
+  - OnSOTS_PawnPossessed(PC,Pawn):
+    - cache primary player pawn (for future FX context) — do not trigger FX
+
+D) Add internal delegates (optional)
+- OnCoreWorldReady(UWorld*)
+- OnCorePrimaryPlayerReady(APlayerController*, APawn*)
+
+E) Docs + worklog
+- Add: Plugins/SOTS_FX_Plugin/Docs/SOTS_FX_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_FX_Plugin/Docs/Worklogs/BuddyWorklog_20251225_SOTS_FX_BRIDGE13.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- Note UNKNOWN if no safe init seam found (do not invent)
+- Confirm defaults OFF; no FX behavior changes
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE13]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE14]
+role: Buddy (hands) — bridge SOTS_INV into SOTS_Core Save Contract (inventory fragment), stub-safe
+priority: HIGH
+scope: Plugins/SOTS_INV + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Register SOTS_INV as an OPTIONAL Save Contract participant that can emit/apply an opaque inventory fragment through SOTS_Core (FSOTS_SavePayloadFragment).
+Disabled-by-default. No IO. No InvSP UI calls. No behavior changes if OFF.
+If no existing inventory snapshot serialization seam exists, this bridge must remain stubbed (Build/Apply return false) and document UNKNOWN.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for EVERY touched plugin (SOTS_INV, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Core SPINE6 (Save Contract) exists.
+- Locate SOTS_INV’s canonical “inventory provider” seam and any existing snapshot serialize/apply helper (paths + line refs).
+If no serialize/apply seam exists: mark UNKNOWN and implement participant stubs only.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_INV Build.cs/.uplugin.
+
+B) Add settings in SOTS_INV (default OFF)
+- bEnableSOTSCoreSaveParticipantBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement participant
+- FINV_SaveParticipant : ISOTS_CoreSaveParticipant
+- GetParticipantId() -> "INV"
+- QuerySaveStatus:
+  - If OFF: {true}
+  - Else: {true} (inventory should not block saving here)
+- BuildSaveFragment / ApplySaveFragment:
+  - If OFF: false
+  - Else:
+    - If proven serialize/apply seam exists: wrap into bytes (opaque) with FragmentId "INV.Inventory"
+    - If NOT proven: return false and log Verbose (gated) that bridge is stubbed
+
+D) Register/unregister via IModularFeatures
+- Register in module StartupModule if setting enabled
+- Unregister in ShutdownModule
+
+E) Docs + worklog
+- Add: Plugins/SOTS_INV/Docs/SOTS_INV_SOTSCoreSaveContractBridge.md
+- Worklog: Plugins/SOTS_INV/Docs/Worklogs/BuddyWorklog_20251225_SOTS_INV_BRIDGE14.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- Explicitly note UNKNOWN if serialization seam not found and keep stubbed
+- Confirm defaults OFF; no IO
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE14]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE15]
+role: Buddy (hands) — bridge SOTS_Steam safe init to SOTS_Core lifecycle (PC begin play), no behavior change by default
+priority: HIGH
+scope: Plugins/SOTS_Steam + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so SOTS_Steam can perform its existing “safe init” at a deterministic moment (PlayerControllerBeginPlay and/or WorldStartPlay) via SOTS_Core lifecycle.
+This must not change Steam behavior unless enabled, and must only call existing proven-safe init seams (no new Steam logic invented).
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for EVERY touched plugin (SOTS_Steam, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Steam’s safe init entrypoint exists (exact symbol + path + line refs).
+- Confirm whether Steam plugin already self-inits elsewhere; document current behavior so we don’t double-init.
+If the safe init seam cannot be proven, mark UNKNOWN and do not implement the call (only cache + delegate).
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_Steam Build.cs/.uplugin.
+
+B) Add settings in SOTS_Steam (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+- bAllowCoreTriggeredSteamInit (default false)  (explicit second gate; prevents accidental behavior change)
+
+C) Implement lifecycle listener
+- FSteam_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures in module startup/shutdown.
+- Early-out unless bEnableSOTSCoreLifecycleBridge AND bAllowCoreTriggeredSteamInit are both true.
+- Callback:
+  - OnSOTS_PlayerControllerBeginPlay(PC):
+    - Call proven-safe Steam init seam ONCE (guard with bool bInitAttempted)
+  - Optional: OnSOTS_WorldStartPlay(World) only if proven needed; avoid double init.
+
+D) Add duplicate suppression in Steam side
+- Ensure init attempt happens once per process/session unless Steam plugin already resets on travel (evidence required).
+- If Steam already initializes elsewhere, default should remain OFF; document in worklog.
+
+E) Docs + worklog
+- Add: Plugins/SOTS_Steam/Docs/SOTS_Steam_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_Steam/Docs/Worklogs/BuddyWorklog_20251225_SOTS_Steam_BRIDGE15.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- Note UNKNOWNs explicitly and do not invent missing init seams
+- Confirm defaults OFF; no behavior change unless both gates enabled
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE15]
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE16]
+role: Buddy (hands) — bridge LightProbePlugin to SOTS_Core lifecycle (world/player ready), deterministic registration (state-only by default)
+priority: HIGH
+scope: Plugins/LightProbePlugin + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so LightProbePlugin can receive deterministic lifecycle events (WorldStartPlay, PawnPossessed) via SOTS_Core to make probe registration/readiness predictable.
+This pass must not alter stealth behavior or GSM ownership. It only creates clean C++ seams and optional state-only events.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs; touch only LightProbePlugin and SOTS_Core.
+- No BP edits/reparenting.
+- No build/run.
+- Default inert: bridge OFF; no behavior change.
+- Remove Binaries/Intermediate for EVERY touched plugin (LightProbePlugin, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Core lifecycle listener dispatch exists (SPINE3) and feature name constant.
+- Locate LightProbePlugin’s registration/readiness seam(s) (exact symbols + paths + line refs):
+  - where probes are created/registered
+  - any “Initialize/EnsureRegistered/Reset” methods
+If no safe seam exists, mark UNKNOWN and implement only cached refs + internal delegates.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core as a dependency to LightProbePlugin Build.cs/.uplugin (private dep).
+
+B) Add settings toggle in LightProbePlugin (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener (pure C++)
+- FLightProbe_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures in module StartupModule/ShutdownModule.
+- Early-out unless enabled.
+- Callbacks (state-only OR proven-safe init only):
+  - OnSOTS_WorldStartPlay(World):
+    - call a NEW internal LightProbe function HandleCoreWorldReady(World) that by default only caches world + fires a LightProbe delegate
+    - If a proven safe “RegisterProbes/EnsureRegistered” exists, you MAY call it, but only with evidence and keep it behind the same setting.
+  - OnSOTS_PawnPossessed(PC,Pawn):
+    - if Pawn is the player pawn: call HandleCorePrimaryPlayerReady(PC,Pawn) (cache + delegate only)
+  - Optional travel: only if Core SPINE4 is proven; handle PreLoadMap/PostLoadMap by clearing cached refs (state-only).
+
+D) Add internal delegates in LightProbePlugin (state-only)
+- OnCoreWorldReady(UWorld*)
+- OnCorePrimaryPlayerReady(APlayerController*, APawn*)
+
+E) Docs + worklog
+- Add: Plugins/LightProbePlugin/Docs/LightProbe_SOTSCoreBridge.md
+- Worklog: Plugins/LightProbePlugin/Docs/Worklogs/BuddyWorklog_20251225_LightProbe_BRIDGE16.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- List files changed/created
+- Confirm bridge OFF by default; GSM ownership unchanged
+- Confirm cleanup (Binaries/Intermediate removed)
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE16]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE17]
+role: Buddy (hands) — bridge SOTS_MMSS to SOTS_Core lifecycle + travel events (music state lifecycle), state-only by default
+priority: HIGH
+scope: Plugins/SOTS_MMSS + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so SOTS_MMSS can receive deterministic lifecycle + travel callbacks via SOTS_Core:
+- WorldStartPlay
+- Primary player ready (PC/Pawn)
+- PreLoadMap/PostLoadMap (ONLY if Core SPINE4 exists and is proven)
+This bridge should establish clean “state reset / phase transitions” seams for music, but must not change current music behavior unless enabled, and even then only state caching in this pass.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- No ticking/polling.
+- Remove Binaries/Intermediate for touched plugins (SOTS_MMSS, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_MMSS current lifecycle points (exact symbols + paths + line refs):
+  - where it selects/plays tracks (safehouse/mission/boss, etc.)
+  - any existing Reset/OnMapChanged/OnMissionPhaseChanged seams
+- Confirm Core SPINE4 travel delegates exist by evidence; if not provable, do not implement travel handlers.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_MMSS Build.cs/.uplugin.
+
+B) Add settings (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener
+- FMMSS_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures.
+- Early-out unless enabled.
+- Callbacks (state-only):
+  - OnSOTS_WorldStartPlay(World): call NEW internal HandleCoreWorldReady(World) (cache + delegate only)
+  - OnSOTS_PawnPossessed(PC,Pawn): call HandleCorePrimaryPlayerReady(PC,Pawn) (cache + delegate only)
+  - If travel proven: handle PreLoadMap/PostLoadMap:
+    - HandleCorePreLoadMap(MapName): cache “leaving world”, fire delegate
+    - HandleCorePostLoadMap(World): cache new world, fire delegate
+
+D) Add internal delegates (state-only)
+- OnCoreWorldReady(UWorld*)
+- OnCorePrimaryPlayerReady(APlayerController*, APawn*)
+- OnCorePreLoadMap(FString)
+- OnCorePostLoadMap(UWorld*)
+
+E) Docs + worklog
+- Add: Plugins/SOTS_MMSS/Docs/SOTS_MMSS_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_MMSS/Docs/Worklogs/BuddyWorklog_20251225_SOTS_MMSS_BRIDGE17.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- Note UNKNOWNs (travel delegate availability) explicitly
+- Confirm defaults OFF; no music behavior change in this pass
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE17]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE18]
+role: Buddy (hands) — bridge SOTS_GAS_Plugin to SOTS_Core lifecycle (and optional Save Contract fragment if proven needed)
+priority: HIGH
+scope: Plugins/SOTS_GAS_Plugin + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so SOTS_GAS_Plugin can receive deterministic lifecycle callbacks via SOTS_Core (world/player ready; travel optional).
+Additionally, ONLY if SOTS_GAS_Plugin still owns any persistent state worth saving/restoring, register a Save Contract participant fragment (opaque bytes) — otherwise implement lifecycle-only.
+No behavior change unless enabled.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Save Contract participant registration (if any) must be OFF by default and must not introduce IO.
+- Remove Binaries/Intermediate for touched plugins (SOTS_GAS_Plugin, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Core lifecycle listener dispatch exists.
+- Determine if SOTS_GAS_Plugin is still authoritative for any persistent state by evidence:
+  - ranks/tags/ability state restore helpers
+  - any snapshot/restore structs or functions
+Record EXACT symbols + paths + line refs.
+If evidence suggests “parked/legacy” with no meaningful persistent state, SKIP Save Contract fragment (lifecycle-only).
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_GAS_Plugin Build.cs/.uplugin.
+
+B) Add settings (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+- bEnableSOTSCoreSaveParticipantBridge (default false)  [only used if Save Contract added]
+
+C) Implement lifecycle listener (always)
+- FGAS_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures.
+- Early-out unless enabled.
+- Callbacks (state-only in this pass):
+  - OnSOTS_WorldStartPlay(World): HandleCoreWorldReady(World) (cache + delegate)
+  - OnSOTS_PawnPossessed(PC,Pawn): HandleCorePrimaryPlayerReady(PC,Pawn) (cache + delegate)
+  - Optional travel only if Core SPINE4 proven: PreLoadMap/PostLoadMap (cache + delegate)
+
+D) Optional Save Contract participant (ONLY if proven needed)
+IF (and only if) there is an existing snapshot serialize/apply seam you can point to by evidence:
+- Implement FGAS_SaveParticipant : ISOTS_CoreSaveParticipant
+- GetParticipantId() -> "GAS"
+- BuildSaveFragment:
+  - if bridge OFF: false
+  - else: wrap existing state into opaque bytes, FragmentId "GAS.State"
+- ApplySaveFragment:
+  - if bridge OFF: false
+  - else: apply bytes via existing seam
+If no proven seam exists: do NOT invent serialization; document UNKNOWN and keep stubs (return false).
+
+E) Docs + worklog
+- Add: Plugins/SOTS_GAS_Plugin/Docs/SOTS_GAS_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_GAS_Plugin/Docs/Worklogs/BuddyWorklog_20251225_SOTS_GAS_BRIDGE18.md
+Include a decision section:
+- “Save Contract fragment implemented?” YES/NO with evidence.
+
+OUTPUT REQUIREMENTS
+- Summary bullets (no source dumps)
+- Explicitly state whether Save Contract fragment was implemented and why (evidence-based)
+- Confirm defaults OFF; no behavior change
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE18]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE19]
+role: Buddy (hands) — bridge OmniTrace to SOTS_Core lifecycle (debug readiness + travel reset), optional
+priority: MEDIUM
+scope: Plugins/OmniTrace + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so OmniTrace can attach/reset deterministically on WorldStartPlay and travel events (if proven), improving debug reliability.
+Must not change runtime behavior unless enabled, and should remain “debug-only” in spirit.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- No new debug drawing unless OmniTrace already does so; do not add tick.
+- Remove Binaries/Intermediate for touched plugins (OmniTrace, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm OmniTrace’s current initialization/attach seam(s) (symbols + paths + line refs):
+  - any subsystem or manager that binds to world/player
+  - any Reset/Cleanup method
+- Confirm Core SPINE4 travel events exist by evidence; otherwise skip travel reset.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to OmniTrace Build.cs/.uplugin.
+
+B) Add settings in OmniTrace (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener
+- FOmniTrace_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures.
+- Early-out unless enabled.
+- Callbacks:
+  - OnSOTS_WorldStartPlay(World):
+    - If a proven safe “Attach/Initialize” seam exists: call it ONCE
+    - Else: call NEW internal HandleCoreWorldReady(World) that caches and fires delegate only
+  - If travel proven: OnPreLoadMap -> call proven Reset/Cleanup seam (or cache + delegate)
+  - OnPostLoadMap -> re-attach (only if proven safe, otherwise delegate only)
+
+D) Docs + worklog
+- Add: Plugins/OmniTrace/Docs/OmniTrace_SOTSCoreBridge.md
+- Worklog: Plugins/OmniTrace/Docs/Worklogs/BuddyWorklog_20251225_OmniTrace_BRIDGE19.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- Note UNKNOWNs (travel events availability; safe seams) honestly
+- Confirm defaults OFF; no behavior change
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE19]
+
+
+[SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE20]
+role: Buddy (hands) — bridge SOTS_Debug to SOTS_Core lifecycle (debug readiness + travel reset), optional
+priority: MEDIUM
+scope: Plugins/SOTS_Debug + Plugins/SOTS_Core (minimal additions only); NO BP edits; NO Unreal build/run.
+
+GOAL
+Add an OPTIONAL, disabled-by-default bridge so SOTS_Debug can attach/reset deterministically on WorldStartPlay (and travel if proven), improving debug UX without relying on subsystem timing.
+No behavior change unless enabled; stays debug-only.
+
+HARD CONSTRAINTS
+- Add-only; minimal diffs.
+- No BP edits.
+- No build/run.
+- Default inert: bridge OFF.
+- Remove Binaries/Intermediate for touched plugins (SOTS_Debug, SOTS_Core).
+
+MANDATORY FIRST STEP (RepoIntel / RAG-FIRST)
+- Confirm SOTS_Debug’s current init/attach seam(s) (symbols + paths + line refs).
+- Confirm Core SPINE4 travel events exist by evidence; otherwise skip travel reset.
+
+IMPLEMENTATION
+A) Add dependency
+- Add SOTS_Core dependency to SOTS_Debug Build.cs/.uplugin.
+
+B) Add settings in SOTS_Debug (default OFF)
+- bEnableSOTSCoreLifecycleBridge (default false)
+- bEnableSOTSCoreBridgeVerboseLogs (default false)
+
+C) Implement lifecycle listener
+- FDebug_CoreLifecycleHook : ISOTS_CoreLifecycleListener
+- Register/unregister via IModularFeatures.
+- Early-out unless enabled.
+- Callbacks:
+  - OnSOTS_WorldStartPlay(World):
+    - If proven safe “InitializeDebug/EnsureWidget” seam exists, call it ONCE
+    - Else: call NEW internal HandleCoreWorldReady(World) (cache + delegate only)
+  - If travel proven: PreLoadMap -> call proven cleanup seam; PostLoadMap -> re-init if safe
+
+D) Docs + worklog
+- Add: Plugins/SOTS_Debug/Docs/SOTS_Debug_SOTSCoreBridge.md
+- Worklog: Plugins/SOTS_Debug/Docs/Worklogs/BuddyWorklog_20251225_SOTS_Debug_BRIDGE20.md
+
+OUTPUT REQUIREMENTS
+- Summary bullets, no source dumps
+- Note UNKNOWNs explicitly (safe seams, travel events)
+- Confirm defaults OFF; no behavior change
+- Confirm cleanup
+
+END.
+[/SOTS_VSCODEBUDDY_CODEX_MAX_SOTS_CORE_BRIDGE20]

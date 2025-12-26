@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "Features/IModularFeature.h"
+
 class UWorld;
 class AGameModeBase;
 class APlayerController;
@@ -11,7 +13,7 @@ class AHUD;
 
 static const FName SOTS_CoreLifecycleListenerFeatureName(TEXT("SOTS.CoreLifecycleListener"));
 
-class ISOTS_CoreLifecycleListener
+class ISOTS_CoreLifecycleListener : public IModularFeature
 {
 public:
     virtual ~ISOTS_CoreLifecycleListener() = default;
