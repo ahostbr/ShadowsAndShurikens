@@ -4,6 +4,9 @@
 #include "GameplayTagContainer.h"
 #include "Engine/World.h"
 
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+
 void USOTS_AIPerceptionSubsystem::RegisterPerceptionComponent(USOTS_AIPerceptionComponent* Comp)
 {
     if (!Comp)
@@ -126,5 +129,34 @@ bool USOTS_AIPerceptionSubsystem::IsAnyoneAlerted() const
     }
 
     return false;
+}
+
+void USOTS_AIPerceptionSubsystem::HandleCoreWorldReady(UWorld* World)
+{
+    LastCoreWorldReady = World;
+    OnCoreWorldReady.Broadcast(World);
+}
+
+void USOTS_AIPerceptionSubsystem::HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn)
+{
+    LastCorePrimaryPC = PC;
+    LastCorePrimaryPawn = Pawn;
+    OnCorePrimaryPlayerReady.Broadcast(PC, Pawn);
+}
+
+void USOTS_AIPerceptionSubsystem::HandleCorePreLoadMap(const FString& MapName)
+{
+    LastCorePreLoadMapName = MapName;
+    LastCorePostLoadMapWorld.Reset();
+    LastCoreWorldReady.Reset();
+    LastCorePrimaryPC.Reset();
+    LastCorePrimaryPawn.Reset();
+    OnCorePreLoadMap.Broadcast(MapName);
+}
+
+void USOTS_AIPerceptionSubsystem::HandleCorePostLoadMap(UWorld* World)
+{
+    LastCorePostLoadMapWorld = World;
+    OnCorePostLoadMap.Broadcast(World);
 }
 

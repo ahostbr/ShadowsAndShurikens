@@ -25,6 +25,7 @@ public class SOTS_MissionDirector : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "SOTS_Core",
                 "SOTS_SkillTree",
                 "SOTS_Stats"
             }

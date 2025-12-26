@@ -9,6 +9,12 @@ from rag_query import RAGQuery, detect_project_root
 
 LOGICAL_TRUE = {"1", "true", "yes", "y", "on"}
 LOGICAL_FALSE = {"0", "false", "no", "n", "off"}
+SCOPE_KIND_MAP = {
+    "all": {"code", "config", "doc"},
+    "code": {"code", "config"},
+    "docs": {"doc"},
+    "config": {"config"},
+}
 
 
 def parse_bool(value: str | None, default: bool) -> bool:
@@ -32,6 +38,7 @@ def main(argv=None) -> int:
     parser.add_argument("--vec_n", type=int, default=20, help="Vector candidates to consider")
     parser.add_argument("--rerank", default="false", help="Enable heuristic reranking (true/false)")
     parser.add_argument("--rerank_k", type=int, default=30, help="Number of top hits to rerank")
+    parser.add_argument("--scope", choices=["all", "code", "docs", "config"], default="all", help="Filter by kind")
     parser.add_argument("--embedding_backend", default="sentence_transformers", help="Embedding backend")
     parser.add_argument("--embedding_model", help="Optional embedding model name")
     parser.add_argument("--verbose", action="store_true")
@@ -47,10 +54,13 @@ def main(argv=None) -> int:
     reports_dir.mkdir(parents=True, exist_ok=True)
 
     rerank = parse_bool(args.rerank, False)
+    allowed_kinds = SCOPE_KIND_MAP[args.scope]
 
     query_engine = RAGQuery(
         project_root=project_root,
         reports_dir=reports_dir,
+        allowed_kinds=allowed_kinds,
+        scope=args.scope,
         embedding_backend=args.embedding_backend,
         embedding_model=args.embedding_model,
         verbose=args.verbose,
@@ -79,6 +89,7 @@ def main(argv=None) -> int:
         "RAG Query Report",
         f"Query: {query_text}",
         f"Timestamp: {timestamp}",
+        f"Scope: {result['scope']}",
         f"RepoIndex available: {result['repo_index_available']}",
         "",
         "Top Hits:",
@@ -96,6 +107,7 @@ def main(argv=None) -> int:
     report_payload = {
         "query": result["query"],
         "timestamp": timestamp,
+        "scope": result["scope"],
         "repo_index_available": result["repo_index_available"],
         "stats": {
             "exact_hits": result["exact_hits"],

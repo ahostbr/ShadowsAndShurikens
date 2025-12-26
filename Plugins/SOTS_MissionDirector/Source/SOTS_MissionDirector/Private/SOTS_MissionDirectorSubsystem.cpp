@@ -151,6 +151,30 @@ USOTS_MissionDirectorSubsystem* USOTS_MissionDirectorSubsystem::Get(const UObjec
     return GameInstance->GetSubsystem<USOTS_MissionDirectorSubsystem>();
 }
 
+void USOTS_MissionDirectorSubsystem::HandleCoreWorldStartPlay(UWorld* World)
+{
+    CoreBridgeWorld = World;
+}
+
+void USOTS_MissionDirectorSubsystem::HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn)
+{
+    CoreBridgePrimaryPC = PC;
+    CoreBridgePrimaryPawn = Pawn;
+}
+
+void USOTS_MissionDirectorSubsystem::HandleCorePreLoadMap(const FString& MapName)
+{
+    CoreBridgeLastPreLoadMapName = MapName;
+    CoreBridgeWorld.Reset();
+    CoreBridgePrimaryPC.Reset();
+    CoreBridgePrimaryPawn.Reset();
+}
+
+void USOTS_MissionDirectorSubsystem::HandleCorePostLoadMap(UWorld* World)
+{
+    CoreBridgeWorld = World;
+}
+
 void USOTS_MissionDirectorSubsystem::StartMissionRun(FName MissionId, FGameplayTag InDifficultyTag)
 {
     UWorld* World = nullptr;

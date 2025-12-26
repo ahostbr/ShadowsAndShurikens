@@ -21,6 +21,7 @@ public class SOTS_GlobalStealthManager : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "SOTS_Core"
             }
         );
     }

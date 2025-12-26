@@ -22,6 +22,7 @@
 #include "SOTS_InputAPI.h"
 #include "SOTS_InteractionSubsystem.h"
 #include "SOTS_ProfileSubsystem.h"
+#include "Save/SOTS_CoreSaveParticipantRegistry.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_UIRouter, Log, All);
 
@@ -1509,4 +1510,55 @@ bool USOTS_UIRouterSubsystem::RequestCheckpointSave(const FSOTS_ProfileId& Profi
 
 	ShowNotification(TEXT("Checkpoint save unavailable."), 2.0f, FGameplayTag());
 	return false;
+}
+
+bool USOTS_UIRouterSubsystem::QueryCanSaveViaCoreContract(const FSOTS_SaveRequestContext& RequestContext, FText& OutBlockReason) const
+{
+	OutBlockReason = FText::GetEmpty();
+
+	const USOTS_UISettings* Settings = USOTS_UISettings::Get();
+	if (!Settings || !Settings->bEnableSOTSCoreSaveContractBridge)
+	{
+		return true;
+	}
+
+	TArray<ISOTS_CoreSaveParticipant*> Participants;
+	FSOTS_CoreSaveParticipantRegistry::GetRegisteredSaveParticipants(Participants);
+	if (Participants.Num() == 0)
+	{
+		return true;
+	}
+
+	for (ISOTS_CoreSaveParticipant* Participant : Participants)
+	{
+		if (!Participant)
+		{
+			continue;
+		}
+
+		const FSOTS_SaveParticipantStatus Status = Participant->QuerySaveStatus(RequestContext);
+		if (!Status.bCanSave)
+		{
+			const FString ParticipantId = Participant->GetParticipantId().ToString();
+			const FString Detail = Status.BlockReason.IsEmpty()
+				? FString::Printf(TEXT("Participant=%s"), *ParticipantId)
+				: FString::Printf(TEXT("%s (Participant=%s)"), *Status.BlockReason, *ParticipantId);
+
+			OutBlockReason = FText::FromString(FString::Printf(TEXT("UI.Save.BlockedByParticipant: %s"), *Detail));
+
+			if (Settings->bEnableSOTSCoreSaveContractBridgeVerboseLogs)
+			{
+				UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("Router: Save blocked by participant Id=%s Reason=%s"),
+					*ParticipantId,
+					*Status.BlockReason);
+			}
+			return false;
+		}
+		else if (Settings->bEnableSOTSCoreSaveContractBridgeVerboseLogs)
+		{
+			UE_LOG(LogSOTS_UIRouter, VeryVerbose, TEXT("Router: Save participant OK Id=%s"), *Participant->GetParticipantId().ToString());
+		}
+	}
+
+	return true;
 }

@@ -38,7 +38,8 @@ public class SOTS_AIPerception : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "SOTS_GlobalStealthManager"
+				"SOTS_GlobalStealthManager",
+				"SOTS_Core"
             }
         );
         

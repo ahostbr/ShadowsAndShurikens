@@ -9,6 +9,7 @@
 #include "SOTS_InteractionViewTypes.h"
 #include "SOTS_InteractionTypes.h"
 #include "SOTS_ProfileTypes.h"
+#include "Save/SOTS_SaveTypes.h"
 #include "SOTS_UIRouterSubsystem.generated.h"
 
 class USOTS_WidgetRegistryDataAsset;
@@ -194,6 +195,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Save")
 	bool RequestCheckpointSave(const FSOTS_ProfileId& ProfileId);
+
+	// [BRIDGE10] Optional Core save contract bridge seam: query save eligibility.
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Save", meta=(ToolTip="[BRIDGE10] Queries SOTS_Core Save Contract participants to determine whether save is allowed. Disabled by default via SOTS_UI project settings; does not trigger any save itself."))
+	bool QueryCanSaveViaCoreContract(const FSOTS_SaveRequestContext& RequestContext, FText& OutBlockReason) const;
 
 	// Modal result channel
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_OnModalResult, const F_SOTS_UIModalResult&, Result);

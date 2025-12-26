@@ -23,6 +23,7 @@ public class SOTS_SkillTree : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "SOTS_Core"
             }
         );
 

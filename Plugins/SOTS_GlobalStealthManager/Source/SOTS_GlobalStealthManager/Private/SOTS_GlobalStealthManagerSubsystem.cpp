@@ -68,6 +68,39 @@ void USOTS_GlobalStealthManagerSubsystem::Deinitialize()
     Super::Deinitialize();
 }
 
+void USOTS_GlobalStealthManagerSubsystem::HandleCoreWorldReady(UWorld* World)
+{
+    if (!World)
+    {
+        return;
+    }
+
+    if (LastCoreWorld.Get() == World)
+    {
+        return;
+    }
+
+    LastCoreWorld = World;
+    OnCoreWorldReady.Broadcast(World);
+}
+
+void USOTS_GlobalStealthManagerSubsystem::HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn)
+{
+    if (!PC || !Pawn)
+    {
+        return;
+    }
+
+    if (LastCorePC.Get() == PC && LastCorePawn.Get() == Pawn)
+    {
+        return;
+    }
+
+    LastCorePC = PC;
+    LastCorePawn = Pawn;
+    OnCorePrimaryPlayerReady.Broadcast(PC, Pawn);
+}
+
 USOTS_GlobalStealthManagerSubsystem* USOTS_GlobalStealthManagerSubsystem::Get(const UObject* WorldContextObject)
 {
     if (!WorldContextObject)

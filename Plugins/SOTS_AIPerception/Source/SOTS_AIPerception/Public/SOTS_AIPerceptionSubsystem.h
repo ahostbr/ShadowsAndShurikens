@@ -7,6 +7,13 @@
 class USOTS_AIPerceptionComponent;
 class AActor;
 struct FGameplayTag;
+class APlayerController;
+class APawn;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FSOTS_AIPerception_OnCoreWorldReady, UWorld*);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FSOTS_AIPerception_OnCorePrimaryPlayerReady, APlayerController*, APawn*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FSOTS_AIPerception_OnCorePreLoadMap, const FString&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FSOTS_AIPerception_OnCorePostLoadMap, UWorld*);
 
 /**
  * World-level coordinator for SOTS AI perception.
@@ -33,8 +40,34 @@ public:
     TArray<USOTS_AIPerceptionComponent*> GetAlertedAI() const;
     bool IsAnyoneAlerted() const;
 
+    // [BRIDGE11] Optional Core bridge seams (state-only).
+    void HandleCoreWorldReady(UWorld* World);
+    void HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn);
+    void HandleCorePreLoadMap(const FString& MapName);
+    void HandleCorePostLoadMap(UWorld* World);
+
+    FSOTS_AIPerception_OnCoreWorldReady OnCoreWorldReady;
+    FSOTS_AIPerception_OnCorePrimaryPlayerReady OnCorePrimaryPlayerReady;
+    FSOTS_AIPerception_OnCorePreLoadMap OnCorePreLoadMap;
+    FSOTS_AIPerception_OnCorePostLoadMap OnCorePostLoadMap;
+
 private:
     UPROPERTY()
     TArray<TWeakObjectPtr<USOTS_AIPerceptionComponent>> RegisteredComponents;
+
+    UPROPERTY(Transient)
+    TWeakObjectPtr<UWorld> LastCoreWorldReady;
+
+    UPROPERTY(Transient)
+    TWeakObjectPtr<APlayerController> LastCorePrimaryPC;
+
+    UPROPERTY(Transient)
+    TWeakObjectPtr<APawn> LastCorePrimaryPawn;
+
+    UPROPERTY(Transient)
+    FString LastCorePreLoadMapName;
+
+    UPROPERTY(Transient)
+    TWeakObjectPtr<UWorld> LastCorePostLoadMapWorld;
 };
 

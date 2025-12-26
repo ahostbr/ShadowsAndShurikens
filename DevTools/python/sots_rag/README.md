@@ -18,11 +18,22 @@ python DevTools/python/sots_rag/run_rag_index.py --project_root E:\SAS\ShadowsAn
 python DevTools/python/sots_rag/run_rag_query.py --project_root E:\SAS\ShadowsAndShurikens --q "Where is USOTS_KEMManagerSubsystem?" --top_k 12 --verbose
 ```
 
+Docs-only query:
+```powershell
+python DevTools/python/sots_rag/run_rag_query.py --project_root E:\SAS\ShadowsAndShurikens --q "Core bridge passes" --scope docs --top_k 12
+```
+
+Code-only query:
+```powershell
+python DevTools/python/sots_rag/run_rag_query.py --project_root E:\SAS\ShadowsAndShurikens --q "RAGQuery _add_candidate" --scope code --top_k 12
+```
+
 ## CLI options
 
 ### Indexer (`run_rag_index.py`)
 - `--project_root`: project root path (auto-detected if omitted)
 - `--reports_dir`: output dir (default `<root>/Reports/RAG`)
+- `--include_code true|false`: include code/config files (default `true`)
 - `--include_docs true|false`: include `.md`/`.txt` files (default `true`)
 - `--full`: rebuild everything (ignores cache)
 - `--changed_only true|false`: only reprocess touched files (default `true`)
@@ -39,6 +50,7 @@ python DevTools/python/sots_rag/run_rag_query.py --project_root E:\SAS\ShadowsAn
 - `--vec_n`: vector candidates to score (default 20)
 - `--rerank true|false` (default `false`): enable heuristic reranking
 - `--rerank_k`: how many of the top hits to rerank (default 30)
+- `--scope all|code|docs|config` (default `all`): restrict results by chunk kind
 - `--embedding_backend`/`--embedding_model`: same as the indexer
 - `--verbose`: prints the internal log envelope
 
@@ -84,4 +96,3 @@ Each query prints a “Top hits” summary, writes structured JSON, a text repor
 
 - The indexer writes progress messages to both the console and `<Reports>/rag_index_run.log`.
 - Queries emit `<Reports>/rag_query_<timestamp>.log` plus the JSON/text reports for later automation.
-

@@ -128,6 +128,12 @@ public:
     UFUNCTION(BlueprintPure, Category="Mission")
     float GetTotalPlaySeconds() const;
 
+    // --- SOTS_Core bridge hooks (state-only; called by optional Core bridge listener) ---
+    void HandleCoreWorldStartPlay(UWorld* World);
+    void HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn);
+    void HandleCorePreLoadMap(const FString& MapName);
+    void HandleCorePostLoadMap(UWorld* World);
+
     // --- Mission definition / objective tracking API ---
 
     /** Starts a mission based on a USOTS_MissionDefinition (objectives + stealth rules). */
@@ -366,6 +372,19 @@ private:
 
     UPROPERTY()
     bool bLastMissionFailedForProfile = false;
+
+    // Core bridge cached state (state-only; no behavior owned here).
+    UPROPERTY()
+    TWeakObjectPtr<UWorld> CoreBridgeWorld;
+
+    UPROPERTY()
+    TWeakObjectPtr<APlayerController> CoreBridgePrimaryPC;
+
+    UPROPERTY()
+    TWeakObjectPtr<APawn> CoreBridgePrimaryPawn;
+
+    UPROPERTY()
+    FString CoreBridgeLastPreLoadMapName;
 
     float TotalPlaySeconds = 0.0f;
     double LastPlaySecondsSampleTime = 0.0;

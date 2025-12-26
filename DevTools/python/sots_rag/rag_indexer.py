@@ -75,6 +75,7 @@ class RAGIndexer:
         self,
         project_root: Path,
         reports_dir: Path,
+        include_code: bool = True,
         include_docs: bool = True,
         full: bool = False,
         changed_only: bool = True,
@@ -94,6 +95,7 @@ class RAGIndexer:
         self.vector_path = self.reports_dir / VECTOR_FILE
         self.report_path = self.reports_dir / REPORT_FILE
         self.run_log_path = self.reports_dir / RUN_LOG_FILE
+        self.include_code = bool(include_code)
         self.include_docs = bool(include_docs)
         self.full = bool(full)
         self.changed_only = bool(changed_only)
@@ -178,9 +180,14 @@ class RAGIndexer:
         self.vector_path.write_text(json.dumps(store.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
 
     def _collect_files(self) -> List[Path]:
-        allowed_exts: Set[str] = set(CODE_EXTS | CONFIG_EXTS)
+        allowed_exts: Set[str] = set()
+        if self.include_code:
+            allowed_exts.update(CODE_EXTS)
+            allowed_exts.update(CONFIG_EXTS)
         if self.include_docs:
             allowed_exts.update(DOC_EXTS)
+        if not allowed_exts:
+            return []
         files: List[Path] = []
         for root, dirs, filenames in os.walk(self.project_root):
             dirs[:] = [d for d in dirs if d.lower() not in SKIP_DIRS]
@@ -293,6 +300,7 @@ class RAGIndexer:
         lines.append("RAG Index Report")
         lines.append(f"Generated: {dt.datetime.now().isoformat(timespec='seconds')}")
         lines.append(f"Project root: {self.project_root}")
+        lines.append(f"Include code: {self.include_code}")
         lines.append(f"Include docs: {self.include_docs}")
         if self.plugin_filters:
             lines.append(f"Plugin filter: {self.plugin_filters}")

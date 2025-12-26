@@ -49,4 +49,10 @@ public:
 
     UPROPERTY(EditAnywhere, Config, Category="SOTS Core Bridge", meta=(ToolTip="[BRIDGE3] Verbose logs for SOTS_Core HUD host bridge. Requires the bridge itself to be enabled."))
     bool bEnableSOTSCoreBridgeVerboseLogs = false;
+
+    UPROPERTY(EditAnywhere, Config, Category="SOTS Core Bridge", meta=(ToolTip="[BRIDGE10] When enabled, allows the UI router to query the SOTS_Core Save Contract participants (ModularFeature: SOTS.CoreSaveParticipant) to determine whether save is currently allowed. Disabled by default."))
+    bool bEnableSOTSCoreSaveContractBridge = false;
+
+    UPROPERTY(EditAnywhere, Config, Category="SOTS Core Bridge", meta=(ToolTip="[BRIDGE10] Verbose logs for the SOTS_Core Save Contract query helper. Requires the bridge itself to be enabled."))
+    bool bEnableSOTSCoreSaveContractBridgeVerboseLogs = false;
 };

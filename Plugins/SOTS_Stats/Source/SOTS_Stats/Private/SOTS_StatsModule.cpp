@@ -4,6 +4,13 @@
 #include "Modules/ModuleManager.h"
 #include "Logging/LogMacros.h"
 
+#include "SOTS_StatsCoreBridgeSettings.h"
+#include "SOTS_StatsCoreSaveParticipant.h"
+
+#include "Save/SOTS_CoreSaveParticipantRegistry.h"
+
+#include "Templates/UniquePtr.h"
+
 DEFINE_LOG_CATEGORY_STATIC(LogSOTS_StatsModule, Log, All);
 
 class FSOTS_StatsModule : public IModuleInterface
@@ -13,12 +20,55 @@ public:
     {
         UE_LOG(LogSOTS_StatsModule, Log, TEXT("SOTS_Stats module starting up"));
         // NOTE: Do not touch worlds / GameInstance / assets here.
+
+        RegisterSaveParticipantIfEnabled();
     }
 
     virtual void ShutdownModule() override
     {
+        UnregisterSaveParticipantIfRegistered();
         UE_LOG(LogSOTS_StatsModule, Log, TEXT("SOTS_Stats module shutting down"));
     }
+
+private:
+    void RegisterSaveParticipantIfEnabled()
+    {
+        const USOTS_StatsCoreBridgeSettings* Settings = GetDefault<USOTS_StatsCoreBridgeSettings>();
+        if (!Settings || !Settings->bEnableSOTSCoreSaveParticipantBridge)
+        {
+            return;
+        }
+
+        if (!SaveParticipant)
+        {
+            SaveParticipant = MakeUnique<FStats_SaveParticipant>();
+        }
+
+        FSOTS_CoreSaveParticipantRegistry::RegisterSaveParticipant(SaveParticipant.Get());
+
+        if (Settings->bEnableSOTSCoreBridgeVerboseLogs)
+        {
+            UE_LOG(LogSOTS_StatsModule, Verbose, TEXT("Stats CoreBridge: Registered SOTS.CoreSaveParticipant id=%s"), *SaveParticipant->GetParticipantId().ToString());
+        }
+    }
+
+    void UnregisterSaveParticipantIfRegistered()
+    {
+        if (!SaveParticipant)
+        {
+            return;
+        }
+
+        const USOTS_StatsCoreBridgeSettings* Settings = GetDefault<USOTS_StatsCoreBridgeSettings>();
+        FSOTS_CoreSaveParticipantRegistry::UnregisterSaveParticipant(SaveParticipant.Get());
+
+        if (Settings && Settings->bEnableSOTSCoreBridgeVerboseLogs)
+        {
+            UE_LOG(LogSOTS_StatsModule, Verbose, TEXT("Stats CoreBridge: Unregistered SOTS.CoreSaveParticipant id=%s"), *SaveParticipant->GetParticipantId().ToString());
+        }
+    }
+
+    TUniquePtr<FStats_SaveParticipant> SaveParticipant;
 };
 
 IMPLEMENT_MODULE(FSOTS_StatsModule, SOTS_Stats);

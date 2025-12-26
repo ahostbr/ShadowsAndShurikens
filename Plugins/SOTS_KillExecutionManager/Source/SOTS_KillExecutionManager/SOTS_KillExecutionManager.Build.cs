@@ -44,7 +44,8 @@ public class SOTS_KillExecutionManager : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "SOTS_Interaction"
+                "SOTS_Interaction",
+                "SOTS_Core"
             }
         );
     }

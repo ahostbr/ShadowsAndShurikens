@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from bm25 import BM25Index, tokenize
 from embeddings import EmbeddingProvider
@@ -33,12 +33,16 @@ class RAGQuery:
         self,
         project_root: Path,
         reports_dir: Path,
+        allowed_kinds: Optional[Sequence[str]] = None,
+        scope: str = "all",
         embedding_backend: str = "sentence_transformers",
         embedding_model: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
         self.project_root = project_root.resolve()
         self.reports_dir = reports_dir.resolve()
+        self.allowed_kinds: Set[str] = set(allowed_kinds or {"code", "config", "doc"})
+        self.scope = scope
         self.log_lines: List[str] = []
         self.verbose = verbose
         self.embedding_provider = EmbeddingProvider(
@@ -121,9 +125,12 @@ class RAGQuery:
         source: str,
         score: float,
     ) -> None:
-        if chunk_id not in self.chunks:
+        chunk = self.chunks.get(chunk_id)
+        if not chunk:
             return
-        entry = candidate_map.setdefault(chunk_id, {"chunk": self.chunks[chunk_id], "score_breakdown": {}})
+        if chunk.get("kind") not in self.allowed_kinds:
+            return
+        entry = candidate_map.setdefault(chunk_id, {"chunk": chunk, "score_breakdown": {}})
         entry["score_breakdown"][source] = max(entry["score_breakdown"].get(source, 0.0), score)
 
     def _exact_candidates(self, query: str) -> List[str]:
@@ -272,6 +279,7 @@ class RAGQuery:
         return {
             "timestamp": timestamp,
             "query": query,
+            "scope": self.scope,
             "repo_index_available": self.bridge.has_repo_index(),
             "exact_hits": len(exact_matches),
             "bm25_candidates": len(bm25_items),

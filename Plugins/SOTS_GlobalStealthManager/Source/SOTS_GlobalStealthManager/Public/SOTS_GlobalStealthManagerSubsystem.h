@@ -11,6 +11,9 @@
 #include "SOTS_GlobalStealthManagerSubsystem.generated.h"
 
 class AActor;
+class APlayerController;
+class APawn;
+class UWorld;
 class USOTS_PlayerStealthComponent;
 
 USTRUCT(BlueprintType)
@@ -197,6 +200,16 @@ public:
     DECLARE_MULTICAST_DELEGATE_OneParam(FOnStealthStateChanged, const FSOTS_PlayerStealthState&);
     FOnStealthStateChanged OnStealthStateChanged;
 
+    // SOTS_Core lifecycle bridge (BRIDGE12): state-only notifications.
+    void HandleCoreWorldReady(UWorld* World);
+    void HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn);
+
+    DECLARE_MULTICAST_DELEGATE_OneParam(FOnCoreWorldReady, UWorld*);
+    FOnCoreWorldReady OnCoreWorldReady;
+
+    DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCorePrimaryPlayerReady, APlayerController*, APawn*);
+    FOnCorePrimaryPlayerReady OnCorePrimaryPlayerReady;
+
 private:
     ESOTSStealthLevel EvaluateStealthLevelFromScore(float Score) const;
     void SetStealthLevel(ESOTSStealthLevel NewLevel);
@@ -372,4 +385,8 @@ private:
 
     FVector DominantDirectionalLightDirWS = FVector::ForwardVector;
     bool bHasDominantDirectionalLightDir = false;
+
+    TWeakObjectPtr<UWorld> LastCoreWorld;
+    TWeakObjectPtr<APlayerController> LastCorePC;
+    TWeakObjectPtr<APawn> LastCorePawn;
 };

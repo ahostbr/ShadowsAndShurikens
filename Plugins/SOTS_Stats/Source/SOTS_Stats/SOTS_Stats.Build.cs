@@ -17,6 +17,7 @@ public class SOTS_Stats : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
+            "SOTS_Core"
         });
     }
 }
