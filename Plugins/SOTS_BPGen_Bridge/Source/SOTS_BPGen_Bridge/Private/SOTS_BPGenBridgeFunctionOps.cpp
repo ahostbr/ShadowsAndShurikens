@@ -22,6 +22,8 @@
 
 #include "Misc/PackageName.h"
 
+#include "SOTS_BPGenBridgePrivateHelpers.h"
+
 namespace
 {
 	static FSOTS_BPGenBridgeFunctionOpResult MakeOpError(const FString& ErrorCode, const FString& ErrorMessage)
@@ -60,52 +62,9 @@ namespace
 		return false;
 	}
 
-	static FString NormalizeLongPackagePath(const FString& InPath)
-	{
-		FString Path = InPath;
-		Path.TrimStartAndEndInline();
-		if (Path.IsEmpty())
-		{
-			return FString();
-		}
-
-		if (Path.StartsWith(TEXT("/Game")) || Path.StartsWith(TEXT("/Engine")) || Path.StartsWith(TEXT("/Script")))
-		{
-			return Path;
-		}
-
-		if (Path.StartsWith(TEXT("/")))
-		{
-			return FString(TEXT("/Game")) + Path;
-		}
-
-		return FString(TEXT("/Game/")) + Path;
-	}
-
-	static FString NormalizeAssetObjectPath(const FString& InAssetPath)
-	{
-		FString Path = NormalizeLongPackagePath(InAssetPath);
-		if (Path.IsEmpty())
-		{
-			return FString();
-		}
-		if (Path.Contains(TEXT(".")))
-		{
-			return Path;
-		}
-
-		const FString AssetName = FPackageName::GetLongPackageAssetName(Path);
-		if (AssetName.IsEmpty())
-		{
-			return Path;
-		}
-
-		return FString::Printf(TEXT("%s.%s"), *Path, *AssetName);
-	}
-
 	static UBlueprint* LoadBlueprintByPath(const FString& BlueprintName, FString& OutNormalizedObjectPath, FSOTS_BPGenBridgeFunctionOpResult& OutError)
 	{
-		OutNormalizedObjectPath = NormalizeAssetObjectPath(BlueprintName);
+		OutNormalizedObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(BlueprintName);
 		if (OutNormalizedObjectPath.IsEmpty())
 		{
 			OutError = MakeOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("Missing blueprint_name"));

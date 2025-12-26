@@ -5,6 +5,7 @@
 #include "Containers/Set.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/HUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "SOTS_InvSPAdapter.h"
@@ -518,6 +519,35 @@ void USOTS_UIRouterSubsystem::EnsureGameplayHUDReady()
 	{
 		ProHUDAdapter->EnsureHUDCreated();
 	}
+}
+
+void USOTS_UIRouterSubsystem::RegisterHUDHost(AHUD* HUD)
+{
+	if (!HUD)
+	{
+		return;
+	}
+
+	HUDHost = HUD;
+
+	if (const USOTS_UISettings* Settings = USOTS_UISettings::Get())
+	{
+		if (Settings->bEnableSOTSCoreHUDHostBridge && Settings->bEnableSOTSCoreBridgeVerboseLogs)
+		{
+			UE_LOG(LogSOTS_UIRouter, Verbose, TEXT("Router: Registered HUD host via SOTS_Core bridge HUD=%s"), *GetNameSafe(HUD));
+		}
+	}
+}
+
+bool USOTS_UIRouterSubsystem::HasHUDHost() const
+{
+	return HUDHost.IsValid();
+}
+
+FString USOTS_UIRouterSubsystem::GetHUDHostDebugString() const
+{
+	AHUD* Host = HUDHost.Get();
+	return FString::Printf(TEXT("HUDHost=%s"), *GetNameSafe(Host));
 }
 
 USOTS_InvSPAdapter* USOTS_UIRouterSubsystem::EnsureInvSPAdapter()

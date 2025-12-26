@@ -43,4 +43,10 @@ public:
 
     UPROPERTY(EditAnywhere, Config, Category="Loading", meta=(ToolTip="Default shader warmup load list data asset."))
     TSoftObjectPtr<USOTS_ShaderWarmupLoadListDataAsset> DefaultShaderWarmupLoadList;
+
+    UPROPERTY(EditAnywhere, Config, Category="SOTS Core Bridge", meta=(ToolTip="[BRIDGE3] When enabled, listens for SOTS_Core HUDReady and registers the HUD as a host in the UI router. Disabled by default."))
+    bool bEnableSOTSCoreHUDHostBridge = false;
+
+    UPROPERTY(EditAnywhere, Config, Category="SOTS Core Bridge", meta=(ToolTip="[BRIDGE3] Verbose logs for SOTS_Core HUD host bridge. Requires the bridge itself to be enabled."))
+    bool bEnableSOTSCoreBridgeVerboseLogs = false;
 };

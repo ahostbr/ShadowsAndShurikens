@@ -8,11 +8,15 @@
 #include "SOTS_ProfileSubsystem.generated.h"
 
 class AActor;
+class AGameModeBase;
 class APawn;
+class APlayerController;
 class UActorComponent;
 class UWorld;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSOTS_ProfileRestoredSignature, const FSOTS_ProfileSnapshot&, Snapshot);
+DECLARE_MULTICAST_DELEGATE_OneParam(FSOTS_ProfileOnWorldStartPlay_Native, UWorld*);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FSOTS_ProfileOnPrimaryPlayerReady_Native, APlayerController*, APawn*);
 
 USTRUCT()
 struct FSOTS_ProfileProviderEntry
@@ -57,6 +61,10 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "SOTS|Profile")
     FSOTS_ProfileRestoredSignature OnProfileRestored;
 
+    // Core bridge (state-only) delegates
+    FSOTS_ProfileOnWorldStartPlay_Native OnCoreWorldStartPlay;
+    FSOTS_ProfileOnPrimaryPlayerReady_Native OnCorePrimaryPlayerReady;
+
     // High-level helpers (autosave/checkpoint/UI save entrypoints)
     UFUNCTION(BlueprintCallable, Category = "SOTS|Profile")
     bool RequestSaveCurrentProfile(FText& OutFailureReason);
@@ -66,6 +74,10 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "SOTS|Profile")
     void SetActiveProfile(const FSOTS_ProfileId& ProfileId);
+
+    void HandleCoreWorldStartPlay(UWorld* World);
+    void HandleCorePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer);
+    void HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn);
 
 protected:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -102,6 +114,12 @@ private:
 
     UPROPERTY()
     FSOTS_ProfileId ActiveProfileId;
+
+    TWeakObjectPtr<UWorld> CoreWorld;
+    TWeakObjectPtr<APlayerController> CorePrimaryPC;
+    TWeakObjectPtr<APawn> CorePrimaryPawn;
+    TWeakObjectPtr<APlayerController> CorePostLoginPC;
+    bool bCorePlayerSessionStarted = false;
 
     float AutosaveIntervalSeconds = 300.0f;
     bool bEnableAutosave = true;

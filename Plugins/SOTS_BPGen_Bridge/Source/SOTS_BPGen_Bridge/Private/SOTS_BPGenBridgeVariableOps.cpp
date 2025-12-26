@@ -12,7 +12,7 @@
 
 namespace
 {
-	static FSOTS_BPGenBridgeVariableOpResult MakeOpError(const FString& Code, const FString& Message)
+	static FSOTS_BPGenBridgeVariableOpResult MakeVariableOpError(const FString& Code, const FString& Message)
 	{
 		FSOTS_BPGenBridgeVariableOpResult Err;
 		Err.bOk = false;
@@ -25,7 +25,7 @@ namespace
 	{
 		if (BlueprintName.IsEmpty())
 		{
-			OutError = MakeOpError(TEXT("ERR_INVALID_INPUT"), TEXT("blueprint_name was empty"));
+			OutError = MakeVariableOpError(TEXT("ERR_INVALID_INPUT"), TEXT("blueprint_name was empty"));
 			return nullptr;
 		}
 
@@ -40,7 +40,7 @@ namespace
 		UBlueprint* BP = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr, *Normalized));
 		if (!BP)
 		{
-			OutError = MakeOpError(TEXT("ERR_TARGET_NOT_FOUND"), FString::Printf(TEXT("Failed to load Blueprint '%s'"), *Normalized));
+			OutError = MakeVariableOpError(TEXT("ERR_TARGET_NOT_FOUND"), FString::Printf(TEXT("Failed to load Blueprint '%s'"), *Normalized));
 			return nullptr;
 		}
 
@@ -302,20 +302,20 @@ namespace SOTS_BPGenBridgeVariableOps
 
 		if (BlueprintName.IsEmpty() || VariableName.IsEmpty() || !VariableConfig.IsValid())
 		{
-			return MakeOpError(TEXT("ERR_INVALID_INPUT"), TEXT("create requires blueprint_name, variable_name, and variable_config"));
+			return MakeVariableOpError(TEXT("ERR_INVALID_INPUT"), TEXT("create requires blueprint_name, variable_name, and variable_config"));
 		}
 
 		FString TypePath;
 		VariableConfig->TryGetStringField(TEXT("type_path"), TypePath);
 		if (TypePath.IsEmpty())
 		{
-			return MakeOpError(TEXT("TYPE_PATH_REQUIRED"), TEXT("variable_config.type_path is required"));
+			return MakeVariableOpError(TEXT("TYPE_PATH_REQUIRED"), TEXT("variable_config.type_path is required"));
 		}
 
 		FSOTS_BPGenPin Pin;
 		if (!TryMapTypePathToPin(TypePath, Pin))
 		{
-			return MakeOpError(TEXT("ERR_TYPE_INVALID"), FString::Printf(TEXT("Unsupported type_path: %s"), *TypePath));
+			return MakeVariableOpError(TEXT("ERR_TYPE_INVALID"), FString::Printf(TEXT("Unsupported type_path: %s"), *TypePath));
 		}
 
 		FString Category;
@@ -555,7 +555,7 @@ namespace SOTS_BPGenBridgeVariableOps
 		FBPVariableDescription* Var = nullptr;
 		if (!TryGetVar(BP, FName(*VariableName), Var) || !Var)
 		{
-			return MakeOpError(TEXT("VARIABLE_NOT_FOUND"), FString::Printf(TEXT("Variable not found: %s"), *VariableName));
+			return MakeVariableOpError(TEXT("VARIABLE_NOT_FOUND"), FString::Printf(TEXT("Variable not found: %s"), *VariableName));
 		}
 
 		TSharedPtr<FJsonObject> VarObj = MakeShared<FJsonObject>();
@@ -598,7 +598,7 @@ namespace SOTS_BPGenBridgeVariableOps
 		FBPVariableDescription* Var = nullptr;
 		if (!TryGetVar(BP, FName(*VariableName), Var) || !Var)
 		{
-			return MakeOpError(TEXT("VARIABLE_NOT_FOUND"), FString::Printf(TEXT("Variable not found: %s"), *VariableName));
+			return MakeVariableOpError(TEXT("VARIABLE_NOT_FOUND"), FString::Printf(TEXT("Variable not found: %s"), *VariableName));
 		}
 
 		FString OutValue;
@@ -676,7 +676,7 @@ namespace SOTS_BPGenBridgeVariableOps
 		FBPVariableDescription* Var = nullptr;
 		if (!TryGetVar(BP, FName(*VariableName), Var) || !Var)
 		{
-			return MakeOpError(TEXT("VARIABLE_NOT_FOUND"), FString::Printf(TEXT("Variable not found: %s"), *VariableName));
+			return MakeVariableOpError(TEXT("VARIABLE_NOT_FOUND"), FString::Printf(TEXT("Variable not found: %s"), *VariableName));
 		}
 
 		const FString ValueStr = JsonValueToDefaultString(Value);

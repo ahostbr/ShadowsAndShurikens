@@ -12,6 +12,7 @@ public class SOTS_UI : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"SOTS_Core",
 				"StructUtils",
 				"MediaAssets",
 				"AssetRegistry",

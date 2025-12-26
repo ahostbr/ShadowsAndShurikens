@@ -12,13 +12,15 @@ public class SOTS_ProfileShared : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "GameplayTags"
+                "GameplayTags",
+                "DeveloperSettings"
             }
         );
 
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "SOTS_Core"
             }
         );
     }

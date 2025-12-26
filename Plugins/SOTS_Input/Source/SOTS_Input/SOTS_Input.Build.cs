@@ -19,7 +19,8 @@ public class SOTS_Input : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
-            "Engine"
+            "Engine",
+            "SOTS_Core"
         });
     }
 }

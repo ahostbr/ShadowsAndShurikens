@@ -22,51 +22,10 @@
 #include "Editor/EditorEngine.h"
 #include "FileHelpers.h"
 
+#include "SOTS_BPGenBridgePrivateHelpers.h"
+
 namespace
 {
-	static FString NormalizeLongPackagePath(const FString& InPath)
-	{
-		FString Path = InPath;
-		Path.TrimStartAndEndInline();
-		if (Path.IsEmpty())
-		{
-			return FString();
-		}
-
-		if (Path.StartsWith(TEXT("/Game")) || Path.StartsWith(TEXT("/Engine")) || Path.StartsWith(TEXT("/Script")))
-		{
-			return Path;
-		}
-
-		if (Path.StartsWith(TEXT("/")))
-		{
-			return FString(TEXT("/Game")) + Path;
-		}
-
-		return FString(TEXT("/Game/")) + Path;
-	}
-
-	static FString NormalizeAssetObjectPath(const FString& InAssetPath)
-	{
-		FString Path = NormalizeLongPackagePath(InAssetPath);
-		if (Path.IsEmpty())
-		{
-			return FString();
-		}
-		if (Path.Contains(TEXT(".")))
-		{
-			return Path;
-		}
-
-		const FString AssetName = FPackageName::GetLongPackageAssetName(Path);
-		if (AssetName.IsEmpty())
-		{
-			return Path;
-		}
-
-		return FString::Printf(TEXT("%s.%s"), *Path, *AssetName);
-	}
-
 	static FSOTS_BPGenBridgeAssetOpResult MakeAssetOpError(const FString& ErrorCode, const FString& ErrorMessage)
 	{
 		FSOTS_BPGenBridgeAssetOpResult R;
@@ -105,7 +64,7 @@ namespace
 
 	static FString NormalizeContentFolderPath(const FString& InPath)
 	{
-		FString Path = NormalizeLongPackagePath(InPath);
+		FString Path = SOTS_BPGenBridgePrivate::NormalizeLongPackagePath(InPath);
 		if (Path.IsEmpty())
 		{
 			return FString(TEXT("/Game"));
@@ -276,7 +235,8 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::OpenInEditor(const TSha
 		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("open_in_editor requires asset_path"));
 	}
 
-	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
+	const FString ObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(AssetPath);
+
 	UObject* Asset = UEditorAssetLibrary::LoadAsset(ObjectPath);
 	if (!Asset)
 	{
@@ -331,7 +291,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Duplicate(const TShared
 		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("duplicate requires destination_path"));
 	}
 
-	const FString SourceObjectPath = NormalizeAssetObjectPath(AssetPath);
+	const FString SourceObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(AssetPath);
 	UObject* Source = UEditorAssetLibrary::LoadAsset(SourceObjectPath);
 	if (!Source)
 	{
@@ -384,7 +344,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Delete(const TSharedPtr
 		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("delete requires asset_path"));
 	}
 
-	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
+	const FString ObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(AssetPath);
 	if (ObjectPath.StartsWith(TEXT("/Engine/")))
 	{
 		return MakeAssetOpError(TEXT("ASSET_READ_ONLY"), FString::Printf(TEXT("Cannot delete engine content: %s"), *ObjectPath));
@@ -566,7 +526,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ExportTexture(const TSh
 		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("export_texture requires asset_path"));
 	}
 
-	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
+	const FString ObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(AssetPath);
 	UObject* Asset = UEditorAssetLibrary::LoadAsset(ObjectPath);
 	UTexture2D* Texture = Cast<UTexture2D>(Asset);
 	if (!Texture)
@@ -678,7 +638,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::Save(const TSharedPtr<F
 		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("save requires asset_path"));
 	}
 
-	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
+	const FString ObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(AssetPath);
 	if (!UEditorAssetLibrary::DoesAssetExist(ObjectPath))
 	{
 		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));
@@ -742,7 +702,7 @@ FSOTS_BPGenBridgeAssetOpResult SOTS_BPGenBridgeAssetOps::ListReferences(const TS
 		return MakeAssetOpError(TEXT("ERR_INVALID_PARAMS"), TEXT("list_references requires asset_path"));
 	}
 
-	const FString ObjectPath = NormalizeAssetObjectPath(AssetPath);
+	const FString ObjectPath = SOTS_BPGenBridgePrivate::NormalizeAssetObjectPath(AssetPath);
 	if (!UEditorAssetLibrary::DoesAssetExist(ObjectPath))
 	{
 		return MakeAssetOpError(TEXT("ASSET_NOT_FOUND"), FString::Printf(TEXT("Asset not found: %s"), *ObjectPath));

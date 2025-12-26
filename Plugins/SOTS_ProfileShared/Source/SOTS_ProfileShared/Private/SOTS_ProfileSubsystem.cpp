@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
@@ -76,6 +77,55 @@ void USOTS_ProfileSubsystem::Deinitialize()
 {
     StopAutosaveTimer();
     Super::Deinitialize();
+}
+
+void USOTS_ProfileSubsystem::HandleCoreWorldStartPlay(UWorld* World)
+{
+    if (!World)
+    {
+        return;
+    }
+
+    if (CoreWorld.Get() == World)
+    {
+        return;
+    }
+
+    CoreWorld = World;
+    OnCoreWorldStartPlay.Broadcast(World);
+}
+
+void USOTS_ProfileSubsystem::HandleCorePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer)
+{
+    if (!NewPlayer)
+    {
+        return;
+    }
+
+    if (bCorePlayerSessionStarted && CorePostLoginPC.Get() == NewPlayer)
+    {
+        return;
+    }
+
+    bCorePlayerSessionStarted = true;
+    CorePostLoginPC = NewPlayer;
+}
+
+void USOTS_ProfileSubsystem::HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn)
+{
+    if (!PC || !Pawn)
+    {
+        return;
+    }
+
+    if (CorePrimaryPC.Get() == PC && CorePrimaryPawn.Get() == Pawn)
+    {
+        return;
+    }
+
+    CorePrimaryPC = PC;
+    CorePrimaryPawn = Pawn;
+    OnCorePrimaryPlayerReady.Broadcast(PC, Pawn);
 }
 
 bool USOTS_ProfileSubsystem::SaveProfile(const FSOTS_ProfileId& ProfileId, const FSOTS_ProfileSnapshot& Snapshot)

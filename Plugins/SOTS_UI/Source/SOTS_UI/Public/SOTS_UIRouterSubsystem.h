@@ -17,6 +17,7 @@ class USOTS_InvSPAdapter;
 class USOTS_InteractionEssentialsAdapter;
 class UUserWidget;
 class AActor;
+class AHUD;
 struct F_SOTS_UIConfirmDialogPayload;
 
 USTRUCT()
@@ -148,6 +149,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI")
 	void EnsureGameplayHUDReady();
 
+	// [BRIDGE3] Optional Core bridge seam: register a HUD host (no widget creation).
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Host")
+	void RegisterHUDHost(AHUD* HUD);
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Host")
+	bool HasHUDHost() const;
+
+	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|Host")
+	FString GetHUDHostDebugString() const;
+
 	// InvSP adapter accessors
 	UFUNCTION(BlueprintCallable, Category = "SOTS|UI|InvSP")
 	USOTS_InvSPAdapter* EnsureInvSPAdapter();
@@ -258,6 +269,9 @@ private:
 	bool PushInventoryWidget(FGameplayTag WidgetTag, ESOTS_UIInventoryRequestType RequestType, AActor* ContainerActor = nullptr, bool bPauseOverride = false);
 	bool IsWidgetActive(FGameplayTag WidgetId, ESOTS_UILayer* OutLayer = nullptr) const;
 	bool PopFirstMatchingFromLayer(ESOTS_UILayer Layer, FGameplayTag WidgetId);
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<AHUD> HUDHost;
 	bool DispatchInteractionIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload);
 	bool DispatchInteractionMarkerIntent(FGameplayTag IntentTag, const FInstancedStruct& Payload);
 	bool HandleReturnToMainMenuAction();

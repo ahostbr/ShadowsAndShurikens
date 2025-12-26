@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Lifecycle/SOTS_CoreLifecycleListener.h"
 
-class FSOTS_CoreLifecycleListenerHandle
+class SOTS_CORE_API FSOTS_CoreLifecycleListenerHandle
 {
 public:
     FSOTS_CoreLifecycleListenerHandle() = default;
