@@ -22,6 +22,8 @@ public class SOTS_MMSS : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "DeveloperSettings",
+                "SOTS_Core",
                 "Slate",
                 "SlateCore"
             }

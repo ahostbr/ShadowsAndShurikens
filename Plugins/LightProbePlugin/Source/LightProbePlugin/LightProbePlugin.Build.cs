@@ -21,10 +21,12 @@ public class LightProbePlugin : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "DeveloperSettings",
                 "RenderCore",
                 "RHI",
                 "Slate",
-                "SlateCore"
+                "SlateCore",
+                "SOTS_Core"
             }
         );
     }

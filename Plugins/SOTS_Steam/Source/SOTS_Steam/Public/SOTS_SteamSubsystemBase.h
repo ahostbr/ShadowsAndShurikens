@@ -19,6 +19,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="SOTS|Steam")
     bool IsSteamAvailable() const;
 
+    // Safe entrypoint to re-check OnlineSubsystem availability deterministically.
+    // No external side effects beyond updating cached availability state.
+    void ForceRefreshSteamAvailability();
+
 protected:
     void LogVerbose(const FString& Message) const;
     void LogWarning(const FString& Message) const;

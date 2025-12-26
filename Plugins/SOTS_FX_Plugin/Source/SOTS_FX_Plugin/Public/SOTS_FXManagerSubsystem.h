@@ -17,6 +17,10 @@ class UNiagaraComponent;
 class UAudioComponent;
 class UActorComponent;
 class USOTS_FXDefinitionLibrary;
+class AActor;
+class APlayerController;
+class APawn;
+class UWorld;
 
 /** Configurable registration for a hard-referenced FX library. */
 USTRUCT(BlueprintType)
@@ -130,6 +134,16 @@ public:
 
     /** Global accessor – no world/context required on the BP side. */
     static USOTS_FXManagerSubsystem* Get();
+
+    // SOTS_Core lifecycle bridge (BRIDGE13): state-only notifications.
+    void HandleCoreWorldReady(UWorld* World);
+    void HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn);
+
+    DECLARE_MULTICAST_DELEGATE_OneParam(FOnCoreWorldReady, UWorld*);
+    FOnCoreWorldReady OnCoreWorldReady;
+
+    DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCorePrimaryPlayerReady, APlayerController*, APawn*);
+    FOnCorePrimaryPlayerReady OnCorePrimaryPlayerReady;
 
     /** Register a cue at runtime (e.g., from GameInstance BP). */
     UFUNCTION(BlueprintCallable, Category = "SOTS|FX")
@@ -325,6 +339,10 @@ protected:
 private:
 
     static TWeakObjectPtr<USOTS_FXManagerSubsystem> SingletonInstance;
+
+    TWeakObjectPtr<UWorld> LastCoreWorld;
+    TWeakObjectPtr<APlayerController> LastCorePC;
+    TWeakObjectPtr<APawn> LastCorePawn;
 
     FSOTS_FXHandle SpawnCue_Internal(UWorld* World, USOTS_FXCueDefinition* CueDefinition, const FSOTS_FXContext& Context);
 

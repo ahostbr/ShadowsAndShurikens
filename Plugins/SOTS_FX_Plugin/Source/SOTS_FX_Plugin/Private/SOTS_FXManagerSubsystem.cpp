@@ -93,6 +93,39 @@ void USOTS_FXManagerSubsystem::Deinitialize()
     Super::Deinitialize();
 }
 
+void USOTS_FXManagerSubsystem::HandleCoreWorldReady(UWorld* World)
+{
+    if (!World)
+    {
+        return;
+    }
+
+    if (LastCoreWorld.Get() == World)
+    {
+        return;
+    }
+
+    LastCoreWorld = World;
+    OnCoreWorldReady.Broadcast(World);
+}
+
+void USOTS_FXManagerSubsystem::HandleCorePrimaryPlayerReady(APlayerController* PC, APawn* Pawn)
+{
+    if (!PC || !Pawn)
+    {
+        return;
+    }
+
+    if (LastCorePC.Get() == PC && LastCorePawn.Get() == Pawn)
+    {
+        return;
+    }
+
+    LastCorePC = PC;
+    LastCorePawn = Pawn;
+    OnCorePrimaryPlayerReady.Broadcast(PC, Pawn);
+}
+
 USOTS_FXManagerSubsystem* USOTS_FXManagerSubsystem::Get()
 {
     return SingletonInstance.Get();

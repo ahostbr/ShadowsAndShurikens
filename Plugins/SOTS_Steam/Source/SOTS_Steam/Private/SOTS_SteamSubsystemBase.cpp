@@ -47,6 +47,11 @@ bool USOTS_SteamSubsystemBase::IsSteamAvailable() const
     return bSteamAvailable && CachedOnlineSubsystem != nullptr;
 }
 
+void USOTS_SteamSubsystemBase::ForceRefreshSteamAvailability()
+{
+    RefreshSteamAvailability();
+}
+
 IOnlineSubsystem* USOTS_SteamSubsystemBase::GetOnlineSubsystemSafe() const
 {
     return IsSteamAvailable() ? CachedOnlineSubsystem : nullptr;

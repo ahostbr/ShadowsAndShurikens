@@ -28,7 +28,8 @@ public class SOTS_FX_Plugin : ModuleRules
             new string[]
             {
                 "Projects",
-                "DeveloperSettings"
+                "DeveloperSettings",
+				"SOTS_Core"
             }
         );
     }

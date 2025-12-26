@@ -31,7 +31,9 @@ public class SOTS_GAS_Plugin : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "Projects"
+                "Projects",
+                "DeveloperSettings",
+                "SOTS_Core"
             }
         );
 
