@@ -11,6 +11,7 @@ class SOTS_MISSIONDIRECTOR_API USOTS_MissionDirectorCoreBridgeSettings : public 
 
 public:
     static const USOTS_MissionDirectorCoreBridgeSettings* Get();
+    virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
     UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
     bool bEnableSOTSCoreLifecycleBridge = false;

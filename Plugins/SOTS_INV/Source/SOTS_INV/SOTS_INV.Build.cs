@@ -12,6 +12,7 @@ public class SOTS_INV : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"DeveloperSettings",
 				"GameplayTags",
 				"SOTS_TagManager",
 				"SOTS_ProfileShared"

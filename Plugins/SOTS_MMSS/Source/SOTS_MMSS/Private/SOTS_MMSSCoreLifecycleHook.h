@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "Interfaces/SOTS_CoreLifecycleListener.h"
+#include "Lifecycle/SOTS_CoreLifecycleListener.h"
 
 class UGameInstance;
 class USOTS_CoreLifecycleSubsystem;

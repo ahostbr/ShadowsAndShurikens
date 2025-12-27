@@ -331,32 +331,78 @@ If you cannot mutate directly (no editor tools), produce a precise PLAN pack of 
 """
 
 
+MODEL_ALIASES: Dict[str, str] = {
+    # SOTS convention: uppercase identifiers using underscores.
+    # These map to OpenAI model IDs.
+    "GPT_5_2": "gpt-5.2",
+    "GPT_5_2_MINI": "gpt-5.2-mini",
+    "GPT_5_2_CODEX": "gpt-5.2-codex",
+}
+
+
+def normalize_model_name(model: str) -> str:
+    """Normalize a model name or alias to an OpenAI model id.
+
+    Accepts either:
+    - Real model ids like "gpt-5.2", "gpt-5.2-codex"
+    - Alias constants like "GPT_5_2", "GPT_5_2_CODEX"
+
+    Unknown values are returned unchanged so the upstream API can validate.
+    """
+    m = (model or "").strip()
+    if not m:
+        return ""
+    if m.startswith("gpt-") or m.startswith("o"):
+        return m
+    key = re.sub(r"[^A-Za-z0-9]+", "_", m).upper()
+
+    # Built-in aliases first.
+    resolved = MODEL_ALIASES.get(key)
+    if resolved:
+        return resolved
+
+    # Optional: treat the provided name as an env-defined alias.
+    # Preferred (namespaced) pattern:
+    #   SOTS_MODEL_GPT_5_2_CODEX=gpt-5.2-codex
+    #   SOTS_MODEL_CODE=GPT_5_2_CODEX
+    env_namespaced = (os.getenv(f"SOTS_MODEL_{key}") or "").strip()
+    if env_namespaced:
+        return env_namespaced
+
+    # Back-compat: allow un-namespaced env aliases too.
+    env_defined = (os.getenv(key) or "").strip()
+    if env_defined:
+        return env_defined
+
+    return m
+
+
 def build_agents(tools_read: List[Any], tools_apply: List[Any]) -> Dict[str, Agent]:
     triage = Agent(
         name="SOTS_Triage",
         instructions=TRIAGE_SYSTEM,
-        model=os.getenv("SOTS_MODEL_TRIAGE", "gpt-5.2-mini"),
+        model=normalize_model_name(os.getenv("SOTS_MODEL_TRIAGE", "gpt-5.2-mini")),
     )
 
     code = Agent(
         name="SOTS_CodeBuddy",
         instructions=CODE_SYSTEM,
         tools=tools_read,  # swapped at runtime
-        model=os.getenv("SOTS_MODEL_CODE", "gpt-5.2-codex"),
+        model=normalize_model_name(os.getenv("SOTS_MODEL_CODE", "gpt-5.2-codex")),
     )
 
     devtools = Agent(
         name="SOTS_DevTools",
         instructions=DEVTOOLS_SYSTEM,
         tools=tools_read,
-        model=os.getenv("SOTS_MODEL_DEVTOOLS", "gpt-5.2"),
+        model=normalize_model_name(os.getenv("SOTS_MODEL_DEVTOOLS", "gpt-5.2")),
     )
 
     editor = Agent(
         name="SOTS_EditorOps",
         instructions=EDITOR_SYSTEM,
         tools=tools_read,
-        model=os.getenv("SOTS_MODEL_EDITOR", "gpt-5.2-codex"),
+        model=normalize_model_name(os.getenv("SOTS_MODEL_EDITOR", "gpt-5.2-codex")),
     )
 
     return {"triage": triage, "code": code, "devtools": devtools, "editor": editor}
@@ -480,7 +526,7 @@ def sots_agents_run_task(payload: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": False, "output_text": "", "error": "prompt is empty", "meta": {"repo_root": str(repo_root)}}
 
     system = str(payload.get("system") or "")
-    model_override = str(payload.get("model") or "")
+    model_override = normalize_model_name(str(payload.get("model") or ""))
     reasoning_effort = str(payload.get("reasoning_effort") or "high")
     mode = str(payload.get("mode") or "plan")
     lane = payload.get("lane")

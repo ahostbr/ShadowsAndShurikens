@@ -1,0 +1,551 @@
+[SOTS_VSCODE_BUDDY] PASS 1 — Case study + integration decision (QCE ↔ SOTS toolchain)
+category: case_study
+component: UE Editor AI (QuickCodeEditor) + sots_mcp_server + sots_rag
+pass: QCE_CASE_STUDY_1
+ts: 2025-12-26 America/New_York
+branch: <active>
+intent: Produce an evidence-based case study of QuickCodeEditor’s integration seams and decide the thinnest “local endpoint” strategy that lets it drive SOTS_Buddy with MCP + RAG + DevTools + Capture.
+
+MANDATORY FIRST STEP (do not skip)
+Batch-read these files (parallel):
+
+DevTools/python/sots_mcp_server/server.py (scan tool list + env gates + reports root + agents runner usage + capture helpers)
+
+DevTools/python/sots_rag/README.md
+
+DevTools/python/sots_rag/run_rag_index.py
+
+DevTools/python/sots_rag/run_rag_query.py
+
+QuickCodeEditor plugin sources:
+
+Source/QuickCodeEditor/Public/Settings/UQCE_EditorSettings.h
+
+Source/QuickCodeEditor/Private/AI/QCE_GenericAIClient.cpp (request/response format expectations)
+
+Output artifacts (add-only)
+Create:
+
+Docs/CaseStudies/QuickCodeEditor_SOTS_Integration.md
+
+The doc must include:
+
+What QCE actually sends/expects
+
+OpenAI-style request body (model, messages[])
+
+Response parse: choices[0].message.content
+
+Auth header presence (it will send Bearer key; we can ignore/accept any non-empty key)
+
+What MCP server already provides (actual tool list)
+At minimum list these (by name) and group them:
+
+Help/Info: sots_help, sots_server_info, sots_smoketest_all
+
+Search: sots_search, sots_search_workspace, sots_search_exports
+
+Files/Dirs: sots_list_dir, sots_read_file
+
+Reports: sots_list_reports, sots_read_report
+
+Capture: sots_latest_digest_image, sots_read_image
+
+Agents: sots_agents_run, sots_agents_help, sots_agents_server_info, sots_agents_health
+
+BPGen: bpgen_ping, bpgen_call
+
+VibeUE: manage_blueprint, manage_blueprint_function
+
+Gap analysis (based on current code):
+
+No first-class RAG tools in MCP
+
+Devtool allowlist doesn’t include RAG scripts
+
+No write/apply_patch tools exposed to MCP (even though SOTS_ALLOW_APPLY exists)
+
+Agents runner currently hard-requires OPENAI_API_KEY (state this clearly)
+
+Decision: recommend implementing a tiny local HTTP gateway (/v1/chat/completions) that:
+
+Accepts QCE requests
+
+Calls SOTS Agents runner (preferred) OR (fallback) returns a structured refusal telling user to set OPENAI_API_KEY
+
+Optionally injects RAG context (toggle) by running run_rag_query.py with --reports_dir DevTools/python/reports/RAG
+
+Minimal config recipe for Ryan:
+
+QCE Provider = ChatGPT
+
+Endpoint = http://127.0.0.1:<PORT>/v1/chat/completions
+
+API key = any non-empty placeholder (e.g. local-dev)
+
+Where to start the gateway from (command line)
+
+Constraints
+Add-only docs. No code edits in this pass.
+
+No Unreal build/run.
+
+Deliverable
+Commit the markdown doc + a tiny “TL;DR” section at top with the chosen plan.
+
+[SOTS_VSCODE_BUDDY] PASS 2 — MCP: add RAG as first-class tools + allowlisted devtools
+category: tooling
+component: sots_mcp_server + sots_rag
+pass: MCP_RAG_2
+ts: 2025-12-26 America/New_York
+branch: <active>
+intent: Make RAG callable from MCP in a way that aligns with the MCP server’s reports directory and doesn’t require changing sots_rag defaults.
+
+MANDATORY FIRST STEP (do not skip)
+Batch-read:
+
+DevTools/python/sots_mcp_server/server.py
+Focus: ALLOWED_SCRIPTS, ALLOWED_SCRIPTS_META, REPORTS_DIR, sots_run_devtool, sots_list_reports, sots_read_report
+
+DevTools/python/sots_rag/run_rag_index.py
+
+DevTools/python/sots_rag/run_rag_query.py
+
+DevTools/python/sots_rag/schemas.py (report filenames)
+
+Changes (apply_patch-first, minimal diffs, add-only)
+A) Extend devtool allowlist
+In server.py, add two entries to:
+
+ALLOWED_SCRIPTS
+
+rag_index → PATHS.devtools_py / "sots_rag" / "run_rag_index.py"
+
+rag_query → PATHS.devtools_py / "sots_rag" / "run_rag_query.py"
+
+ALLOWED_SCRIPTS_META
+
+both set read_only=True
+
+Make sure:
+
+No stdout logging is introduced (keep MCP clean).
+
+The help text in sots_run_devtool mentions the new keys.
+
+B) Add first-class MCP tools (preferred UX)
+Add new tools (names exactly):
+
+sots_rag_index
+
+sots_rag_query
+
+sots_rag_status (optional but helpful)
+
+Behavior:
+
+Default reports_dir for these tools must be: REPORTS_DIR / "RAG" (i.e., DevTools/python/reports/RAG)
+
+sots_rag_index:
+
+runs the indexer (via _run_python) with:
+
+--project_root <PATHS.project_root>
+
+--reports_dir <REPORTS_DIR/RAG>
+
+returns:
+
+index summary (read rag_index_report.txt from reports_dir if present)
+
+a clear “where outputs live” block (paths)
+
+sots_rag_query:
+
+runs query script with:
+
+--project_root <PATHS.project_root>
+
+--reports_dir <REPORTS_DIR/RAG>
+
+--query "<user query>"
+
+pass through top_k / scope flags if present
+
+parse stdout to find the emitted report path line:
+
+Reports: <...>.txt, <...>.json
+
+read the .json file and return its JSON object as data
+
+sots_rag_status:
+
+reports whether REPORTS_DIR/RAG exists and whether rag_index_report.txt exists
+
+returns file mtimes and sizes
+
+C) Update smoke test
+Extend sots_smoketest_all to include a non-expensive RAG presence check:
+
+verify scripts exist
+
+verify REPORTS_DIR is writable
+
+do NOT build a full index in smoketest (too slow); only check path + import viability
+
+Constraints
+Add-only; no refactors.
+
+Keep MCP output deterministic and JSON-friendly.
+
+No Unreal build/run.
+
+Worklog
+Add:
+
+DevTools/python/sots_mcp_server/Docs/Worklogs/MCP_RAG_2_<timestamp>.md
+Include: touched files, what you added, how to call the new tools.
+
+[SOTS_VSCODE_BUDDY] PASS 3 — Local HTTP gateway for QuickCodeEditor + optional RAG injection + capture hook
+category: integration
+component: QuickCodeEditor (client) ↔ local gateway ↔ SOTS Agents + MCP + RAG + Capture
+pass: QCE_GATEWAY_3
+ts: 2025-12-26 America/New_York
+branch: <active>
+intent: Let QCE point at a local OpenAI-compatible endpoint that routes requests into the SOTS toolchain.
+
+MANDATORY FIRST STEP (do not skip)
+Batch-read:
+
+QCE response parsing expectations:
+
+Source/QuickCodeEditor/Private/AI/QCE_GenericAIClient.cpp
+
+MCP server agents entry points:
+
+DevTools/python/sots_mcp_server/server.py (look at sots_agents_run, _get_agents_orch, OPENAI_API_KEY check)
+
+Capture tool paths:
+
+server.py section defining IMAGE_DEFAULT_PATH, sots_latest_digest_image
+
+Also locate (in repo, not in zip) the agents runner implementation referenced by server:
+
+DevTools/python/sots_agents_runner/... (or wherever sots_agents_run_task + SOTSAgentsOrchestrator live)
+
+Implementation (add-only)
+A) Add a new gateway module
+Create:
+
+DevTools/python/sots_mcp_server/qce_gateway.py
+
+Requirements:
+
+Runs an HTTP server with:
+
+POST /v1/chat/completions
+
+GET /health
+
+Env config (all optional):
+
+SOTS_QCE_HOST default 127.0.0.1
+
+SOTS_QCE_PORT default 32123
+
+SOTS_QCE_USE_RAG default 0
+
+SOTS_QCE_ATTACH_DIGEST default 0
+
+Logging rule (Ryan law): must print clear debug output AND write a small log file:
+
+DevTools/python/reports/qce_gateway/qce_gateway.log
+
+OpenAI-compatible response shape:
+
+{
+  "id": "qce-local-<uuid>",
+  "object": "chat.completion",
+  "created": 0,
+  "model": "<echo request model>",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "<assistant text>" },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0 }
+}
+Error response shape (QCE reads error.message):
+
+{ "error": { "type": "qce_error", "message": "..." } }
+B) Routing behavior (core)
+On request:
+
+Extract the latest user intent from messages (join them into a single prompt string).
+
+If SOTS_QCE_USE_RAG=1:
+
+call the MCP server’s new sots_rag_query (or run the script directly) and inject top snippets into the system prompt as READ-ONLY CONTEXT.
+
+If SOTS_QCE_ATTACH_DIGEST=1:
+
+call sots_latest_digest_image and include a short note like:
+
+“Latest VisualDigest exists at: …; use if needed.”
+
+(Do not inline base64 into the prompt by default; keep it lightweight.)
+
+Invoke SOTS agents runner:
+
+Preferred: call the same function path that sots_agents_run uses (i.e., sots_agents_run_task(...))
+
+Return the assistant text as choices[0].message.content.
+
+C) Fix the hard OpenAI key requirement (actual-state correction)
+Right now server.py blocks sots_agents_run if OPENAI_API_KEY is unset.
+
+Update the agents runner layer (preferred place: sots_agents_runner) so it can support:
+
+OpenAI key OR local OpenAI-compatible base URL (LM Studio / local proxy) without requiring a key.
+
+Add envs (example):
+
+SOTS_AGENTS_OPENAI_BASE_URL (if set to http://127.0.0.1:1234/v1, skip key requirement)
+
+SOTS_AGENTS_OPENAI_API_KEY optional (only required for real OpenAI)
+
+Then update server.py gating to:
+
+Only require OPENAI_API_KEY when no local base URL is configured.
+
+This keeps “run buddy from editor” viable even when you want local models.
+
+D) Add a tiny launcher
+Create:
+
+DevTools/python/sots_mcp_server/run_qce_gateway.py
+
+imports qce_gateway and starts server
+
+prints host/port and writes log
+
+E) Docs
+Create:
+
+Docs/Tools/QuickCodeEditor_LocalBuddy_Setup.md
+
+Include:
+
+Exact QCE settings values
+
+How to start gateway
+
+Troubleshooting checklist (port in use, firewall, endpoint path, API key placeholder)
+
+Constraints
+Add-only code + docs.
+
+No Unreal build/run.
+
+Keep gateway simple: no streaming, no websockets.
+
+Worklog
+Add:
+
+DevTools/python/sots_mcp_server/Docs/Worklogs/QCE_GATEWAY_3_<timestamp>.md
+
+[SOTS_VSCODE_BUDDY]
+category: mutation
+plugin: SOTS_MCP_SERVER
+pass: MCP_POWERUP_6_PATCHPACK_STAGE_PREVIEW_APPLY
+ts: 2025-12-26 America/New_York
+branch: <active>
+intent: Add safe, gated “Patch Pack” mutation tooling to the SOTS MCP server: stage → preview → apply (with backups + manifest). Designed so Buddy-in-Editor can propose changes and (when explicitly enabled) apply them to the repo safely.
+[/SOTS_VSCODE_BUDDY]
+
+GOAL
+Implement a minimal, robust write pipeline inside `DevTools/python/sots_mcp_server/server.py` that supports:
+1) Stage: write a “patch pack” into a staging folder under REPORTS_DIR (no repo mutation).
+2) Preview: show what would change (diff stats + optional unified diffs).
+3) Apply: (ONLY when gated) apply staged pack into the repo root with mandatory backups + verification.
+
+THIS MUST MATCH ACTUAL SERVER STATE (zip-reviewed)
+- Server file: `DevTools/python/sots_mcp_server/server.py`
+- Current gates exist: `SOTS_ALLOW_APPLY`, `SOTS_ALLOW_BPGEN_APPLY`, `SOTS_ALLOW_DEVTOOLS_RUN`
+- Current REPORTS dir is: `REPORTS_DIR = (PATHS.devtools_py / "reports").resolve()`  (DevTools/python/reports)
+- No mutation tools exist today (only read/search/reports + bpgen gated + agents + run_devtool allowlist)
+
+HARD CONSTRAINTS
+- RepoRoot is: E:\SAS\ShadowsAndShurikens
+- NEVER use E:\SAS\ShadowsAndShurikens\DevTools\python\sots_mcp_server as a root path. Root is always RepoRoot.
+- Add-only. Minimal diffs. No refactors unless required.
+- Do NOT run Unreal.
+- Default behavior remains READ-ONLY (no staging, no apply unless explicitly enabled).
+- All file writes MUST be blocked unless the correct env gate is enabled.
+- Always prevent path traversal (no absolute paths; no “..” escapes).
+- MUST write a manifest + write clear server logs (reuse existing _jsonl_log pattern).
+- MUST create backups on apply (and never delete existing backups).
+
+NEW ENV GATE (required)
+- Add: `SOTS_ALLOW_STAGE` (default: inherits from SOTS_ALLOW_APPLY)
+  e.g. `ALLOW_STAGE = _env_bool("SOTS_ALLOW_STAGE", ALLOW_APPLY)`
+- Staging writes require ALLOW_STAGE==True
+- Applying to repo requires ALLOW_APPLY==True (existing)
+
+MANDATORY FIRST STEP (do not skip)
+1) Read these in one batch (parallel):
+   - DevTools/python/sots_mcp_server/server.py (focus: REPORTS_DIR, ROOT_MAP, _ensure_under_root, _safe_relpath, _jsonl_log, sots_help, sots_smoketest_all)
+   - DevTools/python/sots_mcp_server/Docs/MCP_SINGLE_SERVER_PARITY.md (update gates/tools list accordingly)
+2) In the worklog, cite exact file path + line ranges where:
+   - REPORTS_DIR is defined
+   - gate envs are defined
+   - helper functions exist (_ensure_under_root, _get_root, etc.)
+   - sots_help is assembled
+
+IMPLEMENTATION (server.py) — ADD ONLY
+
+A) Define patch-pack folders (under REPORTS_DIR)
+- STAGING_ROOT = REPORTS_DIR / "patch_packs"
+- BACKUP_ROOT  = REPORTS_DIR / "patch_backups"
+Create dirs lazily on-demand.
+
+Patch Pack on disk layout:
+REPORTS_DIR/patch_packs/<pack_id>/
+  manifest.json
+  files/<rel_path...>               (staged new contents)
+  diffs/<rel_path>.diff             (optional unified diff vs repo at stage time)
+  summary.json                      (optional computed stats)
+
+Backup layout on apply:
+REPORTS_DIR/patch_backups/<apply_ts>_<pack_id>/
+  manifest.json
+  backups/<rel_path...>.bak
+  apply_log.json
+
+B) Add MCP tools (new)
+1) sots_stage_patch_pack (MUTATION, gated by SOTS_ALLOW_STAGE)
+   Inputs:
+   - pack_name: str (optional)
+   - notes: str (optional)
+   - base_root: str = "repo"  (use existing ROOT_MAP; default repo)
+   - files: List[ { "path": "relative/path.ext", "content": "<text>", "encoding": "utf-8" } ]
+     - path is repo-relative (no absolute; no leading slash; normalize separators)
+   Behavior:
+   - Validate gate ALLOW_STAGE, else error: “Blocked by SOTS_ALLOW_STAGE=0”
+   - Validate every file path is safe and under base_root
+   - Write staged content to STAGING_ROOT/<pack_id>/files/<path>
+   - Build manifest.json including:
+     - pack_id, created_ts, pack_name, notes
+     - base_root used
+     - per-file: path, bytes, sha256, existed_in_repo, repo_bytes_before, repo_sha256_before
+   - Optionally generate unified diff (truncate if huge) into diffs/
+   Returns:
+   - pack_id
+   - staging_dir (relative to REPORTS_DIR)
+   - file_count
+   - list of file records (path, existed_in_repo, bytes)
+
+   Tool annotations:
+   - readOnlyHint = not ALLOW_STAGE
+   - title: "Stage Patch Pack (reports)"
+
+2) sots_list_patch_packs (READ-ONLY)
+   - Lists STAGING_ROOT/<pack_id> with mtimes/sizes (similar to _list_reports but scoped)
+   - Returns pack_id + created_ts if present (from manifest)
+
+3) sots_read_patch_pack (READ-ONLY)
+   Inputs:
+   - pack_id: str
+   - max_diff_chars: int default 20000
+   Behavior:
+   - Reads manifest.json and returns it
+   - Optionally returns a small preview of diffs (first N chars each, capped)
+
+4) sots_preview_apply_patch_pack (READ-ONLY)
+   Inputs:
+   - pack_id: str
+   - target_root: str = "repo"
+   Behavior:
+   - Loads manifest + staged files
+   - Re-reads current repo target files and computes:
+     - would_create / would_modify counts
+     - bytes_before/after deltas
+     - sha256 before/after
+   - Returns a concise summary + per-file plan
+   - (No writing)
+
+5) sots_apply_patch_pack (MUTATION, gated by SOTS_ALLOW_APPLY + explicit confirm)
+   Inputs:
+   - pack_id: str
+   - target_root: str = "repo"
+   - confirm: str   (must equal EXACTLY: "APPLY:<pack_id>")
+   Behavior:
+   - If not ALLOW_APPLY: error “Blocked by SOTS_ALLOW_APPLY=0”
+   - If confirm mismatch: error “Confirm mismatch. Use APPLY:<pack_id>”
+   - Create backup dir BACKUP_ROOT/<apply_ts>_<pack_id>/
+   - Copy manifest.json into backup dir
+   - For each file:
+     - If target exists: copy to backups/<path>.bak (ensure dirs)
+     - Write staged content into repo target file path
+     - Verify sha256 matches staged sha256 after write
+   - Write apply_log.json (per-file status, exceptions, durations)
+   Returns:
+   - ok + apply_dir (relative to REPORTS_DIR)
+   - counts applied + failures list
+
+   Tool annotations:
+   - readOnlyHint = not ALLOW_APPLY
+   - title: "Apply Patch Pack (repo) — gated"
+
+C) Update sots_help + smoketest
+- In sots_help():
+  - Add gates:
+    - SOTS_ALLOW_STAGE
+  - Add canonical tool names to the tools list:
+    - sots_stage_patch_pack
+    - sots_list_patch_packs
+    - sots_read_patch_pack
+    - sots_preview_apply_patch_pack
+    - sots_apply_patch_pack
+- In sots_smoketest_all():
+  - Add safe readiness checks ONLY (no staging/apply):
+    - confirm STAGING_ROOT parent path is under REPORTS_DIR
+    - report gate values in result payload
+    - ensure REPORTS_DIR exists/writable (create no files; just attempt mkdir of STAGING_ROOT only if gate allows? otherwise just check)
+
+D) Docs + worklog
+1) Update:
+   - DevTools/python/sots_mcp_server/Docs/MCP_SINGLE_SERVER_PARITY.md
+     - Add new env gate SOTS_ALLOW_STAGE
+     - Document patch pack tools + confirm string requirement
+2) Add new doc:
+   - DevTools/python/sots_mcp_server/Docs/PATCH_PACKS.md
+     - “Stage → Preview → Apply” workflow
+     - Folder locations under REPORTS_DIR
+     - Safety rules (path validation, backups, confirm token)
+3) Add worklog:
+   - DevTools/python/sots_mcp_server/Docs/Worklogs/MCP_POWERUP_6_PATCHPACK_STAGE_PREVIEW_APPLY_<timestamp>.md
+     Include:
+     - touched files
+     - exact tool signatures
+     - example MCP calls (JSON) for stage/preview/apply
+     - troubleshooting (gate envs, confirm mismatch, path blocked)
+
+QUALITY BAR / SAFETY CHECKLIST (must satisfy)
+- No tool writes anything unless the correct gate is enabled.
+- Apply requires BOTH: SOTS_ALLOW_APPLY=1 AND confirm == "APPLY:<pack_id>"
+- All writes are constrained under repo root (target_root=repo) and staging/backup constrained under REPORTS_DIR.
+- Backups happen before any overwrite and are never deleted/overwritten.
+- Manifest contains sha256 and apply verifies sha256 after write.
+- Any error returns a structured error dict (consistent with existing _sots_err).
+
+NO-REFRACTOR NOTE
+If you need helpers (sha256, diff), add them as small private functions near existing helpers. Do not reorganize the file.
+
+DONE WHEN
+- New MCP tools exist and are listed in sots_help.
+- Docs and worklog exist.
+- No behavior changes to existing read-only tools.
+- Default gates keep server read-only unless explicitly enabled.

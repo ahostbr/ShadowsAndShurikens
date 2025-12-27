@@ -5,18 +5,38 @@
 # This script is designed to be noisy (per DevTools law): it always
 # prints what it is doing and writes a small log file next to the JSON.
 
-import os
 import json
 import argparse
 from pathlib import Path
 from datetime import datetime
 
 
-def find_uplugin_files(root: Path):
-    for p in root.rglob("*.uplugin"):
-        # Only consider SOTS_* plugins by default
-        if "SOTS_" in p.name or "SOTS" in p.parent.name:
+def _iter_sots_plugin_dirs(plugins_dir: Path):
+    for p in sorted(plugins_dir.iterdir()):
+        if p.is_dir() and p.name.startswith("SOTS"):
             yield p
+
+
+def _find_uplugin_for_plugin_dir(plugin_dir: Path) -> Path | None:
+    expected = plugin_dir / f"{plugin_dir.name}.uplugin"
+    if expected.exists():
+        return expected
+
+    candidates = sorted(plugin_dir.glob("*.uplugin"))
+    if candidates:
+        return candidates[0]
+    return None
+
+
+def find_uplugin_files(project_root: Path):
+    plugins_dir = project_root / "Plugins"
+    if not plugins_dir.exists():
+        raise SystemExit(f"[ERROR] Plugins dir not found under project root: {plugins_dir}")
+
+    for plugin_dir in _iter_sots_plugin_dirs(plugins_dir):
+        uplugin = _find_uplugin_for_plugin_dir(plugin_dir)
+        if uplugin is not None:
+            yield uplugin
 
 
 def load_uplugin(path: Path):
@@ -28,9 +48,9 @@ def load_uplugin(path: Path):
         return None
 
 
-def build_depmap(root: Path):
+def build_depmap(project_root: Path):
     plugins = {}
-    for uplugin_path in find_uplugin_files(root):
+    for uplugin_path in find_uplugin_files(project_root):
         data = load_uplugin(uplugin_path)
         if not data:
             continue
@@ -39,7 +59,7 @@ def build_depmap(root: Path):
         modules = data.get("Modules", [])
         plugin_deps = data.get("Plugins", [])
 
-        dep_names = [d.get("Name") for d in plugin_deps if "Name" in d]
+        dep_names = sorted({d.get("Name") for d in plugin_deps if isinstance(d, dict) and d.get("Name")})
 
         modules_info = []
         for m in modules:
@@ -49,9 +69,17 @@ def build_depmap(root: Path):
                 "LoadingPhase": m.get("LoadingPhase"),
             })
 
+        modules_info = sorted(modules_info, key=lambda x: (x.get("Name") or ""))
+
+        try:
+            rel_path = uplugin_path.relative_to(project_root)
+            uplugin_path_str = rel_path.as_posix()
+        except Exception:
+            uplugin_path_str = str(uplugin_path)
+
         plugins[plugin_key] = {
             "FriendlyName": plugin_name,
-            "Path": str(uplugin_path),
+            "Path": uplugin_path_str,
             "Dependencies": dep_names,
             "Modules": modules_info,
         }
@@ -77,7 +105,7 @@ def main():
         "--root",
         type=str,
         default=".",
-        help="Root folder to scan (e.g. project root containing Plugins/)",
+        help="Project root folder (must contain Plugins/)",
     )
     parser.add_argument(
         "--output-json",
@@ -93,12 +121,13 @@ def main():
 
     print(f"[INFO] sots_plugin_depmap.py starting at {datetime.now().isoformat()}")
     print(f"[INFO] Scanning root: {root}")
+    print(f"[INFO] Scanning plugins dir: {root / 'Plugins'}")
 
     depmap = build_depmap(root)
 
     out_json.parent.mkdir(parents=True, exist_ok=True)
     with out_json.open("w", encoding="utf-8") as f:
-        json.dump(depmap, f, indent=2)
+        json.dump(depmap, f, indent=2, sort_keys=True)
 
     summarize_depmap(depmap)
 

@@ -11,6 +11,7 @@ class SOTS_GAS_PLUGIN_API USOTS_GASCoreBridgeSettings : public UDeveloperSetting
 
 public:
 	static const USOTS_GASCoreBridgeSettings* Get();
+	virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
 	UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
 	bool bEnableSOTSCoreLifecycleBridge = false;

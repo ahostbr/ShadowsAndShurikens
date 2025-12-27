@@ -12,6 +12,7 @@ class SOTS_DEBUG_API USOTS_DebugCoreBridgeSettings : public UDeveloperSettings
 
 public:
 	static const USOTS_DebugCoreBridgeSettings* Get();
+	virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
 	UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
 	bool bEnableSOTSCoreLifecycleBridge = false;

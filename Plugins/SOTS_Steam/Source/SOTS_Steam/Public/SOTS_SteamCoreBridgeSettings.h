@@ -12,6 +12,7 @@ class SOTS_STEAM_API USOTS_SteamCoreBridgeSettings : public UDeveloperSettings
 
 public:
     static const USOTS_SteamCoreBridgeSettings* Get();
+    virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
     // Master gate for BRIDGE15 (SOTS_Core lifecycle bridge).
     UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")

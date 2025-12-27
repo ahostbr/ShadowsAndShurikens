@@ -11,6 +11,7 @@ public class SOTS_Stats : ModuleRules
             "Core",
             "CoreUObject",
             "Engine",
+            "DeveloperSettings",
             "GameplayTags",
             "SOTS_ProfileShared"
         });

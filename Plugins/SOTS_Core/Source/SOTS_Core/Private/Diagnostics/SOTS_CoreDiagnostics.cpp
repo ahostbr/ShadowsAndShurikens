@@ -16,7 +16,7 @@
 #include "SOTS_CoreVersion.h"
 #include "SOTS_Core.h"
 
-#if PLATFORM_COMPILER_HAS_RTTI
+#if defined(PLATFORM_COMPILER_HAS_RTTI) && PLATFORM_COMPILER_HAS_RTTI
 #include <typeinfo>
 #endif
 
@@ -190,7 +190,7 @@ void FSOTS_CoreDiagnostics::DumpBridgeHealth(UWorld* World)
             IModularFeature* Feature = Features[Index];
             FString TypeName = TEXT("UNKNOWN");
 
-#if PLATFORM_COMPILER_HAS_RTTI
+#if defined(PLATFORM_COMPILER_HAS_RTTI) && PLATFORM_COMPILER_HAS_RTTI
             if (Feature)
             {
                 TypeName = ANSI_TO_TCHAR(typeid(*Feature).name());
@@ -226,7 +226,7 @@ void FSOTS_CoreDiagnostics::DumpBridgeHealth(UWorld* World)
             const FName Id = Participant ? Participant->GetParticipantId() : NAME_None;
 
             FString TypeName = TEXT("UNKNOWN");
-#if PLATFORM_COMPILER_HAS_RTTI
+#if defined(PLATFORM_COMPILER_HAS_RTTI) && PLATFORM_COMPILER_HAS_RTTI
             if (Participant)
             {
                 TypeName = ANSI_TO_TCHAR(typeid(*Participant).name());

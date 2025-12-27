@@ -2,7 +2,7 @@
 
 USOTS_ProfileSharedCoreBridgeSettings::USOTS_ProfileSharedCoreBridgeSettings()
 {
-    CategoryName = TEXT("Plugins");
+    CategoryName = TEXT("SOTS");
     SectionName = TEXT("SOTS ProfileShared Core Bridge");
     bEnableSOTSCoreLifecycleBridge = false;
     bEnableSOTSCoreBridgeVerboseLogs = false;

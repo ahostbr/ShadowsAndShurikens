@@ -2,7 +2,7 @@
 
 USOTS_KEMCoreBridgeSettings::USOTS_KEMCoreBridgeSettings()
 {
-    CategoryName = TEXT("Plugins");
+    CategoryName = TEXT("SOTS");
     SectionName = TEXT("SOTS KillExecutionManager Core Bridge");
 
     bEnableSOTSCoreSaveParticipantBridge = false;

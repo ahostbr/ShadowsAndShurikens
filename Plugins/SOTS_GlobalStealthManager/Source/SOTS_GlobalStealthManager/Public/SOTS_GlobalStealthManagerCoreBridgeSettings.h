@@ -11,6 +11,7 @@ class SOTS_GLOBALSTEALTHMANAGER_API USOTS_GlobalStealthManagerCoreBridgeSettings
 
 public:
 	static const USOTS_GlobalStealthManagerCoreBridgeSettings* Get();
+	virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
 	UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
 	bool bEnableSOTSCoreLifecycleBridge = false;

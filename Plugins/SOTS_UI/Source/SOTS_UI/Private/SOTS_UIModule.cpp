@@ -4,6 +4,8 @@
 #include "Modules/ModuleManager.h"
 #include "Logging/LogMacros.h"
 
+#include "GameFramework/HUD.h"
+
 #include "Features/IModularFeatures.h"
 #include "Lifecycle/SOTS_CoreLifecycleListener.h"
 #include "SOTS_UIRouterSubsystem.h"

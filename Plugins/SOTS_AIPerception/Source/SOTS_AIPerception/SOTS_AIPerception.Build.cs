@@ -26,6 +26,7 @@ public class SOTS_AIPerception : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
+                "DeveloperSettings",
                 "GameplayTags",
                 "AIModule",
                 "SOTS_TagManager",

@@ -11,6 +11,7 @@ class SOTS_FX_PLUGIN_API USOTS_FXCoreBridgeSettings : public UDeveloperSettings
 
 public:
 	static const USOTS_FXCoreBridgeSettings* Get();
+	virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
 	UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
 	bool bEnableSOTSCoreLifecycleBridge = false;

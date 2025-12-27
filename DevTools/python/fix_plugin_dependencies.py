@@ -6,12 +6,35 @@ from llm_log import print_llm_summary
 from cli_utils import confirm_start, confirm_exit
 
 
+_MATCH_SUBSTRINGS_CASEFOLD = [
+    ".uplugin",
+    "missing module",
+    "unable to find module",
+    "unable to instantiate module",
+    "incompatible or missing module",
+    # Common UBT warning when a plugin depends on another plugin but the .uplugin doesn't declare it.
+    "does not list plugin",
+    "as a dependency",
+    "please add it to",
+    # Other common forms seen in UBT/Editor logs when dependency wiring is incomplete.
+    "unable to load module",
+    "could not be found",
+    "was not found",
+    "missing precompiled manifest",
+]
+
+
+def _is_interesting_plugin_line(line: str) -> bool:
+    cf = line.casefold()
+    return any(sub in cf for sub in _MATCH_SUBSTRINGS_CASEFOLD)
+
+
 def summarize_log(log_path: Path):
     text = log_path.read_text(encoding="utf-8", errors="ignore")
     lines = text.splitlines()
     interesting = []
     for line in lines:
-        if ".uplugin" in line or "Missing Module" in line or "Unable to find module" in line:
+        if _is_interesting_plugin_line(line):
             interesting.append(line.strip())
     return interesting
 

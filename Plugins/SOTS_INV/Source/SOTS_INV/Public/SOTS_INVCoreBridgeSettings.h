@@ -12,6 +12,7 @@ class SOTS_INV_API USOTS_INVCoreBridgeSettings : public UDeveloperSettings
 
 public:
     USOTS_INVCoreBridgeSettings();
+    virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
     UPROPERTY(EditAnywhere, Config, Category = "Core Bridge")
     bool bEnableSOTSCoreSaveParticipantBridge;

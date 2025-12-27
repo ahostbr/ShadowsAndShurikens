@@ -2,7 +2,7 @@
 
 USOTS_InputLayerRegistrySettings::USOTS_InputLayerRegistrySettings()
 {
-    CategoryName = TEXT("Plugins");
+    CategoryName = TEXT("SOTS");
     SectionName = TEXT("SOTS Input Layer Registry");
     bLogRegistryLoads = true;
     bUseAsyncLoads = false;

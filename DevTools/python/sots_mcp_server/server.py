@@ -2463,12 +2463,49 @@ ALLOWED_SCRIPTS: Dict[str, Path] = {
     "todo_backlog": PATHS.devtools_py / "sots_todo_backlog.py",
     "api_surface": PATHS.devtools_py / "sots_api_surface.py",
     "plugin_discovery": PATHS.devtools_py / "sots_plugin_discovery.py",
+    # RAG (read-only)
+    "rag_index": PATHS.devtools_py / "sots_rag" / "run_rag_index.py",
+    "rag_query": PATHS.devtools_py / "sots_rag" / "run_rag_query.py",
     # Optional (if present in your toolbox):
     "sots_tools": PATHS.devtools_py / "sots_tools.py",
 }
 ALLOWED_SCRIPTS_META: Dict[str, Dict[str, Any]] = {
     name: {"read_only": True} for name in ALLOWED_SCRIPTS.keys()
 }
+
+RAG_REPORTS_DIR = (REPORTS_DIR / "RAG").resolve()
+
+
+def _file_stat_safe(p: Path) -> Dict[str, Any]:
+    try:
+        st = p.stat()
+        return {
+            "exists": True,
+            "is_file": p.is_file(),
+            "is_dir": p.is_dir(),
+            "bytes": st.st_size,
+            "mtime_epoch": int(st.st_mtime),
+        }
+    except Exception:
+        return {"exists": False}
+
+
+def _parse_rag_reports_from_stdout(stdout: str) -> Optional[Tuple[Path, Path]]:
+    # Expected line (example):
+    # Reports: <...>.txt, <...>.json
+    if not stdout:
+        return None
+    for raw in (stdout or "").splitlines():
+        line = raw.strip()
+        if not line.lower().startswith("reports:"):
+            continue
+        m = re.search(r"Reports:\s*(.+?\.txt)\s*,\s*(.+?\.json)\s*$", line, flags=re.IGNORECASE)
+        if not m:
+            continue
+        txt_path = Path(m.group(1)).expanduser()
+        json_path = Path(m.group(2)).expanduser()
+        return (txt_path, json_path)
+    return None
 
 SAFE_SEARCH_ROOTS = {
     "Plugins": PATHS.project_root / "Plugins",
@@ -2798,7 +2835,7 @@ def _search_files(
 )
 def run_devtool(name: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
     """
-    name: depmap | tag_usage | todo_backlog | api_surface | plugin_discovery | sots_tools
+    name: depmap | tag_usage | todo_backlog | api_surface | plugin_discovery | rag_index | rag_query | sots_tools
     args: forwarded CLI args (validated only as a list of strings)
     """
     req_id = _new_request_id()
@@ -3868,6 +3905,9 @@ def sots_help() -> Dict[str, Any]:
         "sots_list_reports",
         "sots_read_report",
         "sots_run_devtool",
+        "sots_rag_status",
+        "sots_rag_index",
+        "sots_rag_query",
         "sots_agents_health",
         "sots_agents_run",
         "sots_agents_help",
@@ -4037,11 +4077,191 @@ def sots_smoketest_all() -> Dict[str, Any]:
         warnings.append(f"bpgen_ping failed: {exc}")
         results["bpgen_ping"] = _sots_err(str(exc))
 
+    # RAG presence checks (non-expensive): script presence + reports dir writability + import viability.
+    try:
+        rag_checks: Dict[str, Any] = {}
+        rag_checks["scripts"] = {
+            "rag_index": str(ALLOWED_SCRIPTS.get("rag_index")) if "rag_index" in ALLOWED_SCRIPTS else "",
+            "rag_query": str(ALLOWED_SCRIPTS.get("rag_query")) if "rag_query" in ALLOWED_SCRIPTS else "",
+            "rag_index_exists": bool(ALLOWED_SCRIPTS.get("rag_index") and ALLOWED_SCRIPTS["rag_index"].exists()),
+            "rag_query_exists": bool(ALLOWED_SCRIPTS.get("rag_query") and ALLOWED_SCRIPTS["rag_query"].exists()),
+        }
+        rag_checks["reports_dir"] = {
+            "reports_root": str(REPORTS_DIR),
+            "rag_reports_dir": str(RAG_REPORTS_DIR),
+            "reports_exists": REPORTS_DIR.exists(),
+            "reports_writable": bool(REPORTS_DIR.exists() and os.access(str(REPORTS_DIR), os.W_OK)),
+        }
+        try:
+            import sots_rag as _  # type: ignore  # noqa: F401
+            rag_checks["importable"] = True
+        except Exception as exc:
+            rag_checks["importable"] = False
+            rag_checks["import_error"] = str(exc)
+        results["rag"] = _sots_ok(rag_checks)
+    except Exception as exc:
+        warnings.append(f"rag checks failed: {exc}")
+        results["rag"] = _sots_err(str(exc))
+
     ok = all(r.get("ok") for r in results.values() if isinstance(r, dict))
     res = _sots_ok({"results": results}, warnings=warnings, meta={"request_id": req_id})
     res["ok"] = ok
     _jsonl_log({"ts": time.time(), "tool": "sots_smoketest_all", "ok": res["ok"], "error": res["error"], "request_id": req_id})
     return res
+
+
+@mcp.tool(
+    name="sots_rag_status",
+    description="Report RAG status under DevTools/python/reports/RAG (existence, mtimes, sizes). Read-only.",
+    annotations={"readOnlyHint": True, "title": "RAG: status"},
+)
+def sots_rag_status() -> Dict[str, Any]:
+    req_id = _new_request_id()
+    try:
+        data = {
+            "rag_reports_dir": str(RAG_REPORTS_DIR),
+            "rag_reports_dir_stat": _file_stat_safe(RAG_REPORTS_DIR),
+            "rag_index_report": str(RAG_REPORTS_DIR / "rag_index_report.txt"),
+            "rag_index_report_stat": _file_stat_safe(RAG_REPORTS_DIR / "rag_index_report.txt"),
+        }
+        res = _sots_ok(data, meta={"request_id": req_id})
+    except Exception as exc:
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+    _jsonl_log({"ts": time.time(), "tool": "sots_rag_status", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+    return res
+
+
+@mcp.tool(
+    name="sots_rag_index",
+    description="Run the SOTS RAG indexer into DevTools/python/reports/RAG and return a summary. Read-only.",
+    annotations={"readOnlyHint": True, "title": "RAG: index"},
+)
+def sots_rag_index(extra_args: Optional[List[str]] = None) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    extra_args = extra_args or []
+    try:
+        script = ALLOWED_SCRIPTS.get("rag_index")
+        if not script:
+            res = _sots_err("rag_index is not allowlisted", meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "sots_rag_index", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
+
+        args = [
+            "--project_root",
+            str(PATHS.project_root),
+            "--reports_dir",
+            str(RAG_REPORTS_DIR),
+            *[str(a) for a in extra_args],
+        ]
+        out = _run_python(script, args)
+        # Prefer reading the index report from the target reports dir.
+        idx_report_path = (RAG_REPORTS_DIR / "rag_index_report.txt")
+        idx_report = None
+        if idx_report_path.exists() and idx_report_path.is_file():
+            try:
+                idx_report = idx_report_path.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                idx_report = None
+        res = _sots_ok(
+            {
+                "run": out,
+                "index_report": idx_report,
+                "outputs": {
+                    "reports_dir": str(RAG_REPORTS_DIR),
+                    "index_report_path": str(idx_report_path),
+                },
+            },
+            meta={"request_id": req_id},
+        )
+        _jsonl_log({"ts": time.time(), "tool": "sots_rag_index", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
+    except Exception as exc:
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_rag_index", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
+
+
+@mcp.tool(
+    name="sots_rag_query",
+    description="Run a SOTS RAG query and return the emitted JSON report object. Read-only.",
+    annotations={"readOnlyHint": True, "title": "RAG: query"},
+)
+def sots_rag_query(query: str, top_k: int = 12, scope: str = "all", extra_args: Optional[List[str]] = None) -> Dict[str, Any]:
+    req_id = _new_request_id()
+    query = (query or "").strip()
+    if not query:
+        res = _sots_err("query is empty", meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
+
+    extra_args = extra_args or []
+    try:
+        script = ALLOWED_SCRIPTS.get("rag_query")
+        if not script:
+            res = _sots_err("rag_query is not allowlisted", meta={"request_id": req_id})
+            _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
+
+        args = [
+            "--project_root",
+            str(PATHS.project_root),
+            "--reports_dir",
+            str(RAG_REPORTS_DIR),
+            "--q",
+            query,
+            "--top_k",
+            str(int(top_k)),
+            "--scope",
+            str(scope or "all"),
+            *[str(a) for a in extra_args],
+        ]
+        out = _run_python(script, args)
+
+        reports = _parse_rag_reports_from_stdout(out.get("stdout") or "")
+        if not reports:
+            res = _sots_err(
+                "Could not parse report paths from rag_query stdout (expected 'Reports: <...>.txt, <...>.json')",
+                data={"run": out},
+                meta={"request_id": req_id},
+            )
+            _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
+
+        txt_path, json_path = reports
+        if not json_path.exists() or not json_path.is_file():
+            res = _sots_err(
+                f"RAG JSON report not found: {json_path}",
+                data={"run": out, "reports": {"txt": str(txt_path), "json": str(json_path)}},
+                meta={"request_id": req_id},
+            )
+            _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
+
+        try:
+            report_obj = json.loads(json_path.read_text(encoding="utf-8", errors="replace"))
+        except Exception as exc:
+            res = _sots_err(
+                f"Failed to read/parse RAG JSON report: {exc}",
+                data={"run": out, "report_json": str(json_path)},
+                meta={"request_id": req_id},
+            )
+            _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+            return res
+
+        res = _sots_ok(
+            {
+                "reports": {"txt": str(txt_path), "json": str(json_path)},
+                "report": report_obj,
+                "run": out,
+            },
+            meta={"request_id": req_id},
+        )
+        _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
+    except Exception as exc:
+        res = _sots_err(str(exc), meta={"request_id": req_id})
+        _jsonl_log({"ts": time.time(), "tool": "sots_rag_query", "ok": res["ok"], "error": res["error"], "request_id": req_id})
+        return res
 
 def main() -> None:
     # Stdio transport is what VS Code uses for local MCP subprocesses.

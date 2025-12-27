@@ -12,6 +12,7 @@ class SOTS_MMSS_API USOTS_MMSSCoreBridgeSettings : public UDeveloperSettings
 
 public:
     static const USOTS_MMSSCoreBridgeSettings* Get();
+    virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
     UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
     bool bEnableSOTSCoreLifecycleBridge = false;

@@ -11,6 +11,7 @@ class SOTS_AIPERCEPTION_API USOTS_AIPerceptionCoreBridgeSettings : public UDevel
 
 public:
 	static const USOTS_AIPerceptionCoreBridgeSettings* Get();
+	virtual FName GetCategoryName() const override { return TEXT("SOTS"); }
 
 	UPROPERTY(Config, EditAnywhere, Category="SOTS|Core Bridge")
 	bool bEnableSOTSCoreLifecycleBridge = false;

@@ -12,6 +12,7 @@ public class SOTS_MissionDirector : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
+                "DeveloperSettings",
                 "GameplayTags",
                 "SOTS_GlobalStealthManager",
                 "SOTS_FX_Plugin",

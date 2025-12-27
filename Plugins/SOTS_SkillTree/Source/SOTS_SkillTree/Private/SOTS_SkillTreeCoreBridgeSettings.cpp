@@ -2,7 +2,7 @@
 
 USOTS_SkillTreeCoreBridgeSettings::USOTS_SkillTreeCoreBridgeSettings()
 {
-    CategoryName = TEXT("Plugins");
+    CategoryName = TEXT("SOTS");
     SectionName = TEXT("SOTS SkillTree Core Bridge");
 
     bEnableSOTSCoreSaveParticipantBridge = false;
